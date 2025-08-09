@@ -380,8 +380,7 @@ func openLoginWindow() {
 			}
 			gs.LastCharacter = name
 			saveSettings()
-			loginWin.RemoveWindow()
-			loginWin = nil
+			loginWin.Open = false
 			go func() {
 				ctx, cancel := context.WithCancel(gameCtx)
 				loginMu.Lock()
