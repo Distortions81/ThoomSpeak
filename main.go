@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/binary"
 	"flag"
+	"go_client/climg"
+	"go_client/clsnd"
 	"log"
 	"os"
 	"os/signal"
@@ -12,9 +14,6 @@ import (
 	"runtime/pprof"
 	"syscall"
 	"time"
-
-	"go_client/climg"
-	"go_client/clsnd"
 )
 
 var (
@@ -99,54 +98,55 @@ func main() {
 	}
 
 	go func() {
-		runGame(ctx)
-		cancel()
-	}()
-	addMessage("Starting...")
+		addMessage("Starting...")
 
-	var err error
-	clImages, err = climg.Load(filepath.Join(baseDir + "/data/CL_Images"))
-	if err != nil {
-		logError("failed to load CL_Images: %v", err)
-	} else {
-		clImages.Denoise = gs.DenoiseImages
-		clImages.DenoiseSharpness = gs.DenoiseSharpness
-		clImages.DenoisePercent = gs.DenoisePercent
-	}
-
-	clSounds, err = clsnd.Load(filepath.Join(baseDir + "/data/CL_Sounds"))
-	if err != nil {
-		logError("failed to load CL_Sounds: %v", err)
-	}
-
-	if gs.precacheAssets {
-		go precacheAssets()
-	}
-
-	if clmovPath != "" {
-		drawStateEncrypted = false
-		frames, err := parseMovie(clmovPath, *clientVer)
+		var err error
+		clImages, err = climg.Load(filepath.Join(baseDir + "/data/CL_Images"))
 		if err != nil {
-			log.Fatalf("parse movie: %v", err)
+			logError("failed to load CL_Images: %v", err)
+		} else {
+			clImages.Denoise = gs.DenoiseImages
+			clImages.DenoiseSharpness = gs.DenoiseSharpness
+			clImages.DenoisePercent = gs.DenoisePercent
 		}
 
-		playerName = extractMoviePlayerName(frames)
+		clSounds, err = clsnd.Load(filepath.Join(baseDir + "/data/CL_Sounds"))
+		if err != nil {
+			logError("failed to load CL_Sounds: %v", err)
+		}
 
-		mp := newMoviePlayer(frames, clMovFPS, cancel)
-		mp.initUI()
+		if gs.precacheAssets {
+			go precacheAssets()
+		}
 
-		if gs.precacheAssets && !assetsPrecached {
-			for !assetsPrecached {
-				time.Sleep(time.Millisecond * 100)
+		if clmovPath != "" {
+			drawStateEncrypted = false
+			frames, err := parseMovie(clmovPath, *clientVer)
+			if err != nil {
+				log.Fatalf("parse movie: %v", err)
 			}
+
+			playerName = extractMoviePlayerName(frames)
+
+			mp := newMoviePlayer(frames, clMovFPS, cancel)
+			mp.initUI()
+
+			if gs.precacheAssets && !assetsPrecached {
+				for !assetsPrecached {
+					time.Sleep(time.Millisecond * 100)
+				}
+			}
+			go mp.run(ctx)
+
+			<-ctx.Done()
+			return
 		}
-		go mp.run(ctx)
 
 		<-ctx.Done()
-		return
-	}
+	}()
 
-	<-ctx.Done()
+	runGame(ctx)
+	cancel()
 }
 
 func extractMoviePlayerName(frames [][]byte) string {
