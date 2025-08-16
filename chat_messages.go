@@ -17,9 +17,12 @@ func chatMessage(msg string) {
 	}
 	chatMsgMu.Lock()
 	chatMsgs = append(chatMsgs, msg)
+
+	//Remove oldest message if full
 	if len(chatMsgs) > maxChatMessages {
 		chatMsgs = chatMsgs[len(chatMsgs)-maxChatMessages:]
 	}
+
 	chatMsgMu.Unlock()
 
 	updateChatWindow()

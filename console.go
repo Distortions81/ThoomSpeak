@@ -18,6 +18,8 @@ func consoleMessage(msg string) {
 
 	messageMu.Lock()
 	messages = append(messages, msg)
+
+	//Remove oldest message if full
 	if len(messages) > maxMessages {
 		messages = messages[len(messages)-maxMessages:]
 	}
