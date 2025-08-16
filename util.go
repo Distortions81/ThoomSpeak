@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"crypto/md5"
 	"encoding/binary"
 	"encoding/hex"
@@ -9,9 +8,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"path/filepath"
-	"regexp"
-	"strconv"
 
 	"golang.org/x/crypto/twofish"
 )
@@ -108,31 +104,6 @@ func describeKError(code int16) (desc, name string, ok bool) {
 	// Fallback to the technical name split into words
 	return name, name, true
 }
-
-func loadAdditionalErrorNames() {
-	path := filepath.Join("..", "mac_client", "client", "public", "Public_cl.h")
-	f, err := os.Open(path)
-	if err != nil {
-		return
-	}
-	defer f.Close()
-
-	scanner := bufio.NewScanner(f)
-	re := regexp.MustCompile(`\s*(k\w+)\s*=\s*(-?\d+),`)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if m := re.FindStringSubmatch(line); m != nil {
-			val, err := strconv.Atoi(m[2])
-			if err == nil {
-				if _, ok := errorNames[int16(val)]; !ok {
-					errorNames[int16(val)] = m[1]
-				}
-			}
-		}
-	}
-}
-
-func init() { loadAdditionalErrorNames() }
 
 var doDebug bool
 var silent bool
