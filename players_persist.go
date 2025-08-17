@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"time"
 )
 
 type persistPlayers struct {
@@ -30,7 +29,6 @@ const PlayersFile = "GT_Players.xml"
 
 var (
 	lastPlayersSave     = lastSettingsSave
-	lastDebugStats      time.Time
 	playersPersistDirty bool
 )
 

@@ -1,79 +1,144 @@
 package main
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 func runBackgroundTasks() {
+	go debugStatsTask(gameCtx)
+	go inventoryRefreshTask(gameCtx)
+	go playersRefreshTask(gameCtx)
+	go syncWindowSettingsTask(gameCtx)
+	go qualityPresetTask(gameCtx)
+	go settingsSaveTask(gameCtx)
+	go playersSaveTask(gameCtx)
+	go movieWindowRefreshTask(gameCtx)
+}
 
-	go func() {
-		var x uint64
-		for {
-			x++
-			time.Sleep(time.Millisecond * 10)
-
-			switch x {
-			case 1:
-				if time.Since(lastDebugStats) > time.Second {
-					lastDebugStats = time.Now()
-					if debugWin != nil && debugWin.IsOpen() {
-						updateDebugStats()
-					}
-				}
-
-			case 2:
-				if inventoryDirty {
-					updateInventoryWindow()
-					updateHandsWindow()
-					inventoryDirty = false
-				}
-
-			case 3:
-				if playersDirty {
-					updatePlayersWindow()
-					playersDirty = false
-				}
-
-			case 4:
-				if syncWindowSettings() {
-					settingsDirty = true
-				}
-
-			case 5:
-				if settingsDirty && qualityPresetDD != nil {
-					qualityPresetDD.Selected = detectQualityPreset()
-				}
-
-			case 6:
-				if time.Since(lastSettingsSave) >= 1*time.Second {
-					if settingsDirty {
-						saveSettings()
-						settingsDirty = false
-					}
-					lastSettingsSave = time.Now()
-				}
-
-			case 7:
-				// Periodically persist players if there were changes.
-				if time.Since(lastPlayersSave) >= 10*time.Second {
-					if playersDirty || playersPersistDirty {
-						savePlayersPersist()
-						playersPersistDirty = false
-					}
-					lastPlayersSave = time.Now()
-				}
-
-			case 8:
-				// Ensure the movie controller window repaints at least once per second
-				// while open, even without other UI events.
-				if movieWin != nil && movieWin.IsOpen() {
-					if time.Since(lastMovieWinTick) >= time.Second {
-						lastMovieWinTick = time.Now()
-						movieWin.Refresh()
-					}
-				}
-
-			default:
-				x = 0
+func debugStatsTask(ctx context.Context) {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if debugWin != nil && debugWin.IsOpen() {
+				updateDebugStats()
 			}
 		}
-	}()
+	}
+}
+
+func inventoryRefreshTask(ctx context.Context) {
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if inventoryDirty {
+				updateInventoryWindow()
+				updateHandsWindow()
+				inventoryDirty = false
+			}
+		}
+	}
+}
+
+func playersRefreshTask(ctx context.Context) {
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if playersDirty {
+				updatePlayersWindow()
+				playersDirty = false
+			}
+		}
+	}
+}
+
+func syncWindowSettingsTask(ctx context.Context) {
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if syncWindowSettings() {
+				settingsDirty = true
+			}
+		}
+	}
+}
+
+func qualityPresetTask(ctx context.Context) {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if settingsDirty && qualityPresetDD != nil {
+				qualityPresetDD.Selected = detectQualityPreset()
+			}
+		}
+	}
+}
+
+func settingsSaveTask(ctx context.Context) {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if settingsDirty {
+				saveSettings()
+				settingsDirty = false
+			}
+			lastSettingsSave = time.Now()
+		}
+	}
+}
+
+func playersSaveTask(ctx context.Context) {
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if playersDirty || playersPersistDirty {
+				savePlayersPersist()
+				playersPersistDirty = false
+			}
+			lastPlayersSave = time.Now()
+		}
+	}
+}
+
+func movieWindowRefreshTask(ctx context.Context) {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if movieWin != nil && movieWin.IsOpen() {
+				movieWin.Refresh()
+			}
+		}
+	}
 }
