@@ -1229,6 +1229,9 @@ func makeSettingsWindow() {
 		if ev.Type == eui.EventCheckboxChanged {
 			gs.ChatTTS = ev.Checked
 			settingsDirty = true
+			if !ev.Checked {
+				stopAllTTS()
+			}
 		}
 	}
 	chatTTSRow.AddItem(chatTTSCB)

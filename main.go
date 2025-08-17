@@ -35,6 +35,7 @@ var (
 	pcapPath      string
 	blockSound    bool
 	blockBubbles  bool
+	blockTTS      bool
 	clientVersion int
 )
 
