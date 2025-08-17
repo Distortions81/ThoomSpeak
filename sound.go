@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"log"
 	"math"
+	"runtime"
 	"sync"
 
 	"github.com/hajimehoshi/ebiten/v2/audio"
@@ -88,24 +89,54 @@ func playSound(ids ...uint16) {
 		}
 
 		mixed := make([]int32, maxSamples)
-		for _, pcm := range sounds {
-			n := len(pcm) / 2
-			for i := 0; i < n; i++ {
-				sample := int16(binary.LittleEndian.Uint16(pcm[2*i:]))
-				mixed[i] += int32(sample)
-			}
-		}
 
-		// Find the peak amplitude to normalize the mix
-		maxVal := int32(0)
-		for _, v := range mixed {
-			if v < 0 {
-				v = -v
+		chunks := runtime.NumCPU()
+		if chunks > maxSamples {
+			chunks = maxSamples
+		}
+		chunkSize := (maxSamples + chunks - 1) / chunks
+
+		var wg sync.WaitGroup
+		maxCh := make(chan int32, chunks)
+
+		for start := 0; start < maxSamples; start += chunkSize {
+			end := start + chunkSize
+			if end > maxSamples {
+				end = maxSamples
 			}
+			wg.Add(1)
+			go func(start, end int) {
+				defer wg.Done()
+				localMax := int32(0)
+				for i := start; i < end; i++ {
+					var sum int32
+					for _, pcm := range sounds {
+						if n := len(pcm) / 2; i < n {
+							sample := int16(binary.LittleEndian.Uint16(pcm[2*i:]))
+							sum += int32(sample)
+						}
+					}
+					mixed[i] = sum
+					if sum < 0 {
+						sum = -sum
+					}
+					if sum > localMax {
+						localMax = sum
+					}
+				}
+				maxCh <- localMax
+			}(start, end)
+		}
+		wg.Wait()
+		close(maxCh)
+
+		maxVal := int32(0)
+		for v := range maxCh {
 			if v > maxVal {
 				maxVal = v
 			}
 		}
+
 		// Apply peak normalization and reduce volume for overlapping sounds
 		scale := 1 / float64(len(sounds))
 		if maxVal > 0 {
@@ -113,15 +144,28 @@ func playSound(ids ...uint16) {
 		}
 
 		out := make([]byte, len(mixed)*2)
-		for i, v := range mixed {
-			v = int32(float64(v) * scale)
-			if v > 32767 {
-				v = 32767
-			} else if v < -32768 {
-				v = -32768
+
+		wg = sync.WaitGroup{}
+		for start := 0; start < len(mixed); start += chunkSize {
+			end := start + chunkSize
+			if end > len(mixed) {
+				end = len(mixed)
 			}
-			binary.LittleEndian.PutUint16(out[2*i:], uint16(int16(v)))
+			wg.Add(1)
+			go func(start, end int) {
+				defer wg.Done()
+				for i := start; i < end; i++ {
+					v := int32(float64(mixed[i]) * scale)
+					if v > 32767 {
+						v = 32767
+					} else if v < -32768 {
+						v = -32768
+					}
+					binary.LittleEndian.PutUint16(out[2*i:], uint16(int16(v)))
+				}
+			}(start, end)
 		}
+		wg.Wait()
 
 		p := audioContext.NewPlayerFromBytes(out)
 		vol := gs.Volume
