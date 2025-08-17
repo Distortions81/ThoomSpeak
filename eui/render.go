@@ -1199,6 +1199,23 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 		}
 	} else if item.ItemType == ITEM_TEXT {
 
+		itemColor := style.Color
+		if item.Focused {
+			itemColor = style.ClickColor
+		} else if item.Hovered {
+			itemColor = style.HoverColor
+		}
+
+		if item.Filled {
+			drawRoundRect(subImg, &roundRect{
+				Size:     maxSize,
+				Position: offset,
+				Fillet:   item.Fillet,
+				Filled:   true,
+				Color:    itemColor,
+			})
+		}
+
 		textSize := (item.FontSize * uiScale) + 2
 		face := textFace(textSize)
 		loo := text.LayoutOptions{

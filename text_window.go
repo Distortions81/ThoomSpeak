@@ -30,7 +30,6 @@ func makeTextWindow(title string, hz eui.HZone, vz eui.VZone, withInput bool) (*
 	var input *eui.ItemData
 	if withInput {
 		input = &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL, Fixed: true}
-		input.Color = eui.ColorVeryDarkGray
 		flow.AddItem(input)
 	}
 
@@ -121,12 +120,13 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 			inLinesN = 1
 		}
 		input.Size.X = clientWAvail
-		input.Size.Y = rowUnits * float32(inLinesN)
+		input.Size.Y = rowUnits + 1*float32(inLinesN)
 		if len(input.Contents) == 0 {
 			t, _ := eui.NewText()
 			t.Text = wrappedIn
 			t.FontSize = float32(fontSize)
 			t.Size = eui.Point{X: clientWAvail, Y: rowUnits * float32(inLinesN)}
+			t.Filled = true
 			input.AddItem(t)
 		} else {
 			if input.Contents[0].Text != wrappedIn || input.Contents[0].FontSize != float32(fontSize) {
