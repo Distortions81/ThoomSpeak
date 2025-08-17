@@ -196,8 +196,6 @@ var (
 	netLatency    time.Duration
 	lastInputSent time.Time
 	latencyMu     sync.Mutex
-	// Throttled refresh for movie controller window
-	lastMovieWinTick time.Time
 )
 
 // drawState tracks information needed by the Ebiten renderer.
