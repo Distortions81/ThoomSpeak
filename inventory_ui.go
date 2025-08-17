@@ -3,6 +3,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"gothoom/eui"
 	"math"
@@ -17,6 +18,11 @@ var inventoryList *eui.ItemData
 var inventoryDirty bool
 
 var TitleCaser = cases.Title(language.AmericanEnglish)
+
+var (
+	invBoldSrc   *text.GoTextFaceSource
+	invItalicSrc *text.GoTextFaceSource
+)
 
 func makeInventoryWindow() {
 	if inventoryWin != nil {
@@ -70,6 +76,12 @@ func updateInventoryWindow() {
 		goFace = &text.GoTextFace{Size: facePx}
 	}
 	metrics := goFace.Metrics()
+	if invBoldSrc == nil {
+		invBoldSrc, _ = text.NewGoTextFaceSource(bytes.NewReader(notoSansBold))
+	}
+	if invItalicSrc == nil {
+		invItalicSrc, _ = text.NewGoTextFaceSource(bytes.NewReader(notoSansItalic))
+	}
 	// Use ceil(ascent+descent) plus 2px cushion to protect descenders
 	rowPx := float32(math.Ceil(metrics.HAscent + metrics.HDescent + 2))
 	rowUnits := rowPx / uiScale
@@ -136,6 +148,15 @@ func updateInventoryWindow() {
 
 		t.Text = TitleCaser.String(label)
 		t.FontSize = float32(fontSize)
+		if loc == "worn" {
+			if invItalicSrc != nil {
+				t.Face = &text.GoTextFace{Source: invItalicSrc, Size: facePx}
+			}
+		} else if loc != "" {
+			if invBoldSrc != nil {
+				t.Face = &text.GoTextFace{Source: invBoldSrc, Size: facePx}
+			}
+		}
 		// Constrain the text item height to match the computed row height (UI units).
 		t.Size.Y = rowUnits
 		t.Size.X = 1000
