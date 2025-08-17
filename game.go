@@ -1071,7 +1071,7 @@ func drawMobile(screen *ebiten.Image, ox, oy int, m frameMobile, descMap map[uin
 	y := roundToInt((v + float64(fieldCenterY)) * gs.GameScale)
 	x += ox
 	y += oy
-	// view bounds culling is handled during state parse; no per-frame check here
+	// No per-frame bounds check.
 	var img *ebiten.Image
 	plane := 0
 	var d frameDescriptor
@@ -1145,7 +1145,7 @@ func drawMobile(screen *ebiten.Image, ox, oy int, m frameMobile, descMap map[uin
 		scale := gs.GameScale
 		scaled := float64(roundToInt(float64(drawSize) * scale))
 		scale = scaled / float64(drawSize)
-		// No per-frame bounds check (culled earlier).
+		// No per-frame bounds check.
 		op := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
 		op.GeoM.Scale(scale, scale)
 		tx := float64(x) - scaled/2
@@ -1289,7 +1289,7 @@ func drawPicture(screen *ebiten.Image, ox, oy int, p framePicture, alpha float64
 	x += ox
 	y += oy
 
-	// No per-frame bounds check (culled earlier).
+	// No per-frame bounds check.
 
 	img := loadImageFrame(p.PictID, frame)
 	var prevImg *ebiten.Image
@@ -1337,7 +1337,7 @@ func drawPicture(screen *ebiten.Image, ox, oy int, p framePicture, alpha float64
 		scaledH := float64(roundToInt(float64(drawH) * sy))
 		sx = scaledW / float64(drawW)
 		sy = scaledH / float64(drawH)
-		// No per-frame bounds check (culled earlier).
+		// No per-frame bounds check.
 		op := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
 		op.GeoM.Scale(sx, sy)
 		tx := float64(x) - scaledW/2
@@ -1371,7 +1371,7 @@ func drawPicture(screen *ebiten.Image, ox, oy int, p framePicture, alpha float64
 			text.Draw(screen, lbl, mainFont, opTxt)
 		}
 	} else {
-		// No per-frame bounds check (culled earlier).
+		// No per-frame bounds check.
 		clr := color.RGBA{0, 0, 0xff, 0xff}
 		if gs.smoothingDebug && p.Moving {
 			clr = color.RGBA{0xff, 0, 0, 0xff}
