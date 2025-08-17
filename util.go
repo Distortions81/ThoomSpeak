@@ -115,19 +115,21 @@ var playerName string
 var playerIndex uint8 = 0xff
 
 const (
-	kBubbleNormal       = 0
-	kBubbleWhisper      = 1
-	kBubbleYell         = 2
-	kBubbleThought      = 3
-	kBubbleRealAction   = 4
-	kBubbleMonster      = 5
-	kBubblePlayerAction = 6
-	kBubblePonder       = 7
-	kBubbleNarrate      = 8
+	kBubbleNormal = iota
+	kBubbleWhisper
+	kBubbleYell
+	kBubbleThought
+	kBubbleRealAction
+	kBubbleMonster
+	kBubblePlayerAction
+	kBubblePonder
+	kBubbleNarrate
+)
 
-	kBubbleTypeMask  = 0x3F << 8
-	kBubbleNotCommon = 0x40 << 8
-	kBubbleFar       = 0x80 << 8
+const (
+	kBubbleTypeMask  = 0x3F
+	kBubbleNotCommon = 0x40
+	kBubbleFar       = 0x80
 )
 
 // bubble languages and codes from Public_cl.h

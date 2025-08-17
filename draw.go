@@ -1199,13 +1199,13 @@ func parseDrawState(data []byte) error {
 					if verb == "thinks" {
 						switch target {
 						case thinkToYou:
-							msg = fmt.Sprintf("%v thinks to you, %v", name, txt)
+							msg = fmt.Sprintf("%v thinks to you, %v", bubbleName, txt)
 						case thinkToClan:
-							msg = fmt.Sprintf("%v thinks to your clan, %v", name, txt)
+							msg = fmt.Sprintf("%v thinks to your clan, %v", bubbleName, txt)
 						case thinkToGroup:
-							msg = fmt.Sprintf("%v thinks to a group, %v", name, txt)
+							msg = fmt.Sprintf("%v thinks to a group, %v", bubbleName, txt)
 						default:
-							msg = fmt.Sprintf("%v thinks, %v", name, txt)
+							msg = fmt.Sprintf("%v thinks, %v", bubbleName, txt)
 						}
 					} else if typ&kBubbleNotCommon != 0 {
 						langWord := lang
@@ -1214,7 +1214,11 @@ func parseDrawState(data []byte) error {
 							langWord = "an unknown language"
 						}
 						if code == kBubbleCodeKnown {
-							msg = fmt.Sprintf("%v %v in %v, %v", name, verb, langWord, txt)
+							if langWord == "Common" {
+								msg = fmt.Sprintf("%v %v %v", name, verb, txt)
+							} else {
+								msg = fmt.Sprintf("%v %v in %v, %v", name, verb, langWord, txt)
+							}
 						} else if typ&kBubbleTypeMask == kBubbleYell {
 							switch code {
 							case kBubbleUnknownShort:
