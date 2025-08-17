@@ -15,7 +15,6 @@ var (
 	shortUnits, _ = durafmt.DefaultUnitsCoder.Decode("y:yrs,wk:wks,d:d,h:h,m:m,s:s,ms:ms,us:us")
 	playingMovie  bool
 	movieWin      *eui.WindowData
-	seeking       bool
 )
 
 // moviePlayer manages clMov playback with basic controls.

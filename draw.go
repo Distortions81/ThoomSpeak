@@ -188,7 +188,12 @@ func nonTransparentPixels(id uint16) int {
 	}
 	pixelCountMu.RUnlock()
 
-	var img image.Image = loadImage(id)
+	timg := loadImage(id)
+	if timg == nil {
+		return 0
+	}
+	var img image.Image = timg
+
 	bounds := img.Bounds()
 	count := 0
 
