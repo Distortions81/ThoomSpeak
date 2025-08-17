@@ -1557,7 +1557,7 @@ func drawStatusBars(screen *ebiten.Image, ox, oy int, snap drawSnapshot, alpha f
 				}
 			}
 			fillClr := color.RGBA{base.R, base.G, base.B, 128}
-			drawRect(x, barY, w, barHeight, fillClr)
+			drawRect(x, y, w, barHeight, fillClr)
 		}
 	}
 
