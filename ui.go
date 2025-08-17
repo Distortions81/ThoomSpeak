@@ -2227,6 +2227,7 @@ func makeBubbleWindow() {
 		if ev.Type == eui.EventCheckboxChanged {
 			gs.SpeechBubbles = ev.Checked
 			settingsDirty = true
+			updateBubbleVisibility()
 		}
 	}
 	flow.AddItem(bubbleCB)
@@ -2240,6 +2241,7 @@ func makeBubbleWindow() {
 			if ev.Type == eui.EventCheckboxChanged {
 				*val = ev.Checked
 				settingsDirty = true
+				updateBubbleVisibility()
 			}
 		}
 		flow.AddItem(cb)
