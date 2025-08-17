@@ -89,7 +89,7 @@ func parseMovie(path string, clientVersion int) ([][]byte, error) {
 		}
 		if flags&flagMobileData != 0 {
 			logDebug("MobileData table at %d", pos)
-			pos = parseMobileTable(data, pos, version, revision)
+			pos = fastParseMobileTable(data, pos, version, revision)
 		}
 		if flags&flagPictureTable != 0 {
 			logDebug("PictureTable at %d", pos)
