@@ -1474,6 +1474,7 @@ func makeSettingsWindow() {
 			defer SettingsLock.Unlock()
 
 			gs.NameBgOpacity = float64(ev.Value)
+			killNameTagCache()
 			settingsDirty = true
 		}
 	}
