@@ -82,15 +82,14 @@ func updateInventoryWindow() {
 	// Clear prior contents and rebuild rows as [icon][name (xN)].
 	inventoryList.Contents = nil
 
-	// Compute row height from actual font metrics (ascent+descent) and add
-	// a small cushion so descenders are never clipped regardless of scale.
+	// Compute row height from actual font metrics (ascent+descent) at the
+	// exact point size used when rendering (+2px fudge for Ebiten).
 	fontSize := gs.InventoryFontSize
 	if fontSize <= 0 {
 		fontSize = gs.ConsoleFontSize
 	}
 	uiScale := eui.UIScale()
-	// Build a face at the scaled point size and measure
-	facePx := float64(float32(fontSize) * uiScale)
+	facePx := float64(float32(fontSize)*uiScale) + 2
 	var goFace *text.GoTextFace
 	if src := eui.FontSource(); src != nil {
 		goFace = &text.GoTextFace{Source: src, Size: facePx}
@@ -104,8 +103,9 @@ func updateInventoryWindow() {
 	if invItalicSrc == nil {
 		invItalicSrc, _ = text.NewGoTextFaceSource(bytes.NewReader(notoSansItalic))
 	}
-	// Use ceil(ascent+descent) plus 2px cushion to protect descenders
-	rowPx := float32(math.Ceil(metrics.HAscent + metrics.HDescent + 2))
+	// Metrics already include the rendering fudge so no extra padding is
+	// needed here.
+	rowPx := float32(math.Ceil(metrics.HAscent + metrics.HDescent))
 	rowUnits := rowPx / uiScale
 	iconSize := int(rowUnits + 0.5)
 
@@ -192,20 +192,17 @@ func updateInventoryWindow() {
 			}
 		}
 
-		nameW, _ := text.Measure(t.Text, face, 0)
 		t.Size.Y = rowUnits
-		t.Size.X = float32(math.Ceil(nameW / uiScale))
-		row.AddItem(t)
 
-		// Add slot label right-justified when equipped and space allows.
+		availName := row.Size.X - float32(iconSize) - icon.Margin
+		var lt *eui.ItemData
 		if anyEquipped[id] && slot >= 0 && slot < len(slotNames) {
 			loc := fmt.Sprintf("[%v]", TitleCaser.String(slotNames[slot]))
 			locW, _ := text.Measure(loc, face, 0)
 			locWU := float32(math.Ceil(locW / uiScale))
-			flowX := float32(iconSize) + icon.Margin + t.Size.X
-			avail := row.Size.X - flowX
-			if avail > locWU {
-				lt, _ := eui.NewText()
+			if availName > locWU {
+				availName -= locWU
+				lt, _ = eui.NewText()
 				lt.Text = loc
 				lt.FontSize = float32(fontSize)
 				lt.Face = face
@@ -213,8 +210,16 @@ func updateInventoryWindow() {
 				lt.Size.X = locWU
 				lt.Fixed = true
 				lt.Position.X = row.Size.X - locWU
-				row.AddItem(lt)
 			}
+		}
+
+		if availName < 0 {
+			availName = 0
+		}
+		t.Size.X = availName
+		row.AddItem(t)
+		if lt != nil {
+			row.AddItem(lt)
 		}
 
 		// Row height matches the icon/text height with minimal padding.
