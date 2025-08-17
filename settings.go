@@ -64,7 +64,7 @@ var gsdef settings = settings{
 	Theme:             "",
 	MessagesToConsole: false,
 	ChatTTS:           false,
-	ChatTTSVolume:     1.0,
+	ChatTTSVolume:    0.5,
 	WindowTiling:      false,
 	WindowSnapping:    false,
 	AnyGameWindowSize: true,
