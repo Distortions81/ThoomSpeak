@@ -118,8 +118,6 @@ func main() {
 		go precacheAssets()
 	}
 
-	consoleMessage("Starting...")
-
 	go func() {
 		if clmovPath != "" {
 			drawStateEncrypted = false

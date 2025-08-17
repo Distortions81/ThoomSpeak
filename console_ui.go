@@ -38,5 +38,6 @@ func makeConsoleWindow() {
 			consoleWin.Refresh()
 		}
 	}
+	consoleMessage("Starting...")
 	updateConsoleWindow()
 }

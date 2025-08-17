@@ -25,7 +25,7 @@ func wrapText(s string, face text.Face, maxWidth float64) (int, []string) {
 		}
 		wordWidths := make([]float64, len(words))
 		for i, w := range words {
-			ww, _ := text.Measure(w, face, 0)
+			ww, _ := text.Measure(w+" ", face, 0)
 			wordWidths[i] = ww
 		}
 
@@ -35,7 +35,7 @@ func wrapText(s string, face text.Face, maxWidth float64) (int, []string) {
 
 		for i := 1; i < len(words); i++ {
 			w := words[i]
-			wWidth := wordWidths[i]
+			wWidth := wordWidths[i] + 2
 			candWidth := curWidth + spaceWidth + wWidth
 			if candWidth <= maxWidth {
 				builder.WriteByte(' ')

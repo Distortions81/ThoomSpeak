@@ -79,7 +79,7 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 	// Prepare wrapping parameters: use the same face for measurement.
 	var face text.Face = goFace
 	// list.Size.X is in item units; convert to pixels for measurement.
-	wrapWidthPx := float64(list.Size.X * ui)
+	wrapWidthPx := float64(list.Size.X - (3*pad)*ui)
 
 	for i, msg := range msgs {
 		// Word-wrap the message to the available width.
