@@ -18,6 +18,18 @@ var (
 	movieWin      *eui.WindowData
 )
 
+// movieCheckpoint captures the draw state after processing a frame. idx
+// matches the number of processed frames (the next frame to play).
+type movieCheckpoint struct {
+	idx   int
+	state drawState
+}
+
+// checkpointInterval determines how often checkpoints are recorded during
+// playback. Larger intervals reduce memory usage at the cost of slower seek
+// times.
+const checkpointInterval = 300
+
 // moviePlayer manages clMov playback with basic controls.
 type moviePlayer struct {
 	frames  [][]byte
@@ -26,6 +38,8 @@ type moviePlayer struct {
 	playing bool
 	ticker  *time.Ticker
 	cancel  context.CancelFunc
+
+	checkpoints []movieCheckpoint
 
 	slider     *eui.ItemData
 	curLabel   *eui.ItemData
@@ -40,11 +54,12 @@ func newMoviePlayer(frames [][]byte, fps int, cancel context.CancelFunc) *movieP
 	frameInterval = time.Second / time.Duration(fps)
 	playingMovie = true
 	return &moviePlayer{
-		frames:  frames,
-		fps:     fps,
-		playing: true,
-		ticker:  time.NewTicker(time.Second / time.Duration(fps)),
-		cancel:  cancel,
+		frames:      frames,
+		fps:         fps,
+		playing:     true,
+		ticker:      time.NewTicker(time.Second / time.Duration(fps)),
+		cancel:      cancel,
+		checkpoints: []movieCheckpoint{{idx: 0, state: cloneDrawState(initialState)}},
 	}
 }
 
@@ -334,6 +349,12 @@ func (p *moviePlayer) step() {
 		_ = txt
 	}
 	p.cur++
+	if p.cur%checkpointInterval == 0 {
+		stateMu.Lock()
+		cp := movieCheckpoint{idx: p.cur, state: cloneDrawState(state)}
+		stateMu.Unlock()
+		p.checkpoints = append(p.checkpoints, cp)
+	}
 	if p.cur >= len(p.frames) {
 		p.playing = false
 		playingMovie = false
@@ -431,10 +452,21 @@ func (p *moviePlayer) seek(idx int) {
 	}
 	wasPlaying := p.playing
 	p.playing = false
-	resetDrawState()
-	frameCounter = 0
 
-	for i := 0; i < idx; i++ {
+	cp := p.checkpoints[0]
+	for i := len(p.checkpoints) - 1; i >= 0; i-- {
+		if p.checkpoints[i].idx <= idx {
+			cp = p.checkpoints[i]
+			break
+		}
+	}
+
+	stateMu.Lock()
+	state = cloneDrawState(cp.state)
+	stateMu.Unlock()
+	frameCounter = cp.idx
+
+	for i := cp.idx; i < idx; i++ {
 		m := p.frames[i]
 		if len(m) >= 2 && binary.BigEndian.Uint16(m[:2]) == 2 {
 			handleDrawState(m)
