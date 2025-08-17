@@ -63,6 +63,7 @@ var gsdef settings = settings{
 	BarPlacement:      BarPlacementBottom,
 	Theme:             "",
 	MessagesToConsole: false,
+	ChatTTS:           false,
 	WindowTiling:      false,
 	WindowSnapping:    false,
 	AnyGameWindowSize: true,
@@ -134,6 +135,7 @@ type settings struct {
 	BarPlacement      BarPlacement
 	Theme             string
 	MessagesToConsole bool
+	ChatTTS           bool
 	WindowTiling      bool
 	WindowSnapping    bool
 	IntegerScaling    bool

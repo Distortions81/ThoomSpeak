@@ -26,6 +26,10 @@ func chatMessage(msg string) {
 	chatMsgMu.Unlock()
 
 	updateChatWindow()
+
+	if gs.ChatTTS {
+		speakChatMessage(msg)
+	}
 }
 
 func getChatMessages() []string {
