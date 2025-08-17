@@ -345,9 +345,7 @@ func (p *moviePlayer) step() {
 		// (e.g., bubble expiration) progress correctly during playback.
 		frameCounter++
 	}
-	if txt := decodeMessage(m); txt != "" {
-		_ = txt
-	}
+	maybeDecodeMessage(m)
 	p.cur++
 	if p.cur%checkpointInterval == 0 {
 		stateMu.Lock()
@@ -475,9 +473,7 @@ func (p *moviePlayer) seek(idx int) {
 			// without draw-state are encountered.
 			frameCounter++
 		}
-		if txt := decodeMessage(m); txt != "" {
-			_ = txt
-		}
+    maybeDecodeMessage(m)
 		if frameCounter%checkpointInterval == 0 {
 			last := p.checkpoints[len(p.checkpoints)-1]
 			if last.idx != frameCounter {
@@ -502,6 +498,22 @@ func (p *moviePlayer) seek(idx int) {
 	p.playing = wasPlaying
 
 	seekingMov = false
+}
+
+// maybeDecodeMessage applies a simple heuristic to determine whether a frame
+// could contain a textual message. Frames shorter than the 16-byte prefix or
+// tagged as draw-state (tag 2) are skipped to avoid needless decoding.
+// This heuristic may be refined as additional frame types are understood.
+func maybeDecodeMessage(m []byte) {
+	if len(m) <= 16 {
+		return
+	}
+	if len(m) >= 2 && binary.BigEndian.Uint16(m[:2]) == 2 {
+		return
+	}
+	if txt := decodeMessage(m); txt != "" {
+		_ = txt
+	}
 }
 
 func resetDrawState() {
