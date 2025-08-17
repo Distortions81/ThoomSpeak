@@ -1222,7 +1222,7 @@ func makeSettingsWindow() {
 	right.AddItem(renderScale)
 
 	label, _ = eui.NewText()
-	label.Text = "\nStatus Bar Placement:"
+	label.Text = "\nStatus Bar Options:"
 	label.FontSize = 15
 	label.Size = eui.Point{X: rightW, Y: 50}
 	right.AddItem(label)
@@ -1231,10 +1231,10 @@ func makeSettingsWindow() {
 		name  string
 		value BarPlacement
 	}{
-		{"Bottom", BarPlacementBottom},
-		{"Lower Left", BarPlacementLowerLeft},
-		{"Lower Right", BarPlacementLowerRight},
-		{"Upper Right", BarPlacementUpperRight},
+		{"Along Bottom", BarPlacementBottom},
+		{"Grouped Lower Left", BarPlacementLowerLeft},
+		{"Grouped Lower Right", BarPlacementLowerRight},
+		{"Grouped Upper Right", BarPlacementUpperRight},
 	}
 	for _, p := range placements {
 		p := p
