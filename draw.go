@@ -1132,9 +1132,46 @@ func parseDrawState(data []byte) error {
 			} else if bubbleName == ThinkUnknownName {
 				name = "Someone"
 			}
-			if gs.SpeechBubbles && txt != "" && !blockBubbles {
+			bubbleType := typ & kBubbleTypeMask
+			showBubble := gs.SpeechBubbles && txt != "" && !blockBubbles
+			if showBubble {
+				typeOK := true
+				switch bubbleType {
+				case kBubbleNormal:
+					typeOK = gs.BubbleNormal
+				case kBubbleWhisper:
+					typeOK = gs.BubbleWhisper
+				case kBubbleYell:
+					typeOK = gs.BubbleYell
+				case kBubbleThought:
+					typeOK = gs.BubbleThought
+				case kBubbleRealAction:
+					typeOK = gs.BubbleRealAction
+				case kBubbleMonster:
+					typeOK = gs.BubbleMonster
+				case kBubblePlayerAction:
+					typeOK = gs.BubblePlayerAction
+				case kBubblePonder:
+					typeOK = gs.BubblePonder
+				case kBubbleNarrate:
+					typeOK = gs.BubbleNarrate
+				}
+				originOK := true
+				switch {
+				case idx == playerIndex:
+					originOK = gs.BubbleSelf
+				case bubbleType == kBubbleMonster:
+					originOK = gs.BubbleMonsters
+				case bubbleType == kBubbleNarrate:
+					originOK = gs.BubbleNarration
+				default:
+					originOK = gs.BubbleOtherPlayers
+				}
+				showBubble = typeOK && originOK
+			}
+			if showBubble {
 				b := bubble{Index: idx, Text: txt, Type: typ, CreatedFrame: frameCounter}
-				switch typ & kBubbleTypeMask {
+				switch bubbleType {
 				case kBubbleRealAction, kBubblePlayerAction, kBubbleNarrate:
 					b.NoArrow = true
 				}

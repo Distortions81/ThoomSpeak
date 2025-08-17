@@ -1030,6 +1030,42 @@ func drawScene(screen *ebiten.Image, ox, oy int, snap drawSnapshot, alpha float6
 
 	if gs.SpeechBubbles {
 		for _, b := range snap.bubbles {
+			bubbleType := b.Type & kBubbleTypeMask
+			typeOK := true
+			switch bubbleType {
+			case kBubbleNormal:
+				typeOK = gs.BubbleNormal
+			case kBubbleWhisper:
+				typeOK = gs.BubbleWhisper
+			case kBubbleYell:
+				typeOK = gs.BubbleYell
+			case kBubbleThought:
+				typeOK = gs.BubbleThought
+			case kBubbleRealAction:
+				typeOK = gs.BubbleRealAction
+			case kBubbleMonster:
+				typeOK = gs.BubbleMonster
+			case kBubblePlayerAction:
+				typeOK = gs.BubblePlayerAction
+			case kBubblePonder:
+				typeOK = gs.BubblePonder
+			case kBubbleNarrate:
+				typeOK = gs.BubbleNarrate
+			}
+			originOK := true
+			switch {
+			case b.Index == playerIndex:
+				originOK = gs.BubbleSelf
+			case bubbleType == kBubbleMonster:
+				originOK = gs.BubbleMonsters
+			case bubbleType == kBubbleNarrate:
+				originOK = gs.BubbleNarration
+			default:
+				originOK = gs.BubbleOtherPlayers
+			}
+			if !(typeOK && originOK) {
+				continue
+			}
 			hpos := float64(b.H)
 			vpos := float64(b.V)
 			if !b.Far {
