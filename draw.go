@@ -1179,11 +1179,13 @@ func parseDrawState(data []byte) error {
 		bubbleData := stateData[:p+end+1]
 		if verb, txt, bubbleName, lang, code, target := decodeBubble(bubbleData); txt != "" || code != kBubbleCodeKnown {
 			name := bubbleName
+			visible := false
 			if bubbleName == ThinkUnknownName {
 				name = "Someone"
 			} else {
 				stateMu.Lock()
 				if d, ok := state.descriptors[idx]; ok {
+					visible = true
 					if bubbleName != "" {
 						if d.Name != "" {
 							name = d.Name
@@ -1226,16 +1228,22 @@ func parseDrawState(data []byte) error {
 			default:
 				if name != "" {
 					if verb == "thinks" {
-						switch target {
-						case thinkToYou:
-							msg = fmt.Sprintf("%v thinks to you, %v", name, txt)
-						case thinkToClan:
-							msg = fmt.Sprintf("%v thinks to your clan, %v", name, txt)
-						case thinkToGroup:
-							msg = fmt.Sprintf("%v thinks to a group, %v", name, txt)
-						default:
-							msg = fmt.Sprintf("%v thinks, %v", name, txt)
+						if target != thinkNone {
+							switch target {
+							case thinkToYou:
+								msg = fmt.Sprintf("%v thinks to you: %v", name, txt)
+							case thinkToClan:
+								msg = fmt.Sprintf("%v thinks to your clan: %v", name, txt)
+							case thinkToGroup:
+								msg = fmt.Sprintf("%v thinks to a group: %v", name, txt)
+							default:
+								msg = fmt.Sprintf("%v thinks: %v", name, txt)
+							}
+						} else {
+							msg = fmt.Sprintf("%v thinks: %v", name, txt)
 						}
+					} else if !visible {
+						msg = fmt.Sprintf("%v says: %v", name, txt)
 					} else if typ&kBubbleNotCommon != 0 {
 						langWord := lang
 						lw := strings.ToLower(langWord)
@@ -1243,17 +1251,17 @@ func parseDrawState(data []byte) error {
 							langWord = "an unknown language"
 						}
 						if code == kBubbleCodeKnown {
-							msg = fmt.Sprintf("%v %v in %v, %v", name, verb, langWord, txt)
+							msg = fmt.Sprintf("%v %v in %v: %v", name, verb, langWord, txt)
 						} else if typ&kBubbleTypeMask == kBubbleYell {
 							switch code {
 							case kBubbleUnknownShort:
-								msg = fmt.Sprintf("%v %v, %v", name, verb, txt)
+								msg = fmt.Sprintf("%v %v: %v", name, verb, txt)
 							case kBubbleUnknownMedium:
-								msg = fmt.Sprintf("%v %v in %v, %v", name, verb, langWord, txt)
+								msg = fmt.Sprintf("%v %v in %v: %v", name, verb, langWord, txt)
 							case kBubbleUnknownLong:
-								msg = fmt.Sprintf("%v %v in %v, %v", name, verb, langWord, txt)
+								msg = fmt.Sprintf("%v %v in %v: %v", name, verb, langWord, txt)
 							default:
-								msg = fmt.Sprintf("%v %v in %v, %v", name, verb, langWord, txt)
+								msg = fmt.Sprintf("%v %v in %v: %v", name, verb, langWord, txt)
 							}
 						} else {
 							var unknown string
@@ -1270,7 +1278,7 @@ func parseDrawState(data []byte) error {
 							msg = fmt.Sprintf("%v %v %v in %v", name, verb, unknown, langWord)
 						}
 					} else {
-						msg = fmt.Sprintf("%v %v, %v", name, verb, txt)
+						msg = fmt.Sprintf("%v %v: %v", name, verb, txt)
 					}
 				} else {
 					if txt != "" {
