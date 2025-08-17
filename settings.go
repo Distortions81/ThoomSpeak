@@ -12,7 +12,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-const SETTINGS_VERSION = 4
+const SETTINGS_VERSION = 5
 
 type BarPlacement int
 
@@ -40,7 +40,9 @@ var gsdef settings = settings{
 	BubbleOpacity:     0.7,
 	NameBgOpacity:     0.7,
 	BarOpacity:        0.5,
+	HiddenCharOpacity: 0.5,
 	SpeechBubbles:     true,
+	ShowHiddenChars:   true,
 
 	MotionSmoothing:   true,
 	BlendMobiles:      false,
@@ -108,7 +110,9 @@ type settings struct {
 	BubbleOpacity     float64
 	NameBgOpacity     float64
 	BarOpacity        float64
+	HiddenCharOpacity float64
 	SpeechBubbles     bool
+	ShowHiddenChars   bool
 
 	MotionSmoothing   bool
 	BlendMobiles      bool
