@@ -832,6 +832,15 @@ func worldDrawInfo() (int, int, float64) {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
+	//Reduce render load while seeking clMov
+	if seekingMov {
+		if time.Since(lastSeekPrev) < time.Second {
+			return
+		}
+		lastSeekPrev = time.Now()
+	}
+	screen.Clear()
+
 	// Ensure the game image item/buffer exists and matches window content.
 	updateGameImageSize()
 	if gameImage == nil {
@@ -951,10 +960,22 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	if gs.ShowFPS {
 		drawServerFPS(screen, screen.Bounds().Dx()-40, 4, serverFPS)
 	}
+
+	if seekingMov {
+		x, y := float64(screen.Bounds().Dx())/2, float64(screen.Bounds().Dy())/2
+		vector.DrawFilledRect(screen, float32(x+2), float32(y+2), 90, 40, color.Black, false)
+
+		op := &text.DrawOptions{}
+		op.GeoM.Translate(x, y)
+		text.Draw(screen, "SEEKING...", mainFontBold, op)
+	}
 }
+
+var lastSeekPrev time.Time
 
 // drawScene renders all world objects for the current frame.
 func drawScene(screen *ebiten.Image, ox, oy int, snap drawSnapshot, alpha float64, mobileFade, pictFade float32) {
+
 	// Use cached descriptor map directly; no need to rebuild/sort it per frame.
 	descMap := snap.descriptors
 
@@ -1709,6 +1730,7 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 func runGame(ctx context.Context) {
 	gameCtx = ctx
 
+	ebiten.SetScreenClearedEveryFrame(false)
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 	w, h := ebiten.Monitor().Size()
 	if w == 0 || h == 0 {
