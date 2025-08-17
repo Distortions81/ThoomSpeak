@@ -207,6 +207,17 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 	}
 	row1.AddItem(helpBtn)
 
+	shotBtn, shotEvents := eui.NewButton()
+	shotBtn.Text = "Screenshot"
+	shotBtn.Size = eui.Point{X: buttonWidth, Y: buttonHeight}
+	shotBtn.FontSize = toolFontSize
+	shotEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			takeScreenshot()
+		}
+	}
+	row1.AddItem(shotBtn)
+
 	exitSessBtn, exitSessEv := eui.NewButton()
 	exitSessBtn.Text = "Exit"
 	exitSessBtn.Size = eui.Point{X: buttonWidth, Y: buttonHeight}
