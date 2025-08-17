@@ -24,6 +24,28 @@ var (
 	invItalicSrc *text.GoTextFaceSource
 )
 
+// slotNames maps item slot constants to display strings.
+var slotNames = []string{
+	"invalid", // kItemSlotNotInventory
+	"unknown", // kItemSlotNotWearable
+	"forehead",
+	"neck",
+	"shoulder",
+	"arms",
+	"gloves",
+	"finger",
+	"coat",
+	"cloak",
+	"torso",
+	"waist",
+	"legs",
+	"feet",
+	"right",
+	"left",
+	"hands",
+	"head",
+}
+
 func makeInventoryWindow() {
 	if inventoryWin != nil {
 		return
@@ -92,32 +114,22 @@ func updateInventoryWindow() {
 
 		// Row container for icon + text
 		row := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL, Fixed: true}
+		row.Size.X = inventoryWin.GetSize().X
 
 		// Icon
 		icon, _ := eui.NewImageItem(iconSize, iconSize)
 		icon.Filled = false
 		icon.Border = 0
 
-		// Choose a pict ID for the item sprite and determine equipped location.
+		// Choose a pict ID for the item sprite and determine equipped slot.
 		var pict uint32
-		loc := ""
+		slot := -1
 		if clImages != nil {
 			// Inventory list usually uses the worn pict for display.
 			if p := clImages.ItemWornPict(uint32(id)); p != 0 {
 				pict = p
 			}
-			// Location label derived from slot, displayed only if any instance
-			// of this item ID is equipped.
-			if anyEquipped[id] {
-				switch clImages.ItemSlot(uint32(id)) {
-				case 14: // kItemSlotRightHand
-					loc = "right"
-				case 15: // kItemSlotLeftHand
-					loc = "left"
-				default:
-					loc = "worn"
-				}
-			}
+			slot = clImages.ItemSlot(uint32(id))
 		}
 		if pict != 0 {
 			if img := loadImage(uint16(pict)); img != nil {
@@ -140,27 +152,51 @@ func updateInventoryWindow() {
 		if qty > 1 {
 			label = fmt.Sprintf("(%v) %v", qty, label)
 		}
-		if loc != "" {
-			label = fmt.Sprintf("%v [%v]", label, loc)
-		}
 
 		t, _ := eui.NewText()
-
 		t.Text = TitleCaser.String(label)
 		t.FontSize = float32(fontSize)
-		if loc == "worn" {
-			if invItalicSrc != nil {
-				t.Face = &text.GoTextFace{Source: invItalicSrc, Size: facePx}
-			}
-		} else if loc != "" {
-			if invBoldSrc != nil {
-				t.Face = &text.GoTextFace{Source: invBoldSrc, Size: facePx}
+
+		face := goFace
+		if anyEquipped[id] {
+			switch slot {
+			case kItemSlotRightHand, kItemSlotLeftHand, kItemSlotBothHands:
+				if invBoldSrc != nil {
+					face = &text.GoTextFace{Source: invBoldSrc, Size: facePx}
+					t.Face = face
+				}
+			default:
+				if invItalicSrc != nil {
+					face = &text.GoTextFace{Source: invItalicSrc, Size: facePx}
+					t.Face = face
+				}
 			}
 		}
-		// Constrain the text item height to match the computed row height (UI units).
+
+		nameW, _ := text.Measure(t.Text, face, 0)
 		t.Size.Y = rowUnits
-		t.Size.X = 1000
+		t.Size.X = float32(nameW / uiScale)
 		row.AddItem(t)
+
+		// Add slot label right-justified when equipped and space allows.
+		if anyEquipped[id] && slot >= 0 && slot < len(slotNames) {
+			loc := fmt.Sprintf("[%v]", TitleCaser.String(slotNames[slot]))
+			locW, _ := text.Measure(loc, face, 0)
+			locWU := float32(locW / uiScale)
+			flowX := float32(iconSize) + icon.Margin + t.Size.X
+			avail := row.Size.X - flowX
+			if avail > locWU {
+				lt, _ := eui.NewText()
+				lt.Text = loc
+				lt.FontSize = float32(fontSize)
+				lt.Face = face
+				lt.Size.Y = rowUnits
+				lt.Size.X = locWU
+				lt.Fixed = true
+				lt.Position.X = avail - locWU
+				row.AddItem(lt)
+			}
+		}
 
 		// Row height matches the icon/text height with minimal padding.
 		row.Size.Y = rowUnits
