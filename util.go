@@ -125,9 +125,9 @@ const (
 	kBubblePonder       = 7
 	kBubbleNarrate      = 8
 
-	kBubbleTypeMask  = 0x3F
-	kBubbleNotCommon = 0x40
-	kBubbleFar       = 0x80
+	kBubbleTypeMask  = 0x3F << 8
+	kBubbleNotCommon = 0x40 << 8
+	kBubbleFar       = 0x80 << 8
 )
 
 // bubble languages and codes from Public_cl.h
