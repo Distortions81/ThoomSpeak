@@ -1207,6 +1207,36 @@ func makeSettingsWindow() {
 	}
 	right.AddItem(bubbleMsgCB)
 
+	chatTTSRow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
+
+	chatTTSCB, chatTTSEvents := eui.NewCheckbox()
+	chatTTSCB.Text = "Read chat messages aloud"
+	chatTTSCB.Size = eui.Point{X: rightW - 110, Y: 24}
+	chatTTSCB.Checked = gs.ChatTTS
+	chatTTSEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			gs.ChatTTS = ev.Checked
+			settingsDirty = true
+		}
+	}
+	chatTTSRow.AddItem(chatTTSCB)
+
+	chatTTSSlider, chatTTSSliderEvents := eui.NewSlider()
+	chatTTSSlider.MinValue = 0
+	chatTTSSlider.MaxValue = 1
+	chatTTSSlider.Value = float32(gs.ChatTTSVolume)
+	chatTTSSlider.Size = eui.Point{X: 100, Y: 24}
+	chatTTSSlider.FontSize = 9
+	chatTTSSliderEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			gs.ChatTTSVolume = float64(ev.Value)
+			settingsDirty = true
+		}
+	}
+	chatTTSRow.AddItem(chatTTSSlider)
+
+	right.AddItem(chatTTSRow)
+
 	label, _ = eui.NewText()
 	label.Text = "\nStatus Bar Options:"
 	label.FontSize = 15
