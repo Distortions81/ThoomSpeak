@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"sync"
 	"time"
 
 	"gothoom/eui"
@@ -47,6 +48,9 @@ func newMoviePlayer(frames [][]byte, fps int, cancel context.CancelFunc) *movieP
 	}
 }
 
+var seekLock sync.Mutex
+var seekingMov bool
+
 // makePlaybackWindow creates the playback control window.
 func (p *moviePlayer) makePlaybackWindow() {
 	win := eui.NewWindow()
@@ -79,8 +83,12 @@ func (p *moviePlayer) makePlaybackWindow() {
 	p.slider.Size = eui.Point{X: 650, Y: 24}
 	p.slider.IntOnly = true
 	events.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventSliderChanged {
-			p.seek(int(ev.Value))
+		if ev.Type == eui.EventSliderChanged && !seekingMov {
+			seekLock.Lock()
+			go func() {
+				p.seek(int(ev.Value))
+				seekLock.Unlock()
+			}()
 		}
 	}
 	tFlow.AddItem(p.slider)
@@ -380,14 +388,32 @@ func (p *moviePlayer) pause() {
 }
 
 func (p *moviePlayer) skipBackMilli(milli int) {
-	p.seek(p.cur - int(float64(milli)*(float64(p.fps)/1000.0)))
+	if seekingMov {
+		return
+	}
+	seekLock.Lock()
+	go func() {
+		p.seek(p.cur - int(float64(milli)*(float64(p.fps)/1000.0)))
+		seekLock.Unlock()
+	}()
+
 }
 
 func (p *moviePlayer) skipForwardMilli(milli int) {
-	p.seek(p.cur + int(float64(milli)*(float64(p.fps)/1000.0)))
+	if seekingMov {
+		return
+	}
+	seekLock.Lock()
+	go func() {
+		p.seek(p.cur + int(float64(milli)*(float64(p.fps)/1000.0)))
+		seekLock.Unlock()
+	}()
+
 }
 
 func (p *moviePlayer) seek(idx int) {
+	seekingMov = true
+
 	// Stop any currently playing sounds so scrubbing is silent.
 	stopAllSounds()
 	blockSound = true
@@ -426,6 +452,8 @@ func (p *moviePlayer) seek(idx int) {
 	setInterpFPS(p.fps)
 	p.updateUI()
 	p.playing = wasPlaying
+
+	seekingMov = false
 }
 
 func resetDrawState() {

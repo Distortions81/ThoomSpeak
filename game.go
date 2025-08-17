@@ -966,12 +966,12 @@ func drawScene(screen *ebiten.Image, ox, oy int, snap drawSnapshot, alpha float6
 	dead := snap.deadMobs
 
 	for _, p := range negPics {
-		drawPicture(screen, ox, oy, p, alpha, pictFade, snap.mobiles, snap.prevMobiles, snap.picShiftX, snap.picShiftY)
+		drawPicture(screen, ox, oy, p, alpha, pictFade, snap.mobiles, descMap, snap.prevMobiles, snap.picShiftX, snap.picShiftY)
 	}
 
 	if gs.hideMobiles {
 		for _, p := range zeroPics {
-			drawPicture(screen, ox, oy, p, alpha, pictFade, snap.mobiles, snap.prevMobiles, snap.picShiftX, snap.picShiftY)
+			drawPicture(screen, ox, oy, p, alpha, pictFade, snap.mobiles, descMap, snap.prevMobiles, snap.picShiftX, snap.picShiftY)
 		}
 	} else {
 		for _, m := range dead {
@@ -996,14 +996,14 @@ func drawScene(screen *ebiten.Image, ox, oy int, snap drawSnapshot, alpha float6
 				}
 				i++
 			} else {
-				drawPicture(screen, ox, oy, zeroPics[j], alpha, pictFade, snap.mobiles, snap.prevMobiles, snap.picShiftX, snap.picShiftY)
+				drawPicture(screen, ox, oy, zeroPics[j], alpha, pictFade, snap.mobiles, descMap, snap.prevMobiles, snap.picShiftX, snap.picShiftY)
 				j++
 			}
 		}
 	}
 
 	for _, p := range posPics {
-		drawPicture(screen, ox, oy, p, alpha, pictFade, snap.mobiles, snap.prevMobiles, snap.picShiftX, snap.picShiftY)
+		drawPicture(screen, ox, oy, p, alpha, pictFade, snap.mobiles, descMap, snap.prevMobiles, snap.picShiftX, snap.picShiftY)
 	}
 
 	if gs.SpeechBubbles {
@@ -1246,7 +1246,7 @@ func drawMobile(screen *ebiten.Image, ox, oy int, m frameMobile, descMap map[uin
 }
 
 // drawPicture renders a single picture sprite.
-func drawPicture(screen *ebiten.Image, ox, oy int, p framePicture, alpha float64, fade float32, mobiles []frameMobile, prevMobiles map[uint8]frameMobile, shiftX, shiftY int) {
+func drawPicture(screen *ebiten.Image, ox, oy int, p framePicture, alpha float64, fade float32, mobiles []frameMobile, descMap map[uint8]frameDescriptor, prevMobiles map[uint8]frameMobile, shiftX, shiftY int) {
 	if gs.hideMoving && p.Moving {
 		return
 	}
@@ -1349,6 +1349,36 @@ func drawPicture(screen *ebiten.Image, ox, oy int, p framePicture, alpha float64
 			op.ColorScale.Scale(1, 0, 0, 1)
 		}
 		screen.DrawImage(src, op)
+
+		if gs.ShowHiddenChars {
+			for _, m := range mobiles {
+				if m.H == p.H && m.V == p.V {
+					if d, ok := descMap[m.Index]; ok && d.Plane <= p.Plane {
+						colors := d.Colors
+						playersMu.RLock()
+						if pl, ok := players[d.Name]; ok && len(pl.Colors) > 0 {
+							colors = append([]byte(nil), pl.Colors...)
+						}
+						playersMu.RUnlock()
+						mImg := loadMobileFrame(d.PictID, m.State, colors)
+						if mImg != nil {
+							mask := ebiten.NewImage(drawW, drawH)
+							mask.DrawImage(src, nil)
+							mop := &ebiten.DrawImageOptions{CompositeMode: ebiten.CompositeModeSourceIn, Filter: ebiten.FilterNearest, DisableMipmaps: true}
+							mop.ColorScale.Scale(0, 0, 0, float32(gs.HiddenCharOpacity))
+							mx := float64(drawW-mImg.Bounds().Dx()) / 2
+							my := float64(drawH-mImg.Bounds().Dy()) / 2
+							mop.GeoM.Translate(mx, my)
+							mask.DrawImage(mImg, mop)
+							opSil := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
+							opSil.GeoM.Scale(sx, sy)
+							opSil.GeoM.Translate(tx, ty)
+							screen.DrawImage(mask, opSil)
+						}
+					}
+				}
+			}
+		}
 
 		if gs.pictIDDebug {
 			metrics := mainFont.Metrics()

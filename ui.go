@@ -1415,6 +1415,33 @@ func makeSettingsWindow() {
 	}
 	left.AddItem(nameBgSlider)
 
+	showHiddenCB, showHiddenEvents := eui.NewCheckbox()
+	showHiddenCB.Text = "Show Characters Behind Objects"
+	showHiddenCB.Size = eui.Point{X: leftW, Y: 24}
+	showHiddenCB.Checked = gs.ShowHiddenChars
+	showHiddenCB.Tooltip = "Display silhouettes of characters hidden behind sprites"
+	showHiddenEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			gs.ShowHiddenChars = ev.Checked
+			settingsDirty = true
+		}
+	}
+	left.AddItem(showHiddenCB)
+
+	hiddenOpSlider, hiddenOpEvents := eui.NewSlider()
+	hiddenOpSlider.Label = "Hidden Character Opacity"
+	hiddenOpSlider.MinValue = 0
+	hiddenOpSlider.MaxValue = 1
+	hiddenOpSlider.Value = float32(gs.HiddenCharOpacity)
+	hiddenOpSlider.Size = eui.Point{X: leftW - 10, Y: 24}
+	hiddenOpEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			gs.HiddenCharOpacity = float64(ev.Value)
+			settingsDirty = true
+		}
+	}
+	left.AddItem(hiddenOpSlider)
+
 	label, _ = eui.NewText()
 	label.Text = "\nQuality Settings:"
 	label.FontSize = 15
