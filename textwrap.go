@@ -23,33 +23,19 @@ func wrapText(s string, face text.Face, maxWidth float64) (int, []string) {
 			lines = append(lines, "")
 			continue
 		}
-		wordWidths := make([]float64, len(words))
-		for i, w := range words {
-			ww, _ := text.Measure(w+" ", face, 0)
-			wordWidths[i] = ww
-		}
 
 		var builder strings.Builder
-		builder.WriteString(words[0])
-		curWidth := wordWidths[0]
+		curWidth := 0.0
 
-		for i := 1; i < len(words); i++ {
-			w := words[i]
-			wWidth := wordWidths[i] + 2
-			candWidth := curWidth + spaceWidth + wWidth
-			if candWidth <= maxWidth {
-				builder.WriteByte(' ')
-				builder.WriteString(w)
-				curWidth = candWidth
-				continue
-			}
+		for _, w := range words {
+			wWidth, _ := text.Measure(w, face, 0)
 
-			if curWidth > maxUsed {
-				maxUsed = curWidth
-			}
-			lines = append(lines, builder.String())
-
-			if wWidth > maxWidth {
+			if curWidth == 0 {
+				if wWidth <= maxWidth {
+					builder.WriteString(w)
+					curWidth = wWidth
+					continue
+				}
 				runesBuffer = runesBuffer[:0]
 				partWidth := 0.0
 				for _, r := range w {
@@ -66,19 +52,56 @@ func wrapText(s string, face text.Face, maxWidth float64) (int, []string) {
 					runesBuffer = append(runesBuffer, r)
 					partWidth += rw
 				}
-				builder.Reset()
 				builder.WriteString(string(runesBuffer))
 				curWidth = partWidth
-			} else {
-				builder.Reset()
+				continue
+			}
+
+			candWidth := curWidth + spaceWidth + wWidth
+			if candWidth <= maxWidth {
+				builder.WriteByte(' ')
+				builder.WriteString(w)
+				curWidth = candWidth
+				continue
+			}
+
+			if curWidth > maxUsed {
+				maxUsed = curWidth
+			}
+			lines = append(lines, builder.String())
+			builder.Reset()
+			curWidth = 0
+
+			if wWidth <= maxWidth {
 				builder.WriteString(w)
 				curWidth = wWidth
+			} else {
+				runesBuffer = runesBuffer[:0]
+				partWidth := 0.0
+				for _, r := range w {
+					rw, _ := text.Measure(string(r), face, 0)
+					if partWidth+rw > maxWidth && len(runesBuffer) > 0 {
+						part := string(runesBuffer)
+						if partWidth > maxUsed {
+							maxUsed = partWidth
+						}
+						lines = append(lines, part)
+						runesBuffer = runesBuffer[:0]
+						partWidth = 0
+					}
+					runesBuffer = append(runesBuffer, r)
+					partWidth += rw
+				}
+				builder.WriteString(string(runesBuffer))
+				curWidth = partWidth
 			}
 		}
+
 		if curWidth > maxUsed {
 			maxUsed = curWidth
 		}
 		lines = append(lines, builder.String())
 	}
+
 	return int(math.Ceil(maxUsed)), lines
 }
