@@ -544,6 +544,52 @@ func (win *windowData) getScrollbarPart(mpos point) dragType {
 	return PART_NONE
 }
 
+func (item *itemData) getScrollbarPart(mpos point) dragType {
+	if !item.Scrollable {
+		return PART_NONE
+	}
+
+	req := item.contentBounds()
+	size := item.GetSize()
+	if item.FlowType == FLOW_VERTICAL && req.Y > size.Y {
+		barH := size.Y * size.Y / req.Y
+		maxScroll := req.Y - size.Y
+		pos := float32(0)
+		if maxScroll > 0 {
+			pos = (item.Scroll.Y / maxScroll) * (size.Y - barH)
+		}
+		sbW := currentStyle.BorderPad.Slider * 2
+		r := rect{
+			X0: item.DrawRect.X1 - sbW,
+			Y0: item.DrawRect.Y0 + pos,
+			X1: item.DrawRect.X1,
+			Y1: item.DrawRect.Y0 + pos + barH,
+		}
+		if r.containsPoint(mpos) {
+			return PART_SCROLL_V
+		}
+	}
+	if item.FlowType == FLOW_HORIZONTAL && req.X > size.X {
+		barW := size.X * size.X / req.X
+		maxScroll := req.X - size.X
+		pos := float32(0)
+		if maxScroll > 0 {
+			pos = (item.Scroll.X / maxScroll) * (size.X - barW)
+		}
+		sbW := currentStyle.BorderPad.Slider * 2
+		r := rect{
+			X0: item.DrawRect.X0 + pos,
+			Y0: item.DrawRect.Y1 - sbW,
+			X1: item.DrawRect.X0 + pos + barW,
+			Y1: item.DrawRect.Y1,
+		}
+		if r.containsPoint(mpos) {
+			return PART_SCROLL_H
+		}
+	}
+	return PART_NONE
+}
+
 func (win *windowData) titleTextWidth() point {
 	if win.TitleHeight <= 0 {
 		return point{}

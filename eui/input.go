@@ -15,6 +15,7 @@ var (
 
 	dragPart   dragType
 	dragWin    *windowData
+	dragFlow   *itemData
 	activeItem *itemData
 
 	downPos point
@@ -74,6 +75,7 @@ func Update() error {
 		}
 		dragPart = PART_NONE
 		dragWin = nil
+		dragFlow = nil
 		activeItem = nil
 		downWin = nil
 	}
@@ -206,9 +208,17 @@ func Update() error {
 						}
 					}
 				case PART_SCROLL_V:
-					dragWindowScroll(win, mpos, true)
+					if dragFlow != nil {
+						dragFlowScroll(dragFlow, mpos, true)
+					} else {
+						dragWindowScroll(win, mpos, true)
+					}
 				case PART_SCROLL_H:
-					dragWindowScroll(win, mpos, false)
+					if dragFlow != nil {
+						dragFlowScroll(dragFlow, mpos, false)
+					} else {
+						dragWindowScroll(win, mpos, false)
+					}
 				}
 				if dragPart != PART_BAR && dragPart != PART_SCROLL_V && dragPart != PART_SCROLL_H {
 					if windowSnapping {
@@ -363,6 +373,14 @@ func (win *windowData) clickWindowItems(mpos point, click bool) {
 	for _, item := range win.Contents {
 		handled := false
 		if item.ItemType == ITEM_FLOW {
+			if part := item.getScrollbarPart(mpos); part != PART_NONE {
+				if click && dragPart == PART_NONE && downWin == win {
+					dragPart = part
+					dragWin = win
+					dragFlow = item
+				}
+				return
+			}
 			handled = item.clickFlows(mpos, click)
 		} else {
 			handled = item.clickItem(mpos, click)
@@ -374,6 +392,14 @@ func (win *windowData) clickWindowItems(mpos point, click bool) {
 }
 
 func (item *itemData) clickFlows(mpos point, click bool) bool {
+	if part := item.getScrollbarPart(mpos); part != PART_NONE {
+		if click && dragPart == PART_NONE && downWin == item.ParentWindow {
+			dragPart = part
+			dragWin = item.ParentWindow
+			dragFlow = item
+		}
+		return true
+	}
 	if len(item.Tabs) > 0 {
 		if item.ActiveTab >= len(item.Tabs) {
 			item.ActiveTab = 0
@@ -903,6 +929,58 @@ func dragWindowScroll(win *windowData, mpos point, vert bool) {
 	}
 	if win.Scroll != old {
 		win.markDirty()
+	}
+}
+
+func dragFlowScroll(flow *itemData, mpos point, vert bool) {
+	if !flow.Scrollable {
+		return
+	}
+	old := flow.Scroll
+	req := flow.contentBounds()
+	size := flow.GetSize()
+	if vert && flow.FlowType == FLOW_VERTICAL && req.Y > size.Y {
+		barH := size.Y * size.Y / req.Y
+		slack := 4 * UIScale()
+		maxScroll := req.Y - size.Y + slack
+		track := flow.DrawRect.Y0
+		pos := mpos.Y - (track + barH/2)
+		if pos < 0 {
+			pos = 0
+		}
+		if pos > size.Y-barH {
+			pos = size.Y - barH
+		}
+		if size.Y-barH > 0 {
+			flow.Scroll.Y = (pos / (size.Y - barH)) * maxScroll
+		} else {
+			flow.Scroll.Y = 0
+		}
+	} else if vert {
+		flow.Scroll.Y = 0
+	}
+	if !vert && flow.FlowType == FLOW_HORIZONTAL && req.X > size.X {
+		barW := size.X * size.X / req.X
+		slack := 4 * UIScale()
+		maxScroll := req.X - size.X + slack
+		track := flow.DrawRect.X0
+		pos := mpos.X - (track + barW/2)
+		if pos < 0 {
+			pos = 0
+		}
+		if pos > size.X-barW {
+			pos = size.X - barW
+		}
+		if size.X-barW > 0 {
+			flow.Scroll.X = (pos / (size.X - barW)) * maxScroll
+		} else {
+			flow.Scroll.X = 0
+		}
+	} else if !vert {
+		flow.Scroll.X = 0
+	}
+	if flow.Scroll != old && flow.ParentWindow != nil {
+		flow.ParentWindow.markDirty()
 	}
 }
 func dropdownOpenContains(items []*itemData, mpos point) bool {
