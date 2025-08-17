@@ -1,16 +1,27 @@
 Movement
 --------
-* Move using WASD or arrow keys; hold Shift for normal-speed movement.
-* Left-click to walk; if "Click To Toggle" is enabled, a single click sets a
-  walk target.
+- Move using WASD or arrow keys. Hold Shift to run.
+- Left-click to walk toward the cursor. When "Click-to-Toggle Walk" is enabled, a single click sets a walk target.
 
 Communication
 -------------
-* Enter starts chat; Enter sends; Esc cancels; Up/Down browse history;
-  use `/play` for tunes.
+- Press Enter to start typing. Enter again sends the message.
+- Press Esc to cancel typing. Up/Down browse previous messages.
+- Use /who to see who is online. /play <tune> plays a tune.
 
-General Tips
-------------
-* `/who` shows who is online.
-* Explore with friends and share your adventures.
+Inventory
+---------
+- Open the Inventory window from the toolbar or Windows list.
+- Drag items between hands or inventory slots. Click items to equip or use.
 
+UI Navigation
+-------------
+- Use the Windows menu or toolbar buttons to toggle windows.
+- Drag window title bars to move; resize by dragging edges.
+- Mouse wheel scrolls lists and text windows.
+- Press F1 to open this help window.
+
+Basics
+------
+- Settings are accessible from the Settings button; changes save automatically.
+- Explore with friends and share adventures.
