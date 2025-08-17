@@ -10,6 +10,9 @@ var inputFlow *eui.ItemData
 var consolePrevCount int
 
 func updateConsoleWindow() {
+	if consoleWin == nil {
+		return
+	}
 	inputMsg := "[Press Enter To Type]"
 	if inputActive {
 		inputMsg = string(inputText)

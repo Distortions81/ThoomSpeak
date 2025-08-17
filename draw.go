@@ -158,10 +158,8 @@ var pixelCountCache = make(map[uint16]int)
 // Reading pixels triggers a GPU stall, so we do it once per image and reuse
 // the cached slice thereafter. To prevent unbounded memory growth the cache
 // is capped at a fixed number of entries and evicts least-recently-used
-// items when full. 128 entries correspond to roughly 2MB of RGBA pixel data
-// for 64x64 images, which comfortably covers the working set while keeping
-// memory usage modest.
-const pixelDataCacheLimit = 128
+// items when full.
+const pixelDataCacheLimit = 1280
 
 type pixelDataEntry struct {
 	id   uint16

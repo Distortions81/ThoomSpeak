@@ -8,6 +8,10 @@ var chatWin *eui.WindowData
 var chatList *eui.ItemData
 
 func updateChatWindow() {
+	if chatWin == nil {
+		return
+	}
+
 	msgs := getChatMessages()
 	updateTextWindow(chatWin, chatList, nil, msgs, gs.ChatFontSize, "")
 	if chatList != nil {

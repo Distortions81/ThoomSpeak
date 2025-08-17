@@ -346,9 +346,10 @@ func handleInfoText(data []byte) {
 			continue
 		}
 		if _, txt, _, _, _, _ := decodeBubble(line); txt != "" {
-			chatMessage(txt)
 			if gs.MessagesToConsole {
 				consoleMessage(txt)
+			} else {
+				chatMessage(txt)
 			}
 			continue
 		}

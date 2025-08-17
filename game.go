@@ -24,11 +24,11 @@ import (
 	dark "github.com/thiagokokada/dark-mode-go"
 )
 
-const lateRatio = 85
+const lateRatio = 80
 const gameAreaSizeX, gameAreaSizeY = 547, 540
 const fieldCenterX, fieldCenterY = gameAreaSizeX / 2, gameAreaSizeY / 2
 const defaultHandPictID = 6
-const initialWindowW, initialWindowH = 1920, 720
+const initialWindowW, initialWindowH = 1920, 1080
 
 var MHOX, MHOY int
 
@@ -1498,16 +1498,34 @@ func drawStatusBars(screen *ebiten.Image, ox, oy int, snap drawSnapshot, alpha f
 	drawBar(x, sp, spMax, color.RGBA{0xff, 0x00, 0x00, 0xff})
 }
 
+var fpsImage *ebiten.Image
+var lastFPS time.Time
+var fpsWidth, fpsHeight float64
+
 func drawServerFPS(screen *ebiten.Image, ox, oy int, fps float64) {
 	if fps <= 0 {
 		return
 	}
-	lat := netLatency
-	msg := fmt.Sprintf("FPS: %0.2f UPS: %0.2f LAT: %dms", ebiten.ActualFPS(), fps, lat.Milliseconds())
-	w, _ := text.Measure(msg, mainFont, 0)
-	op := &text.DrawOptions{}
-	op.GeoM.Translate(float64(ox)-w, float64(oy))
-	text.Draw(screen, msg, mainFont, op)
+	if time.Since(lastFPS) >= time.Second {
+		lastFPS = time.Now()
+
+		lat := netLatency
+		msg := fmt.Sprintf("FPS: %0.2f Server: %0.2f Ping: %-3v ms", ebiten.ActualFPS(), fps, lat.Milliseconds())
+		w, h := text.Measure(msg, mainFont, 0)
+
+		if fpsImage == nil || fpsHeight != h {
+			fpsImage = newImage(int(w*1.3), int(h))
+		}
+
+		fpsImage.Clear()
+		text.Draw(fpsImage, msg, mainFont, &text.DrawOptions{})
+		fpsWidth, fpsHeight = w, h
+	}
+
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Translate(float64(ox)-fpsWidth, float64(oy))
+	screen.DrawImage(fpsImage, op)
+
 }
 
 // equippedItemPicts returns pict IDs for items equipped in right and left hands.
