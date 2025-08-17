@@ -31,6 +31,7 @@ const defaultHandPictID = 6
 const initialWindowW, initialWindowH = 1920, 1080
 
 var uiMouseDown bool
+var ebitenStopped bool
 
 // worldRT is the offscreen render target for the game world when
 // arbitrary window sizing is enabled. It stays at an integer-scaled
@@ -1745,6 +1746,7 @@ func runGame(ctx context.Context) {
 
 	op := &ebiten.RunGameOptions{ScreenTransparent: false}
 	if err := ebiten.RunGameWithOptions(&Game{}, op); err != nil {
+		ebitenStopped = true
 		log.Printf("ebiten: %v", err)
 	}
 	syncWindowSettings()
