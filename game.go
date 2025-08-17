@@ -1227,6 +1227,18 @@ func drawMobile(screen *ebiten.Image, ox, oy int, m frameMobile, descMap map[uin
 						sm.nameTagH = ihImg
 						sm.nameTagKey = key
 						state.mobiles[m.Index] = sm
+						for i := range state.liveMobs {
+							if state.liveMobs[i].Index == m.Index {
+								state.liveMobs[i] = sm
+								break
+							}
+						}
+						for i := range state.deadMobs {
+							if state.deadMobs[i].Index == m.Index {
+								state.deadMobs[i] = sm
+								break
+							}
+						}
 					}
 					stateMu.Unlock()
 				}
