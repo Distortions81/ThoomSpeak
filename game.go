@@ -640,7 +640,7 @@ func (g *Game) Update() error {
 	 */
 	walk := false
 	if pointInUI(mx, my) {
-		if !click && heldTime > 1 {
+		if !click && heldTime > 0 {
 			if pointInUI(MHOX, MHOY) {
 				click = false
 				heldTime = 0
