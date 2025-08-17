@@ -160,27 +160,35 @@ func stripBEPPTags(b []byte) []byte {
 }
 
 func parseThinkText(raw []byte, text string) (name string, target thinkTarget, msg string) {
-	idx := strings.IndexByte(text, ':')
-	if idx >= 0 {
-		name = strings.TrimSpace(text[:idx])
-		msg = strings.TrimSpace(text[idx+1:])
+	colon := strings.IndexByte(text, ':')
+	if colon >= 0 {
+		msg = strings.TrimSpace(text[colon+1:])
 	} else {
-		name = ThinkUnknownName
 		msg = strings.TrimSpace(text)
 	}
 
-	if i := bytes.Index(raw, []byte{0xC2, 't', '_', 't'}); i >= 0 && i+4 < len(raw) {
-		switch raw[i+4] {
-		case 't':
-			target = thinkToYou
-		case 'c':
-			target = thinkToClan
-		case 'g':
-			target = thinkToGroup
-		}
+	// Scan raw bytes for either a colon or BEPP tag, whichever comes first.
+	pos := 0
+	for pos < len(raw) && raw[pos] != ':' && raw[pos] != 0xC2 {
+		pos++
 	}
 
-	if target == thinkNone && name != "" && name != ThinkUnknownName {
+	if pos < len(raw) && raw[pos] == 0xC2 {
+		// Name ends before BEPP tag.
+		name = strings.TrimSpace(decodeMacRoman(raw[:pos]))
+		if pos+4 < len(raw) && raw[pos+1] == 't' && raw[pos+2] == '_' && raw[pos+3] == 't' {
+			switch raw[pos+4] {
+			case 't':
+				target = thinkToYou
+			case 'c':
+				target = thinkToClan
+			case 'g':
+				target = thinkToGroup
+			}
+		}
+	} else if colon >= 0 {
+		// Colon found before any BEPP tag.
+		name = strings.TrimSpace(text[:colon])
 		switch {
 		case strings.HasSuffix(name, " to you"):
 			target = thinkToYou
@@ -193,6 +201,27 @@ func parseThinkText(raw []byte, text string) (name string, target thinkTarget, m
 			name = strings.TrimSuffix(name, " to a group")
 		}
 		name = strings.TrimSpace(name)
+	} else {
+		name = ""
+	}
+
+	// Fallback: extract target from BEPP tag anywhere in raw if not already set.
+	if target == thinkNone {
+		if i := bytes.Index(raw, []byte{0xC2, 't', '_', 't'}); i >= 0 && i+4 < len(raw) {
+			switch raw[i+4] {
+			case 't':
+				target = thinkToYou
+			case 'c':
+				target = thinkToClan
+			case 'g':
+				target = thinkToGroup
+			}
+		}
+	}
+
+	name = strings.TrimSpace(name)
+	if name == "" || strings.EqualFold(name, ThinkUnknownName) {
+		name = ThinkUnknownName
 	}
 	return
 }
