@@ -39,6 +39,7 @@ var gsdef settings = settings{
 	PlayersFontSize:   18,
 	BubbleOpacity:     0.7,
 	NameBgOpacity:     0.7,
+	BarOpacity:        0.5,
 	SpeechBubbles:     true,
 
 	MotionSmoothing:   true,
@@ -106,6 +107,7 @@ type settings struct {
 	PlayersFontSize   float64
 	BubbleOpacity     float64
 	NameBgOpacity     float64
+	BarOpacity        float64
 	SpeechBubbles     bool
 
 	MotionSmoothing   bool
