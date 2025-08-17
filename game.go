@@ -1484,22 +1484,58 @@ func drawStatusBars(screen *ebiten.Image, ox, oy int, snap drawSnapshot, alpha f
 	}
 	barWidth := int(110 * gs.GameScale)
 	barHeight := int(8 * gs.GameScale)
+
 	fieldWidth := int(float64(gameAreaSizeX) * gs.GameScale)
-	slot := (fieldWidth - 3*barWidth) / 6
-	barY := int(float64(gameAreaSizeY)*gs.GameScale-20*gs.GameScale) - barHeight
-	screenH := screen.Bounds().Dy()
-	minY := -oy
-	maxY := screenH - oy - barHeight
-	if barY < minY {
-		barY = minY
-	} else if barY > maxY {
-		barY = maxY
+	fieldHeight := int(float64(gameAreaSizeY) * gs.GameScale)
+
+	var x, y, dx, dy int
+	switch gs.BarPlacement {
+	case BarPlacementLowerLeft:
+		x = int(20 * gs.GameScale)
+		spacing := int(4 * gs.GameScale)
+		y = fieldHeight - int(20*gs.GameScale) - 3*barHeight - 2*spacing
+		dx = 0
+		dy = barHeight + spacing
+	case BarPlacementLowerRight:
+		x = fieldWidth - int(20*gs.GameScale) - barWidth
+		spacing := int(4 * gs.GameScale)
+		y = fieldHeight - int(20*gs.GameScale) - 3*barHeight - 2*spacing
+		dx = 0
+		dy = barHeight + spacing
+	case BarPlacementUpperRight:
+		x = fieldWidth - int(20*gs.GameScale) - barWidth
+		spacing := int(4 * gs.GameScale)
+		y = int(20 * gs.GameScale)
+		dx = 0
+		dy = barHeight + spacing
+	default: // BarPlacementBottom
+		slot := (fieldWidth - 3*barWidth) / 6
+		x = slot
+		y = fieldHeight - int(20*gs.GameScale) - barHeight
+		dx = barWidth + 2*slot
+		dy = 0
 	}
-	x := slot
-	step := barWidth + 2*slot
-	drawBar := func(x int, cur, max int, clr color.RGBA) {
+
+	screenW := screen.Bounds().Dx()
+	screenH := screen.Bounds().Dy()
+	minX := -ox
+	minY := -oy
+	maxX := screenW - ox - barWidth - 2*dx
+	maxY := screenH - oy - barHeight - 2*dy
+	if x < minX {
+		x = minX
+	} else if x > maxX {
+		x = maxX
+	}
+	if y < minY {
+		y = minY
+	} else if y > maxY {
+		y = maxY
+	}
+
+	drawBar := func(x, y int, cur, max int, clr color.RGBA) {
 		frameClr := color.RGBA{0xff, 0xff, 0xff, 0xff}
-		vector.StrokeRect(screen, float32(float64(ox+x)-gs.GameScale), float32(float64(oy+barY)-gs.GameScale), float32(barWidth)+float32(2*gs.GameScale), float32(barHeight)+float32(2*gs.GameScale), 1, frameClr, false)
+		vector.StrokeRect(screen, float32(float64(ox+x)-gs.GameScale), float32(float64(oy+y)-gs.GameScale), float32(barWidth)+float32(2*gs.GameScale), float32(barHeight)+float32(2*gs.GameScale), 1, frameClr, false)
 		if max > 0 && cur > 0 {
 			w := barWidth * cur / max
 			base := clr
@@ -1518,17 +1554,20 @@ func drawStatusBars(screen *ebiten.Image, ox, oy int, snap drawSnapshot, alpha f
 			drawRect(x, barY, w, barHeight, fillClr)
 		}
 	}
+
 	hp := lerpBar(snap.prevHP, snap.hp, alpha)
 	hpMax := lerpBar(snap.prevHPMax, snap.hpMax, alpha)
-	drawBar(x, hp, hpMax, color.RGBA{0x00, 0xff, 0, 0xff})
-	x += step
+	drawBar(x, y, hp, hpMax, color.RGBA{0x00, 0xff, 0, 0xff})
+	x += dx
+	y += dy
 	bal := lerpBar(snap.prevBalance, snap.balance, alpha)
 	balMax := lerpBar(snap.prevBalanceMax, snap.balanceMax, alpha)
-	drawBar(x, bal, balMax, color.RGBA{0x00, 0x00, 0xff, 0xff})
-	x += step
+	drawBar(x, y, bal, balMax, color.RGBA{0x00, 0x00, 0xff, 0xff})
+	x += dx
+	y += dy
 	sp := lerpBar(snap.prevSP, snap.sp, alpha)
 	spMax := lerpBar(snap.prevSPMax, snap.spMax, alpha)
-	drawBar(x, sp, spMax, color.RGBA{0xff, 0x00, 0x00, 0xff})
+	drawBar(x, y, sp, spMax, color.RGBA{0xff, 0x00, 0x00, 0xff})
 }
 
 var fpsImage *ebiten.Image
