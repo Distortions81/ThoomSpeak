@@ -134,7 +134,9 @@ func removeInventoryItem(id uint16, idx int) {
 
 func equipInventoryItem(id uint16, idx int, equip bool) {
 	inventoryMu.Lock()
-	// Find target by per-ID index when provided; otherwise first by ID.
+	// Find target by per-ID index when provided. Without an explicit index
+	// choose an item by ID, preferring an already equipped instance when
+	// unequipping.
 	target := -1
 	if idx >= 0 {
 		for i := range inventoryItems {
@@ -145,9 +147,15 @@ func equipInventoryItem(id uint16, idx int, equip bool) {
 		}
 	} else {
 		for i := range inventoryItems {
-			if inventoryItems[i].ID == id {
+			if inventoryItems[i].ID != id {
+				continue
+			}
+			if !equip && inventoryItems[i].Equipped {
 				target = i
 				break
+			}
+			if target < 0 {
+				target = i
 			}
 		}
 	}
