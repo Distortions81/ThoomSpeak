@@ -15,6 +15,7 @@ var (
 	shortUnits, _ = durafmt.DefaultUnitsCoder.Decode("y:yrs,wk:wks,d:d,h:h,m:m,s:s,ms:ms,us:us")
 	playingMovie  bool
 	movieWin      *eui.WindowData
+	seeking       bool
 )
 
 // moviePlayer manages clMov playback with basic controls.
@@ -392,9 +393,11 @@ func (p *moviePlayer) seek(idx int) {
 	stopAllSounds()
 	blockSound = true
 	blockBubbles = true
+	seeking = true
 	defer func() {
 		blockSound = false
 		blockBubbles = false
+		seeking = false
 	}()
 
 	if idx < 0 {
@@ -410,16 +413,36 @@ func (p *moviePlayer) seek(idx int) {
 
 	for i := 0; i < idx; i++ {
 		m := p.frames[i]
-		if len(m) >= 2 && binary.BigEndian.Uint16(m[:2]) == 2 {
-			handleDrawState(m)
-		} else {
-			// Keep timeline consistent during scrubbing when frames
-			// without draw-state are encountered.
-			frameCounter++
+		if len(m) < 2 {
+			continue
 		}
-		if txt := decodeMessage(m); txt != "" {
-			_ = txt
+		flags := frameFlags(m)
+		payload := m[2:]
+		if flags&flagGameState != 0 {
+			fastParseGameState(append([]byte(nil), payload...), uint16(clientVersion), uint16(movieRevision))
 		}
+		if flags&flagMobileData != 0 {
+			fastParseMobileTable(payload, 0, uint16(clientVersion), uint16(movieRevision))
+		}
+		if flags&flagPictureTable != 0 {
+			if len(payload) >= 2 {
+				count := int(binary.BigEndian.Uint16(payload[:2]))
+				pos := 2
+				pics := make([]framePicture, 0, count)
+				for j := 0; j < count && pos+6 <= len(payload); j++ {
+					id := binary.BigEndian.Uint16(payload[pos : pos+2])
+					h := int16(binary.BigEndian.Uint16(payload[pos+2 : pos+4]))
+					v := int16(binary.BigEndian.Uint16(payload[pos+4 : pos+6]))
+					pics = append(pics, framePicture{PictID: id, H: h, V: v})
+					pos += 6
+				}
+				if pos+4 <= len(payload) {
+					pos += 4
+				}
+				state.pictures = pics
+			}
+		}
+		frameCounter++
 	}
 	p.cur = idx
 	resetInterpolation()
