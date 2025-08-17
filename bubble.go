@@ -1,6 +1,7 @@
 package main
 
 import (
+	"gothoom/eui"
 	"image/color"
 	"math"
 
@@ -12,10 +13,18 @@ import (
 // whiteImage is a reusable 1x1 white pixel used across the UI for drawing
 // solid rectangles and lines without creating multiple images.
 var whiteImage *ebiten.Image
+var blackImage *ebiten.Image
+var grayImage *ebiten.Image
 
 func init() {
 	whiteImage = newImage(1, 1)
 	whiteImage.Fill(color.White)
+
+	blackImage = newImage(1, 1)
+	blackImage.Fill(color.Black)
+
+	grayImage = newImage(1, 1)
+	grayImage.Fill(eui.Color{R: 128, G: 128, B: 128})
 }
 
 // adjustBubbleRect calculates the on-screen rectangle for a bubble and clamps

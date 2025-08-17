@@ -32,8 +32,6 @@ const initialWindowW, initialWindowH = 1920, 1080
 
 var MHOX, MHOY int
 
-var blackPixel *ebiten.Image
-
 // worldRT is the offscreen render target for the game world when
 // arbitrary window sizing is enabled. It stays at an integer-scaled
 // multiple of the native field size and is composited into the window.
@@ -1440,43 +1438,6 @@ func lerpBar(prev, cur int, alpha float64) int {
 	return int(math.Round(float64(prev) + alpha*float64(cur-prev)))
 }
 
-func drawGameCurtain(screen *ebiten.Image, ox, oy int) {
-	w := int(math.Round(float64(gameAreaSizeX) * gs.GameScale))
-	h := int(math.Round(float64(gameAreaSizeY) * gs.GameScale))
-	sw := screen.Bounds().Dx()
-	sh := screen.Bounds().Dy()
-
-	if blackPixel == nil {
-		blackPixel = newImage(1, 1)
-		blackPixel.Fill(color.Black)
-	}
-
-	op := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
-
-	if oy > 0 {
-		op.GeoM.Scale(float64(sw), float64(oy))
-		screen.DrawImage(blackPixel, op)
-	}
-	if bottom := sh - (oy + h); bottom > 0 {
-		op.GeoM.Reset()
-		op.GeoM.Scale(float64(sw), float64(bottom))
-		op.GeoM.Translate(0, float64(oy+h))
-		screen.DrawImage(blackPixel, op)
-	}
-	if ox > 0 {
-		op.GeoM.Reset()
-		op.GeoM.Scale(float64(ox), float64(h))
-		op.GeoM.Translate(0, float64(oy))
-		screen.DrawImage(blackPixel, op)
-	}
-	if right := sw - (ox + w); right > 0 {
-		op.GeoM.Reset()
-		op.GeoM.Scale(float64(right), float64(h))
-		op.GeoM.Translate(float64(ox+w), float64(oy))
-		screen.DrawImage(blackPixel, op)
-	}
-}
-
 // drawStatusBars renders health, balance and spirit bars.
 func drawStatusBars(screen *ebiten.Image, ox, oy int, snap drawSnapshot, alpha float64) {
 	drawRect := func(x, y, w, h int, clr color.RGBA) {
@@ -1484,6 +1445,7 @@ func drawStatusBars(screen *ebiten.Image, ox, oy int, snap drawSnapshot, alpha f
 		op.GeoM.Scale(float64(w), float64(h))
 		op.GeoM.Translate(float64(ox+x), float64(oy+y))
 		op.ColorScale.ScaleWithColor(clr)
+		op.ColorScale.ScaleAlpha(float32(gs.BarOpacity))
 		screen.DrawImage(whiteImage, op)
 	}
 	barWidth := int(110 * gs.GameScale)
@@ -1538,7 +1500,7 @@ func drawStatusBars(screen *ebiten.Image, ox, oy int, snap drawSnapshot, alpha f
 	}
 
 	drawBar := func(x, y int, cur, max int, clr color.RGBA) {
-		alpha := uint8(gs.BarOpacity * 255)
+		alpha := uint8(255)
 		frameClr := color.RGBA{0xff, 0xff, 0xff, alpha}
 		pad := int(gs.GameScale)
 		drawRect(x-pad, y-pad, barWidth+2*pad, pad, frameClr)
