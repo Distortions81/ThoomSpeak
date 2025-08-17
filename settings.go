@@ -42,7 +42,6 @@ var gsdef settings = settings{
 	BarOpacity:         0.5,
 	HiddenCharOpacity:  0.5,
 	SpeechBubbles:      true,
-	ShowHiddenChars:    true,
 	BubbleNormal:       true,
 	BubbleWhisper:      true,
 	BubbleYell:         true,
@@ -127,7 +126,6 @@ type settings struct {
 	BarOpacity         float64
 	HiddenCharOpacity  float64
 	SpeechBubbles      bool
-	ShowHiddenChars    bool
 	BubbleNormal       bool
 	BubbleWhisper      bool
 	BubbleYell         bool
