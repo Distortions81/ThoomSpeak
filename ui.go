@@ -1114,6 +1114,20 @@ func makeSettingsWindow() {
 	}
 	left.AddItem(barColorCB)
 
+	barOpacitySlider, barOpacityEvents := eui.NewSlider()
+	barOpacitySlider.Label = "Status bar opacity"
+	barOpacitySlider.MinValue = 0.0
+	barOpacitySlider.MaxValue = 1.0
+	barOpacitySlider.Value = float32(gs.BarOpacity)
+	barOpacitySlider.Size = eui.Point{X: leftW - 10, Y: 24}
+	barOpacityEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			gs.BarOpacity = float64(ev.Value)
+			settingsDirty = true
+		}
+	}
+	left.AddItem(barOpacitySlider)
+
 	label, _ = eui.NewText()
 	label.Text = "\nWindow Behavior:"
 	label.FontSize = 15

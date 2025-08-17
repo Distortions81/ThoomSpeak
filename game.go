@@ -1538,8 +1538,13 @@ func drawStatusBars(screen *ebiten.Image, ox, oy int, snap drawSnapshot, alpha f
 	}
 
 	drawBar := func(x, y int, cur, max int, clr color.RGBA) {
-		frameClr := color.RGBA{0xff, 0xff, 0xff, 0xff}
-		vector.StrokeRect(screen, float32(float64(ox+x)-gs.GameScale), float32(float64(oy+y)-gs.GameScale), float32(barWidth)+float32(2*gs.GameScale), float32(barHeight)+float32(2*gs.GameScale), 1, frameClr, false)
+		alpha := uint8(gs.BarOpacity * 255)
+		frameClr := color.RGBA{0xff, 0xff, 0xff, alpha}
+		pad := int(gs.GameScale)
+		drawRect(x-pad, y-pad, barWidth+2*pad, pad, frameClr)
+		drawRect(x-pad, y+barHeight, barWidth+2*pad, pad, frameClr)
+		drawRect(x-pad, y, pad, barHeight, frameClr)
+		drawRect(x+barWidth, y, pad, barHeight, frameClr)
 		if max > 0 && cur > 0 {
 			w := barWidth * cur / max
 			base := clr
@@ -1554,7 +1559,7 @@ func drawStatusBars(screen *ebiten.Image, ox, oy int, snap drawSnapshot, alpha f
 					base = color.RGBA{0x00, 0xff, 0x00, 0xff}
 				}
 			}
-			fillClr := color.RGBA{base.R, base.G, base.B, 128}
+			fillClr := color.RGBA{base.R, base.G, base.B, alpha}
 			drawRect(x, y, w, barHeight, fillClr)
 		}
 	}
