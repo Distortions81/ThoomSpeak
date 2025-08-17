@@ -21,7 +21,6 @@ func replayPCAP(ctx context.Context, path string) error {
 	select {
 	case <-gameStarted:
 	case <-ctx.Done():
-		ebitenStopped = true
 		return ctx.Err()
 	}
 

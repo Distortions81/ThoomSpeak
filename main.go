@@ -140,7 +140,6 @@ func main() {
 			go mp.run(ctx)
 
 			<-ctx.Done()
-			ebitenStopped = true
 			return
 		}
 
@@ -159,7 +158,6 @@ func main() {
 				}
 			}()
 			<-ctx.Done()
-			ebitenStopped = true
 			return
 		}
 	}()
@@ -167,7 +165,6 @@ func main() {
 	cancel()
 
 	<-ctx.Done()
-	ebitenStopped = true
 }
 
 func extractMoviePlayerName(frames [][]byte) string {

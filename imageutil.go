@@ -7,9 +7,6 @@ import (
 )
 
 func newImage(w, h int) *ebiten.Image {
-	if ebitenStopped {
-		return nil
-	}
 	if gs.PotatoComputer {
 		return ebiten.NewImageWithOptions(image.Rect(0, 0, w, h), &ebiten.NewImageOptions{Unmanaged: true})
 	}

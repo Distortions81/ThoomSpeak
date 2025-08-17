@@ -24,7 +24,6 @@ func initDiscordRPC(ctx context.Context) {
 	}
 	go func() {
 		<-ctx.Done()
-		ebitenStopped = true
 		client.Logout()
 	}()
 }
