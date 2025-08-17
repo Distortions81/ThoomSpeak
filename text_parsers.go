@@ -41,7 +41,8 @@ func parseWhoText(raw []byte, s string) bool {
 // Returns true if the line was recognized and handled.
 func parseShareText(raw []byte, s string) bool {
 	switch {
-	case strings.HasPrefix(s, "You are not sharing experiences with anyone."):
+	case strings.HasPrefix(s, "You are not sharing experiences with anyone.") ||
+		strings.HasPrefix(s, "You are no longer sharing experiences with anyone."):
 		// Clear sharees
 		playersMu.Lock()
 		for _, p := range players {
@@ -67,6 +68,12 @@ func parseShareText(raw []byte, s string) bool {
 		return true
 	case strings.HasPrefix(s, "You are sharing experiences with ") || strings.HasPrefix(s, "You begin sharing your experiences with "):
 		// Self -> sharees
+		// Clear any existing sharees first
+		playersMu.Lock()
+		for _, p := range players {
+			p.Sharee = false
+		}
+		playersMu.Unlock()
 		off := bytes.Index(raw, []byte{0xC2, 'p', 'n'})
 		if off >= 0 {
 			for _, name := range parseNames(raw[off:]) {
@@ -75,6 +82,27 @@ func parseShareText(raw []byte, s string) bool {
 				p.Sharee = true
 				playersMu.Unlock()
 			}
+			playersDirty = true
+		}
+		return true
+	case strings.HasSuffix(s, " is sharing experiences with you."):
+		name := firstTagContent(raw, 'p', 'n')
+		if name != "" {
+			p := getPlayer(name)
+			playersMu.Lock()
+			p.Sharing = true
+			playersMu.Unlock()
+			playersDirty = true
+		}
+		return true
+	case strings.HasSuffix(s, " is no longer sharing experiences with you."):
+		name := firstTagContent(raw, 'p', 'n')
+		if name != "" {
+			playersMu.Lock()
+			if p, ok := players[name]; ok {
+				p.Sharing = false
+			}
+			playersMu.Unlock()
 			playersDirty = true
 		}
 		return true

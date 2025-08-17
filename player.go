@@ -15,8 +15,8 @@ type Player struct {
 	PictID     uint16
 	Colors     []byte
 	IsNPC      bool // entry represents an NPC
-	Sharee     bool // player is sharing to us
-	Sharing    bool // we are sharing to player
+	Sharee     bool // we are sharing to this player
+	Sharing    bool // player is sharing to us
 	GMLevel    int  // parsed from be-who; not rendered
 	Dead       bool // parsed from obit messages (future)
 	FellWhere  string
