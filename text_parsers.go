@@ -45,10 +45,17 @@ func parseShareText(raw []byte, s string) bool {
 		strings.HasPrefix(s, "You are no longer sharing experiences with anyone."):
 		// Clear sharees
 		playersMu.Lock()
+		changed := make([]string, 0, len(players))
 		for _, p := range players {
-			p.Sharee = false
+			if p.Sharee {
+				p.Sharee = false
+				changed = append(changed, p.Name)
+			}
 		}
 		playersMu.Unlock()
+		for _, n := range changed {
+			killNameTagCacheFor(n)
+		}
 		playersDirty = true
 		return true
 	case strings.HasPrefix(s, "You are no longer sharing experiences with "):
@@ -56,12 +63,18 @@ func parseShareText(raw []byte, s string) bool {
 		// name will be in -pn tags
 		off := bytes.Index(raw, []byte{0xC2, 'p', 'n'})
 		if off >= 0 {
-			for _, name := range parseNames(raw[off:]) {
-				playersMu.Lock()
-				if p, ok := players[name]; ok {
+			names := parseNames(raw[off:])
+			playersMu.Lock()
+			changed := make([]string, 0, len(names))
+			for _, name := range names {
+				if p, ok := players[name]; ok && p.Sharee {
 					p.Sharee = false
+					changed = append(changed, name)
 				}
-				playersMu.Unlock()
+			}
+			playersMu.Unlock()
+			for _, n := range changed {
+				killNameTagCacheFor(n)
 			}
 			playersDirty = true
 		}
@@ -70,17 +83,32 @@ func parseShareText(raw []byte, s string) bool {
 		// Self -> sharees
 		// Clear any existing sharees first
 		playersMu.Lock()
+		changed := make([]string, 0, len(players))
 		for _, p := range players {
-			p.Sharee = false
+			if p.Sharee {
+				p.Sharee = false
+				changed = append(changed, p.Name)
+			}
 		}
 		playersMu.Unlock()
+		for _, n := range changed {
+			killNameTagCacheFor(n)
+		}
 		off := bytes.Index(raw, []byte{0xC2, 'p', 'n'})
 		if off >= 0 {
-			for _, name := range parseNames(raw[off:]) {
+			names := parseNames(raw[off:])
+			playersMu.Lock()
+			changed = changed[:0]
+			for _, name := range names {
 				p := getPlayer(name)
-				playersMu.Lock()
-				p.Sharee = true
-				playersMu.Unlock()
+				if !p.Sharee {
+					p.Sharee = true
+					changed = append(changed, name)
+				}
+			}
+			playersMu.Unlock()
+			for _, n := range changed {
+				killNameTagCacheFor(n)
 			}
 			playersDirty = true
 		}
@@ -90,8 +118,12 @@ func parseShareText(raw []byte, s string) bool {
 		if name != "" {
 			p := getPlayer(name)
 			playersMu.Lock()
+			changed := !p.Sharing
 			p.Sharing = true
 			playersMu.Unlock()
+			if changed {
+				killNameTagCacheFor(name)
+			}
 			playersDirty = true
 		}
 		return true
@@ -99,10 +131,17 @@ func parseShareText(raw []byte, s string) bool {
 		name := firstTagContent(raw, 'p', 'n')
 		if name != "" {
 			playersMu.Lock()
+			changed := false
 			if p, ok := players[name]; ok {
-				p.Sharing = false
+				if p.Sharing {
+					p.Sharing = false
+					changed = true
+				}
 			}
 			playersMu.Unlock()
+			if changed {
+				killNameTagCacheFor(name)
+			}
 			playersDirty = true
 		}
 		return true
@@ -110,11 +149,19 @@ func parseShareText(raw []byte, s string) bool {
 		// Upstream sharers
 		off := bytes.Index(raw, []byte{0xC2, 'p', 'n'})
 		if off >= 0 {
-			for _, name := range parseNames(raw[off:]) {
+			names := parseNames(raw[off:])
+			playersMu.Lock()
+			changed := make([]string, 0, len(names))
+			for _, name := range names {
 				p := getPlayer(name)
-				playersMu.Lock()
-				p.Sharing = true
-				playersMu.Unlock()
+				if !p.Sharing {
+					p.Sharing = true
+					changed = append(changed, name)
+				}
+			}
+			playersMu.Unlock()
+			for _, n := range changed {
+				killNameTagCacheFor(n)
 			}
 			playersDirty = true
 		}

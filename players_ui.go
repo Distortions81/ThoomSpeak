@@ -208,6 +208,16 @@ func updatePlayersWindow() {
 		t, _ := eui.NewText()
 		t.Text = name
 		t.FontSize = float32(fontSize)
+		// Choose font style based on sharing relationship.
+		face := mainFont
+		if p.Sharing && p.Sharee {
+			face = mainFontBoldItalic
+		} else if p.Sharing {
+			face = mainFontBold
+		} else if p.Sharee {
+			face = mainFontItalic
+		}
+		t.Face = face
 		// Dim the name when fallen or stale/offline.
 		if p.Dead || offline {
 			t.TextColor = eui.NewColor(180, 180, 180, 255)

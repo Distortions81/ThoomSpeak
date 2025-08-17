@@ -77,17 +77,25 @@ func parseBackendInfo(data []byte) {
 // parseBackendShare parses "be-sh" messages describing sharing relationships.
 func parseBackendShare(data []byte) {
 	playersMu.Lock()
+	cleared := make([]string, 0, len(players))
 	for _, p := range players {
-		p.Sharee = false
-		p.Sharing = false
+		if p.Sharee || p.Sharing {
+			p.Sharee = false
+			p.Sharing = false
+			cleared = append(cleared, p.Name)
+		}
 	}
 	playersMu.Unlock()
+	for _, n := range cleared {
+		killNameTagCacheFor(n)
+	}
 	parts := bytes.SplitN(data, []byte{'\t'}, 2)
 	shareePart := parts[0]
 	var sharerPart []byte
 	if len(parts) > 1 {
 		sharerPart = parts[1]
 	}
+	changed := []string{}
 	for _, name := range parseNames(shareePart) {
 		playersMu.Lock()
 		p, ok := players[name]
@@ -95,7 +103,10 @@ func parseBackendShare(data []byte) {
 			p = &Player{Name: name}
 			players[name] = p
 		}
-		p.Sharee = true
+		if !p.Sharee {
+			p.Sharee = true
+			changed = append(changed, name)
+		}
 		p.LastSeen = time.Now()
 		playersMu.Unlock()
 	}
@@ -106,9 +117,15 @@ func parseBackendShare(data []byte) {
 			p = &Player{Name: name}
 			players[name] = p
 		}
-		p.Sharing = true
+		if !p.Sharing {
+			p.Sharing = true
+			changed = append(changed, name)
+		}
 		p.LastSeen = time.Now()
 		playersMu.Unlock()
+	}
+	for _, n := range changed {
+		killNameTagCacheFor(n)
 	}
 	playersDirty = true
 }
