@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	text "github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
 type Color color.RGBA
@@ -101,6 +102,7 @@ type itemData struct {
 	Alignment alignType
 	PinTo     pinType
 	FontSize  float32
+	Face      text.Face
 	LineSpace float32 //Multiplier, 1.0 = no gap between lines
 	ItemType  itemTypeData
 

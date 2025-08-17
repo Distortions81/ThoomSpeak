@@ -25,6 +25,13 @@ type openDropdown struct {
 	offset point
 }
 
+func itemFace(item *itemData, size float32) text.Face {
+	if item != nil && item.Face != nil {
+		return item.Face
+	}
+	return textFace(size)
+}
+
 // Draw renders the UI to the provided screen image.
 // Call this from your Ebiten Draw function.
 func Draw(screen *ebiten.Image) {
@@ -574,7 +581,7 @@ func (item *itemData) drawFlows(win *windowData, parent *itemData, offset point,
 		x := offset.X
 		spacing := float32(4) * uiScale
 		for i, tab := range item.Tabs {
-			face := textFace(textSize)
+			face := itemFace(tab, textSize)
 			tw, _ := text.Measure(tab.Name, face, 0)
 			w := float32(tw) + 8
 			if w < float32(defaultTabWidth)*uiScale {
@@ -813,7 +820,7 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 
 	if item.Label != "" {
 		textSize := (item.FontSize * uiScale) + 2
-		face := textFace(textSize)
+		face := itemFace(item, textSize)
 		loo := text.LayoutOptions{PrimaryAlign: text.AlignStart, SecondaryAlign: text.AlignCenter}
 		tdop := ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
 		tdop.GeoM.Translate(float64(offset.X), float64(offset.Y+textSize/2))
@@ -871,7 +878,7 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 		}
 
 		textSize := (item.FontSize * uiScale) + 2
-		face := textFace(textSize)
+		face := itemFace(item, textSize)
 		loo := text.LayoutOptions{
 			LineSpacing:    1.2,
 			PrimaryAlign:   text.AlignStart,
@@ -927,7 +934,7 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 		}
 
 		textSize := (item.FontSize * uiScale) + 2
-		face := textFace(textSize)
+		face := itemFace(item, textSize)
 		loo := text.LayoutOptions{
 			LineSpacing:    1.2,
 			PrimaryAlign:   text.AlignStart,
@@ -969,7 +976,7 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 		}
 
 		textSize := (item.FontSize * uiScale) + 2
-		face := textFace(textSize)
+		face := itemFace(item, textSize)
 		loo := text.LayoutOptions{
 			LineSpacing:    0,
 			PrimaryAlign:   text.AlignCenter,
@@ -1004,7 +1011,7 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 		}
 
 		textSize := (item.FontSize * uiScale) + 2
-		face := textFace(textSize)
+		face := itemFace(item, textSize)
 		loo := text.LayoutOptions{
 			LineSpacing:    0,
 			PrimaryAlign:   text.AlignStart,
@@ -1050,7 +1057,7 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 		}
 
 		textSize := (item.FontSize * uiScale) + 2
-		face := textFace(textSize)
+		face := itemFace(item, textSize)
 		maxW, _ := text.Measure(maxLabel, face, 0)
 
 		gap := currentStyle.SliderValueGap
@@ -1132,7 +1139,7 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 		}
 
 		textSize := (item.FontSize * uiScale) + 2
-		face := textFace(textSize)
+		face := itemFace(item, textSize)
 		loo := text.LayoutOptions{PrimaryAlign: text.AlignStart, SecondaryAlign: text.AlignCenter}
 		tdop := ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
 		tdop.GeoM.Translate(float64(offset.X+item.BorderPad+item.Padding+currentStyle.TextPadding*uiScale), float64(offset.Y+maxSize.Y/2))
@@ -1217,7 +1224,7 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 		}
 
 		textSize := (item.FontSize * uiScale) + 2
-		face := textFace(textSize)
+		face := itemFace(item, textSize)
 		loo := text.LayoutOptions{
 			LineSpacing:    float64(textSize) * 1.2,
 			PrimaryAlign:   text.AlignStart,
@@ -1392,7 +1399,7 @@ func drawDropdownOptions(item *itemData, offset point, clip rect, screen *ebiten
 	first := int(item.Scroll.Y / optionH)
 	offY := startY - (item.Scroll.Y - float32(first)*optionH)
 	textSize := (item.FontSize * uiScale) + 2
-	face := textFace(textSize)
+	face := itemFace(item, textSize)
 	loo := text.LayoutOptions{PrimaryAlign: text.AlignStart, SecondaryAlign: text.AlignCenter}
 
 	if item.ShadowSize > 0 && item.ShadowColor.A > 0 {
