@@ -1080,7 +1080,7 @@ func drawMobile(screen *ebiten.Image, ox, oy int, m frameMobile, descMap map[uin
 	plane := 0
 	var d frameDescriptor
 	var colors []byte
-	var state uint8
+	var curState uint8
 	if desc, ok := descMap[m.Index]; ok {
 		d = desc
 		colors = d.Colors
@@ -1089,8 +1089,8 @@ func drawMobile(screen *ebiten.Image, ox, oy int, m frameMobile, descMap map[uin
 			colors = append([]byte(nil), p.Colors...)
 		}
 		playersMu.RUnlock()
-		state = m.State
-		img = loadMobileFrame(d.PictID, state, colors)
+		curState = m.State
+		img = loadMobileFrame(d.PictID, curState, colors)
 		plane = d.Plane
 	}
 	var prevImg *ebiten.Image
@@ -1129,7 +1129,7 @@ func drawMobile(screen *ebiten.Image, ox, oy int, m frameMobile, descMap map[uin
 				idx = steps - 1
 			}
 			prevKey := makeMobileKey(prevPict, prevState, prevColors)
-			curKey := makeMobileKey(d.PictID, state, colors)
+			curKey := makeMobileKey(d.PictID, curState, colors)
 			if b := mobileBlendFrame(prevKey, curKey, prevImg, img, idx, steps); b != nil {
 				src = b
 				drawSize = b.Bounds().Dx()
@@ -1206,6 +1206,29 @@ func drawMobile(screen *ebiten.Image, ox, oy int, m frameMobile, descMap map[uin
 					opTxt.GeoM.Translate(float64(left+2), float64(top+2))
 					opTxt.ColorScale.ScaleWithColor(textClr)
 					text.Draw(screen, d.Name, face, opTxt)
+
+					// Cache the name tag image for future frames.
+					key := nameTagKey{
+						Text:    d.Name,
+						Colors:  m.Colors,
+						Opacity: alpha,
+						FontGen: fontGen,
+						Style:   style,
+					}
+					img, iwImg, ihImg := buildNameTagImage(d.Name, m.Colors, alpha, style)
+					m.nameTag = img
+					m.nameTagW = iwImg
+					m.nameTagH = ihImg
+					m.nameTagKey = key
+					stateMu.Lock()
+					if sm, ok := state.mobiles[m.Index]; ok {
+						sm.nameTag = img
+						sm.nameTagW = iwImg
+						sm.nameTagH = ihImg
+						sm.nameTagKey = key
+						state.mobiles[m.Index] = sm
+					}
+					stateMu.Unlock()
 				}
 			} else {
 				back := int((m.Colors >> 4) & 0x0f)
