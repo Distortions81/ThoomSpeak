@@ -77,11 +77,14 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 
 	// Prepare wrapping parameters: use the same face for measurement.
 	var face text.Face = goFace
-	// list.Size.X is in item units; convert to pixels for measurement.
-	wrapWidthPx := float64(list.Size.X-(3*pad)*ui) - 20
-	if wrapWidthPx < 0 {
-		wrapWidthPx = 0
+
+	// Leave a margin on the right to prevent clipped characters.
+	const rightMarginPx = 24
+	textWidthUnits := clientWAvail - float32(rightMarginPx)/ui
+	if textWidthUnits < 0 {
+		textWidthUnits = 0
 	}
+	wrapWidthPx := float64(textWidthUnits) * float64(ui)
 
 	for i, msg := range msgs {
 		// Word-wrap the message to the available width.
@@ -97,12 +100,12 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 				list.Contents[i].FontSize = float32(fontSize)
 			}
 			list.Contents[i].Size.Y = rowUnits * float32(linesN)
-			list.Contents[i].Size.X = clientWAvail
+			list.Contents[i].Size.X = textWidthUnits
 		} else {
 			t, _ := eui.NewText()
 			t.Text = wrapped
 			t.FontSize = float32(fontSize)
-			t.Size = eui.Point{X: clientWAvail, Y: rowUnits * float32(linesN)}
+			t.Size = eui.Point{X: textWidthUnits, Y: rowUnits * float32(linesN)}
 			// Append to maintain ordering with the msgs index
 			list.AddItem(t)
 		}
@@ -122,13 +125,13 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 			inLines = inLines[len(inLines)-maxInputLines:]
 		}
 		wrappedIn := strings.Join(inLines, "\n")
-		input.Size.X = clientWAvail
+		input.Size.X = textWidthUnits
 		input.Size.Y = rowUnits * float32(maxInputLines)
 		if len(input.Contents) == 0 {
 			t, _ := eui.NewText()
 			t.Text = wrappedIn
 			t.FontSize = float32(fontSize)
-			t.Size = eui.Point{X: clientWAvail, Y: rowUnits * float32(maxInputLines)}
+			t.Size = eui.Point{X: textWidthUnits, Y: rowUnits * float32(maxInputLines)}
 			t.Filled = true
 			input.AddItem(t)
 		} else {
@@ -136,7 +139,7 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 				input.Contents[0].Text = wrappedIn
 				input.Contents[0].FontSize = float32(fontSize)
 			}
-			input.Contents[0].Size.X = clientWAvail
+			input.Contents[0].Size.X = textWidthUnits
 			input.Contents[0].Size.Y = rowUnits * float32(maxInputLines)
 		}
 	}
