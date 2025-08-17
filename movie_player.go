@@ -473,7 +473,23 @@ func (p *moviePlayer) seek(idx int) {
 			// without draw-state are encountered.
 			frameCounter++
 		}
-		maybeDecodeMessage(m)
+    maybeDecodeMessage(m)
+		if frameCounter%checkpointInterval == 0 {
+			last := p.checkpoints[len(p.checkpoints)-1]
+			if last.idx != frameCounter {
+				stateMu.Lock()
+				snap := movieCheckpoint{idx: frameCounter, state: cloneDrawState(state)}
+				stateMu.Unlock()
+				p.checkpoints = append(p.checkpoints, snap)
+			}
+		}
+	}
+	last := p.checkpoints[len(p.checkpoints)-1]
+	if last.idx != idx {
+		stateMu.Lock()
+		snap := movieCheckpoint{idx: idx, state: cloneDrawState(state)}
+		stateMu.Unlock()
+		p.checkpoints = append(p.checkpoints, snap)
 	}
 	p.cur = idx
 	resetInterpolation()
