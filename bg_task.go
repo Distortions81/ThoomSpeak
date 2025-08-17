@@ -22,6 +22,7 @@ func debugStatsTask(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
+			ebitenStopped = true
 			return
 		case <-ticker.C:
 			if debugWin != nil && debugWin.IsOpen() {
@@ -37,6 +38,7 @@ func inventoryRefreshTask(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
+			ebitenStopped = true
 			return
 		case <-ticker.C:
 			if inventoryDirty {
@@ -54,6 +56,7 @@ func playersRefreshTask(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
+			ebitenStopped = true
 			return
 		case <-ticker.C:
 			if playersDirty {
@@ -70,6 +73,7 @@ func syncWindowSettingsTask(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
+			ebitenStopped = true
 			return
 		case <-ticker.C:
 			if syncWindowSettings() {
@@ -85,6 +89,7 @@ func qualityPresetTask(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
+			ebitenStopped = true
 			return
 		case <-ticker.C:
 			if settingsDirty && qualityPresetDD != nil {
@@ -100,6 +105,7 @@ func settingsSaveTask(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
+			ebitenStopped = true
 			return
 		case <-ticker.C:
 			if settingsDirty {
@@ -117,6 +123,7 @@ func playersSaveTask(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
+			ebitenStopped = true
 			return
 		case <-ticker.C:
 			if playersDirty || playersPersistDirty {
@@ -134,6 +141,7 @@ func movieWindowRefreshTask(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
+			ebitenStopped = true
 			return
 		case <-ticker.C:
 			if movieWin != nil && movieWin.IsOpen() {

@@ -300,6 +300,7 @@ func login(ctx context.Context, clientVersion int) error {
 		go tcpReadLoop(ctx, tcpConn)
 
 		<-ctx.Done()
+		ebitenStopped = true
 		if tcpConn != nil {
 			tcpConn.Close()
 			tcpConn = nil

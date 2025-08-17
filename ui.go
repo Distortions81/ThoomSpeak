@@ -1431,6 +1431,16 @@ func makeSettingsWindow() {
 	}
 	left.AddItem(nameBgSlider)
 
+	bubbleBtn, bubbleEvents := eui.NewButton()
+	bubbleBtn.Text = "Bubble Settings..."
+	bubbleBtn.Size = eui.Point{X: rightW, Y: 24}
+	bubbleEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			bubbleWin.ToggleNear(ev.Item)
+		}
+	}
+	left.AddItem(bubbleBtn)
+
 	label, _ = eui.NewText()
 	label.Text = "\nQuality Settings:"
 	label.FontSize = 15
@@ -1471,19 +1481,10 @@ func makeSettingsWindow() {
 	}
 	right.AddItem(qualityBtn)
 
-	bubbleBtn, bubbleEvents := eui.NewButton()
-	bubbleBtn.Text = "Bubble Settings..."
-	bubbleBtn.Size = eui.Point{X: rightW, Y: 24}
-	bubbleEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventClick {
-			bubbleWin.ToggleNear(ev.Item)
-		}
-	}
-	right.AddItem(bubbleBtn)
-
 	label, _ = eui.NewText()
-	label.Text = ""
-	label.Size = eui.Point{X: rightW, Y: 15}
+	label.Text = "\nAdvanced:"
+	label.FontSize = 15
+	label.Size = eui.Point{X: rightW, Y: 50}
 	right.AddItem(label)
 
 	debugBtn, debugEvents := eui.NewButton()

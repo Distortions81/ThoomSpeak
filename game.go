@@ -500,6 +500,7 @@ var once sync.Once
 func (g *Game) Update() error {
 	select {
 	case <-gameCtx.Done():
+		ebitenStopped = true
 		return errors.New("shutdown")
 	default:
 	}
@@ -1903,6 +1904,7 @@ func sendInputLoop(ctx context.Context, conn net.Conn) {
 	for {
 		select {
 		case <-ctx.Done():
+			ebitenStopped = true
 			return
 		case <-frameCh:
 		}
@@ -1933,6 +1935,7 @@ func sendInputLoop(ctx context.Context, conn net.Conn) {
 		timer := time.NewTimer(delay)
 		select {
 		case <-ctx.Done():
+			ebitenStopped = true
 			timer.Stop()
 			return
 		case <-timer.C:
@@ -1963,6 +1966,7 @@ func udpReadLoop(ctx context.Context, conn net.Conn) {
 			if ne, ok := err.(net.Error); ok && ne.Timeout() {
 				select {
 				case <-ctx.Done():
+					ebitenStopped = true
 					return
 				default:
 					continue
@@ -2039,6 +2043,7 @@ loop:
 			if ne, ok := err.(net.Error); ok && ne.Timeout() {
 				select {
 				case <-ctx.Done():
+					ebitenStopped = true
 					break loop
 				default:
 					continue
@@ -2099,6 +2104,7 @@ loop:
 		}
 		select {
 		case <-ctx.Done():
+			ebitenStopped = true
 			break loop
 		default:
 		}
