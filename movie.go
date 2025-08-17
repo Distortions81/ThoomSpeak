@@ -19,6 +19,10 @@ const oldestMovieVersion = 193
 
 var movieRevision int32
 
+// seeking indicates that we're fast-forwarding through movie data without
+// rendering or triggering side effects.
+var seeking bool
+
 func parseMovie(path string, clientVersion int) ([][]byte, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -45,7 +49,8 @@ func parseMovie(path string, clientVersion int) ([][]byte, error) {
 	}
 	logDebug("movie version %d.%d headerLen %d", version, revision, headerLen)
 
-	stateMu.Lock()
+	seeking = true
+	defer func() { seeking = false }()
 	state = drawState{
 		descriptors: make(map[uint8]frameDescriptor),
 		mobiles:     make(map[uint8]frameMobile),
@@ -53,7 +58,6 @@ func parseMovie(path string, clientVersion int) ([][]byte, error) {
 		prevDescs:   make(map[uint8]frameDescriptor),
 	}
 	initialState = cloneDrawState(state)
-	stateMu.Unlock()
 
 	pos := headerLen
 	sign := []byte{0xde, 0xad, 0xbe, 0xef}
@@ -103,20 +107,25 @@ func parseMovie(path string, clientVersion int) ([][]byte, error) {
 				id := binary.BigEndian.Uint16(data[pos : pos+2])
 				h := int16(binary.BigEndian.Uint16(data[pos+2 : pos+4]))
 				v := int16(binary.BigEndian.Uint16(data[pos+4 : pos+6]))
-				plane := 0
-				if clImages != nil {
-					plane = clImages.Plane(uint32(id))
+				if !seeking && clImages != nil {
+					plane := clImages.Plane(uint32(id))
+					pics = append(pics, framePicture{PictID: id, H: h, V: v, Plane: plane})
+				} else {
+					pics = append(pics, framePicture{PictID: id, H: h, V: v})
 				}
 				pos += 6
-				pics = append(pics, framePicture{PictID: id, H: h, V: v, Plane: plane})
 			}
 			if pos+4 <= len(data) {
 				pos += 4
 			}
-			sortPictures(pics)
-			stateMu.Lock()
-			state.pictures = pics
-			stateMu.Unlock()
+			if !seeking {
+				sortPictures(pics)
+				stateMu.Lock()
+				state.pictures = pics
+				stateMu.Unlock()
+			} else {
+				state.pictures = pics
+			}
 		}
 		if size > 0 {
 			if pos+size > len(data) {
@@ -159,20 +168,25 @@ func fastParseGameState(gs []byte, version, revision uint16) {
 				id := binary.BigEndian.Uint16(gs[pos : pos+2])
 				h := int16(binary.BigEndian.Uint16(gs[pos+2 : pos+4]))
 				v := int16(binary.BigEndian.Uint16(gs[pos+4 : pos+6]))
-				plane := 0
-				if clImages != nil {
-					plane = clImages.Plane(uint32(id))
+				if !seeking && clImages != nil {
+					plane := clImages.Plane(uint32(id))
+					pics = append(pics, framePicture{PictID: id, H: h, V: v, Plane: plane})
+				} else {
+					pics = append(pics, framePicture{PictID: id, H: h, V: v})
 				}
 				pos += 6
-				pics = append(pics, framePicture{PictID: id, H: h, V: v, Plane: plane})
 			}
 			if pos+4 <= len(gs) {
 				pos += 4
 			}
-			sortPictures(pics)
-			stateMu.Lock()
-			state.pictures = pics
-			stateMu.Unlock()
+			if !seeking {
+				sortPictures(pics)
+				stateMu.Lock()
+				state.pictures = pics
+				stateMu.Unlock()
+			} else {
+				state.pictures = pics
+			}
 			gs = gs[pos:]
 		}
 	}
@@ -267,18 +281,31 @@ func fastParseMobileTable(data []byte, pos int, version, revision uint16) int {
 			}
 			pos += lgt
 		}
-		stateMu.Lock()
-		if hasMobile {
-			if state.mobiles == nil {
-				state.mobiles = make(map[uint8]frameMobile)
+		if seeking {
+			if hasMobile {
+				if state.mobiles == nil {
+					state.mobiles = make(map[uint8]frameMobile)
+				}
+				state.mobiles[mob.Index] = mob
 			}
-			state.mobiles[mob.Index] = mob
+			if state.descriptors == nil {
+				state.descriptors = make(map[uint8]frameDescriptor)
+			}
+			state.descriptors[d.Index] = d
+		} else {
+			stateMu.Lock()
+			if hasMobile {
+				if state.mobiles == nil {
+					state.mobiles = make(map[uint8]frameMobile)
+				}
+				state.mobiles[mob.Index] = mob
+			}
+			if state.descriptors == nil {
+				state.descriptors = make(map[uint8]frameDescriptor)
+			}
+			state.descriptors[d.Index] = d
+			stateMu.Unlock()
 		}
-		if state.descriptors == nil {
-			state.descriptors = make(map[uint8]frameDescriptor)
-		}
-		state.descriptors[d.Index] = d
-		stateMu.Unlock()
 	}
 	return pos
 }
