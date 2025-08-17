@@ -3,62 +3,77 @@ package main
 import "time"
 
 func runBackgroundTasks() {
-	go func() {
-		for {
-			time.Sleep(time.Second)
-			if debugWin != nil && debugWin.IsOpen() {
-				updateDebugStats()
-			}
-		}
-	}()
 
 	go func() {
+		var x uint64
 		for {
-			//TODO CLEANUP -- Replace with tickers
-			time.Sleep(time.Millisecond * 200)
+			x++
+			time.Sleep(time.Millisecond * 10)
 
-			if inventoryDirty {
-				updateInventoryWindow()
-				updateHandsWindow()
-				inventoryDirty = false
-			}
-
-			if playersDirty {
-				updatePlayersWindow()
-				playersDirty = false
-			}
-			if syncWindowSettings() {
-				settingsDirty = true
-			}
-			if settingsDirty && qualityPresetDD != nil {
-				qualityPresetDD.Selected = detectQualityPreset()
-			}
-			if time.Since(lastSettingsSave) >= 5*time.Second {
-				if settingsDirty {
-					saveSettings()
-					settingsDirty = false
+			switch x {
+			case 1:
+				if time.Since(lastDebugStats) > time.Second {
+					lastDebugStats = time.Now()
+					if debugWin != nil && debugWin.IsOpen() {
+						updateDebugStats()
+					}
 				}
-				lastSettingsSave = time.Now()
-			}
 
-			// Periodically persist players if there were changes.
-			if time.Since(lastPlayersSave) >= 5*time.Second {
-				if playersDirty || playersPersistDirty {
-					savePlayersPersist()
-					playersPersistDirty = false
+			case 2:
+				if inventoryDirty {
+					updateInventoryWindow()
+					updateHandsWindow()
+					inventoryDirty = false
 				}
-				lastPlayersSave = time.Now()
-			}
 
-			// Ensure the movie controller window repaints at least once per second
-			// while open, even without other UI events.
-			if movieWin != nil && movieWin.IsOpen() {
-				if time.Since(lastMovieWinTick) >= time.Second {
-					lastMovieWinTick = time.Now()
-					movieWin.Refresh()
+			case 3:
+				if playersDirty {
+					updatePlayersWindow()
+					playersDirty = false
 				}
-			}
 
+			case 4:
+				if syncWindowSettings() {
+					settingsDirty = true
+				}
+
+			case 5:
+				if settingsDirty && qualityPresetDD != nil {
+					qualityPresetDD.Selected = detectQualityPreset()
+				}
+
+			case 6:
+				if time.Since(lastSettingsSave) >= 1*time.Second {
+					if settingsDirty {
+						saveSettings()
+						settingsDirty = false
+					}
+					lastSettingsSave = time.Now()
+				}
+
+			case 7:
+				// Periodically persist players if there were changes.
+				if time.Since(lastPlayersSave) >= 10*time.Second {
+					if playersDirty || playersPersistDirty {
+						savePlayersPersist()
+						playersPersistDirty = false
+					}
+					lastPlayersSave = time.Now()
+				}
+
+			case 8:
+				// Ensure the movie controller window repaints at least once per second
+				// while open, even without other UI events.
+				if movieWin != nil && movieWin.IsOpen() {
+					if time.Since(lastMovieWinTick) >= time.Second {
+						lastMovieWinTick = time.Now()
+						movieWin.Refresh()
+					}
+				}
+
+			default:
+				x = 0
+			}
 		}
 	}()
 }
