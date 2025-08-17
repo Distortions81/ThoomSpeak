@@ -1597,12 +1597,12 @@ func drawEquippedItems(screen *ebiten.Image, ox, oy int) {
 			return
 		}
 		w := int(float64(img.Bounds().Dx()) * gs.GameScale)
-		opRight := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
+		opRight := &ebiten.DrawImageOptions{Filter: ebiten.FilterLinear, DisableMipmaps: true}
 		opRight.GeoM.Scale(gs.GameScale, gs.GameScale)
 		opRight.GeoM.Translate(float64(x), float64(y))
 		screen.DrawImage(img, opRight)
 
-		opLeft := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
+		opLeft := &ebiten.DrawImageOptions{Filter: ebiten.FilterLinear, DisableMipmaps: true}
 		opLeft.GeoM.Scale(-gs.GameScale, gs.GameScale)
 		opLeft.GeoM.Translate(float64(w), 0)
 		opLeft.GeoM.Translate(float64(x+w)+4*gs.GameScale, float64(y))
@@ -1612,7 +1612,7 @@ func drawEquippedItems(screen *ebiten.Image, ox, oy int) {
 
 	if rightID != 0 {
 		if img := loadImage(rightID); img != nil {
-			op := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
+			op := &ebiten.DrawImageOptions{Filter: ebiten.FilterLinear, DisableMipmaps: true}
 			op.GeoM.Scale(gs.GameScale, gs.GameScale)
 			op.GeoM.Translate(float64(x), float64(y))
 			screen.DrawImage(img, op)
@@ -1622,7 +1622,7 @@ func drawEquippedItems(screen *ebiten.Image, ox, oy int) {
 	if leftID != 0 {
 		if img := loadImage(leftID); img != nil {
 			w := int(float64(img.Bounds().Dx()) * gs.GameScale)
-			op := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
+			op := &ebiten.DrawImageOptions{Filter: ebiten.FilterLinear, DisableMipmaps: true}
 			op.GeoM.Scale(-gs.GameScale, gs.GameScale)
 			op.GeoM.Translate(float64(w), 0)
 			op.GeoM.Translate(float64(x), float64(y))

@@ -1186,7 +1186,7 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 	} else if item.ItemType == ITEM_IMAGE {
 		if item.Image != nil {
 			iw, ih := item.Image.Bounds().Dx(), item.Image.Bounds().Dy()
-			op := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
+			op := &ebiten.DrawImageOptions{Filter: ebiten.FilterLinear, DisableMipmaps: true}
 			if int(maxSize.X) != iw || int(maxSize.Y) != ih {
 				op.GeoM.Scale(float64(maxSize.X)/float64(iw), float64(maxSize.Y)/float64(ih))
 			}
