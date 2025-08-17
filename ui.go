@@ -295,29 +295,62 @@ func makeToolbar() {
 	updateHandsWindow()
 }
 
+func overlayItemOnHand(hand, item *ebiten.Image) *ebiten.Image {
+	if hand == nil {
+		return item
+	}
+	if item == nil {
+		return hand
+	}
+	w := hand.Bounds().Dx()
+	h := hand.Bounds().Dy()
+	iw, ih := item.Bounds().Dx(), item.Bounds().Dy()
+	if iw > w {
+		w = iw
+	}
+	if ih > h {
+		h = ih
+	}
+	out := newImage(w, h)
+	offX := (w - hand.Bounds().Dx()) / 2
+	offY := (h - hand.Bounds().Dy()) / 2
+	opHand := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
+	opHand.ColorScale.ScaleAlpha(0.5)
+	opHand.GeoM.Translate(float64(offX), float64(offY))
+	out.DrawImage(hand, opHand)
+	offX = (w - iw) / 2
+	offY = (h - ih) / 2
+	opItem := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
+	opItem.GeoM.Translate(float64(offX), float64(offY))
+	out.DrawImage(item, opItem)
+	return out
+}
+
 func updateHandsWindow() {
 	if rightHandImg == nil || leftHandImg == nil {
 		return
 	}
+	baseHand := loadImage(defaultHandPictID)
+	if baseHand == nil {
+		return
+	}
 	rightID, leftID := equippedItemPicts()
-	var rightImg, leftImg *ebiten.Image
-	if rightID == 0 && leftID == 0 {
-		img := loadImage(defaultHandPictID)
-		if img == nil {
-			return
-		}
-		rightImg = img
-		leftImg = mirrorImage(img)
-	} else {
-		if rightID != 0 {
-			rightImg = loadImage(rightID)
-		}
-		if leftID != 0 {
-			if img := loadImage(leftID); img != nil {
-				leftImg = mirrorImage(img)
-			}
+
+	rightImg := baseHand
+	if rightID != 0 {
+		if item := loadImage(rightID); item != nil {
+			rightImg = overlayItemOnHand(baseHand, item)
 		}
 	}
+
+	leftHand := mirrorImage(baseHand)
+	leftImg := leftHand
+	if leftID != 0 {
+		if item := loadImage(leftID); item != nil {
+			leftImg = overlayItemOnHand(leftHand, mirrorImage(item))
+		}
+	}
+
 	if rightImg != nil {
 		rightHandImg.Image = rightImg
 		rightHandImg.Size = eui.Point{X: float32(rightImg.Bounds().Dx()), Y: float32(rightImg.Bounds().Dy())}
