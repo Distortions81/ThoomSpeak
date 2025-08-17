@@ -1033,6 +1033,8 @@ func makeErrorWindow(msg string) {
 	showPopup("Error", body, []popupButton{{Text: "OK"}})
 }
 
+var SettingsLock sync.Mutex
+
 func makeSettingsWindow() {
 	if settingsWin != nil {
 		return
@@ -1070,6 +1072,9 @@ func makeSettingsWindow() {
 	themeDD.Size = eui.Point{X: rightW, Y: 24}
 	themeEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventDropdownSelected {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
 			name := themeDD.Options[ev.Index]
 			if err := eui.LoadTheme(name); err == nil {
 				gs.Theme = name
@@ -1093,6 +1098,9 @@ func makeSettingsWindow() {
 	toggle.Tooltip = "Click once to start walking, click again to stop."
 	toggleEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventCheckboxChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
 			gs.ClickToToggle = ev.Checked
 			if !gs.ClickToToggle {
 				walkToggled = false
@@ -1110,6 +1118,9 @@ func makeSettingsWindow() {
 	keySpeedSlider.Size = eui.Point{X: leftW - 10, Y: 24}
 	keySpeedEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
 			gs.KBWalkSpeed = float64(ev.Value)
 			settingsDirty = true
 		}
@@ -1194,6 +1205,9 @@ func makeSettingsWindow() {
 	fullscreenCB.Checked = gs.Fullscreen
 	fullscreenEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventCheckboxChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
 			gs.Fullscreen = ev.Checked
 			ebiten.SetFullscreen(gs.Fullscreen)
 			ebiten.SetWindowFloating(gs.Fullscreen)
@@ -1208,6 +1222,9 @@ func makeSettingsWindow() {
 	bubbleMsgCB.Checked = gs.MessagesToConsole
 	bubbleMsgEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventCheckboxChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
 			gs.MessagesToConsole = ev.Checked
 			settingsDirty = true
 			if ev.Checked {
@@ -1227,6 +1244,9 @@ func makeSettingsWindow() {
 	chatTTSCB.Checked = gs.ChatTTS
 	chatTTSEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventCheckboxChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
 			gs.ChatTTS = ev.Checked
 			settingsDirty = true
 			if !ev.Checked {
@@ -1244,6 +1264,9 @@ func makeSettingsWindow() {
 	chatTTSSlider.FontSize = 9
 	chatTTSSliderEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
 			gs.ChatTTSVolume = float64(ev.Value)
 			settingsDirty = true
 		}
@@ -1276,6 +1299,9 @@ func makeSettingsWindow() {
 		radio.Checked = gs.BarPlacement == p.value
 		radioEvents.Handle = func(ev eui.UIEvent) {
 			if ev.Type == eui.EventRadioSelected {
+				SettingsLock.Lock()
+				defer SettingsLock.Unlock()
+
 				gs.BarPlacement = p.value
 				settingsDirty = true
 			}
@@ -1303,6 +1329,9 @@ func makeSettingsWindow() {
 	barOpacitySlider.Size = eui.Point{X: leftW - 10, Y: 24}
 	barOpacityEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
 			gs.BarOpacity = float64(ev.Value)
 			settingsDirty = true
 		}
@@ -1323,6 +1352,9 @@ func makeSettingsWindow() {
 	labelFontSlider.Size = eui.Point{X: leftW - 10, Y: 24}
 	labelFontEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
 			gs.MainFontSize = float64(ev.Value)
 			initFont()
 			settingsDirty = true
@@ -1344,6 +1376,9 @@ func makeSettingsWindow() {
 	invFontSlider.Size = eui.Point{X: leftW - 10, Y: 24}
 	invFontEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
 			gs.InventoryFontSize = float64(ev.Value)
 			settingsDirty = true
 			updateInventoryWindow()
@@ -1365,6 +1400,9 @@ func makeSettingsWindow() {
 	plFontSlider.Size = eui.Point{X: leftW - 10, Y: 24}
 	plFontEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
 			gs.PlayersFontSize = float64(ev.Value)
 			settingsDirty = true
 			updatePlayersWindow()
@@ -1383,6 +1421,9 @@ func makeSettingsWindow() {
 	consoleFontSlider.Size = eui.Point{X: leftW - 10, Y: 24}
 	consoleFontEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
 			gs.ConsoleFontSize = float64(ev.Value)
 			updateConsoleWindow()
 			if consoleWin != nil {
@@ -1401,6 +1442,9 @@ func makeSettingsWindow() {
 	chatWindowFontSlider.Size = eui.Point{X: leftW - 10, Y: 24}
 	chatWindowFontEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
 			gs.ChatFontSize = float64(ev.Value)
 			updateChatWindow()
 			if chatWin != nil {
@@ -1424,7 +1468,11 @@ func makeSettingsWindow() {
 	nameBgSlider.Value = float32(gs.NameBgOpacity)
 	nameBgSlider.Size = eui.Point{X: leftW - 10, Y: 24}
 	nameBgEvents.Handle = func(ev eui.UIEvent) {
+
 		if ev.Type == eui.EventSliderChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
 			gs.NameBgOpacity = float64(ev.Value)
 			settingsDirty = true
 		}
@@ -1436,6 +1484,9 @@ func makeSettingsWindow() {
 	bubbleBtn.Size = eui.Point{X: rightW, Y: 24}
 	bubbleEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
 			bubbleWin.ToggleNear(ev.Item)
 		}
 	}
@@ -1476,6 +1527,9 @@ func makeSettingsWindow() {
 	qualityBtn.Size = eui.Point{X: rightW, Y: 24}
 	qualityEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
 			qualityWin.ToggleNear(ev.Item)
 		}
 	}
@@ -1492,6 +1546,9 @@ func makeSettingsWindow() {
 	debugBtn.Size = eui.Point{X: rightW, Y: 24}
 	debugEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
 			debugWin.ToggleNear(ev.Item)
 		}
 	}
@@ -1506,6 +1563,9 @@ func makeSettingsWindow() {
 	resetBtn.Tooltip = "Restore defaults and reapply"
 	resetEv.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
 			confirmResetSettings()
 		}
 	}

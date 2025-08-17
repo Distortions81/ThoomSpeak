@@ -271,8 +271,6 @@ func buildNameTagImage(name string, colorCode uint8, opacity uint8, style uint8)
 		return nil, 0, 0
 	}
 	textClr, bgClr, frameClr := mobileNameColors(colorCode)
-	bgClr.A = opacity
-	frameClr.A = opacity
 	face := mainFont
 	switch style {
 	case styleBold:
@@ -293,9 +291,10 @@ func buildNameTagImage(name string, colorCode uint8, opacity uint8, style uint8)
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Scale(float64(iw+5), float64(ih))
 	op.ColorScale.ScaleWithColor(bgClr)
+	op.ColorScale.ScaleAlpha(float32(gs.NameBgOpacity))
 	img.DrawImage(whiteImage, op)
 	// Border
-	vector.StrokeRect(img, 0, 0, float32(iw+5), float32(ih), 1, frameClr, false)
+	vector.StrokeRect(img, 1, 1, float32(iw+4), float32(ih-1), 1, frameClr, false)
 	// Text
 	opTxt := &text.DrawOptions{}
 	opTxt.GeoM.Translate(2, 2)
@@ -1015,7 +1014,7 @@ func parseDrawState(data []byte) error {
 				m.nameTagH = prev.nameTagH
 				m.nameTagKey = prev.nameTagKey
 			} else {
-				img, iw, ih := buildNameTagImage(d.Name, m.Colors, key.Opacity, style)
+				img, iw, ih := buildNameTagImage(d.Name, m.Colors, uint8(gs.NameBgOpacity*255), style)
 				m.nameTag = img
 				m.nameTagW = iw
 				m.nameTagH = ih
