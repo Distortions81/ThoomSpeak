@@ -111,8 +111,9 @@ func decodeBEPP(data []byte) string {
 			return "info: " + text
 		}
 	case "sh":
+		parseShareText(raw, text)
 		if text != "" {
-			return "share: " + text
+			return text
 		}
 	case "be":
 		// Back-end command: handle internally using raw (unstripped) data.
