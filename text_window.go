@@ -75,10 +75,18 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 	linePx := math.Ceil(metrics.HAscent + metrics.HDescent + 2) // +2 px padding
 	rowUnits := float32(linePx) / ui
 
+	// Determine scrollbar width in pixels so text doesn't render underneath it.
+	sb := float32(0)
+	if slider, _ := eui.NewSlider(); slider != nil {
+		sb = slider.BorderPad * 2 * ui
+	}
+
 	// Prepare wrapping parameters: use the same face for measurement.
 	var face text.Face = goFace
-	// list.Size.X is in item units; convert to pixels for measurement.
-	wrapWidthPx := float64(list.Size.X - (3*pad)*ui)
+	wrapWidthPx := float64(clientWAvail - sb - 3*pad)
+	if wrapWidthPx < 0 {
+		wrapWidthPx = 0
+	}
 
 	for i, msg := range msgs {
 		// Word-wrap the message to the available width.
@@ -94,12 +102,12 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 				list.Contents[i].FontSize = float32(fontSize)
 			}
 			list.Contents[i].Size.Y = rowUnits * float32(linesN)
-			list.Contents[i].Size.X = clientWAvail
+			list.Contents[i].Size.X = clientWAvail - sb
 		} else {
 			t, _ := eui.NewText()
 			t.Text = wrapped
 			t.FontSize = float32(fontSize)
-			t.Size = eui.Point{X: clientWAvail, Y: rowUnits * float32(linesN)}
+			t.Size = eui.Point{X: clientWAvail - sb, Y: rowUnits * float32(linesN)}
 			// Append to maintain ordering with the msgs index
 			list.AddItem(t)
 		}
@@ -125,7 +133,7 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 			t, _ := eui.NewText()
 			t.Text = wrappedIn
 			t.FontSize = float32(fontSize)
-			t.Size = eui.Point{X: clientWAvail, Y: rowUnits * float32(inLinesN)}
+			t.Size = eui.Point{X: clientWAvail - sb, Y: rowUnits * float32(inLinesN)}
 			t.Filled = true
 			input.AddItem(t)
 		} else {
@@ -133,7 +141,7 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 				input.Contents[0].Text = wrappedIn
 				input.Contents[0].FontSize = float32(fontSize)
 			}
-			input.Contents[0].Size.X = clientWAvail
+			input.Contents[0].Size.X = clientWAvail - sb
 			input.Contents[0].Size.Y = rowUnits * float32(inLinesN)
 		}
 		maxScroll := input.Contents[0].Size.Y - input.Size.Y
