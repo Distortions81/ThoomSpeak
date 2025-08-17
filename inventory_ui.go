@@ -108,13 +108,32 @@ func updateInventoryWindow() {
 	rowPx := float32(math.Ceil(metrics.HAscent + metrics.HDescent + 2))
 	rowUnits := rowPx / uiScale
 	iconSize := int(rowUnits + 0.5)
+
+	// Compute available client width/height similar to updateTextWindow so rows
+	// don't extend into the window padding and get clipped.
+	clientW := inventoryWin.GetSize().X
+	clientH := inventoryWin.GetSize().Y - inventoryWin.GetTitleSize()
+	s := eui.UIScale()
+	if inventoryWin.NoScale {
+		s = 1
+	}
+	pad := (inventoryWin.Padding + inventoryWin.BorderPad) * s
+	clientWAvail := clientW - 2*pad
+	if clientWAvail < 0 {
+		clientWAvail = 0
+	}
+	clientHAvail := clientH - 2*pad
+	if clientHAvail < 0 {
+		clientHAvail = 0
+	}
+
 	for _, id := range order {
 		it := first[id]
 		qty := counts[id]
 
 		// Row container for icon + text
 		row := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL, Fixed: true}
-		row.Size.X = inventoryWin.GetSize().X
+		row.Size.X = clientWAvail
 
 		// Icon
 		icon, _ := eui.NewImageItem(iconSize, iconSize)
@@ -175,14 +194,14 @@ func updateInventoryWindow() {
 
 		nameW, _ := text.Measure(t.Text, face, 0)
 		t.Size.Y = rowUnits
-		t.Size.X = float32(nameW / uiScale)
+		t.Size.X = float32(math.Ceil(nameW / uiScale))
 		row.AddItem(t)
 
 		// Add slot label right-justified when equipped and space allows.
 		if anyEquipped[id] && slot >= 0 && slot < len(slotNames) {
 			loc := fmt.Sprintf("[%v]", TitleCaser.String(slotNames[slot]))
 			locW, _ := text.Measure(loc, face, 0)
-			locWU := float32(locW / uiScale)
+			locWU := float32(math.Ceil(locW / uiScale))
 			flowX := float32(iconSize) + icon.Margin + t.Size.X
 			avail := row.Size.X - flowX
 			if avail > locWU {
@@ -193,7 +212,7 @@ func updateInventoryWindow() {
 				lt.Size.Y = rowUnits
 				lt.Size.X = locWU
 				lt.Fixed = true
-				lt.Position.X = avail - locWU
+				lt.Position.X = row.Size.X - locWU
 				row.AddItem(lt)
 			}
 		}
@@ -214,14 +233,12 @@ func updateInventoryWindow() {
 
 	// Size the list and refresh window similar to updateTextWindow behavior.
 	if inventoryWin != nil {
-		clientW := inventoryWin.GetSize().X
-		clientH := inventoryWin.GetSize().Y - inventoryWin.GetTitleSize()
 		if inventoryList.Parent != nil {
-			inventoryList.Parent.Size.X = clientW
-			inventoryList.Parent.Size.Y = clientH
+			inventoryList.Parent.Size.X = clientWAvail
+			inventoryList.Parent.Size.Y = clientHAvail
 		}
-		inventoryList.Size.X = clientW
-		inventoryList.Size.Y = clientH
+		inventoryList.Size.X = clientWAvail
+		inventoryList.Size.Y = clientHAvail
 		inventoryWin.Refresh()
 	}
 }
