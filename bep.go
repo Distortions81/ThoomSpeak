@@ -191,6 +191,7 @@ func parseBackendWho(data []byte) {
 }
 
 // parseNames extracts a slice of names from a sequence of "-pn name -pn" entries.
+// Between segments commas, spaces and the word "and" (case-insensitive) are ignored.
 func parseNames(data []byte) []string {
 	var names []string
 	for len(data) >= 3 {
@@ -205,9 +206,18 @@ func parseNames(data []byte) []string {
 		name := strings.TrimSpace(decodeMacRoman(data[:end]))
 		names = append(names, name)
 		data = data[end+3:]
-		if len(data) > 0 && data[0] == ',' {
-			data = data[1:]
+		for {
+			data = bytes.TrimLeft(data, " ")
+			switch {
+			case len(data) >= 3 && bytes.EqualFold(data[:3], []byte("and")):
+				data = data[3:]
+			case len(data) > 0 && data[0] == ',':
+				data = data[1:]
+			default:
+				goto next
+			}
 		}
+	next:
 	}
 	return names
 }
