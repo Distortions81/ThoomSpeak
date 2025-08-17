@@ -42,7 +42,7 @@ func playSound(ids ...uint16) {
 		return
 	}
 	go func(ids []uint16) {
-		logDebug("playSound %v called", ids)
+		//logDebug("playSound %v called", ids)
 		if blockSound {
 			logDebug("playSound blocked by blockSound")
 			return
@@ -146,7 +146,7 @@ func playSound(ids ...uint16) {
 		soundPlayers[p] = struct{}{}
 		soundMu.Unlock()
 
-		logDebug("playSound playing")
+		//logDebug("playSound playing")
 		p.Play()
 	}(append([]uint16(nil), ids...))
 }
@@ -278,7 +278,7 @@ func applyFadeInOut(samples []int16, rate int) {
 // sample rate, and caches the resulting PCM bytes. The CL_Sounds archive is
 // opened on first use and individual sounds are parsed lazily.
 func loadSound(id uint16) []byte {
-	logDebug("loadSound(%d) called", id)
+	//logDebug("loadSound(%d) called", id)
 	if audioContext == nil {
 		logDebug("loadSound(%d) no audio context", id)
 		return nil
@@ -304,7 +304,7 @@ func loadSound(id uint16) []byte {
 		return nil
 	}
 
-	logDebug("loadSound(%d) fetching from archive", id)
+	//logDebug("loadSound(%d) fetching from archive", id)
 	s, err := c.Get(uint32(id))
 	if s == nil {
 		if err != nil {
@@ -322,7 +322,7 @@ func loadSound(id uint16) []byte {
 		return nil
 	}
 	statSoundLoaded(id)
-	logDebug("loadSound(%d) loaded %d Hz %d-bit %d bytes", id, s.SampleRate, s.Bits, len(s.Data))
+	//logDebug("loadSound(%d) loaded %d Hz %d-bit %d bytes", id, s.SampleRate, s.Bits, len(s.Data))
 
 	srcRate := int(s.SampleRate / 2)
 	dstRate := audioContext.SampleRate()
@@ -345,7 +345,7 @@ func loadSound(id uint16) []byte {
 	}
 
 	if srcRate != dstRate {
-		logDebug("loadSound(%d) resampling from %d to %d", id, srcRate, dstRate)
+		//logDebug("loadSound(%d) resampling from %d to %d", id, srcRate, dstRate)
 		samples = resampleLinear(samples, srcRate, dstRate)
 	}
 
@@ -363,7 +363,7 @@ func loadSound(id uint16) []byte {
 		soundMu.Lock()
 		pcmCache[id] = pcm
 		soundMu.Unlock()
-		logDebug("loadSound(%d) cached %d bytes", id, len(pcm))
+		//logDebug("loadSound(%d) cached %d bytes", id, len(pcm))
 	}
 	return pcm
 }

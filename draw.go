@@ -364,7 +364,7 @@ func buildNameTagImage(name string, colorCode uint8, opacity uint8) (*ebiten.Ima
 // found.
 func pictureShift(prev, cur []framePicture) (int, int, []int, bool) {
 	if len(prev) == 0 || len(cur) == 0 {
-		logDebug("pictureShift: no data prev=%d cur=%d", len(prev), len(cur))
+		//logDebug("pictureShift: no data prev=%d cur=%d", len(prev), len(cur))
 		return 0, 0, nil, false
 	}
 
@@ -436,7 +436,7 @@ func pictureShift(prev, cur []framePicture) (int, int, []int, bool) {
 			bestCount = c
 		}
 	}
-	logDebug("pictureShift: counts=%v best=%v count=%d total=%d", counts, best, bestCount, total)
+	//logDebug("pictureShift: counts=%v best=%v count=%d total=%d", counts, best, bestCount, total)
 	if bestCount*2 <= total {
 		logDebug("pictureShift: no majority best=%d total=%d", bestCount, total)
 		return 0, 0, nil, false
@@ -1024,7 +1024,7 @@ func parseDrawState(data []byte) error {
 		if interval <= 0 {
 			interval = time.Second / 5
 		}
-		logDebug("interp mobiles interval=%v", interval)
+		//logDebug("interp mobiles interval=%v", interval)
 		state.prevTime = time.Now()
 		state.curTime = state.prevTime.Add(interval)
 	}
@@ -1065,12 +1065,14 @@ func parseDrawState(data []byte) error {
 	}
 	// Prepare render caches now that state has been updated.
 	prepareRenderCacheLocked()
-	ack := state.ackCmd
-	light := state.lightingFlags
+	//ack := state.ackCmd
+	//light := state.lightingFlags
 	stateMu.Unlock()
 
-	logDebug("draw state cmd=%d ack=%d resend=%d light=%#x desc=%d pict=%d again=%d mobile=%d state=%d",
-		ack, ackFrame, resendFrame, light, len(descs), len(pics), pictAgain, len(mobiles), len(stateData))
+	/*
+		logDebug("draw state cmd=%d ack=%d resend=%d light=%#x desc=%d pict=%d again=%d mobile=%d state=%d",
+			ack, ackFrame, resendFrame, light, len(descs), len(pics), pictAgain, len(mobiles), len(stateData))
+	*/
 
 	stage = "info strings"
 	// Server sends a zero-terminated info-text blob which may contain

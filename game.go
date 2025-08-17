@@ -1514,6 +1514,7 @@ func drawServerFPS(screen *ebiten.Image, ox, oy int, fps float64) {
 		w, h := text.Measure(msg, mainFont, 0)
 
 		if fpsImage == nil || fpsHeight != h {
+			logDebug("Allocated FPS image.")
 			fpsImage = newImage(int(w*1.3), int(h))
 		}
 

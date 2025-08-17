@@ -68,13 +68,13 @@ func parseMovie(path string, clientVersion int) ([][]byte, error) {
 			pos += idx
 			continue
 		}
-		frame := binary.BigEndian.Uint32(data[pos+4 : pos+8])
+		//frame := binary.BigEndian.Uint32(data[pos+4 : pos+8])
 		size := int(binary.BigEndian.Uint16(data[pos+8 : pos+10]))
 		flags := binary.BigEndian.Uint16(data[pos+10 : pos+12])
-		logDebug("frame %d index=%d size=%d flags=0x%x", frameNum, frame, size, flags)
+		//logDebug("frame %d index=%d size=%d flags=0x%x", frameNum, frame, size, flags)
 		pos += 12
 		if flags&flagGameState != 0 {
-			logDebug("GameState block at %d", pos)
+			//logDebug("GameState block at %d", pos)
 			if pos+24 > len(data) {
 				break
 			}
@@ -88,11 +88,11 @@ func parseMovie(path string, clientVersion int) ([][]byte, error) {
 			pos = end
 		}
 		if flags&flagMobileData != 0 {
-			logDebug("MobileData table at %d", pos)
+			//logDebug("MobileData table at %d", pos)
 			pos = parseMobileTable(data, pos, version, revision)
 		}
 		if flags&flagPictureTable != 0 {
-			logDebug("PictureTable at %d", pos)
+			//logDebug("PictureTable at %d", pos)
 			if pos+2 > len(data) {
 				break
 			}
