@@ -79,7 +79,7 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 	var face text.Face = goFace
 
 	// Leave a margin on the right to prevent clipped characters when wrapping
-	const rightMarginPx = 24
+	const rightMarginPx = 40
 	wrapWidthPx := float64(clientWAvail)*float64(ui) - rightMarginPx
 	if wrapWidthPx < 0 {
 		wrapWidthPx = 0
