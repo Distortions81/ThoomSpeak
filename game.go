@@ -30,7 +30,7 @@ const fieldCenterX, fieldCenterY = gameAreaSizeX / 2, gameAreaSizeY / 2
 const defaultHandPictID = 6
 const initialWindowW, initialWindowH = 1920, 1080
 
-var MHOX, MHOY int
+var uiMouseDown bool
 
 // worldRT is the offscreen render target for the game world when
 // arbitrary window sizing is enabled. It stays at an integer-scaled
@@ -632,39 +632,35 @@ func (g *Game) Update() error {
 	heldTime := inpututil.MouseButtonPressDuration(ebiten.MouseButtonLeft)
 	click := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
 
-	if click && heldTime <= 1 {
-		MHOX, MHOY = mx, my
+	if click && pointInUI(mx, my) {
+		uiMouseDown = true
 	}
-
-	/*
-	 * Detect used in UI
-	 * TODO CLEANUP
-	 */
-	walk := false
-	if pointInUI(mx, my) {
-		if !click && heldTime > 0 {
-			if pointInUI(MHOX, MHOY) {
-				click = false
-				heldTime = 0
-			}
+	if uiMouseDown {
+		if !ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+			uiMouseDown = false
+		} else {
+			click = false
+			heldTime = 0
 		}
-		click = false
 	}
 
 	x, y := baseX, baseY
-	if keyWalk {
-		x, y, walk = keyX, keyY, true
-		walkToggled = false
-	} else if gs.ClickToToggle && click {
-		walkToggled = !walkToggled
-		walk = walkToggled
-	} else if !gs.ClickToToggle && heldTime > 1 && !click {
-		walk = true
-		walkToggled = false
-	}
+	walk := false
+	if !uiMouseDown {
+		if keyWalk {
+			x, y, walk = keyX, keyY, true
+			walkToggled = false
+		} else if gs.ClickToToggle && click {
+			walkToggled = !walkToggled
+			walk = walkToggled
+		} else if !gs.ClickToToggle && heldTime > 1 && !click {
+			walk = true
+			walkToggled = false
+		}
 
-	if gs.ClickToToggle && walkToggled {
-		walk = walkToggled
+		if gs.ClickToToggle && walkToggled {
+			walk = walkToggled
+		}
 	}
 
 	/* Change Cursor */
