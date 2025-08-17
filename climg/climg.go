@@ -707,6 +707,110 @@ func (c *CLImages) Size(id uint32) (int, int) {
 	return int(w), int(h)
 }
 
+// NonTransparentPixels returns the number of pixels with non-zero alpha for
+// the specified image ID. It decodes the image data directly from the archive
+// to avoid GPU readbacks.
+func (c *CLImages) NonTransparentPixels(id uint32) int {
+	ref := c.idrefs[id]
+	if ref == nil {
+		return 0
+	}
+	imgLoc := c.images[ref.imageID]
+	colLoc := c.colors[ref.colorID]
+	if imgLoc == nil || colLoc == nil {
+		return 0
+	}
+	r := bytes.NewReader(c.data)
+	if _, err := r.Seek(int64(imgLoc.offset), io.SeekStart); err != nil {
+		log.Printf("seek image %d: %v", id, err)
+		return 0
+	}
+	var h, w uint16
+	var pad uint32
+	var v, b byte
+	if err := binary.Read(r, binary.BigEndian, &h); err != nil {
+		log.Printf("read h for %d: %v", id, err)
+		return 0
+	}
+	if err := binary.Read(r, binary.BigEndian, &w); err != nil {
+		log.Printf("read w for %d: %v", id, err)
+		return 0
+	}
+	if err := binary.Read(r, binary.BigEndian, &pad); err != nil {
+		log.Printf("read pad for %d: %v", id, err)
+		return 0
+	}
+	if err := binary.Read(r, binary.BigEndian, &v); err != nil {
+		log.Printf("read v for %d: %v", id, err)
+		return 0
+	}
+	if err := binary.Read(r, binary.BigEndian, &b); err != nil {
+		log.Printf("read b for %d: %v", id, err)
+		return 0
+	}
+
+	width := int(w)
+	height := int(h)
+	valueW := int(v)
+	blockLenW := int(b)
+	pixelCount := width * height
+	br := New(r)
+	data := make([]byte, pixelCount)
+	pixPos := 0
+	for pixPos < pixelCount {
+		t, err := br.ReadBit()
+		if err != nil {
+			log.Printf("read bit for %d: %v", id, err)
+			return 0
+		}
+		s, err := br.ReadInt(blockLenW)
+		if err != nil {
+			log.Printf("read int for %d: %v", id, err)
+			return 0
+		}
+		s++
+		if t {
+			for i := 0; i < s && pixPos < pixelCount; i++ {
+				val, err := br.ReadBits(valueW)
+				if err != nil {
+					log.Printf("read bits for %d: %v", id, err)
+					return 0
+				}
+				data[pixPos] = val
+				pixPos++
+			}
+		} else {
+			val, err := br.ReadBits(valueW)
+			if err != nil {
+				log.Printf("read bits for %d: %v", id, err)
+				return 0
+			}
+			for i := 0; i < s && pixPos < pixelCount; i++ {
+				data[pixPos] = val
+				pixPos++
+			}
+		}
+	}
+
+	if ref.flags&pictDefCustomColors != 0 && len(data) >= width {
+		data = data[width:]
+	}
+
+	_, transparent := alphaTransparentForFlags(ref.flags)
+	if !transparent {
+		return len(data)
+	}
+
+	col := colLoc.colorBytes
+	count := 0
+	for _, idx := range data {
+		if col[idx] != 0 {
+			count++
+		}
+	}
+	return count
+}
+
 // applyCustomPalette replaces entries in col according to mapping and custom.
 // mapping holds color table indices for each customizable slot while custom
 // provides the new palette indices supplied by the server for those slots.

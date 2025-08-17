@@ -1,7 +1,6 @@
 package main
 
 import (
-	"container/list"
 	"runtime"
 	"time"
 
@@ -21,11 +20,6 @@ func clearCaches() {
 	pixelCountMu.Lock()
 	pixelCountCache = make(map[uint16]int)
 	pixelCountMu.Unlock()
-
-	pixelDataMu.Lock()
-	pixelDataCache = make(map[uint16]*list.Element)
-	pixelDataList.Init()
-	pixelDataMu.Unlock()
 
 	soundMu.Lock()
 	pcmCache = make(map[uint16][]byte)

@@ -2,11 +2,9 @@ package main
 
 import (
 	"bytes"
-	"container/list"
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"image"
 	"math"
 	"sort"
 	"strings"
@@ -158,97 +156,30 @@ func picturesSummary(pics []framePicture) string {
 	return buf.String()
 }
 
-var pixelCountMu sync.RWMutex
-var pixelCountCache = make(map[uint16]int)
-
-// pixelDataCache caches raw pixel data for images so that subsequent
-// nonTransparentPixels calls do not need to read back from the GPU.
-// Reading pixels triggers a GPU stall, so we do it once per image and reuse
-// the cached slice thereafter. To prevent unbounded memory growth the cache
-// is capped at a fixed number of entries and evicts least-recently-used
-// items when full.
-const pixelDataCacheLimit = 1280
-
-type pixelDataEntry struct {
-	id   uint16
-	data []byte
-}
-
 var (
-	pixelDataMu    sync.Mutex
-	pixelDataCache = make(map[uint16]*list.Element)
-	pixelDataList  = list.New()
+	pixelCountMu    sync.RWMutex
+	pixelCountCache = make(map[uint16]int)
 )
 
 // nonTransparentPixels returns the number of non-transparent pixels for the
-// given picture ID. The result is cached after the first computation. When
-// possible, it uses raw pixel slices for faster counting and falls back to the
-// generic img.At path otherwise.
+// given picture ID. When CL_Images data is available it avoids GPU readbacks
+// by using the decoded pixel data directly and falls back to a generic path
+// otherwise.
 func nonTransparentPixels(id uint16) int {
-	pixelCountMu.RLock()
 	if !gs.NoCaching {
+		pixelCountMu.RLock()
 		if c, ok := pixelCountCache[id]; ok {
 			pixelCountMu.RUnlock()
 			return c
 		}
+		pixelCountMu.RUnlock()
 	}
-	pixelCountMu.RUnlock()
 
-	var img image.Image = loadImage(id)
-	bounds := img.Bounds()
 	count := 0
-
-	switch src := img.(type) {
-	case *ebiten.Image:
-		// Fast path: read raw pixels once and optionally cache them.
-		w, h := bounds.Dx(), bounds.Dy()
-		var buf []byte
-		if gs.NoCaching {
-			buf = make([]byte, 4*w*h)
-			src.ReadPixels(buf)
-		} else {
-			pixelDataMu.Lock()
-			if elem, ok := pixelDataCache[id]; ok {
-				entry := elem.Value.(*pixelDataEntry)
-				if len(entry.data) < 4*w*h {
-					entry.data = make([]byte, 4*w*h)
-					src.ReadPixels(entry.data)
-				}
-				buf = entry.data
-				pixelDataList.MoveToFront(elem)
-			} else {
-				buf = make([]byte, 4*w*h)
-				src.ReadPixels(buf)
-				elem := pixelDataList.PushFront(&pixelDataEntry{id: id, data: buf})
-				pixelDataCache[id] = elem
-				if pixelDataList.Len() > pixelDataCacheLimit {
-					if back := pixelDataList.Back(); back != nil {
-						pixelDataList.Remove(back)
-						e := back.Value.(*pixelDataEntry)
-						delete(pixelDataCache, e.id)
-					}
-				}
-			}
-			pixelDataMu.Unlock()
-		}
-		for i := 3; i < len(buf); i += 4 {
-			if buf[i] != 0 {
-				count++
-			}
-		}
-	case *image.RGBA:
-		// Fast path for RGBA images: directly access the Pix slice.
-		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-			i := (y-bounds.Min.Y)*src.Stride + (bounds.Min.X * 4)
-			for x := bounds.Min.X; x < bounds.Max.X; x++ {
-				if src.Pix[i+3] != 0 {
-					count++
-				}
-				i += 4
-			}
-		}
-	default:
-		// Fallback: use the image's At method.
+	if clImages != nil {
+		count = clImages.NonTransparentPixels(uint32(id))
+	} else if img := loadImage(id); img != nil {
+		bounds := img.Bounds()
 		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 			for x := bounds.Min.X; x < bounds.Max.X; x++ {
 				_, _, _, a := img.At(x, y).RGBA()
