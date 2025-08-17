@@ -1157,8 +1157,20 @@ func drawMobile(screen *ebiten.Image, ox, oy int, m frameMobile, descMap map[uin
 		if d, ok := descMap[m.Index]; ok {
 			alpha := uint8(gs.NameBgOpacity * 255)
 			if d.Name != "" {
+				style := styleRegular
+				playersMu.RLock()
+				if p, ok := players[d.Name]; ok {
+					if p.Sharing && p.Sharee {
+						style = styleBoldItalic
+					} else if p.Sharing {
+						style = styleBold
+					} else if p.Sharee {
+						style = styleItalic
+					}
+				}
+				playersMu.RUnlock()
 				// Prefer cached name tag if parameters match current settings.
-				if m.nameTag != nil && m.nameTagKey.FontGen == fontGen && m.nameTagKey.Opacity == alpha && m.nameTagKey.Text == d.Name && m.nameTagKey.Colors == m.Colors {
+				if m.nameTag != nil && m.nameTagKey.FontGen == fontGen && m.nameTagKey.Opacity == alpha && m.nameTagKey.Text == d.Name && m.nameTagKey.Colors == m.Colors && m.nameTagKey.Style == style {
 					top := y + int(20*gs.GameScale)
 					left := x - m.nameTagW/2
 					op := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
@@ -1168,7 +1180,16 @@ func drawMobile(screen *ebiten.Image, ox, oy int, m frameMobile, descMap map[uin
 					textClr, bgClr, frameClr := mobileNameColors(m.Colors)
 					bgClr.A = alpha
 					frameClr.A = alpha
-					w, h := text.Measure(d.Name, mainFont, 0)
+					face := mainFont
+					switch style {
+					case styleBold:
+						face = mainFontBold
+					case styleItalic:
+						face = mainFontItalic
+					case styleBoldItalic:
+						face = mainFontBoldItalic
+					}
+					w, h := text.Measure(d.Name, face, 0)
 					iw := int(math.Ceil(w))
 					ih := int(math.Ceil(h))
 					top := y + int(20*gs.GameScale)
@@ -1182,7 +1203,7 @@ func drawMobile(screen *ebiten.Image, ox, oy int, m frameMobile, descMap map[uin
 					opTxt := &text.DrawOptions{}
 					opTxt.GeoM.Translate(float64(left+2), float64(top+2))
 					opTxt.ColorScale.ScaleWithColor(textClr)
-					text.Draw(screen, d.Name, mainFont, opTxt)
+					text.Draw(screen, d.Name, face, opTxt)
 				}
 			} else {
 				back := int((m.Colors >> 4) & 0x0f)

@@ -56,7 +56,15 @@ type nameTagKey struct {
 	Colors  uint8
 	Opacity uint8
 	FontGen uint32
+	Style   uint8
 }
+
+const (
+	styleRegular uint8 = iota
+	styleBold
+	styleItalic
+	styleBoldItalic
+)
 
 const poseDead = 32
 const maxInterpPixels = 64
@@ -327,14 +335,23 @@ func mobileVisible(m frameMobile, descByIndex map[uint8]frameDescriptor) bool {
 
 // buildNameTagImage creates a cached image for a mobile name tag using the
 // current font and settings. Returns the image and its width/height in pixels.
-func buildNameTagImage(name string, colorCode uint8, opacity uint8) (*ebiten.Image, int, int) {
+func buildNameTagImage(name string, colorCode uint8, opacity uint8, style uint8) (*ebiten.Image, int, int) {
 	if name == "" {
 		return nil, 0, 0
 	}
 	textClr, bgClr, frameClr := mobileNameColors(colorCode)
 	bgClr.A = opacity
 	frameClr.A = opacity
-	w, h := text.Measure(name, mainFont, 0)
+	face := mainFont
+	switch style {
+	case styleBold:
+		face = mainFontBold
+	case styleItalic:
+		face = mainFontItalic
+	case styleBoldItalic:
+		face = mainFontBoldItalic
+	}
+	w, h := text.Measure(name, face, 0)
 	iw := int(math.Ceil(w))
 	ih := int(math.Ceil(h))
 	if iw <= 0 || ih <= 0 {
@@ -352,7 +369,7 @@ func buildNameTagImage(name string, colorCode uint8, opacity uint8) (*ebiten.Ima
 	opTxt := &text.DrawOptions{}
 	opTxt.GeoM.Translate(2, 2)
 	opTxt.ColorScale.ScaleWithColor(textClr)
-	text.Draw(img, name, mainFont, opTxt)
+	text.Draw(img, name, face, opTxt)
 	return img, iw + 5, ih
 }
 
@@ -1042,11 +1059,24 @@ func parseDrawState(data []byte) error {
 			continue
 		}
 		if d, ok := state.descriptors[m.Index]; ok && d.Name != "" {
+			style := styleRegular
+			playersMu.RLock()
+			if p, ok := players[d.Name]; ok {
+				if p.Sharing && p.Sharee {
+					style = styleBoldItalic
+				} else if p.Sharing {
+					style = styleBold
+				} else if p.Sharee {
+					style = styleItalic
+				}
+			}
+			playersMu.RUnlock()
 			key := nameTagKey{
 				Text:    d.Name,
 				Colors:  m.Colors,
 				Opacity: uint8(gs.NameBgOpacity*255 + 0.5),
 				FontGen: fontGen,
+				Style:   style,
 			}
 			if prev, ok := state.mobiles[m.Index]; ok && prev.nameTag != nil && prev.nameTagKey == key {
 				m.nameTag = prev.nameTag
@@ -1054,7 +1084,7 @@ func parseDrawState(data []byte) error {
 				m.nameTagH = prev.nameTagH
 				m.nameTagKey = prev.nameTagKey
 			} else {
-				img, iw, ih := buildNameTagImage(d.Name, m.Colors, key.Opacity)
+				img, iw, ih := buildNameTagImage(d.Name, m.Colors, key.Opacity, style)
 				m.nameTag = img
 				m.nameTagW = iw
 				m.nameTagH = ih
