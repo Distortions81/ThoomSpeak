@@ -200,7 +200,7 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 	helpBtn.FontSize = toolFontSize
 	helpEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
-			helpWin.ToggleNear(ev.Item)
+			toggleHelpWindow(ev.Item)
 		}
 	}
 	row1.AddItem(helpBtn)
@@ -2476,7 +2476,7 @@ func makeWindowsWindow() {
 	helpBoxEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventCheckboxChanged {
 			if ev.Checked {
-				helpWin.MarkOpenNear(ev.Item)
+				openHelpWindow(ev.Item)
 			} else {
 				helpWin.Close()
 			}

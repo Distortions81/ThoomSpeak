@@ -21,7 +21,32 @@ func initHelpUI() {
 		return
 	}
 	helpWin, helpList, _ = makeTextWindow("Help", eui.HZoneCenter, eui.VZoneMiddleTop, false)
+	helpWin.AutoSize = true
 	helpLines = strings.Split(strings.ReplaceAll(helpText, "\r\n", "\n"), "\n")
 	helpWin.OnResize = func() { updateTextWindow(helpWin, helpList, nil, helpLines, 15, "") }
+}
+
+func openHelpWindow(anchor *eui.ItemData) {
+	if helpWin == nil {
+		return
+	}
 	updateTextWindow(helpWin, helpList, nil, helpLines, 15, "")
+	if anchor != nil {
+		helpWin.MarkOpenNear(anchor)
+	} else {
+		helpWin.MarkOpen()
+	}
+	updateTextWindow(helpWin, helpList, nil, helpLines, 15, "")
+	helpWin.Refresh()
+}
+
+func toggleHelpWindow(anchor *eui.ItemData) {
+	if helpWin == nil {
+		return
+	}
+	if helpWin.IsOpen() {
+		helpWin.Close()
+		return
+	}
+	openHelpWindow(anchor)
 }
