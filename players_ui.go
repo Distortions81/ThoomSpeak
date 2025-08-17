@@ -3,10 +3,12 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"math"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"gothoom/eui"
@@ -18,6 +20,21 @@ import (
 var playersWin *eui.WindowData
 var playersList *eui.ItemData
 var playersDirty bool
+
+var (
+	boldSrc       *text.GoTextFaceSource
+	italicSrc     *text.GoTextFaceSource
+	boldItalicSrc *text.GoTextFaceSource
+	fontSrcOnce   sync.Once
+)
+
+func ensureShareFonts() {
+	fontSrcOnce.Do(func() {
+		boldSrc, _ = text.NewGoTextFaceSource(bytes.NewReader(notoSansBold))
+		italicSrc, _ = text.NewGoTextFaceSource(bytes.NewReader(notoSansItalic))
+		boldItalicSrc, _ = text.NewGoTextFaceSource(bytes.NewReader(notoSansBoldItalic))
+	})
+}
 
 // defaultMobilePictID returns a fallback CL_Images mobile pict ID for the
 // given gender when a player's specific PictID is unknown. Values are chosen
@@ -39,19 +56,13 @@ func updatePlayersWindow() {
 		return
 	}
 
-	// Gather current players and filter to non-NPCs with names.
+	// Gather current players and sort by last seen (most recent first).
 	ps := getPlayers()
-	// Sort: online (recently seen and not explicitly offline) first, by name; offline last, by name.
 	sort.Slice(ps, func(i, j int) bool {
-		staleI := time.Since(ps[i].LastSeen) > 5*time.Minute
-		staleJ := time.Since(ps[j].LastSeen) > 5*time.Minute
-		offI := ps[i].Offline || staleI
-		offJ := ps[j].Offline || staleJ
-		if offI != offJ {
-			return !offI && offJ
+		if ps[i].LastSeen.Equal(ps[j].LastSeen) {
+			return ps[i].Name < ps[j].Name
 		}
-		// Both same offline status: sort by name
-		return ps[i].Name < ps[j].Name
+		return ps[i].LastSeen.After(ps[j].LastSeen)
 	})
 	exiles := make([]Player, 0, len(ps))
 	shareCount, shareeCount := 0, 0
@@ -105,6 +116,8 @@ func updatePlayersWindow() {
 	metrics := goFace.Metrics()
 	linePx := math.Ceil(metrics.HAscent + metrics.HDescent + 2) // +2 px padding
 	rowUnits := float32(linePx) / ui
+	ensureShareFonts()
+	faceSize := facePx + 2
 
 	// Rebuild contents: header + one row per player
 	// Layout per row: [avatar (or default/blank)] [profession (or blank)] [name]
@@ -208,6 +221,20 @@ func updatePlayersWindow() {
 		t, _ := eui.NewText()
 		t.Text = name
 		t.FontSize = float32(fontSize)
+		switch {
+		case p.Sharee && p.Sharing:
+			if boldItalicSrc != nil {
+				t.Face = &text.GoTextFace{Source: boldItalicSrc, Size: faceSize}
+			}
+		case p.Sharee:
+			if boldSrc != nil {
+				t.Face = &text.GoTextFace{Source: boldSrc, Size: faceSize}
+			}
+		case p.Sharing:
+			if italicSrc != nil {
+				t.Face = &text.GoTextFace{Source: italicSrc, Size: faceSize}
+			}
+		}
 		// Dim the name when fallen or stale/offline.
 		if p.Dead || offline {
 			t.TextColor = eui.NewColor(180, 180, 180, 255)
