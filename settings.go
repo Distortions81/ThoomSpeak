@@ -14,6 +14,15 @@ import (
 
 const SETTINGS_VERSION = 4
 
+type BarPlacement int
+
+const (
+	BarPlacementBottom BarPlacement = iota
+	BarPlacementLowerLeft
+	BarPlacementLowerRight
+	BarPlacementUpperRight
+)
+
 var gs settings = gsdef
 
 var gsdef settings = settings{
@@ -48,6 +57,7 @@ var gsdef settings = settings{
 	Volume:            0.125,
 	Mute:              false,
 	GameScale:         2,
+	BarPlacement:      BarPlacementBottom,
 	Theme:             "",
 	MessagesToConsole: false,
 	WindowTiling:      false,
@@ -114,6 +124,7 @@ type settings struct {
 	Mute              bool
 	AnyGameWindowSize bool // allow arbitrary game window sizes
 	GameScale         float64
+	BarPlacement      BarPlacement
 	Theme             string
 	MessagesToConsole bool
 	WindowTiling      bool
