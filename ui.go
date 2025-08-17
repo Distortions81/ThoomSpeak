@@ -54,6 +54,7 @@ var windowsPlayersCB *eui.ItemData
 var windowsInventoryCB *eui.ItemData
 var windowsChatCB *eui.ItemData
 var windowsConsoleCB *eui.ItemData
+var windowsHelpCB *eui.ItemData
 var hudWin *eui.WindowData
 var rightHandImg *eui.ItemData
 var leftHandImg *eui.ItemData
@@ -106,6 +107,10 @@ func init() {
 			windowsConsoleCB.Checked = consoleWin != nil && consoleWin.IsOpen()
 			windowsConsoleCB.Dirty = true
 		}
+		if windowsHelpCB != nil {
+			windowsHelpCB.Checked = helpWin != nil && helpWin.IsOpen()
+			windowsHelpCB.Dirty = true
+		}
 		if windowsWin != nil {
 			windowsWin.Refresh()
 		}
@@ -138,10 +143,10 @@ func initUI() {
 	makeSettingsWindow()
 	makeQualityWindow()
 	makeDebugWindow()
+	initHelpUI()
 	makeWindowsWindow()
 	makeInventoryWindow()
 	makePlayersWindow()
-	makeHelpWindow()
 	makeToolbar()
 
 	// Load any persisted players data (e.g., from prior sessions) so
@@ -2387,6 +2392,22 @@ func makeWindowsWindow() {
 	}
 	flow.AddItem(consoleBox)
 
+	helpBox, helpBoxEvents := eui.NewCheckbox()
+	windowsHelpCB = helpBox
+	helpBox.Text = "Help"
+	helpBox.Size = eui.Point{X: 128, Y: 24}
+	helpBox.Checked = helpWin != nil && helpWin.IsOpen()
+	helpBoxEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			if ev.Checked {
+				helpWin.MarkOpenNear(ev.Item)
+			} else {
+				helpWin.Close()
+			}
+		}
+	}
+	flow.AddItem(helpBox)
+
 	windowsWin.AddItem(flow)
 	windowsWin.AddWindow(false)
 
@@ -2409,35 +2430,4 @@ func makePlayersWindow() {
 	// Refresh contents on resize so word-wrapping and row sizing stay correct.
 	playersWin.OnResize = func() { updatePlayersWindow() }
 	updatePlayersWindow()
-}
-
-func makeHelpWindow() {
-	if helpWin != nil {
-		return
-	}
-	helpWin = eui.NewWindow()
-	helpWin.Title = "Help"
-	helpWin.Closable = true
-	helpWin.Resizable = false
-	helpWin.AutoSize = true
-	helpWin.Movable = true
-	//helpWin.SetZone(eui.HZoneCenterLeft, eui.VZoneMiddleTop)
-	helpFlow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
-	helpTexts := []string{
-		"WASD or Arrow Keys - Walk",
-		"Shift + Movement - Run",
-		"Left Click - Walk toward cursor",
-		"Click-to-Toggle Walk - Left click toggles walking",
-		"Enter - Start typing / send command",
-		"Escape - Cancel typing",
-	}
-	for _, line := range helpTexts {
-		t, _ := eui.NewText()
-		t.Text = line
-		t.Size = eui.Point{X: 300, Y: 24}
-		t.FontSize = 15
-		helpFlow.AddItem(t)
-	}
-	helpWin.AddItem(helpFlow)
-	helpWin.AddWindow(false)
 }
