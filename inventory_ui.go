@@ -199,7 +199,7 @@ func updateInventoryWindow() {
 		if anyEquipped[id] && slot >= 0 && slot < len(slotNames) {
 			loc := fmt.Sprintf("[%v]", TitleCaser.String(slotNames[slot]))
 			locW, _ := text.Measure(loc, face, 0)
-			locWU := float32(math.Ceil(locW / uiScale))
+			locWU := float32(math.Ceil(locW / float64(uiScale)))
 			if availName > locWU {
 				availName -= locWU
 				lt, _ = eui.NewText()
