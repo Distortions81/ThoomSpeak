@@ -593,9 +593,7 @@ func (g *Game) Update() error {
 	}
 
 	if inpututil.IsKeyJustPressed(ebiten.KeyF1) {
-		if helpWin != nil {
-			helpWin.Toggle()
-		}
+		toggleHelpWindow(nil)
 	}
 
 	/* WASD / ARROWS */
