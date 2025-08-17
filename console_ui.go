@@ -20,12 +20,8 @@ func updateConsoleWindow() {
 	msgs := getConsoleMessages()
 	updateTextWindow(consoleWin, messagesFlow, inputFlow, msgs, gs.ConsoleFontSize, inputMsg)
 	if inputActive {
-		if inputFlow != nil && len(inputFlow.Contents) > 0 {
-			maxScroll := inputFlow.Contents[0].Size.Y - inputFlow.Size.Y
-			if maxScroll < 0 {
-				maxScroll = 0
-			}
-			inputFlow.Scroll.Y = maxScroll
+		if inputFlow != nil {
+			inputFlow.Scroll.Y = 1e9
 		}
 		if consoleWin != nil {
 			consoleWin.Refresh()

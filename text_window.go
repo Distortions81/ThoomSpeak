@@ -72,7 +72,7 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 		goFace = &text.GoTextFace{Size: facePx}
 	}
 	metrics := goFace.Metrics()
-	linePx := math.Ceil(metrics.HAscent + metrics.HDescent + 2) // +2 px padding
+	linePx := math.Ceil(metrics.HAscent + metrics.HDescent + metrics.HLineGap + 2) // +2 px padding
 	rowUnits := float32(linePx) / ui
 
 	// Determine scrollbar width in pixels so text doesn't render underneath it.
@@ -83,7 +83,7 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 
 	// Prepare wrapping parameters: use the same face for measurement.
 	var face text.Face = goFace
-	wrapWidthPx := float64(clientWAvail - sb - 3*pad)
+	wrapWidthPx := float64(clientWAvail - sb)
 	if wrapWidthPx < 0 {
 		wrapWidthPx = 0
 	}
@@ -103,11 +103,15 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 			}
 			list.Contents[i].Size.Y = rowUnits * float32(linesN)
 			list.Contents[i].Size.X = clientWAvail - sb
+			list.Contents[i].Position = eui.Point{}
+			list.Contents[i].Margin = 0
 		} else {
 			t, _ := eui.NewText()
 			t.Text = wrapped
 			t.FontSize = float32(fontSize)
 			t.Size = eui.Point{X: clientWAvail - sb, Y: rowUnits * float32(linesN)}
+			t.Position = eui.Point{}
+			t.Margin = 0
 			// Append to maintain ordering with the msgs index
 			list.AddItem(t)
 		}
@@ -135,6 +139,8 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 			t.FontSize = float32(fontSize)
 			t.Size = eui.Point{X: clientWAvail - sb, Y: rowUnits * float32(inLinesN)}
 			t.Filled = true
+			t.Position = eui.Point{}
+			t.Margin = 0
 			input.AddItem(t)
 		} else {
 			if input.Contents[0].Text != wrappedIn || input.Contents[0].FontSize != float32(fontSize) {
@@ -143,12 +149,10 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 			}
 			input.Contents[0].Size.X = clientWAvail - sb
 			input.Contents[0].Size.Y = rowUnits * float32(inLinesN)
+			input.Contents[0].Position = eui.Point{}
+			input.Contents[0].Margin = 0
 		}
-		maxScroll := input.Contents[0].Size.Y - input.Size.Y
-		if maxScroll < 0 {
-			maxScroll = 0
-		}
-		input.Scroll.Y = maxScroll
+		input.Scroll.Y = 1e9
 	}
 
 	if win != nil {
