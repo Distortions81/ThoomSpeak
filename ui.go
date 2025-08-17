@@ -1128,6 +1128,7 @@ func makeSettingsWindow() {
 	}
 	left.AddItem(barOpacitySlider)
 
+
 	label, _ = eui.NewText()
 	label.Text = "\nWindow Behavior:"
 	label.FontSize = 15
@@ -1277,6 +1278,18 @@ func makeSettingsWindow() {
 		}
 		right.AddItem(radio)
 	}
+
+	barColorCB, barColorEvents := eui.NewCheckbox()
+	barColorCB.Text = "Color bars by value"
+	barColorCB.Size = eui.Point{X: leftW, Y: 24}
+	barColorCB.Checked = gs.BarColorByValue
+	barColorEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			gs.BarColorByValue = ev.Checked
+			settingsDirty = true
+		}
+	}
+	right.AddItem(barColorCB)
 
 	label, _ = eui.NewText()
 	label.Text = "\nText Sizes:"
