@@ -1350,10 +1350,11 @@ func drawPicture(screen *ebiten.Image, ox, oy int, p framePicture, alpha float64
 		}
 		screen.DrawImage(src, op)
 
+		// Optionally reveal silhouettes of mobiles hidden behind this object.
 		if gs.ShowHiddenChars {
 			for _, m := range mobiles {
 				if m.H == p.H && m.V == p.V {
-					if d, ok := descMap[m.Index]; ok && d.Plane <= p.Plane {
+					if d, ok := descMap[m.Index]; ok && d.Plane < p.Plane {
 						colors := d.Colors
 						playersMu.RLock()
 						if pl, ok := players[d.Name]; ok && len(pl.Colors) > 0 {
@@ -1362,18 +1363,24 @@ func drawPicture(screen *ebiten.Image, ox, oy int, p framePicture, alpha float64
 						playersMu.RUnlock()
 						mImg := loadMobileFrame(d.PictID, m.State, colors)
 						if mImg != nil {
-							mask := ebiten.NewImage(drawW, drawH)
-							mask.DrawImage(src, nil)
-							mop := &ebiten.DrawImageOptions{CompositeMode: ebiten.CompositeModeSourceIn, Filter: ebiten.FilterNearest, DisableMipmaps: true}
-							mop.ColorScale.Scale(0, 0, 0, float32(gs.HiddenCharOpacity))
-							mx := float64(drawW-mImg.Bounds().Dx()) / 2
-							my := float64(drawH-mImg.Bounds().Dy()) / 2
-							mop.GeoM.Translate(mx, my)
-							mask.DrawImage(mImg, mop)
-							opSil := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
-							opSil.GeoM.Scale(sx, sy)
-							opSil.GeoM.Translate(tx, ty)
-							screen.DrawImage(mask, opSil)
+							// Show the silhouette when the object's and mobile's bounding boxes intersect.
+							objRect := image.Rect(x-drawW/2, y-drawH/2, x+drawW/2, y+drawH/2)
+							mW, mH := mImg.Bounds().Dx(), mImg.Bounds().Dy()
+							mobRect := image.Rect(x-mW/2, y-mH/2, x+mW/2, y+mH/2)
+							if objRect.Overlaps(mobRect) {
+								mask := ebiten.NewImage(drawW, drawH)
+								mask.DrawImage(src, nil)
+								mop := &ebiten.DrawImageOptions{CompositeMode: ebiten.CompositeModeSourceIn, Filter: ebiten.FilterNearest, DisableMipmaps: true}
+								mop.ColorScale.Scale(0, 0, 0, float32(gs.HiddenCharOpacity))
+								mx := float64(drawW-mImg.Bounds().Dx()) / 2
+								my := float64(drawH-mImg.Bounds().Dy()) / 2
+								mop.GeoM.Translate(mx, my)
+								mask.DrawImage(mImg, mop)
+								opSil := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
+								opSil.GeoM.Scale(sx, sy)
+								opSil.GeoM.Translate(tx, ty)
+								screen.DrawImage(mask, opSil)
+							}
 						}
 					}
 				}
