@@ -1184,6 +1184,37 @@ func makeSettingsWindow() {
 	right.AddItem(renderScale)
 
 	label, _ = eui.NewText()
+	label.Text = "\nStatus Bar Placement:"
+	label.FontSize = 15
+	label.Size = eui.Point{X: rightW, Y: 50}
+	right.AddItem(label)
+
+	placements := []struct {
+		name  string
+		value BarPlacement
+	}{
+		{"Bottom", BarPlacementBottom},
+		{"Lower Left", BarPlacementLowerLeft},
+		{"Lower Right", BarPlacementLowerRight},
+		{"Upper Right", BarPlacementUpperRight},
+	}
+	for _, p := range placements {
+		p := p
+		radio, radioEvents := eui.NewRadio()
+		radio.Text = p.name
+		radio.RadioGroup = "status-bar-placement"
+		radio.Size = eui.Point{X: rightW, Y: 24}
+		radio.Checked = gs.BarPlacement == p.value
+		radioEvents.Handle = func(ev eui.UIEvent) {
+			if ev.Type == eui.EventRadioSelected {
+				gs.BarPlacement = p.value
+				settingsDirty = true
+			}
+		}
+		right.AddItem(radio)
+	}
+
+	label, _ = eui.NewText()
 	label.Text = "\nText Sizes:"
 	label.FontSize = 15
 	label.Size = eui.Point{X: leftW, Y: 50}
