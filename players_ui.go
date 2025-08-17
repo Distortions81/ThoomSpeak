@@ -106,7 +106,7 @@ func updatePlayersWindow() {
 		fontSize = gs.ConsoleFontSize
 	}
 	ui := eui.UIScale()
-	facePx := float64(float32(fontSize) * ui)
+	facePx := float64(float32(fontSize)*ui) + 2
 	var goFace *text.GoTextFace
 	if src := eui.FontSource(); src != nil {
 		goFace = &text.GoTextFace{Source: src, Size: facePx}
@@ -114,10 +114,8 @@ func updatePlayersWindow() {
 		goFace = &text.GoTextFace{Size: facePx}
 	}
 	metrics := goFace.Metrics()
-	linePx := math.Ceil(metrics.HAscent + metrics.HDescent + 2) // +2 px padding
-	rowUnits := float32(linePx) / ui
+	rowUnits := float32(math.Ceil(metrics.HAscent+metrics.HDescent)) / ui
 	ensureShareFonts()
-	faceSize := facePx + 2
 
 	// Rebuild contents: header + one row per player
 	// Layout per row: [avatar (or default/blank)] [profession (or blank)] [name]
@@ -224,15 +222,15 @@ func updatePlayersWindow() {
 		switch {
 		case p.Sharee && p.Sharing:
 			if boldItalicSrc != nil {
-				t.Face = &text.GoTextFace{Source: boldItalicSrc, Size: faceSize}
-			}
-		case p.Sharee:
-			if boldSrc != nil {
-				t.Face = &text.GoTextFace{Source: boldSrc, Size: faceSize}
+				t.Face = &text.GoTextFace{Source: boldItalicSrc, Size: facePx}
 			}
 		case p.Sharing:
+			if boldSrc != nil {
+				t.Face = &text.GoTextFace{Source: boldSrc, Size: facePx}
+			}
+		case p.Sharee:
 			if italicSrc != nil {
-				t.Face = &text.GoTextFace{Source: italicSrc, Size: faceSize}
+				t.Face = &text.GoTextFace{Source: italicSrc, Size: facePx}
 			}
 		}
 		// Dim the name when fallen or stale/offline.
