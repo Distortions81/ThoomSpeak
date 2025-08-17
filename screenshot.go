@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"image/png"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -18,7 +20,22 @@ func takeScreenshot() {
 		return
 	}
 	ts := time.Now().Format("2006-01-02-15-04-05")
-	fn := filepath.Join(dir, fmt.Sprintf("clan-lord-%s.png", ts))
+	buf := "clanlord-"
+	if clmov != "" {
+		clname := path.Base(clmov)
+		clname = strings.ToLower(clname)
+		clname = strings.TrimSuffix(clname, ".clmov")
+		cllen := len(clname)
+		if cllen > 16 {
+			clname = clname[:16]
+		}
+		buf = clname
+	}
+	if gs.LastCharacter != "" {
+		buf = gs.LastCharacter
+	}
+
+	fn := filepath.Join(dir, fmt.Sprintf("%v__%s.png", buf, ts))
 	f, err := os.Create(fn)
 	if err != nil {
 		logError("screenshot: create %v: %v", fn, err)
@@ -28,4 +45,5 @@ func takeScreenshot() {
 	if err := png.Encode(f, worldRT); err != nil {
 		logError("screenshot: encode %v: %v", fn, err)
 	}
+	consoleMessage("Screenshot saved.")
 }
