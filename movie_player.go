@@ -511,7 +511,9 @@ func maybeDecodeMessage(m []byte) {
 	if len(m) >= 2 && binary.BigEndian.Uint16(m[:2]) == 2 {
 		return
 	}
-	if txt := decodeMessage(m); txt != "" {
+	// decodeMessage mutates the message body; use a copy to keep the stored
+	// frame unchanged.
+	if txt := decodeMessage(append([]byte(nil), m...)); txt != "" {
 		_ = txt
 	}
 }

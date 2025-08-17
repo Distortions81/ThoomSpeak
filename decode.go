@@ -288,47 +288,35 @@ func decodeBubble(data []byte) (verb, text, name, lang string, code uint8, targe
 	return verb, text, name, lang, code, target
 }
 
+// decodeMessage extracts printable text from a raw server message. It operates
+// directly on m[16:], which may be modified during decoding (e.g., when
+// decrypting).
 func decodeMessage(m []byte) string {
 	if len(m) <= 16 {
 		return ""
 	}
-	data := append([]byte(nil), m[16:]...)
-	if len(data) > 0 && data[0] == 0xC2 {
-		if s := decodeBEPP(data); s != "" {
+	data := m[16:]
+	for attempt := 0; attempt < 2; attempt++ {
+		if len(data) > 0 && data[0] == 0xC2 {
+			if s := decodeBEPP(data); s != "" {
+				return s
+			}
+			return ""
+		}
+		if _, s, _, _, _, _ := decodeBubble(data); s != "" {
 			return s
 		}
-		return ""
-	}
-	if _, s, _, _, _, _ := decodeBubble(data); s != "" {
-		return s
-	}
-	if i := bytes.IndexByte(data, 0); i >= 0 {
-		data = data[:i]
-	}
-	if len(data) > 0 {
-		txt := decodeMacRoman(data)
-		if len([]rune(strings.TrimSpace(txt))) >= 4 {
-			return txt
+		if i := bytes.IndexByte(data, 0); i >= 0 {
+			data = data[:i]
 		}
-	}
-
-	simpleEncrypt(data)
-	if len(data) > 0 && data[0] == 0xC2 {
-		if s := decodeBEPP(data); s != "" {
-			return s
+		if len(data) > 0 {
+			txt := decodeMacRoman(data)
+			if len([]rune(strings.TrimSpace(txt))) >= 4 {
+				return txt
+			}
 		}
-		return ""
-	}
-	if _, s, _, _, _, _ := decodeBubble(data); s != "" {
-		return s
-	}
-	if i := bytes.IndexByte(data, 0); i >= 0 {
-		data = data[:i]
-	}
-	if len(data) > 0 {
-		txt := decodeMacRoman(data)
-		if len([]rune(strings.TrimSpace(txt))) >= 4 {
-			return txt
+		if attempt == 0 {
+			simpleEncrypt(data)
 		}
 	}
 	return ""
