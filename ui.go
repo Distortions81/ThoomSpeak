@@ -54,7 +54,6 @@ var windowsPlayersCB *eui.ItemData
 var windowsInventoryCB *eui.ItemData
 var windowsChatCB *eui.ItemData
 var windowsConsoleCB *eui.ItemData
-var toolbarWin *eui.WindowData
 var hudWin *eui.WindowData
 var rightHandImg *eui.ItemData
 var leftHandImg *eui.ItemData
@@ -713,6 +712,7 @@ func makeAddCharacterWindow() {
 	passInput, _ := eui.NewInput()
 	passInput.Label = "Password"
 	passInput.TextPtr = &addCharPass
+	passInput.HideText = true
 	passInput.Size = eui.Point{X: 200, Y: 24}
 	addCharPassInput = passInput
 	flow.AddItem(passInput)
@@ -1070,66 +1070,71 @@ func makeSettingsWindow() {
 	label.Size = eui.Point{X: rightW, Y: 50}
 	right.AddItem(label)
 
-	tilingCB, tilingEvents := eui.NewCheckbox()
-	tilingCB.Text = "Tiling window mode (buggy)"
-	tilingCB.Size = eui.Point{X: rightW, Y: 24}
-	tilingCB.Checked = gs.WindowTiling
-	tilingCB.Tooltip = "Prevent windows from overlapping"
-	tilingEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventCheckboxChanged {
-			gs.WindowTiling = ev.Checked
-			eui.SetWindowTiling(ev.Checked)
-			settingsDirty = true
+	/*
+		tilingCB, tilingEvents := eui.NewCheckbox()
+		tilingCB.Text = "Tiling window mode (buggy)"
+		tilingCB.Size = eui.Point{X: rightW, Y: 24}
+		tilingCB.Checked = gs.WindowTiling
+		tilingCB.Tooltip = "Prevent windows from overlapping"
+		tilingEvents.Handle = func(ev eui.UIEvent) {
+			if ev.Type == eui.EventCheckboxChanged {
+				gs.WindowTiling = ev.Checked
+				eui.SetWindowTiling(ev.Checked)
+				settingsDirty = true
+			}
 		}
-	}
-	right.AddItem(tilingCB)
+		right.AddItem(tilingCB)
 
-	snapCB, snapEvents := eui.NewCheckbox()
-	snapCB.Text = "Window snapping (buggy)"
-	snapCB.Size = eui.Point{X: rightW, Y: 24}
-	snapCB.Checked = gs.WindowSnapping
-	snapCB.Tooltip = "Snap windows to edges and others"
-	snapEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventCheckboxChanged {
-			gs.WindowSnapping = ev.Checked
-			eui.SetWindowSnapping(ev.Checked)
-			settingsDirty = true
+		snapCB, snapEvents := eui.NewCheckbox()
+		snapCB.Text = "Window snapping (buggy)"
+		snapCB.Size = eui.Point{X: rightW, Y: 24}
+		snapCB.Checked = gs.WindowSnapping
+		snapCB.Tooltip = "Snap windows to edges and others"
+		snapEvents.Handle = func(ev eui.UIEvent) {
+			if ev.Type == eui.EventCheckboxChanged {
+				gs.WindowSnapping = ev.Checked
+				eui.SetWindowSnapping(ev.Checked)
+				settingsDirty = true
+			}
 		}
-	}
-	right.AddItem(snapCB)
+		right.AddItem(snapCB)
+	*/
 
 	// Screen size settings in-place (moved from separate window)
-	uiScaleSlider, uiScaleEvents := eui.NewSlider()
-	uiScaleSlider.Label = "UI Scaling"
-	uiScaleSlider.MinValue = 1.0
-	uiScaleSlider.MaxValue = 2.5
-	uiScaleSlider.Value = float32(gs.UIScale)
-	pendingUIScale := gs.UIScale
-	uiScaleEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventSliderChanged {
-			pendingUIScale = float64(ev.Value)
-		}
-	}
+	/*
+				uiScaleSlider, uiScaleEvents := eui.NewSlider()
+				uiScaleSlider.Label = "UI Scaling"
+				uiScaleSlider.MinValue = 1.0
+				uiScaleSlider.MaxValue = 2.5
+				uiScaleSlider.Value = float32(gs.UIScale)
+				pendingUIScale := gs.UIScale
+				uiScaleEvents.Handle = func(ev eui.UIEvent) {
+					if ev.Type == eui.EventSliderChanged {
+						pendingUIScale = float64(ev.Value)
+					}
+				}
 
-	uiScaleApplyBtn, uiScaleApplyEvents := eui.NewButton()
-	uiScaleApplyBtn.Text = "Apply UI Scale"
-	uiScaleApplyBtn.Size = eui.Point{X: 140, Y: 24}
-	uiScaleApplyEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventClick {
-			gs.UIScale = pendingUIScale
-			eui.SetUIScale(float32(gs.UIScale))
-			updateGameWindowSize()
-			settingsDirty = true
-		}
-	}
+			uiScaleApplyBtn, uiScaleApplyEvents := eui.NewButton()
+			uiScaleApplyBtn.Text = "Apply UI Scale"
+			uiScaleApplyBtn.Size = eui.Point{X: 140, Y: 24}
+			uiScaleApplyEvents.Handle = func(ev eui.UIEvent) {
+				if ev.Type == eui.EventClick {
+					gs.UIScale = pendingUIScale
+					eui.SetUIScale(float32(gs.UIScale))
+					updateGameWindowSize()
+					settingsDirty = true
+				}
+			}
 
-	// Place the slider and button on the same row
-	uiScaleRow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
-	// Fit slider to remaining width in the row
-	uiScaleSlider.Size = eui.Point{X: rightW - uiScaleApplyBtn.Size.X - 10, Y: 24}
-	uiScaleRow.AddItem(uiScaleSlider)
-	uiScaleRow.AddItem(uiScaleApplyBtn)
-	right.AddItem(uiScaleRow)
+
+		// Place the slider and button on the same row
+		uiScaleRow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
+		// Fit slider to remaining width in the row
+		uiScaleSlider.Size = eui.Point{X: rightW - uiScaleApplyBtn.Size.X - 10, Y: 24}
+		uiScaleRow.AddItem(uiScaleSlider)
+		uiScaleRow.AddItem(uiScaleApplyBtn)
+		right.AddItem(uiScaleRow)
+	*/
 
 	fullscreenCB, fullscreenEvents := eui.NewCheckbox()
 	fullscreenCB.Text = "Fullscreen"
@@ -1146,19 +1151,19 @@ func makeSettingsWindow() {
 	right.AddItem(fullscreenCB)
 
 	renderScale, renderScaleEvents := eui.NewSlider()
-	renderScale.Label = "Render Scale"
+	renderScale.Label = "Render Size"
 	renderScale.MinValue = 1
 	renderScale.MaxValue = 4
 	renderScale.IntOnly = true
 	if gs.GameScale < 1 {
 		gs.GameScale = 1
 	}
-	if gs.GameScale > 10 {
-		gs.GameScale = 10
+	if gs.GameScale > 4 {
+		gs.GameScale = 4
 	}
 	renderScale.Value = float32(math.Round(gs.GameScale))
 	renderScale.Size = eui.Point{X: rightW - 10, Y: 24}
-	renderScale.Tooltip = "Game render zoom (1x–10x). In Integer mode uses nearest filtering."
+	renderScale.Tooltip = "Game render resolution (1x - 4x). Higher will be shaper on larger screens."
 	renderScaleEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
 			v := math.Round(float64(ev.Value))
@@ -1298,7 +1303,7 @@ func makeSettingsWindow() {
 	label, _ = eui.NewText()
 	label.Text = "\nOpacity Settings:"
 	label.FontSize = 15
-	label.Size = eui.Point{X: leftW, Y: 30}
+	label.Size = eui.Point{X: leftW, Y: 50}
 	left.AddItem(label)
 
 	bubbleOpSlider, bubbleOpEvents := eui.NewSlider()

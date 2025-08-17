@@ -264,9 +264,18 @@ func Update() error {
 	if focusedItem != nil {
 		for _, r := range ebiten.AppendInputChars(nil) {
 			if r >= 32 && r != 127 && r != '\r' && r != '\n' {
-				focusedItem.Text += string(r)
+				if focusedItem.HideText {
+					focusedItem.SecretText += string(r)
+					focusedItem.Text += "*"
+				} else {
+					focusedItem.Text += string(r)
+				}
 				if focusedItem.TextPtr != nil {
-					*focusedItem.TextPtr = focusedItem.Text
+					if focusedItem.HideText {
+						*focusedItem.TextPtr = focusedItem.SecretText
+					} else {
+						*focusedItem.TextPtr = focusedItem.Text
+					}
 				}
 				focusedItem.markDirty()
 				if focusedItem.Handler != nil {
@@ -277,6 +286,9 @@ func Update() error {
 		if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) {
 			runes := []rune(focusedItem.Text)
 			if len(runes) > 0 {
+				if focusedItem.HideText {
+					focusedItem.SecretText = string(runes[:len(runes)-1])
+				}
 				focusedItem.Text = string(runes[:len(runes)-1])
 				if focusedItem.TextPtr != nil {
 					*focusedItem.TextPtr = focusedItem.Text
