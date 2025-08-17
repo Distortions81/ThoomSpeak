@@ -7,13 +7,27 @@ import (
 	"time"
 
 	ttsspeech "github.com/go-tts/tts/pkg/speech"
+	"github.com/hajimehoshi/ebiten/v2/audio"
 	"github.com/hajimehoshi/ebiten/v2/audio/mp3"
 )
 
-var chatTTSMu sync.Mutex
+var (
+	chatTTSMu    sync.Mutex
+	ttsPlayers   = make(map[*audio.Player]struct{})
+	ttsPlayersMu sync.Mutex
+)
+
+func stopAllTTS() {
+	ttsPlayersMu.Lock()
+	defer ttsPlayersMu.Unlock()
+	for p := range ttsPlayers {
+		_ = p.Close()
+		delete(ttsPlayers, p)
+	}
+}
 
 func speakChatMessage(msg string) {
-	if audioContext == nil {
+	if audioContext == nil || blockTTS {
 		return
 	}
 	go func(text string) {
@@ -44,6 +58,11 @@ func speakChatMessage(msg string) {
 			logDebug("chat tts player: %v", err)
 			return
 		}
+
+		ttsPlayersMu.Lock()
+		ttsPlayers[p] = struct{}{}
+		ttsPlayersMu.Unlock()
+
 		vol := gs.ChatTTSVolume * gs.Volume
 		if gs.Mute {
 			vol = 0
@@ -54,5 +73,9 @@ func speakChatMessage(msg string) {
 			time.Sleep(100 * time.Millisecond)
 		}
 		_ = p.Close()
+
+		ttsPlayersMu.Lock()
+		delete(ttsPlayers, p)
+		ttsPlayersMu.Unlock()
 	}(msg)
 }

@@ -288,6 +288,7 @@ func (p *moviePlayer) makePlaybackWindow() {
 		}
 		// Stop any active sounds
 		stopAllSounds()
+		stopAllTTS()
 		// Cancel playback loop
 		if p.cancel != nil {
 			p.cancel()
@@ -435,11 +436,14 @@ func (p *moviePlayer) seek(idx int) {
 
 	// Stop any currently playing sounds so scrubbing is silent.
 	stopAllSounds()
+	stopAllTTS()
 	blockSound = true
 	blockBubbles = true
+	blockTTS = true
 	defer func() {
 		blockSound = false
 		blockBubbles = false
+		blockTTS = false
 	}()
 
 	if idx < 0 {
@@ -473,7 +477,7 @@ func (p *moviePlayer) seek(idx int) {
 			// without draw-state are encountered.
 			frameCounter++
 		}
-    maybeDecodeMessage(m)
+		maybeDecodeMessage(m)
 		if frameCounter%checkpointInterval == 0 {
 			last := p.checkpoints[len(p.checkpoints)-1]
 			if last.idx != frameCounter {

@@ -27,7 +27,7 @@ func chatMessage(msg string) {
 
 	updateChatWindow()
 
-	if gs.ChatTTS {
+	if gs.ChatTTS && !blockTTS {
 		speakChatMessage(msg)
 	}
 }
