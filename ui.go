@@ -142,6 +142,7 @@ func initUI() {
 	makeConsoleWindow()
 	makeSettingsWindow()
 	makeQualityWindow()
+	makeBubbleWindow()
 	makeDebugWindow()
 	initHelpUI()
 	makeWindowsWindow()
@@ -1282,21 +1283,6 @@ func makeSettingsWindow() {
 	label.Size = eui.Point{X: leftW, Y: 50}
 	left.AddItem(label)
 
-	chatFontSlider, chatFontEvents := eui.NewSlider()
-	chatFontSlider.Label = "Chat Bubble Font Size"
-	chatFontSlider.MinValue = 6
-	chatFontSlider.MaxValue = 48
-	chatFontSlider.Value = float32(gs.BubbleFontSize)
-	chatFontSlider.Size = eui.Point{X: leftW - 10, Y: 24}
-	chatFontEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventSliderChanged {
-			gs.BubbleFontSize = float64(ev.Value)
-			initFont()
-			settingsDirty = true
-		}
-	}
-	left.AddItem(chatFontSlider)
-
 	labelFontSlider, labelFontEvents := eui.NewSlider()
 	labelFontSlider.Label = "Name Font Size"
 	labelFontSlider.MinValue = 5
@@ -1399,20 +1385,6 @@ func makeSettingsWindow() {
 	label.Size = eui.Point{X: leftW, Y: 50}
 	left.AddItem(label)
 
-	bubbleOpSlider, bubbleOpEvents := eui.NewSlider()
-	bubbleOpSlider.Label = "Bubble Opacity"
-	bubbleOpSlider.MinValue = 0
-	bubbleOpSlider.MaxValue = 1
-	bubbleOpSlider.Value = float32(gs.BubbleOpacity)
-	bubbleOpSlider.Size = eui.Point{X: leftW - 10, Y: 24}
-	bubbleOpEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventSliderChanged {
-			gs.BubbleOpacity = float64(ev.Value)
-			settingsDirty = true
-		}
-	}
-	left.AddItem(bubbleOpSlider)
-
 	nameBgSlider, nameBgEvents := eui.NewSlider()
 	nameBgSlider.Label = "Name Background Opacity"
 	nameBgSlider.MinValue = 0
@@ -1494,6 +1466,16 @@ func makeSettingsWindow() {
 	}
 	right.AddItem(qualityBtn)
 
+	bubbleBtn, bubbleEvents := eui.NewButton()
+	bubbleBtn.Text = "Bubble Settings..."
+	bubbleBtn.Size = eui.Point{X: rightW, Y: 24}
+	bubbleEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			bubbleWin.ToggleNear(ev.Item)
+		}
+	}
+	right.AddItem(bubbleBtn)
+
 	label, _ = eui.NewText()
 	label.Text = ""
 	label.Size = eui.Point{X: rightW, Y: 15}
@@ -1551,6 +1533,9 @@ func resetAllSettings() {
 	}
 	if qualityWin != nil {
 		qualityWin.Refresh()
+	}
+	if bubbleWin != nil {
+		bubbleWin.Refresh()
 	}
 
 	// Rebuild the Settings window UI so control values match defaults
@@ -2186,6 +2171,67 @@ func makeQualityWindow() {
 	qualityWin.AddWindow(false)
 }
 
+func makeBubbleWindow() {
+	if bubbleWin != nil {
+		return
+	}
+	var width float32 = 250
+	bubbleWin = eui.NewWindow()
+	bubbleWin.Title = "Bubble Settings"
+	bubbleWin.Closable = true
+	bubbleWin.Resizable = false
+	bubbleWin.AutoSize = true
+	bubbleWin.Movable = true
+	bubbleWin.SetZone(eui.HZoneCenterLeft, eui.VZoneMiddleTop)
+
+	flow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
+
+	bubbleCB, bubbleEvents := eui.NewCheckbox()
+	bubbleCB.Text = "Message Bubbles"
+	bubbleCB.Size = eui.Point{X: width, Y: 24}
+	bubbleCB.Checked = gs.SpeechBubbles
+	bubbleCB.Tooltip = "Show speech bubbles in game"
+	bubbleEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			gs.SpeechBubbles = ev.Checked
+			settingsDirty = true
+		}
+	}
+	flow.AddItem(bubbleCB)
+
+	bubbleOpSlider, bubbleOpEvents := eui.NewSlider()
+	bubbleOpSlider.Label = "Bubble Opacity"
+	bubbleOpSlider.MinValue = 0
+	bubbleOpSlider.MaxValue = 1
+	bubbleOpSlider.Value = float32(gs.BubbleOpacity)
+	bubbleOpSlider.Size = eui.Point{X: width - 10, Y: 24}
+	bubbleOpEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			gs.BubbleOpacity = float64(ev.Value)
+			settingsDirty = true
+		}
+	}
+	flow.AddItem(bubbleOpSlider)
+
+	chatFontSlider, chatFontEvents := eui.NewSlider()
+	chatFontSlider.Label = "Chat Bubble Font Size"
+	chatFontSlider.MinValue = 6
+	chatFontSlider.MaxValue = 48
+	chatFontSlider.Value = float32(gs.BubbleFontSize)
+	chatFontSlider.Size = eui.Point{X: width - 10, Y: 24}
+	chatFontEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			gs.BubbleFontSize = float64(ev.Value)
+			initFont()
+			settingsDirty = true
+		}
+	}
+	flow.AddItem(chatFontSlider)
+
+	bubbleWin.AddItem(flow)
+	bubbleWin.AddWindow(false)
+}
+
 func makeDebugWindow() {
 	if debugWin != nil {
 		return
@@ -2201,19 +2247,6 @@ func makeDebugWindow() {
 	debugWin.SetZone(eui.HZoneCenterLeft, eui.VZoneMiddleTop)
 
 	debugFlow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
-
-	bubbleCB, bubbleEvents := eui.NewCheckbox()
-	bubbleCB.Text = "Message Bubbles"
-	bubbleCB.Size = eui.Point{X: width, Y: 24}
-	bubbleCB.Checked = gs.SpeechBubbles
-	bubbleCB.Tooltip = "Show speech bubbles in game"
-	bubbleEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventCheckboxChanged {
-			gs.SpeechBubbles = ev.Checked
-			settingsDirty = true
-		}
-	}
-	debugFlow.AddItem(bubbleCB)
 
 	nightCB, nightEvents := eui.NewCheckbox()
 	nightCB.Text = "Night Effect"

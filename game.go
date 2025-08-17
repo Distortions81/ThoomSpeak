@@ -178,6 +178,7 @@ var settingsWin *eui.WindowData
 var debugWin *eui.WindowData
 var qualityWin *eui.WindowData
 var graphicsWin *eui.WindowData
+var bubbleWin *eui.WindowData
 
 // Deprecated: sound settings window removed; kept other windows.
 var gameCtx context.Context
