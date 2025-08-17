@@ -25,17 +25,38 @@ func wrapText(s string, face text.Face, maxWidth float64) (int, []string) {
 		}
 		wordWidths := make([]float64, len(words))
 		for i, w := range words {
-			ww, _ := text.Measure(w+" ", face, 0)
+			ww, _ := text.Measure(w, face, 0)
 			wordWidths[i] = ww
 		}
 
 		var builder strings.Builder
-		builder.WriteString(words[0])
 		curWidth := wordWidths[0]
+		if curWidth > maxWidth {
+			runesBuffer = runesBuffer[:0]
+			partWidth := 0.0
+			for _, r := range words[0] {
+				rw, _ := text.Measure(string(r), face, 0)
+				if partWidth+rw > maxWidth && len(runesBuffer) > 0 {
+					part := string(runesBuffer)
+					if partWidth > maxUsed {
+						maxUsed = partWidth
+					}
+					lines = append(lines, part)
+					runesBuffer = runesBuffer[:0]
+					partWidth = 0
+				}
+				runesBuffer = append(runesBuffer, r)
+				partWidth += rw
+			}
+			builder.WriteString(string(runesBuffer))
+			curWidth = partWidth
+		} else {
+			builder.WriteString(words[0])
+		}
 
 		for i := 1; i < len(words); i++ {
 			w := words[i]
-			wWidth := wordWidths[i] + 2
+			wWidth := wordWidths[i]
 			candWidth := curWidth + spaceWidth + wWidth
 			if candWidth <= maxWidth {
 				builder.WriteByte(' ')
