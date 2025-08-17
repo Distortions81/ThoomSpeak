@@ -28,21 +28,34 @@ var gs settings = gsdef
 var gsdef settings = settings{
 	Version: SETTINGS_VERSION,
 
-	LastCharacter:     "",
-	ClickToToggle:     false,
-	KBWalkSpeed:       0.25,
-	MainFontSize:      8,
-	BubbleFontSize:    6,
-	ConsoleFontSize:   12,
-	ChatFontSize:      14,
-	InventoryFontSize: 18,
-	PlayersFontSize:   18,
-	BubbleOpacity:     0.7,
-	NameBgOpacity:     0.7,
-	BarOpacity:        0.5,
-	HiddenCharOpacity: 0.5,
-	SpeechBubbles:     true,
-	ShowHiddenChars:   true,
+	LastCharacter:      "",
+	ClickToToggle:      false,
+	KBWalkSpeed:        0.25,
+	MainFontSize:       8,
+	BubbleFontSize:     6,
+	ConsoleFontSize:    12,
+	ChatFontSize:       14,
+	InventoryFontSize:  18,
+	PlayersFontSize:    18,
+	BubbleOpacity:      0.7,
+	NameBgOpacity:      0.7,
+	BarOpacity:         0.5,
+	HiddenCharOpacity:  0.5,
+	SpeechBubbles:      true,
+	ShowHiddenChars:    true,
+	BubbleNormal:       true,
+	BubbleWhisper:      true,
+	BubbleYell:         true,
+	BubbleThought:      true,
+	BubbleRealAction:   true,
+	BubbleMonster:      true,
+	BubblePlayerAction: true,
+	BubblePonder:       true,
+	BubbleNarrate:      true,
+	BubbleSelf:         true,
+	BubbleOtherPlayers: true,
+	BubbleMonsters:     true,
+	BubbleNarration:    true,
 
 	MotionSmoothing:   true,
 	BlendMobiles:      false,
@@ -100,21 +113,34 @@ var gsdef settings = settings{
 type settings struct {
 	Version int
 
-	LastCharacter     string
-	ClickToToggle     bool
-	KBWalkSpeed       float64
-	MainFontSize      float64
-	BubbleFontSize    float64
-	ConsoleFontSize   float64
-	ChatFontSize      float64
-	InventoryFontSize float64
-	PlayersFontSize   float64
-	BubbleOpacity     float64
-	NameBgOpacity     float64
-	BarOpacity        float64
-	HiddenCharOpacity float64
-	SpeechBubbles     bool
-	ShowHiddenChars   bool
+	LastCharacter      string
+	ClickToToggle      bool
+	KBWalkSpeed        float64
+	MainFontSize       float64
+	BubbleFontSize     float64
+	ConsoleFontSize    float64
+	ChatFontSize       float64
+	InventoryFontSize  float64
+	PlayersFontSize    float64
+	BubbleOpacity      float64
+	NameBgOpacity      float64
+	BarOpacity         float64
+	HiddenCharOpacity  float64
+	SpeechBubbles      bool
+	ShowHiddenChars    bool
+	BubbleNormal       bool
+	BubbleWhisper      bool
+	BubbleYell         bool
+	BubbleThought      bool
+	BubbleRealAction   bool
+	BubbleMonster      bool
+	BubblePlayerAction bool
+	BubblePonder       bool
+	BubbleNarrate      bool
+	BubbleSelf         bool
+	BubbleOtherPlayers bool
+	BubbleMonsters     bool
+	BubbleNarration    bool
 
 	MotionSmoothing   bool
 	BlendMobiles      bool

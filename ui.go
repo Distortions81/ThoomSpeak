@@ -2228,6 +2228,34 @@ func makeBubbleWindow() {
 	}
 	flow.AddItem(bubbleCB)
 
+	addBubbleCB := func(label string, val *bool) {
+		cb, events := eui.NewCheckbox()
+		cb.Text = label
+		cb.Size = eui.Point{X: width, Y: 24}
+		cb.Checked = *val
+		events.Handle = func(ev eui.UIEvent) {
+			if ev.Type == eui.EventCheckboxChanged {
+				*val = ev.Checked
+				settingsDirty = true
+			}
+		}
+		flow.AddItem(cb)
+	}
+
+	addBubbleCB("Normal", &gs.BubbleNormal)
+	addBubbleCB("Whisper", &gs.BubbleWhisper)
+	addBubbleCB("Yell", &gs.BubbleYell)
+	addBubbleCB("Thought", &gs.BubbleThought)
+	addBubbleCB("Real Action", &gs.BubbleRealAction)
+	addBubbleCB("Monster", &gs.BubbleMonster)
+	addBubbleCB("Player Action", &gs.BubblePlayerAction)
+	addBubbleCB("Ponder", &gs.BubblePonder)
+	addBubbleCB("Narrate", &gs.BubbleNarrate)
+	addBubbleCB("Self", &gs.BubbleSelf)
+	addBubbleCB("Other Players", &gs.BubbleOtherPlayers)
+	addBubbleCB("Monsters", &gs.BubbleMonsters)
+	addBubbleCB("Narration", &gs.BubbleNarration)
+
 	bubbleOpSlider, bubbleOpEvents := eui.NewSlider()
 	bubbleOpSlider.Label = "Bubble Opacity"
 	bubbleOpSlider.MinValue = 0
