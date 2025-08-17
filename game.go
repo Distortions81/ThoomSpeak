@@ -31,7 +31,6 @@ const defaultHandPictID = 6
 const initialWindowW, initialWindowH = 1920, 1080
 
 var uiMouseDown bool
-var ebitenStopped bool
 
 // worldRT is the offscreen render target for the game world when
 // arbitrary window sizing is enabled. It stays at an integer-scaled
@@ -180,6 +179,12 @@ var debugWin *eui.WindowData
 var qualityWin *eui.WindowData
 var graphicsWin *eui.WindowData
 var bubbleWin *eui.WindowData
+
+var (
+	lastDebugStatsUpdate   time.Time
+	lastQualityPresetCheck time.Time
+	lastMovieWinRefresh    time.Time
+)
 
 // Deprecated: sound settings window removed; kept other windows.
 var gameCtx context.Context
@@ -500,7 +505,6 @@ var once sync.Once
 func (g *Game) Update() error {
 	select {
 	case <-gameCtx.Done():
-		ebitenStopped = true
 		return errors.New("shutdown")
 	default:
 	}
@@ -508,8 +512,59 @@ func (g *Game) Update() error {
 
 	once.Do(func() {
 		initGame()
-		runBackgroundTasks()
 	})
+
+	if debugWin != nil && debugWin.IsOpen() {
+		if time.Since(lastDebugStatsUpdate) >= time.Second {
+			updateDebugStats()
+			lastDebugStatsUpdate = time.Now()
+		}
+	}
+
+	if inventoryDirty {
+		updateInventoryWindow()
+		updateHandsWindow()
+		inventoryDirty = false
+	}
+
+	if playersDirty {
+		updatePlayersWindow()
+		playersDirty = false
+	}
+
+	if syncWindowSettings() {
+		settingsDirty = true
+	}
+
+	if time.Since(lastQualityPresetCheck) >= time.Second {
+		if settingsDirty && qualityPresetDD != nil {
+			qualityPresetDD.Selected = detectQualityPreset()
+		}
+		lastQualityPresetCheck = time.Now()
+	}
+
+	if time.Since(lastSettingsSave) >= time.Second {
+		if settingsDirty {
+			saveSettings()
+			settingsDirty = false
+		}
+		lastSettingsSave = time.Now()
+	}
+
+	if time.Since(lastPlayersSave) >= 10*time.Second {
+		if playersDirty || playersPersistDirty {
+			savePlayersPersist()
+			playersPersistDirty = false
+		}
+		lastPlayersSave = time.Now()
+	}
+
+	if movieWin != nil && movieWin.IsOpen() {
+		if time.Since(lastMovieWinRefresh) >= time.Second {
+			movieWin.Refresh()
+			lastMovieWinRefresh = time.Now()
+		}
+	}
 
 	/* Console input */
 	changedInput := false
@@ -1753,7 +1808,6 @@ func runGame(ctx context.Context) {
 
 	op := &ebiten.RunGameOptions{ScreenTransparent: false}
 	if err := ebiten.RunGameWithOptions(&Game{}, op); err != nil {
-		ebitenStopped = true
 		log.Printf("ebiten: %v", err)
 	}
 	syncWindowSettings()
@@ -1940,7 +1994,6 @@ func sendInputLoop(ctx context.Context, conn net.Conn) {
 	for {
 		select {
 		case <-ctx.Done():
-			ebitenStopped = true
 			return
 		case <-frameCh:
 		}
@@ -1971,7 +2024,6 @@ func sendInputLoop(ctx context.Context, conn net.Conn) {
 		timer := time.NewTimer(delay)
 		select {
 		case <-ctx.Done():
-			ebitenStopped = true
 			timer.Stop()
 			return
 		case <-timer.C:
@@ -2002,7 +2054,6 @@ func udpReadLoop(ctx context.Context, conn net.Conn) {
 			if ne, ok := err.(net.Error); ok && ne.Timeout() {
 				select {
 				case <-ctx.Done():
-					ebitenStopped = true
 					return
 				default:
 					continue
@@ -2079,7 +2130,6 @@ loop:
 			if ne, ok := err.(net.Error); ok && ne.Timeout() {
 				select {
 				case <-ctx.Done():
-					ebitenStopped = true
 					break loop
 				default:
 					continue
@@ -2140,7 +2190,6 @@ loop:
 		}
 		select {
 		case <-ctx.Done():
-			ebitenStopped = true
 			break loop
 		default:
 		}
