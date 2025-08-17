@@ -500,7 +500,8 @@ func handleDrawState(m []byte) {
 		return
 	}
 
-	data := append([]byte(nil), m[2:]...)
+	// data references m and must remain read-only; it must not escape this call.
+	data := m[2:]
 	if drawStateEncrypted {
 		simpleEncrypt(data)
 	}
