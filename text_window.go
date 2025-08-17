@@ -115,7 +115,7 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 	}
 
 	if input != nil {
-		const maxInputLines = 5
+		const maxInputLines = 100
 		// Soft-wrap the input message to the available width.
 		_, inLines := wrapText(inputMsg, face, wrapWidthPx)
 		if len(inLines) > maxInputLines {
@@ -141,6 +141,14 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 		}
 	}
 
+	// Calculate total height of list contents for auto-scrolling.
+	contentHeight := float32(0)
+	for _, c := range list.Contents {
+		if c != nil {
+			contentHeight += c.Size.Y + c.Margin*2
+		}
+	}
+
 	if win != nil {
 		// Size the flow to the client area, and the list to fill above the input.
 		if list.Parent != nil {
@@ -148,11 +156,34 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 			list.Parent.Size.Y = clientHAvail
 		}
 		list.Size.X = clientWAvail
+		listAvail := clientHAvail
 		if input != nil {
-			list.Size.Y = clientHAvail - input.Size.Y
-		} else {
-			list.Size.Y = clientHAvail
+			listAvail -= input.Size.Y
 		}
+		if listAvail < 0 {
+			listAvail = 0
+		}
+		list.Size.Y = listAvail
+
+		// Auto-scroll the list to show the latest messages.
+		if contentHeight > listAvail {
+			list.Scroll.Y = contentHeight - listAvail
+		} else {
+			list.Scroll.Y = 0
+		}
+
+		// Ensure the window shows the bottom of the flow when content exceeds the client height.
+		totalHeight := contentHeight
+		if input != nil {
+			totalHeight += input.Size.Y
+		}
+		if totalHeight > clientHAvail {
+			win.Scroll.Y = totalHeight - clientHAvail
+		} else {
+			win.Scroll.Y = 0
+		}
+
+		win.Dirty = true
 		// Do not refresh here unconditionally; callers decide when to refresh.
 	}
 }
