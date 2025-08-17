@@ -110,6 +110,52 @@ func sortDescriptors(descs []frameDescriptor) {
 	})
 }
 
+// resolveThinkBubbleIndex attempts to resolve a thinker name to a descriptor
+// index by first matching descriptor names and then falling back to matching
+// appearance from the players list. It also updates the descriptor's name when
+// a match is found.
+func resolveThinkBubbleIndex(name string) (uint8, bool) {
+	if name == "" || name == ThinkUnknownName {
+		return 0, false
+	}
+
+	playersMu.RLock()
+	p, ok := players[name]
+	var pictID uint16
+	var colors []byte
+	if ok {
+		pictID = p.PictID
+		if len(p.Colors) > 0 {
+			colors = append([]byte(nil), p.Colors...)
+		}
+	}
+	playersMu.RUnlock()
+
+	stateMu.Lock()
+	defer stateMu.Unlock()
+	for idx, d := range state.descriptors {
+		if strings.EqualFold(d.Name, name) {
+			if d.Name != name {
+				d.Name = name
+				state.descriptors[idx] = d
+			}
+			return idx, true
+		}
+	}
+	if ok {
+		for idx, d := range state.descriptors {
+			if d.PictID == pictID && bytes.Equal(d.Colors, colors) {
+				if d.Name != name {
+					d.Name = name
+					state.descriptors[idx] = d
+				}
+				return idx, true
+			}
+		}
+	}
+	return 0, false
+}
+
 // bitReader helps decode the packed picture fields.
 type bitReader struct {
 	data   []byte
@@ -1178,11 +1224,21 @@ func parseDrawState(data []byte) error {
 		}
 		bubbleData := stateData[:p+end+1]
 		if verb, txt, bubbleName, lang, code, target := decodeBubble(bubbleData); txt != "" || code != kBubbleCodeKnown {
+			showBubble := gs.SpeechBubbles && txt != "" && !blockBubbles
+			idxResolved := true
+			if typ&kBubbleTypeMask == kBubbleThought {
+				var ok bool
+				idx, ok = resolveThinkBubbleIndex(bubbleName)
+				idxResolved = ok
+				if !ok {
+					showBubble = false
+				}
+			}
 			name := bubbleName
 			if target == thinkNone {
-				if bubbleName == ThinkUnknownName {
+				if bubbleName == ThinkUnknownName || !idxResolved {
 					name = "Someone"
-				} else {
+				} else if idxResolved {
 					stateMu.Lock()
 					if d, ok := state.descriptors[idx]; ok {
 						if bubbleName != "" {
@@ -1190,6 +1246,7 @@ func parseDrawState(data []byte) error {
 								name = d.Name
 							} else {
 								d.Name = bubbleName
+								state.descriptors[idx] = d
 								name = bubbleName
 							}
 						} else {
@@ -1201,7 +1258,7 @@ func parseDrawState(data []byte) error {
 			} else if bubbleName == ThinkUnknownName {
 				name = "Someone"
 			}
-			if gs.SpeechBubbles && txt != "" && !blockBubbles {
+			if showBubble && idxResolved {
 				b := bubble{Index: idx, Text: txt, Type: typ, CreatedFrame: frameCounter}
 				switch typ & kBubbleTypeMask {
 				case kBubbleRealAction, kBubblePlayerAction, kBubbleNarrate:
@@ -1212,6 +1269,12 @@ func parseDrawState(data []byte) error {
 					b.Far = true
 				}
 				stateMu.Lock()
+				if bubbleName != "" {
+					if d, ok := state.descriptors[idx]; ok && d.Name != bubbleName {
+						d.Name = bubbleName
+						state.descriptors[idx] = d
+					}
+				}
 				state.bubbles = append(state.bubbles, b)
 				stateMu.Unlock()
 			}
