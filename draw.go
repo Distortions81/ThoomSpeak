@@ -1282,9 +1282,10 @@ func parseDrawState(data []byte) error {
 					}
 				}
 			}
-			chatMessage(msg)
 			if gs.MessagesToConsole {
 				consoleMessage(msg)
+			} else {
+				chatMessage(msg)
 			}
 		}
 		stateData = stateData[p+end+1:]

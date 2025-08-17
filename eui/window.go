@@ -268,6 +268,7 @@ func (target *windowData) MarkOpen() {
 	if WindowStateChanged != nil {
 		WindowStateChanged()
 	}
+
 }
 
 // Refresh marks the window and its children dirty so they are redrawn and

@@ -153,7 +153,9 @@ func initUI() {
 	// avatars/classes can show up immediately.
 	loadPlayersPersist()
 
-	chatWin.MarkOpen()
+	if !gs.MessagesToConsole {
+		chatWin.MarkOpen()
+	}
 	consoleWin.MarkOpen()
 	inventoryWin.MarkOpen()
 	playersWin.MarkOpen()
@@ -1188,38 +1190,22 @@ func makeSettingsWindow() {
 	}
 	right.AddItem(fullscreenCB)
 
-	renderScale, renderScaleEvents := eui.NewSlider()
-	renderScale.Label = "Render Size"
-	renderScale.MinValue = 1
-	renderScale.MaxValue = 4
-	renderScale.IntOnly = true
-	if gs.GameScale < 1 {
-		gs.GameScale = 1
-	}
-	if gs.GameScale > 4 {
-		gs.GameScale = 4
-	}
-	renderScale.Value = float32(math.Round(gs.GameScale))
-	renderScale.Size = eui.Point{X: rightW - 10, Y: 24}
-	renderScale.Tooltip = "Game render resolution (1x - 4x). Higher will be shaper on larger screens."
-	renderScaleEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventSliderChanged {
-			v := math.Round(float64(ev.Value))
-			if v < 1 {
-				v = 1
-			}
-			if v > 10 {
-				v = 10
-			}
-			gs.GameScale = v
-			renderScale.Value = float32(v)
+	bubbleMsgCB, bubbleMsgEvents := eui.NewCheckbox()
+	bubbleMsgCB.Text = "Combine chat + console"
+	bubbleMsgCB.Size = eui.Point{X: rightW, Y: 24}
+	bubbleMsgCB.Checked = gs.MessagesToConsole
+	bubbleMsgEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			gs.MessagesToConsole = ev.Checked
 			settingsDirty = true
-			if gameWin != nil {
-				gameWin.Refresh()
+			if ev.Checked {
+				if chatWin != nil {
+					chatWin.Close()
+				}
 			}
 		}
 	}
-	right.AddItem(renderScale)
+	right.AddItem(bubbleMsgCB)
 
 	label, _ = eui.NewText()
 	label.Text = "\nStatus Bar Options:"
@@ -1979,6 +1965,39 @@ func makeQualityWindow() {
 	}
 	flow.AddItem(pictFramesSlider)
 
+	renderScale, renderScaleEvents := eui.NewSlider()
+	renderScale.Label = "Upscale game amount"
+	renderScale.MinValue = 1
+	renderScale.MaxValue = 4
+	renderScale.IntOnly = true
+	if gs.GameScale < 1 {
+		gs.GameScale = 1
+	}
+	if gs.GameScale > 4 {
+		gs.GameScale = 4
+	}
+	renderScale.Value = float32(math.Round(gs.GameScale))
+	renderScale.Size = eui.Point{X: width - 10, Y: 24}
+	renderScale.Tooltip = "Game render resolution (1x - 4x). Higher will be shaper on higher-res displays."
+	renderScaleEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			v := math.Round(float64(ev.Value))
+			if v < 1 {
+				v = 1
+			}
+			if v > 10 {
+				v = 10
+			}
+			gs.GameScale = v
+			renderScale.Value = float32(v)
+			settingsDirty = true
+			if gameWin != nil {
+				gameWin.Refresh()
+			}
+		}
+	}
+	flow.AddItem(renderScale)
+
 	showFPSCB, showFPSEvents := eui.NewCheckbox()
 	showFPSCB.Text = "Show FPS + UPS"
 	showFPSCB.Size = eui.Point{X: width, Y: 24}
@@ -2195,19 +2214,6 @@ func makeDebugWindow() {
 		}
 	}
 	debugFlow.AddItem(recordStatsCB)
-
-	bubbleMsgCB, bubbleMsgEvents := eui.NewCheckbox()
-	bubbleMsgCB.Text = "Send chat to console window"
-	bubbleMsgCB.Tooltip = "Nice for single-window text"
-	bubbleMsgCB.Size = eui.Point{X: width, Y: 24}
-	bubbleMsgCB.Checked = gs.MessagesToConsole
-	bubbleMsgEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventCheckboxChanged {
-			gs.MessagesToConsole = ev.Checked
-			settingsDirty = true
-		}
-	}
-	debugFlow.AddItem(bubbleMsgCB)
 
 	hideMoveCB, hideMoveEvents := eui.NewCheckbox()
 	hideMoveCB.Text = "Hide Moving Objects"

@@ -8,7 +8,7 @@ var chatWin *eui.WindowData
 var chatList *eui.ItemData
 
 func updateChatWindow() {
-	if chatWin == nil {
+	if chatWin == nil || !chatWin.IsOpen() {
 		return
 	}
 
@@ -22,6 +22,9 @@ func updateChatWindow() {
 }
 
 func makeChatWindow() error {
+	if gs.MessagesToConsole {
+		return nil
+	}
 	if chatWin != nil {
 		return nil
 	}

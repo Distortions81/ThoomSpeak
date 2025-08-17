@@ -210,6 +210,10 @@ func (win *windowData) dragbarRect() rect {
 }
 
 func (win *windowData) Refresh() {
+	if !win.IsOpen() {
+		return
+	}
+
 	win.resizeFlows()
 	if win.AutoSize {
 		win.updateAutoSize()
