@@ -1352,7 +1352,7 @@ func drawPicture(screen *ebiten.Image, ox, oy int, p framePicture, alpha float64
 
 		// Optionally reveal silhouettes of mobiles hidden behind this object.
 		if gs.ShowHiddenChars {
-			objRect := image.Rect(x-drawW/2, y-drawH/2, x+drawW/2, y+drawH/2)
+			objRect := image.Rect(x-int(scaledW/2), y-int(scaledH/2), x+int(scaledW/2), y+int(scaledH/2))
 			for _, m := range mobiles {
 				if d, ok := descMap[m.Index]; ok && d.Plane < p.Plane {
 					colors := d.Colors
@@ -1368,14 +1368,16 @@ func drawPicture(screen *ebiten.Image, ox, oy int, p framePicture, alpha float64
 						mx += ox
 						my += oy
 						mW, mH := mImg.Bounds().Dx(), mImg.Bounds().Dy()
-						mobRect := image.Rect(mx-mW/2, my-mH/2, mx+mW/2, my+mH/2)
+						mScaledW := roundToInt(float64(mW) * gs.GameScale)
+						mScaledH := roundToInt(float64(mH) * gs.GameScale)
+						mobRect := image.Rect(mx-mScaledW/2, my-mScaledH/2, mx+mScaledW/2, my+mScaledH/2)
 						if objRect.Overlaps(mobRect) {
 							mask := ebiten.NewImage(drawW, drawH)
 							mask.DrawImage(src, nil)
 							mop := &ebiten.DrawImageOptions{CompositeMode: ebiten.CompositeModeSourceIn, Filter: ebiten.FilterNearest, DisableMipmaps: true}
 							mop.ColorScale.Scale(0, 0, 0, float32(gs.HiddenCharOpacity))
-							dx := float64(mx-x) + float64(drawW-mW)/2
-							dy := float64(my-y) + float64(drawH-mH)/2
+							dx := (float64(mx-x) / sx) + float64(drawW-mW)/2
+							dy := (float64(my-y) / sy) + float64(drawH-mH)/2
 							mop.GeoM.Translate(dx, dy)
 							mask.DrawImage(mImg, mop)
 							opSil := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
