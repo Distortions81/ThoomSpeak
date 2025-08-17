@@ -84,7 +84,7 @@ func parseMovie(path string, clientVersion int) ([][]byte, error) {
 			if end > len(data) {
 				break
 			}
-			parseGameState(data[start:end], version, revision)
+			fastParseGameState(data[start:end], version, revision)
 			pos = end
 		}
 		if flags&flagMobileData != 0 {
@@ -137,6 +137,150 @@ func parseMovie(path string, clientVersion int) ([][]byte, error) {
 	initialState = cloneDrawState(state)
 	stateMu.Unlock()
 	return frames, nil
+}
+
+// fastParseGameState minimally decodes an initial game state block and only
+// updates descriptor, picture, and mobile tables. Any additional data present
+// in the payload is skipped to maintain alignment.
+func fastParseGameState(gs []byte, version, revision uint16) {
+	if len(gs) == 0 {
+		return
+	}
+	if i := bytes.IndexByte(gs, 0); i >= 0 {
+		gs = gs[i+1:]
+	}
+	if len(gs) >= 2 {
+		count := int(binary.BigEndian.Uint16(gs[:2]))
+		size := 2 + 6*count + 4
+		if count > 0 && size <= len(gs) {
+			pos := 2
+			pics := make([]framePicture, 0, count)
+			for i := 0; i < count && pos+6 <= len(gs); i++ {
+				id := binary.BigEndian.Uint16(gs[pos : pos+2])
+				h := int16(binary.BigEndian.Uint16(gs[pos+2 : pos+4]))
+				v := int16(binary.BigEndian.Uint16(gs[pos+4 : pos+6]))
+				plane := 0
+				if clImages != nil {
+					plane = clImages.Plane(uint32(id))
+				}
+				pos += 6
+				pics = append(pics, framePicture{PictID: id, H: h, V: v, Plane: plane})
+			}
+			if pos+4 <= len(gs) {
+				pos += 4
+			}
+			sortPictures(pics)
+			stateMu.Lock()
+			state.pictures = pics
+			stateMu.Unlock()
+			gs = gs[pos:]
+		}
+	}
+	if bytes.Contains(gs, []byte{0xff, 0xff, 0xff, 0xff}) {
+		fastParseMobileTable(gs, 0, version, revision)
+	}
+}
+
+// fastParseMobileTable is a trimmed-down variant of parseMobileTable that only
+// records descriptor and mobile data needed for cumulative state.
+func fastParseMobileTable(data []byte, pos int, version, revision uint16) int {
+	const descTableSize = 266
+	type layout struct {
+		descSize            int
+		colorsOffset        int
+		nameOffset          int
+		numColorsOffset     int
+		bubbleCounterOffset int
+	}
+	var l layout
+	switch {
+	case version > 141:
+		l = layout{descSize: 156, colorsOffset: 56, nameOffset: 86, numColorsOffset: 48, bubbleCounterOffset: 28}
+	case version > 113:
+		l = layout{descSize: 150, colorsOffset: 52, nameOffset: 82, numColorsOffset: 44, bubbleCounterOffset: 24}
+	case version > 105:
+		l = layout{descSize: 142, colorsOffset: 52, nameOffset: 82, numColorsOffset: 44, bubbleCounterOffset: 24}
+	case version > 97:
+		l = layout{descSize: 130, colorsOffset: 40, nameOffset: 70, numColorsOffset: 32, bubbleCounterOffset: 24}
+	default:
+		if version < 80 {
+			logDebug("unsupported mobile table version %d", version)
+			return pos
+		}
+		l = layout{descSize: 126, colorsOffset: 36, nameOffset: 66, numColorsOffset: 28, bubbleCounterOffset: 20}
+	}
+	for pos+4 <= len(data) {
+		idx := int32(binary.BigEndian.Uint32(data[pos : pos+4]))
+		pos += 4
+		if idx == -1 {
+			break
+		}
+		hasMobile := idx < descTableSize
+		if !hasMobile {
+			idx -= descTableSize
+		}
+		var mob frameMobile
+		if hasMobile {
+			if pos+16 > len(data) {
+				return len(data)
+			}
+			mob.Index = uint8(idx)
+			mob.State = uint8(binary.BigEndian.Uint32(data[pos : pos+4]))
+			mob.H = int16(binary.BigEndian.Uint32(data[pos+4 : pos+8]))
+			mob.V = int16(binary.BigEndian.Uint32(data[pos+8 : pos+12]))
+			mob.Colors = uint8(binary.BigEndian.Uint32(data[pos+12 : pos+16]))
+			pos += 16
+		}
+		if pos+l.descSize > len(data) {
+			return len(data)
+		}
+		buf := data[pos : pos+l.descSize]
+		pos += l.descSize
+		d := frameDescriptor{Index: uint8(idx)}
+		d.Type = uint8(binary.BigEndian.Uint32(buf[16:20]))
+		pict := binary.BigEndian.Uint32(buf[0:4])
+		d.PictID = uint16(pict & 0xffff)
+		numColors := int(binary.BigEndian.Uint32(buf[l.numColorsOffset : l.numColorsOffset+4]))
+		if numColors < 0 || numColors > 30 {
+			numColors = 30
+		}
+		end := l.colorsOffset + numColors
+		if end > len(buf) {
+			end = len(buf)
+		}
+		d.Colors = append([]byte(nil), buf[l.colorsOffset:end]...)
+		nameBytes := buf[l.nameOffset : l.nameOffset+48]
+		if i := bytes.IndexByte(nameBytes, 0); i >= 0 {
+			d.Name = string(nameBytes[:i])
+		} else {
+			d.Name = string(nameBytes)
+		}
+		bubbleCounter := int32(binary.BigEndian.Uint32(buf[l.bubbleCounterOffset : l.bubbleCounterOffset+4]))
+		if bubbleCounter != 0 {
+			if pos+2 > len(data) {
+				return len(data)
+			}
+			lgt := int(binary.BigEndian.Uint16(data[pos : pos+2]))
+			pos += 2
+			if pos+lgt > len(data) {
+				return len(data)
+			}
+			pos += lgt
+		}
+		stateMu.Lock()
+		if hasMobile {
+			if state.mobiles == nil {
+				state.mobiles = make(map[uint8]frameMobile)
+			}
+			state.mobiles[mob.Index] = mob
+		}
+		if state.descriptors == nil {
+			state.descriptors = make(map[uint8]frameDescriptor)
+		}
+		state.descriptors[d.Index] = d
+		stateMu.Unlock()
+	}
+	return pos
 }
 
 // parseGameState decodes an initial game state block found in movies. The

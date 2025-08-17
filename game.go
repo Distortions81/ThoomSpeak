@@ -1912,7 +1912,7 @@ func udpReadLoop(ctx context.Context, conn net.Conn) {
 				} else {
 					if flags&flagGameState != 0 {
 						payload := append([]byte(nil), m[2:]...)
-						parseGameState(payload, uint16(clientVersion), uint16(movieRevision))
+						fastParseGameState(payload, uint16(clientVersion), uint16(movieRevision))
 						loginGameState = payload
 					}
 					if flags&flagMobileData != 0 {
@@ -1988,7 +1988,7 @@ loop:
 				} else {
 					if flags&flagGameState != 0 {
 						payload := append([]byte(nil), m[2:]...)
-						parseGameState(payload, uint16(clientVersion), uint16(movieRevision))
+						fastParseGameState(payload, uint16(clientVersion), uint16(movieRevision))
 						loginGameState = payload
 					}
 					if flags&flagMobileData != 0 {
