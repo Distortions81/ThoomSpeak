@@ -409,6 +409,7 @@ func (p *moviePlayer) seek(idx int) {
 	p.playing = false
 	resetDrawState()
 	frameCounter = 0
+	clearWantedImages()
 
 	for i := 0; i < idx; i++ {
 		m := p.frames[i]
@@ -432,6 +433,7 @@ func (p *moviePlayer) seek(idx int) {
 					id := binary.BigEndian.Uint16(payload[pos : pos+2])
 					h := int16(binary.BigEndian.Uint16(payload[pos+2 : pos+4]))
 					v := int16(binary.BigEndian.Uint16(payload[pos+4 : pos+6]))
+					recordPicture(id)
 					pics = append(pics, framePicture{PictID: id, H: h, V: v})
 					pos += 6
 				}
@@ -443,6 +445,7 @@ func (p *moviePlayer) seek(idx int) {
 		}
 		frameCounter++
 	}
+	loadWantedImages()
 	p.cur = idx
 	resetInterpolation()
 	setInterpFPS(p.fps)

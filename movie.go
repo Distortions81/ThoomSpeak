@@ -23,6 +23,42 @@ var movieRevision int32
 // rendering or triggering side effects.
 var seeking bool
 
+// pendingPictures and pendingMobiles collect image identifiers encountered
+// during fast parsing so they can be loaded afterward.
+var (
+	pendingPictures = make(map[uint16]struct{})
+	pendingMobiles  = make(map[mobileKey]struct{})
+)
+
+func clearWantedImages() {
+	pendingPictures = make(map[uint16]struct{})
+	pendingMobiles = make(map[mobileKey]struct{})
+}
+
+func recordPicture(id uint16) {
+	if !seeking {
+		return
+	}
+	pendingPictures[id] = struct{}{}
+}
+
+func recordMobile(id uint16, state uint8, colors []byte) {
+	if !seeking {
+		return
+	}
+	pendingMobiles[makeMobileKey(id, state, colors)] = struct{}{}
+}
+
+func loadWantedImages() {
+	for id := range pendingPictures {
+		loadImage(id)
+	}
+	for k := range pendingMobiles {
+		loadMobileFrame(k.id, k.state, k.colors[:k.colorsLen])
+	}
+	clearWantedImages()
+}
+
 func parseMovie(path string, clientVersion int) ([][]byte, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -58,6 +94,7 @@ func parseMovie(path string, clientVersion int) ([][]byte, error) {
 		prevDescs:   make(map[uint8]frameDescriptor),
 	}
 	initialState = cloneDrawState(state)
+	clearWantedImages()
 
 	pos := headerLen
 	sign := []byte{0xde, 0xad, 0xbe, 0xef}
@@ -107,6 +144,7 @@ func parseMovie(path string, clientVersion int) ([][]byte, error) {
 				id := binary.BigEndian.Uint16(data[pos : pos+2])
 				h := int16(binary.BigEndian.Uint16(data[pos+2 : pos+4]))
 				v := int16(binary.BigEndian.Uint16(data[pos+4 : pos+6]))
+				recordPicture(id)
 				if !seeking && clImages != nil {
 					plane := clImages.Plane(uint32(id))
 					pics = append(pics, framePicture{PictID: id, H: h, V: v, Plane: plane})
@@ -145,6 +183,7 @@ func parseMovie(path string, clientVersion int) ([][]byte, error) {
 	stateMu.Lock()
 	initialState = cloneDrawState(state)
 	stateMu.Unlock()
+	loadWantedImages()
 	return frames, nil
 }
 
@@ -168,6 +207,7 @@ func fastParseGameState(gs []byte, version, revision uint16) {
 				id := binary.BigEndian.Uint16(gs[pos : pos+2])
 				h := int16(binary.BigEndian.Uint16(gs[pos+2 : pos+4]))
 				v := int16(binary.BigEndian.Uint16(gs[pos+4 : pos+6]))
+				recordPicture(id)
 				if !seeking && clImages != nil {
 					plane := clImages.Plane(uint32(id))
 					pics = append(pics, framePicture{PictID: id, H: h, V: v, Plane: plane})
@@ -280,6 +320,9 @@ func fastParseMobileTable(data []byte, pos int, version, revision uint16) int {
 				return len(data)
 			}
 			pos += lgt
+		}
+		if hasMobile {
+			recordMobile(d.PictID, mob.State, d.Colors)
 		}
 		if seeking {
 			if hasMobile {
@@ -459,6 +502,10 @@ func parseMobileTable(data []byte, pos int, version, revision uint16) int {
 			}
 			_ = string(data[pos : pos+lgt]) // bubble text, ignored
 			pos += lgt
+		}
+
+		if hasMobile {
+			recordMobile(d.PictID, mob.State, d.Colors)
 		}
 
 		stateMu.Lock()
