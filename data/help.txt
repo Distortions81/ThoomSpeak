@@ -7,17 +7,15 @@ Communication
 -------------
 - Press Enter to start typing. Enter again sends the message.
 - Press Esc to cancel typing. Up/Down browse previous messages.
-- Use /who to see who is online. /play <tune> plays a tune.
 
 Inventory
 ---------
-- Open the Inventory window from the toolbar or Windows list.
-- Drag items between hands or inventory slots. Click items to equip or use.
+- Open the Inventory window from the toolbar->Windows button.
 
 UI Navigation
 -------------
-- Use the Windows menu or toolbar buttons to toggle windows.
-- Drag window title bars to move; resize by dragging edges.
+- Use the Windows button and window to toggle windows open or closed.
+- Drag window title bars to move; resize by dragging edges (not tops).
 - Mouse wheel scrolls lists and text windows.
 - Press F1 to open this help window.
 
