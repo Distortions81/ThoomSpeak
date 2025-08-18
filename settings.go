@@ -77,7 +77,7 @@ var gsdef settings = settings{
 	Theme:             "",
 	MessagesToConsole: false,
 	ChatTTS:           false,
-	ChatTTSVolume:     1.0,
+	ChatTTSVolumeDB:   0,
 	WindowTiling:      false,
 	WindowSnapping:    false,
 	AnyGameWindowSize: true,
@@ -163,7 +163,7 @@ type settings struct {
 	Theme             string
 	MessagesToConsole bool
 	ChatTTS           bool
-	ChatTTSVolume     float64
+	ChatTTSVolumeDB   float64
 	WindowTiling      bool
 	WindowSnapping    bool
 	IntegerScaling    bool
@@ -241,6 +241,7 @@ func loadSettings() bool {
 		applyQualityPreset("High")
 	}
 
+	gs.Volume = dbToGain(gs.VolumeDB)
 	clampWindowSettings()
 	return true
 }
