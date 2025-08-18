@@ -234,7 +234,6 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 	volumeSlider.MinValue = -60
 	volumeSlider.MaxValue = 0
 	volumeSlider.Value = float32(gs.VolumeDB)
-	volumeSlider.IntOnly = true
 	volumeSlider.Size = eui.Point{X: 150, Y: buttonHeight}
 	volumeSlider.FontSize = 9
 	volumeSlider.Label = fmt.Sprintf("Volume: %.0f dB", gs.VolumeDB)
