@@ -234,6 +234,7 @@ type drawState struct {
 	picsPos  []framePicture
 	liveMobs []frameMobile
 	deadMobs []frameMobile
+	nameMobs []frameMobile
 }
 
 var (
@@ -250,7 +251,8 @@ var (
 // prepareRenderCacheLocked populates render-ready, sorted/partitioned slices.
 // Call with stateMu held and only when a new game state is applied.
 func prepareRenderCacheLocked() {
-	// Mobiles: split into live and dead, then sort by V then H.
+	// Mobiles: split into live and dead, sort by V then H, and prepare
+	// a separate slice sorted right-to-left/top-to-bottom for name tags.
 	state.liveMobs = state.liveMobs[:0]
 	state.deadMobs = state.deadMobs[:0]
 	for _, m := range state.mobiles {
@@ -261,6 +263,9 @@ func prepareRenderCacheLocked() {
 	}
 	sortMobiles(state.deadMobs)
 	sortMobiles(state.liveMobs)
+
+	state.nameMobs = append(state.nameMobs[:0], state.liveMobs...)
+	sortMobilesNameTags(state.nameMobs)
 
 	// Pictures: sort once, then partition by plane while preserving order.
 	// Work on a copy to avoid reordering the canonical state.pictures slice
@@ -303,7 +308,7 @@ type drawSnapshot struct {
 	pictures                    []framePicture
 	picShiftX                   int
 	picShiftY                   int
-	mobiles                     []frameMobile
+	mobiles                     []frameMobile // sorted right-to-left, top-to-bottom
 	prevMobiles                 map[uint8]frameMobile
 	prevDescs                   map[uint8]frameDescriptor
 	prevTime                    time.Time
@@ -336,7 +341,7 @@ func captureDrawSnapshot() drawSnapshot {
 		pictures:       append([]framePicture(nil), state.pictures...),
 		picShiftX:      state.picShiftX,
 		picShiftY:      state.picShiftY,
-		mobiles:        make([]frameMobile, 0, len(state.mobiles)),
+		mobiles:        append([]frameMobile(nil), state.nameMobs...),
 		prevTime:       state.prevTime,
 		curTime:        state.curTime,
 		hp:             state.hp,
@@ -363,9 +368,6 @@ func captureDrawSnapshot() drawSnapshot {
 
 	for idx, d := range state.descriptors {
 		snap.descriptors[idx] = d
-	}
-	for _, m := range state.mobiles {
-		snap.mobiles = append(snap.mobiles, m)
 	}
 	if len(state.bubbles) > 0 {
 		curFrame := frameCounter
