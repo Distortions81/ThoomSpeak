@@ -231,15 +231,14 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 	row1.AddItem(exitSessBtn)
 
 	volumeSlider, volumeEvents := eui.NewSlider()
-	volumeSlider.MinValue = -60
-	volumeSlider.MaxValue = 0
-	volumeSlider.Value = float32(gs.VolumeDB)
+	volumeSlider.MinValue = 0
+	volumeSlider.MaxValue = 1
+	volumeSlider.Value = float32(gs.Volume)
 	volumeSlider.Size = eui.Point{X: 150, Y: buttonHeight}
 	volumeSlider.FontSize = 9
 	volumeEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
-			gs.VolumeDB = float64(ev.Value)
-			gs.Volume = dbToGain(gs.VolumeDB)
+			gs.Volume = float64(ev.Value)
 			settingsDirty = true
 			updateSoundVolume()
 		}
@@ -1258,9 +1257,9 @@ func makeSettingsWindow() {
 	chatTTSRow.AddItem(chatTTSCB)
 
 	chatTTSSlider, chatTTSSliderEvents := eui.NewSlider()
-	chatTTSSlider.MinValue = -60
-	chatTTSSlider.MaxValue = 0
-	chatTTSSlider.Value = float32(gs.ChatTTSVolumeDB)
+	chatTTSSlider.MinValue = 0
+	chatTTSSlider.MaxValue = 1
+	chatTTSSlider.Value = float32(gs.ChatTTSVolume)
 	chatTTSSlider.Size = eui.Point{X: 100, Y: 24}
 	chatTTSSlider.FontSize = 9
 	chatTTSSliderEvents.Handle = func(ev eui.UIEvent) {
@@ -1268,7 +1267,7 @@ func makeSettingsWindow() {
 			SettingsLock.Lock()
 			defer SettingsLock.Unlock()
 
-			gs.ChatTTSVolumeDB = float64(ev.Value)
+			gs.ChatTTSVolume = float64(ev.Value)
 			settingsDirty = true
 		}
 	}
