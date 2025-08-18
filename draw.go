@@ -432,7 +432,11 @@ var drawStateEncrypted = false
 
 // handleDrawState decodes the packed draw state message. It decrypts the
 // payload when drawStateEncrypted is true.
-func handleDrawState(m []byte) {
+//
+// When buildCache is false, the draw state is parsed without rebuilding the
+// render cache. This is useful for fast-forward operations where intermediate
+// frames do not need a fully prepared cache.
+func handleDrawState(m []byte, buildCache bool) {
 	frameCounter++
 
 	if len(m) < 11 { // 2 byte tag + 9 bytes minimum
@@ -443,7 +447,7 @@ func handleDrawState(m []byte) {
 	if drawStateEncrypted {
 		simpleEncrypt(data)
 	}
-	if err := parseDrawState(data); err != nil {
+	if err := parseDrawState(data, buildCache); err != nil {
 		logDebugPacket(fmt.Sprintf("parseDrawState error: %v", err), data)
 	}
 }
@@ -621,7 +625,10 @@ func parseInventory(data []byte) ([]byte, bool) {
 
 // parseDrawState decodes the draw state data. It returns an error when the
 // packet appears malformed, indicating the parsing stage that failed.
-func parseDrawState(data []byte) error {
+//
+// When buildCache is false, state is updated without rebuilding the render
+// cache.
+func parseDrawState(data []byte, buildCache bool) error {
 	stage := "header"
 	if len(data) < 9 {
 		return errors.New(stage)
@@ -1032,8 +1039,10 @@ func parseDrawState(data []byte) error {
 		}
 		state.mobiles[m.Index] = m
 	}
-	// Prepare render caches now that state has been updated.
-	prepareRenderCacheLocked()
+	// Prepare render caches now that state has been updated when requested.
+	if buildCache {
+		prepareRenderCacheLocked()
+	}
 	//ack := state.ackCmd
 	//light := state.lightingFlags
 	stateMu.Unlock()
