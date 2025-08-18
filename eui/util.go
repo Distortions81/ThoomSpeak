@@ -693,12 +693,21 @@ func (win *windowData) GetRawSize() Point { return win.Size }
 func (win *windowData) GetRawPos() Point { return win.Position }
 
 func (item *itemData) GetSize() Point {
-	sz := Point{X: item.Size.X * uiScale, Y: item.Size.Y * uiScale}
+	sz := item.Size
+	if item.ItemType == ITEM_IMAGE && item.Image != nil {
+		if sz.X == 0 {
+			sz.X = float32(item.Image.Bounds().Dx())
+		}
+		if sz.Y == 0 {
+			sz.Y = float32(item.Image.Bounds().Dy())
+		}
+	}
+	res := Point{X: sz.X * uiScale, Y: sz.Y * uiScale}
 	if item.Label != "" {
 		textSize := (item.FontSize * uiScale) + 2
-		sz.Y += textSize + currentStyle.TextPadding*uiScale
+		res.Y += textSize + currentStyle.TextPadding*uiScale
 	}
-	return sz
+	return res
 }
 
 func (item *itemData) GetPos() Point {

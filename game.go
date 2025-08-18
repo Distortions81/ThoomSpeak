@@ -6,7 +6,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"image"
 	"image/color"
 	"log"
 	"math"
@@ -32,11 +31,6 @@ const initialWindowW, initialWindowH = 1920, 1080
 
 var uiMouseDown bool
 
-// worldRT is the offscreen render target for the game world when
-// arbitrary window sizing is enabled. It stays at an integer-scaled
-// multiple of the native field size and is composited into the window.
-var worldRT *ebiten.Image
-
 // gameImageItem is the UI image item inside the game window that displays
 // the rendered world, and gameImage is its backing texture.
 var gameImageItem *eui.ItemData
@@ -46,18 +40,6 @@ var inAspectResize bool
 // gameWindowBG picks a background color for the game window content area.
 // Prefers the game window's theme BGColor when opaque, otherwise falls
 // back to any other window's BGColor, and finally to black.
-func ensureWorldRT(w, h int) {
-	if w < 1 {
-		w = 1
-	}
-	if h < 1 {
-		h = 1
-	}
-	if worldRT == nil || worldRT.Bounds().Dx() != w || worldRT.Bounds().Dy() != h {
-		// Use unmanaged images for faster off-screen rendering.
-		worldRT = ebiten.NewImageWithOptions(image.Rect(0, 0, w, h), &ebiten.NewImageOptions{Unmanaged: true})
-	}
-}
 
 // updateGameImageSize ensures the game image item exists and matches the
 // current inner content size of the game window.
@@ -911,7 +893,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	// at that integer and composite with nearest-neighbor.
 	bufW := gameImage.Bounds().Dx()
 	bufH := gameImage.Bounds().Dy()
-	const maxSuperSampleScale = 4
 	worldW, worldH := gameAreaSizeX, gameAreaSizeY
 
 	// Clamp desired render scale from settings (treat as integer steps)
@@ -928,88 +909,38 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		fit = 1
 	}
 
-	var offIntScale int
-	var target int // final intended on-screen integer scale
-	var finalFilter ebiten.Filter
+	var finalScale float64
 	if gs.IntegerScaling {
-		// Render and composite at the same exact integer scale.
-		target = desired
-		if target > fit {
-			target = fit
+		if desired > fit {
+			desired = fit
 		}
-		offIntScale = target
-		finalFilter = ebiten.FilterNearest
+		finalScale = float64(desired)
 	} else if gs.AnyGameWindowSize {
-		// Any-size mode: always fill the window with linear filtering.
-		// Use the slider value as a supersample factor (up to a safe cap),
-		// but prefer at least the integer fit so we don't upscale the RT.
-		target = fit // final on-screen scale is whatever fits the window
-		offIntScale = int(math.Ceil(float64(fit)))
-		if desired > offIntScale {
-			offIntScale = desired
-		}
-		if offIntScale > maxSuperSampleScale {
-			offIntScale = maxSuperSampleScale
-		}
-		if offIntScale < 1 {
-			offIntScale = 1
-		}
-		finalFilter = ebiten.FilterLinear
+		finalScale = math.Min(float64(bufW)/float64(worldW), float64(bufH)/float64(worldH))
 	} else {
-		// Classic fixed-size mode: render to the target integer scale.
-		target = desired
-		offIntScale = target
-		if offIntScale < 1 {
-			offIntScale = 1
-		}
-		finalFilter = ebiten.FilterNearest
+		finalScale = float64(desired)
 	}
 
-	// Prepare variable-sized offscreen target (supersampled in any-size)
-	offW := worldW * offIntScale
-	offH := worldH * offIntScale
-	ensureWorldRT(offW, offH)
-	worldRT.Clear()
+	drawW := float64(worldW) * finalScale
+	drawH := float64(worldH) * finalScale
+	tx := (float64(bufW) - drawW) / 2
+	ty := (float64(bufH) - drawH) / 2
 
-	// Render splash or live frame into worldRT using offscreen integer scale
+	gameImage.Clear()
+	prev := gs.GameScale
+	gs.GameScale = finalScale
 	if clmov == "" && tcpConn == nil && pcapPath == "" && !fake {
-		prev := gs.GameScale
-		gs.GameScale = float64(offIntScale)
-		drawSplash(worldRT, 0, 0)
-		gs.GameScale = prev
+		drawSplash(gameImage, int(tx), int(ty))
 	} else {
 		snap := captureDrawSnapshot()
 		alpha, mobileFade, pictFade := computeInterpolation(snap.prevTime, snap.curTime, gs.MobileBlendAmount, gs.BlendAmount)
-		prev := gs.GameScale
-		gs.GameScale = float64(offIntScale)
-		drawScene(worldRT, 0, 0, snap, alpha, mobileFade, pictFade)
+		drawScene(gameImage, int(tx), int(ty), snap, alpha, mobileFade, pictFade)
 		if gs.nightEffect {
-			drawNightOverlay(worldRT, 0, 0)
+			drawNightOverlay(gameImage, int(tx), int(ty))
 		}
-		drawStatusBars(worldRT, 0, 0, snap, alpha)
-		gs.GameScale = prev
+		drawStatusBars(gameImage, int(tx), int(ty), snap, alpha)
 	}
-
-	// Composite worldRT into the gameImage buffer: scale/center
-	gameImage.Clear()
-	// In integer mode we render at target and do not rescale.
-	// Any-size mode fills the window; otherwise scale to the target.
-	scaleDown := 1.0
-	if !gs.IntegerScaling {
-		if gs.AnyGameWindowSize {
-			scaleDown = math.Min(float64(bufW)/float64(offW), float64(bufH)/float64(offH))
-		} else {
-			scaleDown = float64(target) / float64(offIntScale)
-		}
-	}
-	drawW := float64(offW) * scaleDown
-	drawH := float64(offH) * scaleDown
-	tx := (float64(bufW) - drawW) / 2
-	ty := (float64(bufH) - drawH) / 2
-	op := &ebiten.DrawImageOptions{Filter: finalFilter, DisableMipmaps: true}
-	op.GeoM.Scale(scaleDown, scaleDown)
-	op.GeoM.Translate(tx, ty)
-	gameImage.DrawImage(worldRT, op)
+	gs.GameScale = prev
 
 	// Finally, draw UI (which includes the game window image)
 	eui.Draw(screen)
