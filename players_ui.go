@@ -133,13 +133,13 @@ func updatePlayersWindow() {
 		name := p.Name
 		tags := make([]string, 0, 2)
 		if p.Sharing {
-			tags = append(tags, "sharing")
+			tags = append(tags, "<-")
 		}
 		if p.Sharee {
-			tags = append(tags, "sharee")
+			tags = append(tags, "->")
 		}
 		if len(tags) > 0 {
-			name = fmt.Sprintf("%s [%s]", name, strings.Join(tags, "+"))
+			name = fmt.Sprintf("%s %s", name, strings.Join(tags, ""))
 		}
 
 		// Build row flow: [avatar/default/blank] [profession/blank] [name]

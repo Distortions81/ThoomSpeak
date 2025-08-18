@@ -33,17 +33,17 @@ func runFakeMode(ctx context.Context) {
 			return
 		}
 
-		playerName = "Hero"
+		p1, p2 := "Bob", "John"
 
 		// Populate simple player descriptors and mobiles so Hero and Bob
 		// appear in the player list and on screen without a server
 		// connection.
-		updatePlayerAppearance("Hero", 447, nil, false)
-		updatePlayerAppearance("Bob", 447, nil, false)
+		updatePlayerAppearance(p1, 447, nil, false)
+		updatePlayerAppearance(p2, 447, nil, false)
 		stateMu.Lock()
 		playerIndex = 0
-		state.descriptors[0] = frameDescriptor{Index: 0, Type: kDescPlayer, PictID: 447, Name: "Hero"}
-		state.descriptors[1] = frameDescriptor{Index: 1, Type: kDescPlayer, PictID: 447, Name: "Bob"}
+		state.descriptors[0] = frameDescriptor{Index: 0, Type: kDescPlayer, PictID: 447, Name: p1}
+		state.descriptors[1] = frameDescriptor{Index: 1, Type: kDescPlayer, PictID: 447, Name: p2}
 		state.mobiles[0] = frameMobile{Index: 0, H: 0, V: 0}
 		state.mobiles[1] = frameMobile{Index: 1, H: 32, V: 0}
 		prepareRenderCacheLocked()
@@ -65,7 +65,7 @@ func runFakeMode(ctx context.Context) {
 			}
 		}
 
-		ticker := time.NewTicker(2 * time.Second)
+		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
 		step := 0
 		for {
@@ -76,36 +76,36 @@ func runFakeMode(ctx context.Context) {
 			}
 			switch step {
 			case 0: // You share Bob
-				msg := append([]byte("You are sharing experiences with "), pnTag("Bob")...)
+				msg := append([]byte("You are sharing experiences with "), pnTag(p2)...)
 				msg = append(msg, '.')
 				handleInfoText(append(bepp("sh", msg), '\r'))
 			case 1: // Bob shares you
-				msg := append(pnTag("Bob"), []byte(" is sharing experiences with you.")...)
+				msg := append(pnTag(p2), []byte(" is sharing experiences with you.")...)
 				handleInfoText(append(bepp("sh", msg), '\r'))
 			case 2: // Hero speaks
-				emitBubble(0, kBubbleNormal, "Hero", "says", "Hello there!")
+				emitBubble(0, kBubbleNormal, p1, "says", "Hello there!")
 			case 3: // Bob whispers
-				emitBubble(1, kBubbleWhisper, "Bob", "whispers", "psst...")
+				emitBubble(1, kBubbleWhisper, p2, "whispers", "psst...")
 			case 4: // Hero yells
-				emitBubble(0, kBubbleYell, "Hero", "yells", "Watch out!")
+				emitBubble(0, kBubbleYell, p1, "yells", "Watch out!")
 			case 5: // Bob thinks
-				emitBubble(1, kBubbleThought, "Bob", "thinks", "I wonder...")
+				emitBubble(1, kBubbleThought, p2, "thinks", "I wonder...")
 			case 6: // Bob thinks to you
-				emitBubble(1, kBubbleThought, "Bob", "thinks to you", "Hello Hero")
+				emitBubble(1, kBubbleThought, p2, "thinks to you", "Hello Hero")
 			case 7: // Bob acts
-				emitBubble(1, kBubblePlayerAction, "Bob", bubbleVerbParentheses, "waves excitedly")
+				emitBubble(1, kBubblePlayerAction, p2, bubbleVerbParentheses, "waves excitedly")
 			case 8: // Bob falls
-				msg := append(pnTag("Bob"), []byte(" has fallen")...)
+				msg := append(pnTag(p2), []byte(" has fallen")...)
 				handleInfoText(append(msg, '\r'))
 			case 9: // Bob recovers
-				msg := append(pnTag("Bob"), []byte(" is no longer fallen")...)
+				msg := append(pnTag(p2), []byte(" is no longer fallen")...)
 				handleInfoText(append(msg, '\r'))
 			case 10: // You unshare Bob
-				msg := append([]byte("You are no longer sharing experiences with "), pnTag("Bob")...)
+				msg := append([]byte("You are no longer sharing experiences with "), pnTag(p2)...)
 				msg = append(msg, '.')
 				handleInfoText(append(bepp("su", msg), '\r'))
 			case 11: // Bob unshares you
-				msg := append(pnTag("Bob"), []byte(" is no longer sharing experiences with you.")...)
+				msg := append(pnTag(p2), []byte(" is no longer sharing experiences with you.")...)
 				handleInfoText(append(bepp("su", msg), '\r'))
 			}
 			step = (step + 1) % 12
