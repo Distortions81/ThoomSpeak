@@ -45,7 +45,7 @@ type CLImages struct {
 	mu               sync.Mutex
 	Denoise          bool
 	DenoiseSharpness float64
-	DenoisePercent   float64
+	DenoiseAmount    float64
 }
 
 const (
@@ -632,7 +632,7 @@ func (c *CLImages) Get(id uint32, custom []byte, forceTransparent bool) *ebiten.
 	}
 
 	if c.Denoise {
-		denoiseImage(img, c.DenoiseSharpness, c.DenoisePercent)
+		denoiseImage(img, c.DenoiseSharpness, c.DenoiseAmount)
 	}
 
 	eimg := newImageFromImage(img)

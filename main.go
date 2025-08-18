@@ -108,7 +108,7 @@ func main() {
 	} else {
 		clImages.Denoise = gs.DenoiseImages
 		clImages.DenoiseSharpness = gs.DenoiseSharpness
-		clImages.DenoisePercent = gs.DenoisePercent
+		clImages.DenoiseAmount = gs.DenoiseAmount
 	}
 
 	clSounds, err = clsnd.Load(filepath.Join("data/CL_Sounds"))

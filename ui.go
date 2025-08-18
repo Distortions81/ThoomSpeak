@@ -600,7 +600,7 @@ func makeDownloadsWindow() {
 			} else {
 				img.Denoise = gs.DenoiseImages
 				img.DenoiseSharpness = gs.DenoiseSharpness
-				img.DenoisePercent = gs.DenoisePercent
+				img.DenoiseAmount = gs.DenoiseAmount
 				clImages = img
 			}
 
@@ -1900,14 +1900,14 @@ func makeQualityWindow() {
 
 	denoiseSharpSlider, denoiseSharpEvents := eui.NewSlider()
 	denoiseSharpSlider.Label = "Sharpness"
-	denoiseSharpSlider.MinValue = 0.1
-	denoiseSharpSlider.MaxValue = 8
-	denoiseSharpSlider.Value = float32(gs.DenoiseSharpness)
+	denoiseSharpSlider.MinValue = 0
+	denoiseSharpSlider.MaxValue = 100
+	denoiseSharpSlider.Value = float32(gs.DenoiseSharpness * 5)
 	denoiseSharpSlider.Size = eui.Point{X: width - 10, Y: 24}
 	denoiseSharpSlider.Tooltip = "High is bias for not losing fine details"
 	denoiseSharpEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
-			gs.DenoiseSharpness = float64(ev.Value)
+			gs.DenoiseSharpness = float64(ev.Value / 5)
 			if clImages != nil {
 				clImages.DenoiseSharpness = gs.DenoiseSharpness
 			}
@@ -1919,16 +1919,16 @@ func makeQualityWindow() {
 
 	denoiseAmtSlider, denoiseAmtEvents := eui.NewSlider()
 	denoiseAmtSlider.Label = "Denoise strength"
-	denoiseAmtSlider.MinValue = 0.1
-	denoiseAmtSlider.MaxValue = 0.5
-	denoiseAmtSlider.Value = float32(gs.DenoisePercent)
+	denoiseAmtSlider.MinValue = 0
+	denoiseAmtSlider.MaxValue = 100
+	denoiseAmtSlider.Value = float32(gs.DenoiseSharpness * 333.3333)
 	denoiseAmtSlider.Size = eui.Point{X: width - 10, Y: 24}
 	denoiseAmtSlider.Tooltip = "How strongly to blend dithered areas"
 	denoiseAmtEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
-			gs.DenoisePercent = float64(ev.Value)
+			gs.DenoiseSharpness = float64(ev.Value / 333.3333)
 			if clImages != nil {
-				clImages.DenoisePercent = gs.DenoisePercent
+				clImages.DenoiseAmount = gs.DenoiseSharpness
 			}
 			clearCaches()
 			settingsDirty = true

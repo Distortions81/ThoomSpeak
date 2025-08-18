@@ -65,7 +65,7 @@ var gsdef settings = settings{
 	PictBlendFrames:   10,
 	DenoiseImages:     false,
 	DenoiseSharpness:  4.0,
-	DenoisePercent:    0.2,
+	DenoiseAmount:     0.2,
 	ShowFPS:           true,
 	UIScale:           1.0,
 	Fullscreen:        false,
@@ -149,7 +149,7 @@ type settings struct {
 	PictBlendFrames   int
 	DenoiseImages     bool
 	DenoiseSharpness  float64
-	DenoisePercent    float64
+	DenoiseAmount     float64
 	ShowFPS           bool
 	UIScale           float64
 	Fullscreen        bool
@@ -254,7 +254,7 @@ func applySettings() {
 	if clImages != nil {
 		clImages.Denoise = gs.DenoiseImages
 		clImages.DenoiseSharpness = gs.DenoiseSharpness
-		clImages.DenoisePercent = gs.DenoisePercent
+		clImages.DenoiseAmount = gs.DenoiseAmount
 	}
 	ebiten.SetVsyncEnabled(gs.vsync)
 	ebiten.SetFullscreen(gs.Fullscreen)
