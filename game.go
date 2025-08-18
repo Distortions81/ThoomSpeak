@@ -737,19 +737,10 @@ func updateGameWindowSize() {
 	if gameWin == nil {
 		return
 	}
-	if gs.AnyGameWindowSize {
-		size := gameWin.GetRawSize()
-		desiredW := int(math.Round(float64(size.X)))
-		desiredH := int(math.Round(float64(size.Y)))
-		gameWin.SetSize(eui.Point{X: float32(desiredW), Y: float32(desiredH)})
-		return
-	}
-	scale := float32(gs.GameScale)
-	desiredSize := eui.Point{
-		X: float32(gameAreaSizeX)*scale + 2*gameWin.Padding,
-		Y: float32(gameAreaSizeY)*scale + 2*gameWin.Padding,
-	}
-	gameWin.SetSize(desiredSize)
+	size := gameWin.GetRawSize()
+	desiredW := int(math.Round(float64(size.X)))
+	desiredH := int(math.Round(float64(size.Y)))
+	gameWin.SetSize(eui.Point{X: float32(desiredW), Y: float32(desiredH)})
 }
 
 func gameWindowOrigin() (int, int) {
@@ -831,45 +822,21 @@ func worldDrawInfo() (int, int, float64) {
 		fit = 1
 	}
 
-	var offIntScale int
-	var target int
-	if gs.IntegerScaling {
-		target = desired
-		if target > fit {
-			target = fit
-		}
-		offIntScale = target
-	} else if gs.AnyGameWindowSize {
-		target = fit
-		offIntScale = int(math.Ceil(float64(fit)))
-		if desired > offIntScale {
-			offIntScale = desired
-		}
-		if offIntScale > maxSuperSampleScale {
-			offIntScale = maxSuperSampleScale
-		}
-		if offIntScale < 1 {
-			offIntScale = 1
-		}
-	} else {
-		target = desired
-		offIntScale = target
-		if offIntScale < 1 {
-			offIntScale = 1
-		}
+	offIntScale := int(math.Ceil(float64(fit)))
+	if desired > offIntScale {
+		offIntScale = desired
+	}
+	if offIntScale > maxSuperSampleScale {
+		offIntScale = maxSuperSampleScale
+	}
+	if offIntScale < 1 {
+		offIntScale = 1
 	}
 
 	offW := worldW * offIntScale
 	offH := worldH * offIntScale
 
-	scaleDown := 1.0
-	if !gs.IntegerScaling {
-		if gs.AnyGameWindowSize {
-			scaleDown = math.Min(float64(bufW)/float64(offW), float64(bufH)/float64(offH))
-		} else {
-			scaleDown = float64(target) / float64(offIntScale)
-		}
-	}
+	scaleDown := math.Min(float64(bufW)/float64(offW), float64(bufH)/float64(offH))
 
 	drawW := float64(offW) * scaleDown
 	drawH := float64(offH) * scaleDown
@@ -928,42 +895,17 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		fit = 1
 	}
 
-	var offIntScale int
-	var target int // final intended on-screen integer scale
-	var finalFilter ebiten.Filter
-	if gs.IntegerScaling {
-		// Render and composite at the same exact integer scale.
-		target = desired
-		if target > fit {
-			target = fit
-		}
-		offIntScale = target
-		finalFilter = ebiten.FilterNearest
-	} else if gs.AnyGameWindowSize {
-		// Any-size mode: always fill the window with linear filtering.
-		// Use the slider value as a supersample factor (up to a safe cap),
-		// but prefer at least the integer fit so we don't upscale the RT.
-		target = fit // final on-screen scale is whatever fits the window
-		offIntScale = int(math.Ceil(float64(fit)))
-		if desired > offIntScale {
-			offIntScale = desired
-		}
-		if offIntScale > maxSuperSampleScale {
-			offIntScale = maxSuperSampleScale
-		}
-		if offIntScale < 1 {
-			offIntScale = 1
-		}
-		finalFilter = ebiten.FilterLinear
-	} else {
-		// Classic fixed-size mode: render to the target integer scale.
-		target = desired
-		offIntScale = target
-		if offIntScale < 1 {
-			offIntScale = 1
-		}
-		finalFilter = ebiten.FilterNearest
+	offIntScale := int(math.Ceil(float64(fit)))
+	if desired > offIntScale {
+		offIntScale = desired
 	}
+	if offIntScale > maxSuperSampleScale {
+		offIntScale = maxSuperSampleScale
+	}
+	if offIntScale < 1 {
+		offIntScale = 1
+	}
+	finalFilter := ebiten.FilterLinear
 
 	// Prepare variable-sized offscreen target (supersampled in any-size)
 	offW := worldW * offIntScale
@@ -992,16 +934,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	// Composite worldRT into the gameImage buffer: scale/center
 	gameImage.Clear()
-	// In integer mode we render at target and do not rescale.
-	// Any-size mode fills the window; otherwise scale to the target.
-	scaleDown := 1.0
-	if !gs.IntegerScaling {
-		if gs.AnyGameWindowSize {
-			scaleDown = math.Min(float64(bufW)/float64(offW), float64(bufH)/float64(offH))
-		} else {
-			scaleDown = float64(target) / float64(offIntScale)
-		}
-	}
+	scaleDown := math.Min(float64(bufW)/float64(offW), float64(bufH)/float64(offH))
 	drawW := float64(offW) * scaleDown
 	drawH := float64(offH) * scaleDown
 	tx := (float64(bufW) - drawW) / 2
@@ -1010,6 +943,12 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	op.GeoM.Scale(scaleDown, scaleDown)
 	op.GeoM.Translate(tx, ty)
 	gameImage.DrawImage(worldRT, op)
+
+	// Draw bubbles and name tags after scaling
+	prevScale := gs.GameScale
+	gs.GameScale = float64(offIntScale) * scaleDown
+	drawOverlays(gameImage, int(math.Round(tx)), int(math.Round(ty)), snap, alpha)
+	gs.GameScale = prevScale
 
 	// Finally, draw UI (which includes the game window image)
 	eui.Draw(screen)
@@ -1083,6 +1022,12 @@ func drawScene(screen *ebiten.Image, ox, oy int, snap drawSnapshot, alpha float6
 		drawPicture(screen, ox, oy, p, alpha, pictFade, snap.mobiles, descMap, snap.prevMobiles, snap.picShiftX, snap.picShiftY)
 	}
 
+}
+
+// drawOverlays renders speech bubbles and mobile name tags onto the final game image.
+func drawOverlays(screen *ebiten.Image, ox, oy int, snap drawSnapshot, alpha float64) {
+	descMap := snap.descriptors
+
 	if gs.SpeechBubbles {
 		for _, b := range snap.bubbles {
 			bubbleType := b.Type & kBubbleTypeMask
@@ -1151,8 +1096,6 @@ func drawScene(screen *ebiten.Image, ox, oy int, snap drawSnapshot, alpha float6
 			if !b.Far {
 				if d, ok := descMap[b.Index]; ok {
 					if size := mobileSize(d.PictID); size > 0 {
-						// Equivalent to: tailHeight - half(sprite) - half(sprite image height)
-						// Replace image-based height with mobileSize to avoid texture fetch.
 						tailHeight := int(10 * gs.GameScale)
 						y += tailHeight - int(math.Round(float64(size)*gs.GameScale))
 					}
@@ -1161,7 +1104,95 @@ func drawScene(screen *ebiten.Image, ox, oy int, snap drawSnapshot, alpha float6
 			x += ox
 			y += oy
 			borderCol, bgCol, textCol := bubbleColors(b.Type)
-			drawBubble(screen, b.Text, x, y, b.Type, b.Far, b.NoArrow, borderCol, bgCol, textCol)
+			drawBubble(screen, b.Text, x, y, b.Type, b.Far, b.NoArrow, ox, oy, borderCol, bgCol, textCol)
+		}
+	}
+
+	for _, m := range snap.mobiles {
+		h := float64(m.H)
+		v := float64(m.V)
+		if gs.MotionSmoothing {
+			if pm, ok := snap.prevMobiles[m.Index]; ok {
+				dh := int(m.H) - int(pm.H) - snap.picShiftX
+				dv := int(m.V) - int(pm.V) - snap.picShiftY
+				if dh*dh+dv*dv <= maxMobileInterpPixels*maxMobileInterpPixels {
+					h = float64(pm.H)*(1-alpha) + float64(m.H)*alpha
+					v = float64(pm.V)*(1-alpha) + float64(m.V)*alpha
+				}
+			}
+		}
+		x := roundToInt((h + float64(fieldCenterX)) * gs.GameScale)
+		y := roundToInt((v + float64(fieldCenterY)) * gs.GameScale)
+		x += ox
+		y += oy
+		if d, ok := descMap[m.Index]; ok {
+			alpha8 := uint8(gs.NameBgOpacity * 255)
+			if d.Name != "" {
+				style := styleRegular
+				playersMu.RLock()
+				if p, ok := players[d.Name]; ok {
+					if p.Sharing && p.Sharee {
+						style = styleBoldItalic
+					} else if p.Sharing {
+						style = styleBold
+					} else if p.Sharee {
+						style = styleItalic
+					}
+				}
+				playersMu.RUnlock()
+				if m.nameTag != nil && m.nameTagKey.FontGen == fontGen && m.nameTagKey.Opacity == alpha8 && m.nameTagKey.Text == d.Name && m.nameTagKey.Colors == m.Colors && m.nameTagKey.Style == style {
+					top := y + int(20*gs.GameScale)
+					left := x - m.nameTagW/2
+					op := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
+					op.GeoM.Translate(float64(left), float64(top))
+					screen.DrawImage(m.nameTag, op)
+				} else {
+					textClr, bgClr, frameClr := mobileNameColors(m.Colors)
+					bgClr.A = alpha8
+					frameClr.A = alpha8
+					face := mainFont
+					switch style {
+					case styleBold:
+						face = mainFontBold
+					case styleItalic:
+						face = mainFontItalic
+					case styleBoldItalic:
+						face = mainFontBoldItalic
+					}
+					w, h := text.Measure(d.Name, face, 0)
+					iw := int(math.Ceil(w))
+					ih := int(math.Ceil(h))
+					top := y + int(20*gs.GameScale)
+					left := x - iw/2
+					op := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
+					op.GeoM.Scale(float64(iw+5), float64(ih))
+					op.GeoM.Translate(float64(left), float64(top))
+					op.ColorScale.ScaleWithColor(bgClr)
+					screen.DrawImage(whiteImage, op)
+					vector.StrokeRect(screen, float32(left), float32(top), float32(iw+5), float32(ih), 1, frameClr, false)
+					opTxt := &text.DrawOptions{}
+					opTxt.GeoM.Translate(float64(left+2), float64(top+2))
+					opTxt.ColorScale.ScaleWithColor(textClr)
+					text.Draw(screen, d.Name, face, opTxt)
+				}
+			} else {
+				size := mobileSize(d.PictID)
+				back := int((m.Colors >> 4) & 0x0f)
+				if back != kColorCodeBackWhite && back != kColorCodeBackBlue && !(back == kColorCodeBackBlack && d.Type == kDescMonster) {
+					if back >= len(nameBackColors) {
+						back = 0
+					}
+					barClr := nameBackColors[back]
+					barClr.A = alpha8
+					top := y + int(float64(size)*gs.GameScale/2+2*gs.GameScale)
+					left := x - int(6*gs.GameScale)
+					op := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
+					op.GeoM.Scale(12*gs.GameScale, 2*gs.GameScale)
+					op.GeoM.Translate(float64(left), float64(top))
+					op.ColorScale.ScaleWithColor(barClr)
+					screen.DrawImage(whiteImage, op)
+				}
+			}
 		}
 	}
 }
@@ -1265,75 +1296,6 @@ func drawMobile(screen *ebiten.Image, ox, oy int, m frameMobile, descMap map[uin
 		ty := float64(y) - scaled/2
 		op.GeoM.Translate(tx, ty)
 		screen.DrawImage(src, op)
-		if d, ok := descMap[m.Index]; ok {
-			alpha := uint8(gs.NameBgOpacity * 255)
-			if d.Name != "" {
-				style := styleRegular
-				playersMu.RLock()
-				if p, ok := players[d.Name]; ok {
-					if p.Sharing && p.Sharee {
-						style = styleBoldItalic
-					} else if p.Sharing {
-						style = styleBold
-					} else if p.Sharee {
-						style = styleItalic
-					}
-				}
-				playersMu.RUnlock()
-				// Prefer cached name tag if parameters match current settings.
-				if m.nameTag != nil && m.nameTagKey.FontGen == fontGen && m.nameTagKey.Opacity == alpha && m.nameTagKey.Text == d.Name && m.nameTagKey.Colors == m.Colors && m.nameTagKey.Style == style {
-					top := y + int(20*gs.GameScale)
-					left := x - m.nameTagW/2
-					op := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
-					op.GeoM.Translate(float64(left), float64(top))
-					screen.DrawImage(m.nameTag, op)
-				} else {
-					textClr, bgClr, frameClr := mobileNameColors(m.Colors)
-					bgClr.A = alpha
-					frameClr.A = alpha
-					face := mainFont
-					switch style {
-					case styleBold:
-						face = mainFontBold
-					case styleItalic:
-						face = mainFontItalic
-					case styleBoldItalic:
-						face = mainFontBoldItalic
-					}
-					w, h := text.Measure(d.Name, face, 0)
-					iw := int(math.Ceil(w))
-					ih := int(math.Ceil(h))
-					top := y + int(20*gs.GameScale)
-					left := x - iw/2
-					op := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
-					op.GeoM.Scale(float64(iw+5), float64(ih))
-					op.GeoM.Translate(float64(left), float64(top))
-					op.ColorScale.ScaleWithColor(bgClr)
-					screen.DrawImage(whiteImage, op)
-					vector.StrokeRect(screen, float32(left), float32(top), float32(iw+5), float32(ih), 1, frameClr, false)
-					opTxt := &text.DrawOptions{}
-					opTxt.GeoM.Translate(float64(left+2), float64(top+2))
-					opTxt.ColorScale.ScaleWithColor(textClr)
-					text.Draw(screen, d.Name, face, opTxt)
-				}
-			} else {
-				back := int((m.Colors >> 4) & 0x0f)
-				if back != kColorCodeBackWhite && back != kColorCodeBackBlue && !(back == kColorCodeBackBlack && d.Type == kDescMonster) {
-					if back >= len(nameBackColors) {
-						back = 0
-					}
-					barClr := nameBackColors[back]
-					barClr.A = alpha
-					top := y + int(float64(size)*gs.GameScale/2+2*gs.GameScale)
-					left := x - int(6*gs.GameScale)
-					op := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
-					op.GeoM.Scale(12*gs.GameScale, 2*gs.GameScale)
-					op.GeoM.Translate(float64(left), float64(top))
-					op.ColorScale.ScaleWithColor(barClr)
-					screen.DrawImage(whiteImage, op)
-				}
-			}
-		}
 		if gs.imgPlanesDebug {
 			metrics := mainFont.Metrics()
 			lbl := fmt.Sprintf("%dm", plane)

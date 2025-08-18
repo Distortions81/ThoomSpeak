@@ -79,8 +79,6 @@ var gsdef settings = settings{
 	ChatTTSVolume:     1.0,
 	WindowTiling:      false,
 	WindowSnapping:    false,
-	AnyGameWindowSize: true,
-	IntegerScaling:    false,
 	NoCaching:         false,
 	PotatoComputer:    false,
 
@@ -156,7 +154,6 @@ type settings struct {
 	Fullscreen        bool
 	Volume            float64
 	Mute              bool
-	AnyGameWindowSize bool // allow arbitrary game window sizes
 	GameScale         float64
 	BarPlacement      BarPlacement
 	Theme             string
@@ -165,7 +162,6 @@ type settings struct {
 	ChatTTSVolume     float64
 	WindowTiling      bool
 	WindowSnapping    bool
-	IntegerScaling    bool
 
 	GameWindow      WindowState
 	InventoryWindow WindowState
@@ -246,8 +242,6 @@ func loadSettings() bool {
 }
 
 func applySettings() {
-	// Fixed-size mode is deprecated; force any-size mode on.
-	gs.AnyGameWindowSize = true
 	updateBubbleVisibility()
 	eui.SetWindowTiling(gs.WindowTiling)
 	eui.SetWindowSnapping(gs.WindowSnapping)

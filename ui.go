@@ -1741,7 +1741,6 @@ func makeGraphicsWindow() {
 	}
 	// Column widths
 	var leftW float32 = 260
-	var rightW float32 = 260
 
 	graphicsWin = eui.NewWindow()
 	graphicsWin.Title = "Screen Size Settings"
@@ -1756,9 +1755,6 @@ func makeGraphicsWindow() {
 
 	simple := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
 	simple.Size = eui.Point{X: leftW, Y: 10}
-
-	advanced := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
-	advanced.Size = eui.Point{X: rightW, Y: 10}
 
 	// Simple (left) controls
 	uiScaleSlider, uiScaleEvents := eui.NewSlider()
@@ -1821,7 +1817,7 @@ func makeGraphicsWindow() {
 	}
 	renderScale.Value = float32(math.Round(gs.GameScale))
 	renderScale.Size = eui.Point{X: leftW - 10, Y: 24}
-	renderScale.Tooltip = "Game render zoom (1x–10x). In Integer mode uses nearest filtering."
+	renderScale.Tooltip = "Game render zoom (1x–10x)."
 	renderScaleEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
 			// Round to integer steps and clamp
@@ -1843,25 +1839,7 @@ func makeGraphicsWindow() {
 	}
 	simple.AddItem(renderScale)
 
-	// Advanced (right) controls
-	intCB, intEvents := eui.NewCheckbox()
-	intCB.Text = "Integer scale (sharper, faster)"
-	intCB.Size = eui.Point{X: rightW, Y: 24}
-	intCB.Checked = gs.IntegerScaling
-	intEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventCheckboxChanged {
-			gs.IntegerScaling = ev.Checked
-			initFont()
-			if gameWin != nil {
-				gameWin.Refresh()
-			}
-			settingsDirty = true
-		}
-	}
-	advanced.AddItem(intCB)
-
 	outer.AddItem(simple)
-	outer.AddItem(advanced)
 	graphicsWin.AddItem(outer)
 	graphicsWin.AddWindow(false)
 }
