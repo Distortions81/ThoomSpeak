@@ -26,6 +26,18 @@ func runFakeMode(ctx context.Context) {
 
 		playerName = "Hero"
 
+		// Populate a simple player descriptor and mobile record using
+		// values captured from live traffic. This allows the player to
+		// appear in the player list and be rendered on screen without a
+		// server connection.
+		updatePlayerAppearance("Hero", 447, nil, false)
+		stateMu.Lock()
+		state.descriptors[0] = frameDescriptor{Index: 0, Type: kDescPlayer, PictID: 447, Name: "Hero"}
+		state.mobiles[0] = frameMobile{Index: 0, H: 0, V: 0}
+		prepareRenderCacheLocked()
+		stateMu.Unlock()
+		playersDirty = true
+
 		// Hero shares Bob
 		msg := append(pnTag("Hero"), []byte(" is sharing experiences with ")...)
 		msg = append(msg, pnTag("Bob")...)
