@@ -102,6 +102,15 @@ func sortMobiles(mobs []frameMobile) {
 	})
 }
 
+func sortMobilesNameTags(mobs []frameMobile) {
+	sort.Slice(mobs, func(i, j int) bool {
+		if mobs[i].H == mobs[j].H {
+			return mobs[i].V < mobs[j].V
+		}
+		return mobs[i].H > mobs[j].H
+	})
+}
+
 func sortDescriptors(descs []frameDescriptor) {
 	sort.Slice(descs, func(i, j int) bool {
 		return descs[i].Index < descs[j].Index
