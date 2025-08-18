@@ -674,11 +674,15 @@ func parseDrawState(data []byte) error {
 		if clImages != nil {
 			d.Plane = clImages.Plane(uint32(d.PictID))
 		}
-		// Skip NPCs entirely for player list scanning.
+		// Skip NPCs entirely for player list scanning. Only update
+		// appearance and queue info requests when not in movie mode to
+		// avoid side effects during playback.
 		if d.Type != kDescNPC && d.Name != "" {
-			updatePlayerAppearance(d.Name, d.PictID, d.Colors, false)
-			// Opportunistically request full info for visible players.
-			queueInfoRequest(d.Name)
+			if !movieMode {
+				updatePlayerAppearance(d.Name, d.PictID, d.Colors, false)
+				// Opportunistically request full info for visible players.
+				queueInfoRequest(d.Name)
+			}
 		}
 		descs = append(descs, d)
 	}
