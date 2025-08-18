@@ -99,7 +99,6 @@ var gsdef settings = settings{
 	precacheImages:      false,
 	throttleSounds:      true,
 	lateInputUpdates:    false,
-	cacheWholeSheet:     true,
 	smoothMoving:        false,
 	dontShiftNewSprites: false,
 	fastBars:            true,
@@ -179,7 +178,6 @@ type settings struct {
 	precacheImages      bool
 	throttleSounds      bool
 	lateInputUpdates    bool
-	cacheWholeSheet     bool
 	smoothMoving        bool
 	dontShiftNewSprites bool
 	fastBars            bool
@@ -224,13 +222,17 @@ func loadSettings() bool {
 		return false
 	}
 
-	newGS := gsdef
-	if err := json.Unmarshal(data, &newGS); err != nil {
+	var tmp struct {
+		settings
+		CacheWholeSheet bool `json:"cacheWholeSheet,omitempty"`
+	}
+	tmp.settings = gsdef
+	if err := json.Unmarshal(data, &tmp); err != nil {
 		return false
 	}
 
-	if newGS.Version == SETTINGS_VERSION {
-		gs = newGS
+	if tmp.Version == SETTINGS_VERSION {
+		gs = tmp.settings
 	} else {
 		applyQualityPreset("High")
 	}
