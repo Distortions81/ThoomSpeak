@@ -719,19 +719,10 @@ func updateGameWindowSize() {
 	if gameWin == nil {
 		return
 	}
-	if gs.AnyGameWindowSize {
-		size := gameWin.GetRawSize()
-		desiredW := int(math.Round(float64(size.X)))
-		desiredH := int(math.Round(float64(size.Y)))
-		gameWin.SetSize(eui.Point{X: float32(desiredW), Y: float32(desiredH)})
-		return
-	}
-	scale := float32(gs.GameScale)
-	desiredSize := eui.Point{
-		X: float32(gameAreaSizeX)*scale + 2*gameWin.Padding,
-		Y: float32(gameAreaSizeY)*scale + 2*gameWin.Padding,
-	}
-	gameWin.SetSize(desiredSize)
+	size := gameWin.GetRawSize()
+	desiredW := int(math.Round(float64(size.X)))
+	desiredH := int(math.Round(float64(size.Y)))
+	gameWin.SetSize(eui.Point{X: float32(desiredW), Y: float32(desiredH)})
 }
 
 func gameWindowOrigin() (int, int) {
@@ -798,7 +789,7 @@ func worldDrawInfo() (int, int, float64) {
 	const maxSuperSampleScale = 4
 	worldW, worldH := gameAreaSizeX, gameAreaSizeY
 
-	// Slider-desired integer scale.
+	// Slider-desired render scale.
 	desired := int(math.Round(gs.GameScale))
 	if desired < 1 {
 		desired = 1
@@ -813,45 +804,21 @@ func worldDrawInfo() (int, int, float64) {
 		fit = 1
 	}
 
-	var offIntScale int
-	var target int
-	if gs.IntegerScaling {
-		target = desired
-		if target > fit {
-			target = fit
-		}
-		offIntScale = target
-	} else if gs.AnyGameWindowSize {
-		target = fit
-		offIntScale = int(math.Ceil(float64(fit)))
-		if desired > offIntScale {
-			offIntScale = desired
-		}
-		if offIntScale > maxSuperSampleScale {
-			offIntScale = maxSuperSampleScale
-		}
-		if offIntScale < 1 {
-			offIntScale = 1
-		}
-	} else {
-		target = desired
-		offIntScale = target
-		if offIntScale < 1 {
-			offIntScale = 1
-		}
+	offIntScale := int(math.Ceil(float64(fit)))
+	if desired > offIntScale {
+		offIntScale = desired
+	}
+	if offIntScale > maxSuperSampleScale {
+		offIntScale = maxSuperSampleScale
+	}
+	if offIntScale < 1 {
+		offIntScale = 1
 	}
 
 	offW := worldW * offIntScale
 	offH := worldH * offIntScale
 
-	scaleDown := 1.0
-	if !gs.IntegerScaling {
-		if gs.AnyGameWindowSize {
-			scaleDown = math.Min(float64(bufW)/float64(offW), float64(bufH)/float64(offH))
-		} else {
-			scaleDown = float64(target) / float64(offIntScale)
-		}
-	}
+	scaleDown := math.Min(float64(bufW)/float64(offW), float64(bufH)/float64(offH))
 
 	drawW := float64(offW) * scaleDown
 	drawH := float64(offH) * scaleDown
@@ -887,39 +854,14 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		return
 	}
 
-	// Determine offscreen integer render scale and composite scale.
+	// Determine render scale and composite scale.
 	// A user-selected render scale (gs.GameScale) in 1x..10x controls
-	// the apparent size of the world. In integer mode we render exactly
-	// at that integer and composite with nearest-neighbor.
+	// the apparent size of the world.
 	bufW := gameImage.Bounds().Dx()
 	bufH := gameImage.Bounds().Dy()
 	worldW, worldH := gameAreaSizeX, gameAreaSizeY
 
-	// Clamp desired render scale from settings (treat as integer steps)
-	desired := int(math.Round(gs.GameScale))
-	if desired < 1 {
-		desired = 1
-	}
-	if desired > 10 {
-		desired = 10
-	}
-	// Maximum scale that fits the current buffer without clipping
-	fit := int(math.Floor(math.Min(float64(bufW)/float64(worldW), float64(bufH)/float64(worldH))))
-	if fit < 1 {
-		fit = 1
-	}
-
-	var finalScale float64
-	if gs.IntegerScaling {
-		if desired > fit {
-			desired = fit
-		}
-		finalScale = float64(desired)
-	} else if gs.AnyGameWindowSize {
-		finalScale = math.Min(float64(bufW)/float64(worldW), float64(bufH)/float64(worldH))
-	} else {
-		finalScale = float64(desired)
-	}
+	finalScale := math.Min(float64(bufW)/float64(worldW), float64(bufH)/float64(worldH))
 
 	drawW := float64(worldW) * finalScale
 	drawH := float64(worldH) * finalScale
