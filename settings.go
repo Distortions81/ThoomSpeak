@@ -56,33 +56,35 @@ var gsdef settings = settings{
 	BubbleMonsters:     true,
 	BubbleNarration:    true,
 
-	MotionSmoothing:   true,
-	BlendMobiles:      false,
-	BlendPicts:        false,
-	BlendAmount:       1.0,
-	MobileBlendAmount: 0.33,
-	MobileBlendFrames: 10,
-	PictBlendFrames:   10,
-	DenoiseImages:     false,
-	DenoiseSharpness:  4.0,
-	DenoiseAmount:     0.2,
-	ShowFPS:           true,
-	UIScale:           1.0,
-	Fullscreen:        false,
-	Volume:            0.10,
-	Mute:              false,
-	GameScale:         2,
-	BarPlacement:      BarPlacementBottom,
-	Theme:             "",
-	MessagesToConsole: false,
-	ChatTTS:           false,
-	ChatTTSVolume:     1.0,
-	WindowTiling:      false,
-	WindowSnapping:    false,
-	AnyGameWindowSize: true,
-	IntegerScaling:    false,
-	NoCaching:         false,
-	PotatoComputer:    false,
+	MotionSmoothing:    true,
+	BlendMobiles:       false,
+	BlendPicts:         false,
+	BlendAmount:        1.0,
+	MobileBlendAmount:  0.33,
+	MobileBlendFrames:  10,
+	PictBlendFrames:    10,
+	DenoiseImages:      false,
+	DenoiseSharpness:   4.0,
+	DenoiseAmount:      0.2,
+	ShowFPS:            true,
+	UIScale:            1.0,
+	Fullscreen:         false,
+	Volume:             0.10,
+	Mute:               false,
+	AutoVolume:         false,
+	AutoVolumeStrength: 0.5,
+	GameScale:          2,
+	BarPlacement:       BarPlacementBottom,
+	Theme:              "",
+	MessagesToConsole:  false,
+	ChatTTS:            false,
+	ChatTTSVolume:      1.0,
+	WindowTiling:       false,
+	WindowSnapping:     false,
+	AnyGameWindowSize:  true,
+	IntegerScaling:     false,
+	NoCaching:          false,
+	PotatoComputer:     false,
 
 	GameWindow:      WindowState{Open: true},
 	InventoryWindow: WindowState{Open: true},
@@ -140,31 +142,33 @@ type settings struct {
 	BubbleMonsters     bool
 	BubbleNarration    bool
 
-	MotionSmoothing   bool
-	BlendMobiles      bool
-	BlendPicts        bool
-	BlendAmount       float64
-	MobileBlendAmount float64
-	MobileBlendFrames int
-	PictBlendFrames   int
-	DenoiseImages     bool
-	DenoiseSharpness  float64
-	DenoiseAmount     float64
-	ShowFPS           bool
-	UIScale           float64
-	Fullscreen        bool
-	Volume            float64
-	Mute              bool
-	AnyGameWindowSize bool // allow arbitrary game window sizes
-	GameScale         float64
-	BarPlacement      BarPlacement
-	Theme             string
-	MessagesToConsole bool
-	ChatTTS           bool
-	ChatTTSVolume     float64
-	WindowTiling      bool
-	WindowSnapping    bool
-	IntegerScaling    bool
+	MotionSmoothing    bool
+	BlendMobiles       bool
+	BlendPicts         bool
+	BlendAmount        float64
+	MobileBlendAmount  float64
+	MobileBlendFrames  int
+	PictBlendFrames    int
+	DenoiseImages      bool
+	DenoiseSharpness   float64
+	DenoiseAmount      float64
+	ShowFPS            bool
+	UIScale            float64
+	Fullscreen         bool
+	Volume             float64
+	Mute               bool
+	AutoVolume         bool
+	AutoVolumeStrength float64
+	AnyGameWindowSize  bool // allow arbitrary game window sizes
+	GameScale          float64
+	BarPlacement       BarPlacement
+	Theme              string
+	MessagesToConsole  bool
+	ChatTTS            bool
+	ChatTTSVolume      float64
+	WindowTiling       bool
+	WindowSnapping     bool
+	IntegerScaling     bool
 
 	GameWindow      WindowState
 	InventoryWindow WindowState
@@ -231,6 +235,10 @@ func loadSettings() bool {
 	newGS := gsdef
 	if err := json.Unmarshal(data, &newGS); err != nil {
 		return false
+	}
+
+	if newGS.AutoVolumeStrength == 0 {
+		newGS.AutoVolumeStrength = 0.5
 	}
 
 	if newGS.Version == SETTINGS_VERSION {
@@ -309,6 +317,10 @@ func updateBubbleVisibility() {
 }
 
 func saveSettings() {
+	if gs.AutoVolumeStrength == 0 {
+		gs.AutoVolumeStrength = 0.5
+	}
+
 	data, err := json.MarshalIndent(gs, "", "  ")
 	if err != nil {
 		logError("save settings: %v", err)
