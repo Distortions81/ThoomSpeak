@@ -177,7 +177,7 @@ func loadImageFrame(id uint16, frame int) *ebiten.Image {
 	innerWidth := sheet.Bounds().Dx() - 2
 	h := innerHeight / frames
 
-	if gs.cacheWholeSheet && !gs.NoCaching {
+	if !gs.NoCaching {
 		imageMu.Lock()
 		for f := 0; f < frames; f++ {
 			k := makeImageKey(id, f)
@@ -240,7 +240,7 @@ func loadMobileFrame(id uint16, state uint8, colors []byte) *ebiten.Image {
 		return nil
 	}
 
-	if gs.cacheWholeSheet && !gs.NoCaching {
+	if !gs.NoCaching {
 		imageMu.Lock()
 		for yy := 0; yy < 16; yy++ {
 			for xx := 0; xx < 16; xx++ {
