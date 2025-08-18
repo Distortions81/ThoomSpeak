@@ -178,6 +178,39 @@ func equipInventoryItem(id uint16, idx int, equip bool) {
 	inventoryDirty = true
 }
 
+// toggleInventoryEquip equips the specified item if no instance is currently
+// equipped. If an instance is already equipped, it unequips that item instead.
+// The server is informed via pendingCommand and local inventory state is
+// updated immediately.
+func toggleInventoryEquip(id uint16) {
+	items := getInventory()
+	equip := true
+	idx := -1
+	for _, it := range items {
+		if it.ID != id {
+			continue
+		}
+		if it.Equipped {
+			equip = false
+			break
+		}
+		if idx < 0 {
+			idx = it.IDIndex
+		}
+	}
+	if equip {
+		if idx >= 0 {
+			pendingCommand = fmt.Sprintf("/equip %d %d", id, idx+1)
+		} else {
+			pendingCommand = fmt.Sprintf("/equip %d", id)
+		}
+		equipInventoryItem(id, idx, true)
+	} else {
+		pendingCommand = fmt.Sprintf("/unequip %d", id)
+		equipInventoryItem(id, -1, false)
+	}
+}
+
 func renameInventoryItem(id uint16, idx int, name string) {
 	inventoryMu.Lock()
 	index := -1

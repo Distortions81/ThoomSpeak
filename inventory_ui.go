@@ -222,6 +222,14 @@ func updateInventoryWindow() {
 			row.AddItem(lt)
 		}
 
+		idCopy := id
+		click := func() { toggleInventoryEquip(idCopy) }
+		icon.Action = click
+		t.Action = click
+		if lt != nil {
+			lt.Action = click
+		}
+
 		// Row height matches the icon/text height with minimal padding.
 		row.Size.Y = rowUnits
 
