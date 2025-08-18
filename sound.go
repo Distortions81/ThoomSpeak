@@ -14,6 +14,7 @@ import (
 
 const (
 	maxSounds = 64
+	dbPad     = -3
 )
 
 var (
@@ -407,8 +408,11 @@ func loadSound(id uint16) []byte {
 	}
 
 	if srcRate != dstRate {
-		//logDebug("loadSound(%d) resampling from %d to %d", id, srcRate, dstRate)
-		samples = ResampleCubicInt16PadDB(samples, srcRate, dstRate, -6)
+		if srcRate < 16000 {
+			samples = ResampleLanczosInt16PadDB(samples, srcRate, dstRate, dbPad)
+		} else {
+			samples = ResampleCubicInt16PadDB(samples, srcRate, dstRate, dbPad)
+		}
 	}
 
 	applyFadeInOut(samples, dstRate)
