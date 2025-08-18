@@ -96,10 +96,10 @@ func runFakeMode(ctx context.Context) {
 				emitBubble(1, kBubblePlayerAction, p2, bubbleVerbParentheses, "waves excitedly")
 			case 8: // Bob falls
 				msg := append(pnTag(p2), []byte(" has fallen")...)
-				handleInfoText(append(msg, '\r'))
+				handleInfoText(append(bepp("hf", msg), '\r'))
 			case 9: // Bob recovers
 				msg := append(pnTag(p2), []byte(" is no longer fallen")...)
-				handleInfoText(append(msg, '\r'))
+				handleInfoText(append(bepp("nf", msg), '\r'))
 			case 10: // You unshare Bob
 				msg := append([]byte("You are no longer sharing experiences with "), pnTag(p2)...)
 				msg = append(msg, '.')
