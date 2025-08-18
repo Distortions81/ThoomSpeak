@@ -141,3 +141,28 @@ func ResampleLanczosInt16PadDB(src []int16, srcRate, dstRate int, padDB float64)
 
 	return dst
 }
+
+func PadDB(samples []int16, padDB float64) []int16 {
+	if padDB == 0 {
+		// No pad, just return a copy
+		out := make([]int16, len(samples))
+		copy(out, samples)
+		return out
+	}
+
+	scale := math.Pow(10, -padDB/20.0)
+	out := make([]int16, len(samples))
+
+	for i, s := range samples {
+		v := float64(s) * scale
+		// Clamp to int16 range
+		if v > math.MaxInt16 {
+			v = math.MaxInt16
+		} else if v < math.MinInt16 {
+			v = math.MinInt16
+		}
+		out[i] = int16(v)
+	}
+
+	return out
+}

@@ -233,6 +233,7 @@ func updateSoundVolume() {
 		}
 	}
 }
+
 func resampleLinear(src []int16, srcRate, dstRate int) []int16 {
 	if srcRate == dstRate || len(src) == 0 {
 		return append([]int16(nil), src...)
@@ -409,6 +410,8 @@ func loadSound(id uint16) []byte {
 
 	if srcRate != dstRate {
 		samples = ResampleLanczosInt16PadDB(samples, srcRate, dstRate, dbPad)
+	} else {
+		samples = PadDB(samples, dbPad)
 	}
 
 	applyFadeInOut(samples, dstRate)
