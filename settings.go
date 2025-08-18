@@ -72,7 +72,7 @@ var gsdef settings = settings{
 	Volume:             0.10,
 	Mute:               false,
 	AutoVolume:         false,
-	AutoVolumeStrength: 0.5,
+	AutoVolumeStrength: 1.0,
 	GameScale:          2,
 	BarPlacement:       BarPlacementBottom,
 	Theme:              "",
