@@ -100,7 +100,7 @@ var gsdef settings = settings{
 	nightEffect:         true,
 	precacheSounds:      true,
 	precacheImages:      false,
-	LowQualitySounds:    false,
+	throttleSounds:      true,
 	lateInputUpdates:    false,
 	cacheWholeSheet:     true,
 	smoothMoving:        false,
@@ -183,7 +183,7 @@ type settings struct {
 	nightEffect         bool
 	precacheSounds      bool
 	precacheImages      bool
-	LowQualitySounds    bool
+	throttleSounds      bool
 	lateInputUpdates    bool
 	cacheWholeSheet     bool
 	smoothMoving        bool

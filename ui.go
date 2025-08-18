@@ -68,21 +68,21 @@ var (
 	pictBlendLabel   *eui.ItemData
 	totalCacheLabel  *eui.ItemData
 
-	soundTestLabel    *eui.ItemData
-	soundTestID       int
-	recordBtn         *eui.ItemData
-	recordStatus      *eui.ItemData
-	qualityPresetDD   *eui.ItemData
-	denoiseCB         *eui.ItemData
-	motionCB          *eui.ItemData
-	noSmoothCB        *eui.ItemData
-	animCB            *eui.ItemData
-	pictBlendCB       *eui.ItemData
-	lowQualitySoundCB *eui.ItemData
-	precacheSoundCB   *eui.ItemData
-	precacheImageCB   *eui.ItemData
-	noCacheCB         *eui.ItemData
-	potatoCB          *eui.ItemData
+	soundTestLabel  *eui.ItemData
+	soundTestID     int
+	recordBtn       *eui.ItemData
+	recordStatus    *eui.ItemData
+	qualityPresetDD *eui.ItemData
+	denoiseCB       *eui.ItemData
+	motionCB        *eui.ItemData
+	noSmoothCB      *eui.ItemData
+	animCB          *eui.ItemData
+	pictBlendCB     *eui.ItemData
+	throttleSoundCB *eui.ItemData
+	precacheSoundCB *eui.ItemData
+	precacheImageCB *eui.ItemData
+	noCacheCB       *eui.ItemData
+	potatoCB        *eui.ItemData
 )
 
 // lastWhoRequest tracks the last time we requested a backend who list so we
@@ -2103,20 +2103,20 @@ func makeQualityWindow() {
 	}
 	flow.AddItem(showFPSCB)
 
-	lqsCB, lowSoundEvents := eui.NewCheckbox()
-	lowQualitySoundCB = lqsCB
-	lowQualitySoundCB.Text = "Low quality sounds"
-	lowQualitySoundCB.Size = eui.Point{X: width, Y: 24}
-	lowQualitySoundCB.Checked = gs.LowQualitySounds
-	lowQualitySoundCB.Tooltip = "Use fast linear resampling for all sounds"
-	lowSoundEvents.Handle = func(ev eui.UIEvent) {
+	lqsCB, throttleSoundEvents := eui.NewCheckbox()
+	throttleSoundCB = lqsCB
+	throttleSoundCB.Text = "Throttle Sounds"
+	throttleSoundCB.Size = eui.Point{X: width, Y: 24}
+	throttleSoundCB.Checked = gs.throttleSounds
+	throttleSoundCB.Tooltip = "Prevent same sound from playing every tick."
+	throttleSoundEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventCheckboxChanged {
-			gs.LowQualitySounds = ev.Checked
+			gs.throttleSounds = ev.Checked
 			clearCaches()
 			settingsDirty = true
 		}
 	}
-	flow.AddItem(lowQualitySoundCB)
+	flow.AddItem(throttleSoundCB)
 
 	psCB, precacheSoundEvents := eui.NewCheckbox()
 	precacheSoundCB = psCB
