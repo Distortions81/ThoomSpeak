@@ -113,6 +113,65 @@ func parseShareText(raw []byte, s string) bool {
 			playersDirty = true
 		}
 		return true
+	case playerName != "" && (strings.HasPrefix(s, playerName+" is sharing experiences with ") || strings.HasPrefix(s, playerName+" begins sharing experiences with ")):
+		// Hero (you) sharing others in third-person form
+		playersMu.Lock()
+		changed := make([]string, 0, len(players))
+		for _, p := range players {
+			if p.Sharee {
+				p.Sharee = false
+				changed = append(changed, p.Name)
+			}
+		}
+		playersMu.Unlock()
+		for _, n := range changed {
+			killNameTagCacheFor(n)
+		}
+		off := bytes.Index(raw, []byte{0xC2, 'p', 'n'})
+		if off >= 0 {
+			names := parseNames(raw[off:])
+			playersMu.Lock()
+			changed = changed[:0]
+			for _, name := range names {
+				if name == playerName {
+					continue
+				}
+				p := getPlayer(name)
+				if !p.Sharee {
+					p.Sharee = true
+					changed = append(changed, name)
+				}
+			}
+			playersMu.Unlock()
+			for _, n := range changed {
+				killNameTagCacheFor(n)
+			}
+			playersDirty = true
+		}
+		return true
+	case playerName != "" && strings.HasPrefix(s, playerName+" is no longer sharing experiences with "):
+		// Hero (you) unsharing others in third-person form
+		off := bytes.Index(raw, []byte{0xC2, 'p', 'n'})
+		if off >= 0 {
+			names := parseNames(raw[off:])
+			playersMu.Lock()
+			changed := make([]string, 0, len(names))
+			for _, name := range names {
+				if name == playerName {
+					continue
+				}
+				if p, ok := players[name]; ok && p.Sharee {
+					p.Sharee = false
+					changed = append(changed, name)
+				}
+			}
+			playersMu.Unlock()
+			for _, n := range changed {
+				killNameTagCacheFor(n)
+			}
+			playersDirty = true
+		}
+		return true
 	case strings.HasSuffix(s, " is sharing experiences with you."):
 		name := firstTagContent(raw, 'p', 'n')
 		if name != "" {
