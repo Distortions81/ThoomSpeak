@@ -65,7 +65,7 @@ func TestPlaySoundIDs(t *testing.T) {
 		t.Fatalf("load CL_Sounds: %v", err)
 	}
 	initSoundContext()
-	gs.Volume = 1
+	gs.VolumeDB = 0
 
 	messages = nil
 	soundMu.Lock()

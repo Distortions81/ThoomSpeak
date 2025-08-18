@@ -12,7 +12,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-const SETTINGS_VERSION = 5
+const SETTINGS_VERSION = 6
 
 type BarPlacement int
 
@@ -69,7 +69,7 @@ var gsdef settings = settings{
 	ShowFPS:           true,
 	UIScale:           1.0,
 	Fullscreen:        false,
-	Volume:            0.10,
+	VolumeDB:          -20,
 	Mute:              false,
 	GameScale:         2,
 	BarPlacement:      BarPlacementBottom,
@@ -153,7 +153,7 @@ type settings struct {
 	ShowFPS           bool
 	UIScale           float64
 	Fullscreen        bool
-	Volume            float64
+	VolumeDB          float64
 	Mute              bool
 	AnyGameWindowSize bool // allow arbitrary game window sizes
 	GameScale         float64
@@ -233,9 +233,19 @@ func loadSettings() bool {
 		return false
 	}
 
-	if newGS.Version == SETTINGS_VERSION {
+	switch newGS.Version {
+	case SETTINGS_VERSION:
 		gs = newGS
-	} else {
+	case 5:
+		var old struct {
+			Volume float64 `json:"Volume"`
+		}
+		_ = json.Unmarshal(data, &old)
+		newGS.VolumeDB = gainToDB(old.Volume)
+		newGS.Version = SETTINGS_VERSION
+		gs = newGS
+		settingsDirty = true
+	default:
 		applyQualityPreset("High")
 	}
 

@@ -233,12 +233,12 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 	volumeSlider, volumeEvents := eui.NewSlider()
 	volumeSlider.MinValue = 0
 	volumeSlider.MaxValue = 1
-	volumeSlider.Value = float32(gs.Volume)
+	volumeSlider.Value = float32(dbToGain(gs.VolumeDB))
 	volumeSlider.Size = eui.Point{X: 150, Y: buttonHeight}
 	volumeSlider.FontSize = 9
 	volumeEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
-			gs.Volume = float64(ev.Value)
+			gs.VolumeDB = gainToDB(float64(ev.Value))
 			settingsDirty = true
 			updateSoundVolume()
 		}
