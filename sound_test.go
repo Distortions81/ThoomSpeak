@@ -69,7 +69,7 @@ func TestPlaySoundIDs(t *testing.T) {
 
 	messages = nil
 	soundMu.Lock()
-	soundPlayers = make(map[*audio.Player]struct{})
+	soundPlayers = make(map[*audio.Player]float64)
 	soundMu.Unlock()
 
 	playSound(1)

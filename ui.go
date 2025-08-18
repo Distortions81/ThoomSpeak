@@ -1221,6 +1221,57 @@ func makeSettingsWindow() {
 	}
 	right.AddItem(fullscreenCB)
 
+	autoVolRow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
+
+	autoVolCB, autoVolEvents := eui.NewCheckbox()
+	autoVolCB.Text = "Auto Volume"
+	autoVolCB.Size = eui.Point{X: rightW - 150, Y: 24}
+	autoVolCB.Checked = gs.AutoVolume
+	autoVolRow.AddItem(autoVolCB)
+
+	autoVolSlider, autoVolSliderEvents := eui.NewSlider()
+	autoVolSlider.Label = "Auto Volume Strength"
+	autoVolSlider.MinValue = 0
+	autoVolSlider.MaxValue = 1
+	autoVolSlider.Value = float32(gs.AutoVolumeStrength)
+	autoVolSlider.Size = eui.Point{X: 150, Y: 24}
+	autoVolSlider.FontSize = 9
+	if gs.AutoVolume {
+		autoVolRow.AddItem(autoVolSlider)
+	}
+
+	autoVolEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
+			gs.AutoVolume = ev.Checked
+			settingsDirty = true
+			updateSoundVolume()
+			if ev.Checked {
+				if len(autoVolRow.Contents) == 1 {
+					autoVolRow.AddItem(autoVolSlider)
+				}
+			} else if len(autoVolRow.Contents) > 1 {
+				autoVolRow.Contents = autoVolRow.Contents[:1]
+			}
+			settingsWin.Refresh()
+		}
+	}
+
+	autoVolSliderEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
+			gs.AutoVolumeStrength = float64(ev.Value)
+			settingsDirty = true
+			updateSoundVolume()
+		}
+	}
+
+	right.AddItem(autoVolRow)
+
 	bubbleMsgCB, bubbleMsgEvents := eui.NewCheckbox()
 	bubbleMsgCB.Text = "Combine chat + console"
 	bubbleMsgCB.Size = eui.Point{X: rightW, Y: 24}
