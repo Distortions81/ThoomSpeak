@@ -13,6 +13,15 @@ func pnTag(name string) []byte {
 	return b
 }
 
+// bepp wraps plain text with a BEPP prefix and NUL terminator.
+func bepp(prefix string, msg []byte) []byte {
+	b := []byte{0xC2}
+	b = append(b, prefix[0], prefix[1])
+	b = append(b, msg...)
+	b = append(b, 0)
+	return b
+}
+
 // runFakeMode injects sample share and fallen messages using real server
 // formats captured from PCAP data. It allows testing client behavior without
 // connecting to the live server.
@@ -46,9 +55,12 @@ func runFakeMode(ctx context.Context) {
 			stateMu.Lock()
 			state.bubbles = append(state.bubbles, bubble{Index: idx, Text: txt, Type: typ, CreatedFrame: frameCounter})
 			stateMu.Unlock()
-			if verb == "" {
+			switch verb {
+			case "", bubbleVerbVerbatim:
 				chatMessage(txt)
-			} else {
+			case bubbleVerbParentheses:
+				chatMessage(name + " " + txt)
+			default:
 				chatMessage(name + " " + verb + ", " + txt)
 			}
 		}
@@ -66,10 +78,10 @@ func runFakeMode(ctx context.Context) {
 			case 0: // You share Bob
 				msg := append([]byte("You are sharing experiences with "), pnTag("Bob")...)
 				msg = append(msg, '.')
-				handleInfoText(append(msg, '\r'))
+				handleInfoText(append(bepp("sh", msg), '\r'))
 			case 1: // Bob shares you
 				msg := append(pnTag("Bob"), []byte(" is sharing experiences with you.")...)
-				handleInfoText(append(msg, '\r'))
+				handleInfoText(append(bepp("sh", msg), '\r'))
 			case 2: // Hero speaks
 				emitBubble(0, kBubbleNormal, "Hero", "says", "Hello there!")
 			case 3: // Bob whispers
@@ -80,21 +92,23 @@ func runFakeMode(ctx context.Context) {
 				emitBubble(1, kBubbleThought, "Bob", "thinks", "I wonder...")
 			case 6: // Bob thinks to you
 				emitBubble(1, kBubbleThought, "Bob", "thinks to you", "Hello Hero")
-			case 7: // Bob falls
+			case 7: // Bob acts
+				emitBubble(1, kBubblePlayerAction, "Bob", bubbleVerbParentheses, "waves excitedly")
+			case 8: // Bob falls
 				msg := append(pnTag("Bob"), []byte(" has fallen")...)
 				handleInfoText(append(msg, '\r'))
-			case 8: // Bob recovers
+			case 9: // Bob recovers
 				msg := append(pnTag("Bob"), []byte(" is no longer fallen")...)
 				handleInfoText(append(msg, '\r'))
-			case 9: // You unshare Bob
+			case 10: // You unshare Bob
 				msg := append([]byte("You are no longer sharing experiences with "), pnTag("Bob")...)
 				msg = append(msg, '.')
-				handleInfoText(append(msg, '\r'))
-			case 10: // Bob unshares you
+				handleInfoText(append(bepp("su", msg), '\r'))
+			case 11: // Bob unshares you
 				msg := append(pnTag("Bob"), []byte(" is no longer sharing experiences with you.")...)
-				handleInfoText(append(msg, '\r'))
+				handleInfoText(append(bepp("su", msg), '\r'))
 			}
-			step = (step + 1) % 11
+			step = (step + 1) % 12
 		}
 	}()
 }
