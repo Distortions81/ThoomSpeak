@@ -28,6 +28,10 @@ var (
 	soundPlayers = make(map[*audio.Player]float64)
 )
 
+func dbToVolume(db float64) float64 {
+	return math.Pow(10, db/20)
+}
+
 // stopAllSounds halts and disposes all currently playing audio players.
 func stopAllSounds() {
 	soundMu.Lock()
@@ -196,7 +200,7 @@ func playSound(ids ...uint16) {
 		wg.Wait()
 
 		p := audioContext.NewPlayerFromBytes(out)
-		vol := gs.Volume * autoGain
+		vol := dbToVolume(gs.VolumeDB)
 		if gs.Mute {
 			vol = 0
 		}
@@ -230,7 +234,8 @@ func initSoundContext() {
 }
 
 func updateSoundVolume() {
-	vol := gs.Volume
+	vol := dbToVolume(gs.VolumeDB)
+	gs.Volume = vol
 	if gs.Mute {
 		vol = 0
 	}
