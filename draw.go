@@ -1275,7 +1275,7 @@ func parseDrawState(data []byte) error {
 	var newSounds []uint16
 	var numNewSounds int
 
-	for i := 0; i < soundCount; i++ {
+	for i := 0; i < soundCount && i < maxSounds; i++ {
 		id := binary.BigEndian.Uint16(stateData[:2])
 		stateData = stateData[2:]
 
