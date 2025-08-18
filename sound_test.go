@@ -72,7 +72,7 @@ func TestPlaySoundIDs(t *testing.T) {
 	soundPlayers = make(map[*audio.Player]struct{})
 	soundMu.Unlock()
 
-	playSound(1)
+	playSound([]uint16{1})
 	time.Sleep(50 * time.Millisecond)
 	if len(messages) != 0 {
 		t.Fatalf("unexpected messages for valid id: %v", messages)
@@ -85,7 +85,7 @@ func TestPlaySoundIDs(t *testing.T) {
 	}
 
 	messages = nil
-	playSound(2)
+	playSound([]uint16{2})
 	time.Sleep(50 * time.Millisecond)
 	if len(messages) != 0 {
 		t.Fatalf("unexpected messages for unknown id: %v", messages)

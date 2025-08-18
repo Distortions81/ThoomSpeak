@@ -38,7 +38,7 @@ func stopAllSounds() {
 // playSound mixes the provided sound IDs and plays the result asynchronously.
 // Each ID is loaded, mixed with simple clipping and then played at the current
 // global volume. The function returns immediately after scheduling playback.
-func playSound(ids ...uint16) {
+func playSound(ids []uint16) {
 	if len(ids) == 0 {
 		return
 	}
@@ -140,7 +140,7 @@ func playSound(ids ...uint16) {
 		// Apply peak normalization and reduce volume for overlapping sounds
 		scale := 1 / float64(len(sounds))
 		if maxVal > 0 {
-			scale *= math.Min(1.0, 32767.0/float64(maxVal))
+			scale *= math.Min(1, 32767.0/float64(maxVal))
 		}
 
 		out := make([]byte, len(mixed)*2)
@@ -192,7 +192,7 @@ func playSound(ids ...uint16) {
 
 		//logDebug("playSound playing")
 		p.Play()
-	}(append([]uint16(nil), ids...))
+	}(ids)
 }
 
 // initSoundContext initializes the global audio context.
@@ -232,7 +232,6 @@ func updateSoundVolume() {
 		}
 	}
 }
-
 func resampleLinear(src []int16, srcRate, dstRate int) []int16 {
 	if srcRate == dstRate || len(src) == 0 {
 		return append([]int16(nil), src...)
@@ -409,7 +408,7 @@ func loadSound(id uint16) []byte {
 
 	if srcRate != dstRate {
 		//logDebug("loadSound(%d) resampling from %d to %d", id, srcRate, dstRate)
-		samples = resampleLinear(samples, srcRate, dstRate)
+		samples = ResampleCubicInt16PadDB(samples, srcRate, dstRate, -6)
 	}
 
 	applyFadeInOut(samples, dstRate)

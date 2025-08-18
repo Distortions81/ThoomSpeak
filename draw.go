@@ -1272,11 +1272,28 @@ func parseDrawState(data []byte) error {
 	if len(stateData) < soundCount*2 {
 		return errors.New(stage)
 	}
+	var newSounds []uint16
+	var numNewSounds int
 	for i := 0; i < soundCount; i++ {
 		id := binary.BigEndian.Uint16(stateData[:2])
 		stateData = stateData[2:]
-		playSound(id)
+
+		//Prevent duplicate sounds
+		if numNewSounds > 0 {
+			for _, item := range newSounds {
+				if item != id {
+					newSounds = append(newSounds, id)
+					numNewSounds++
+					break
+				}
+			}
+		} else {
+			newSounds = []uint16{id}
+		}
 	}
+	playSound(newSounds)
+
+	//Why is this never used
 	stage = "inventory"
 	var invOK bool
 	stateData, invOK = parseInventory(stateData)
