@@ -231,15 +231,20 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 	row1.AddItem(exitSessBtn)
 
 	volumeSlider, volumeEvents := eui.NewSlider()
+
 	volumeSlider.MinValue = 0
 	volumeSlider.MaxValue = 1
 	volumeSlider.Value = float32(dbToGain(gs.VolumeDB))
+
 	volumeSlider.Size = eui.Point{X: 150, Y: buttonHeight}
 	volumeSlider.FontSize = 9
+	volumeSlider.Label = fmt.Sprintf("Volume: %.0f dB", gs.VolumeDB)
 	volumeEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
 			gs.VolumeDB = gainToDB(float64(ev.Value))
 			settingsDirty = true
+			volumeSlider.Label = fmt.Sprintf("Volume: %.0f dB", ev.Value)
+			volumeSlider.Dirty = true
 			updateSoundVolume()
 		}
 	}
@@ -1216,6 +1221,57 @@ func makeSettingsWindow() {
 	}
 	right.AddItem(fullscreenCB)
 
+	autoVolRow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
+
+	autoVolCB, autoVolEvents := eui.NewCheckbox()
+	autoVolCB.Text = "Auto Volume"
+	autoVolCB.Size = eui.Point{X: rightW - 150, Y: 24}
+	autoVolCB.Checked = gs.AutoVolume
+	autoVolRow.AddItem(autoVolCB)
+
+	autoVolSlider, autoVolSliderEvents := eui.NewSlider()
+	autoVolSlider.Label = "Auto Volume Strength"
+	autoVolSlider.MinValue = 0
+	autoVolSlider.MaxValue = 1
+	autoVolSlider.Value = float32(gs.AutoVolumeStrength)
+	autoVolSlider.Size = eui.Point{X: 150, Y: 24}
+	autoVolSlider.FontSize = 9
+	if gs.AutoVolume {
+		autoVolRow.AddItem(autoVolSlider)
+	}
+
+	autoVolEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
+			gs.AutoVolume = ev.Checked
+			settingsDirty = true
+			updateSoundVolume()
+			if ev.Checked {
+				if len(autoVolRow.Contents) == 1 {
+					autoVolRow.AddItem(autoVolSlider)
+				}
+			} else if len(autoVolRow.Contents) > 1 {
+				autoVolRow.Contents = autoVolRow.Contents[:1]
+			}
+			settingsWin.Refresh()
+		}
+	}
+
+	autoVolSliderEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
+			gs.AutoVolumeStrength = float64(ev.Value)
+			settingsDirty = true
+			updateSoundVolume()
+		}
+	}
+
+	right.AddItem(autoVolRow)
+
 	bubbleMsgCB, bubbleMsgEvents := eui.NewCheckbox()
 	bubbleMsgCB.Text = "Combine chat + console"
 	bubbleMsgCB.Size = eui.Point{X: rightW, Y: 24}
@@ -1257,9 +1313,9 @@ func makeSettingsWindow() {
 	chatTTSRow.AddItem(chatTTSCB)
 
 	chatTTSSlider, chatTTSSliderEvents := eui.NewSlider()
-	chatTTSSlider.MinValue = 0
-	chatTTSSlider.MaxValue = 1
-	chatTTSSlider.Value = float32(gs.ChatTTSVolume)
+	chatTTSSlider.MinValue = -60
+	chatTTSSlider.MaxValue = 0
+	chatTTSSlider.Value = float32(gs.ChatTTSVolumeDB)
 	chatTTSSlider.Size = eui.Point{X: 100, Y: 24}
 	chatTTSSlider.FontSize = 9
 	chatTTSSliderEvents.Handle = func(ev eui.UIEvent) {
@@ -1267,7 +1323,7 @@ func makeSettingsWindow() {
 			SettingsLock.Lock()
 			defer SettingsLock.Unlock()
 
-			gs.ChatTTSVolume = float64(ev.Value)
+			gs.ChatTTSVolumeDB = float64(ev.Value)
 			settingsDirty = true
 		}
 	}

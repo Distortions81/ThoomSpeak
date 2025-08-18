@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"io"
+	"math"
 	"sync"
 	"time"
 
@@ -16,6 +17,10 @@ var (
 	ttsPlayers   = make(map[*audio.Player]struct{})
 	ttsPlayersMu sync.Mutex
 )
+
+func dbToGain(db float64) float64 {
+	return math.Pow(10, db/20)
+}
 
 func stopAllTTS() {
 	ttsPlayersMu.Lock()

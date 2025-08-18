@@ -6,6 +6,10 @@ import (
 	"strings"
 )
 
+func dbToGain(db float64) float64 {
+	return math.Pow(10, db/20)
+}
+
 // playTuneSimple parses a space-separated list of note names and plays them as a
 // sequence of sine waves. Each note is assumed to be a quarter note at a
 // fixed tempo and octave if not specified (default octave 4).
@@ -31,7 +35,7 @@ func playTuneSimple(tune string) {
 		}
 	}
 	p := audioContext.NewPlayerFromBytes(buf)
-	p.SetVolume(0.2)
+	p.SetVolume(dbToGain(-14))
 	p.Play()
 }
 
