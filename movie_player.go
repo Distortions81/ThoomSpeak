@@ -15,6 +15,7 @@ import (
 var (
 	shortUnits, _ = durafmt.DefaultUnitsCoder.Decode("y:yrs,wk:wks,d:d,h:h,m:m,s:s,ms:ms,us:us")
 	playingMovie  bool
+	movieMode     bool
 	movieWin      *eui.WindowData
 )
 
@@ -53,6 +54,7 @@ func newMoviePlayer(frames [][]byte, fps int, cancel context.CancelFunc) *movieP
 	serverFPS = float64(fps)
 	frameInterval = time.Second / time.Duration(fps)
 	playingMovie = true
+	movieMode = true
 	return &moviePlayer{
 		frames:      frames,
 		fps:         fps,
@@ -294,6 +296,7 @@ func (p *moviePlayer) makePlaybackWindow() {
 			p.cancel()
 		}
 		playingMovie = false
+		movieMode = false
 		// Clear the selected movie path and reopen the login window.
 		clmov = ""
 		pcapPath = ""
@@ -320,6 +323,7 @@ func (p *moviePlayer) run(ctx context.Context) {
 		case <-ctx.Done():
 			p.ticker.Stop()
 			playingMovie = false
+			movieMode = false
 			return
 		case <-p.ticker.C:
 			if p.playing {
