@@ -211,6 +211,20 @@ func NewImageItem(w, h int) (*itemData, *ebiten.Image) {
 	return &newItem, newItem.Image
 }
 
+// Create a new image item with a new image buffer
+func NewImageFastItem(w, h int) (*itemData, *ebiten.Image) {
+	if currentTheme == nil {
+		currentTheme = baseTheme
+	}
+	newItem := itemData{
+		ItemType: ITEM_IMAGE_FAST,
+		Size:     point{X: float32(w), Y: float32(h)},
+		Theme:    currentTheme,
+	}
+	newItem.Image = newImage(w, h)
+	return &newItem, newItem.Image
+}
+
 // Create a new textbox from the default theme
 func NewText() (*itemData, *EventHandler) {
 	if currentTheme == nil {

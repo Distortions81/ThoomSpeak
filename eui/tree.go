@@ -88,7 +88,7 @@ func itemTypeName(t itemTypeData) string {
 		return "dropdown"
 	case ITEM_COLORWHEEL:
 		return "colorwheel"
-	case ITEM_IMAGE:
+	case ITEM_IMAGE, ITEM_IMAGE_FAST:
 		return "image"
 	case ITEM_PROGRESS:
 		return "progress"

@@ -78,7 +78,7 @@ func updateGameImageSize() {
 		return
 	}
 	if gameImageItem == nil {
-		it, img := eui.NewImageItem(w, h)
+		it, img := eui.NewImageFastItem(w, h)
 		gameImageItem = it
 		gameImage = img
 		gameImageItem.Position = eui.Point{X: 2, Y: 2}
