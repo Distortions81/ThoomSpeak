@@ -1204,6 +1204,16 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 			}
 			subImg.DrawImage(item.Image, op)
 		}
+	} else if item.ItemType == ITEM_IMAGE_FAST {
+		if item.Image != nil {
+			op := &ebiten.DrawImageOptions{Filter: ebiten.FilterLinear, DisableMipmaps: true}
+			op.GeoM.Translate(float64(offset.X), float64(offset.Y))
+			if item.Disabled {
+				// Lightly dim disabled images to indicate inactive/offline state.
+				op.ColorScale.Scale(0.35, 0.35, 0.35, 1.0)
+			}
+			subImg.DrawImage(item.Image, op)
+		}
 	} else if item.ItemType == ITEM_TEXT {
 
 		itemColor := style.Color

@@ -203,7 +203,7 @@ func NewImageItem(w, h int) (*itemData, *ebiten.Image) {
 		currentTheme = baseTheme
 	}
 	newItem := itemData{
-		ItemType: ITEM_IMAGE,
+		ItemType: ITEM_IMAGE_FAST,
 		Size:     point{X: float32(w), Y: float32(h)},
 		Theme:    currentTheme,
 	}

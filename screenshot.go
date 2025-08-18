@@ -11,7 +11,7 @@ import (
 )
 
 func takeScreenshot() {
-	if worldRT == nil {
+	if gameImage == nil {
 		return
 	}
 	dir := filepath.Join(dataDirPath, "Screenshots")
@@ -42,7 +42,7 @@ func takeScreenshot() {
 		return
 	}
 	defer f.Close()
-	if err := png.Encode(f, worldRT); err != nil {
+	if err := png.Encode(f, gameImage); err != nil {
 		logError("screenshot: encode %v: %v", fn, err)
 	}
 	consoleMessage("Screenshot saved.")

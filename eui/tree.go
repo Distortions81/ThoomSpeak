@@ -90,6 +90,8 @@ func itemTypeName(t itemTypeData) string {
 		return "colorwheel"
 	case ITEM_IMAGE:
 		return "image"
+	case ITEM_IMAGE_FAST:
+		return "imagefast"
 	case ITEM_PROGRESS:
 		return "progress"
 	default:
