@@ -2123,7 +2123,7 @@ func makeQualityWindow() {
 	precacheSoundCB.Text = "Precache Sounds"
 	precacheSoundCB.Size = eui.Point{X: width, Y: 24}
 	precacheSoundCB.Checked = gs.precacheSounds
-	precacheSoundCB.Tooltip = "Load and pre-process all sounds, uses RAM but runs smoother (400MB)"
+	precacheSoundCB.Tooltip = "Load and pre-process all sounds, uses RAM but runs smoother (~300MB)"
 	precacheSoundCB.Disabled = gs.NoCaching
 	precacheSoundEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventCheckboxChanged {
@@ -2154,7 +2154,7 @@ func makeQualityWindow() {
 	precacheImageCB.Text = "Precache Images"
 	precacheImageCB.Size = eui.Point{X: width, Y: 24}
 	precacheImageCB.Checked = gs.precacheImages
-	precacheImageCB.Tooltip = "Load and pre-process all images, more RAM but runs smoother (2GB)"
+	precacheImageCB.Tooltip = "Load and pre-process all images, more RAM but runs smoother (<2GB)"
 	precacheImageCB.Disabled = gs.NoCaching
 	precacheImageEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventCheckboxChanged {
