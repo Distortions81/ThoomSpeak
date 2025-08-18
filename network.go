@@ -196,7 +196,7 @@ func processServerMessage(msg []byte) {
 	tag := binary.BigEndian.Uint16(msg[:2])
 	if tag == 2 {
 		noteFrame()
-		handleDrawState(msg)
+		handleDrawState(msg, true)
 		return
 	}
 	if txt := decodeMessage(msg); txt != "" {

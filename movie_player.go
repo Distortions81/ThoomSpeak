@@ -343,7 +343,7 @@ func (p *moviePlayer) step() {
 	}
 	m := p.frames[p.cur]
 	if len(m) >= 2 && binary.BigEndian.Uint16(m[:2]) == 2 {
-		handleDrawState(m)
+		handleDrawState(m, true)
 	} else {
 		// Advance the logical frame counter even when this movie frame
 		// does not contain a draw-state update so time-based effects
@@ -470,13 +470,17 @@ func (p *moviePlayer) seek(idx int) {
 
 	stateMu.Lock()
 	state = cloneDrawState(cp.state)
+	// Ensure render caches reflect the restored checkpoint state. The cache
+	// will be rebuilt again if additional frames are parsed.
+	prepareRenderCacheLocked()
 	stateMu.Unlock()
 	frameCounter = cp.idx
 
 	for i := cp.idx; i < idx; i++ {
 		m := p.frames[i]
 		if len(m) >= 2 && binary.BigEndian.Uint16(m[:2]) == 2 {
-			handleDrawState(m)
+			// Skip render cache preparation for intermediate frames.
+			handleDrawState(m, i == idx-1)
 		} else {
 			// Keep timeline consistent during scrubbing when frames
 			// without draw-state are encountered.
