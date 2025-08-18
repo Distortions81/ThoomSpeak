@@ -235,6 +235,10 @@ func loadSettings() bool {
 		return false
 	}
 
+	if newGS.AutoVolumeStrength == 0 {
+		newGS.AutoVolumeStrength = 0.5
+	}
+
 	if newGS.Version == SETTINGS_VERSION {
 		gs = newGS
 	} else {
@@ -312,6 +316,10 @@ func updateBubbleVisibility() {
 }
 
 func saveSettings() {
+	if gs.AutoVolumeStrength == 0 {
+		gs.AutoVolumeStrength = 0.5
+	}
+
 	data, err := json.MarshalIndent(gs, "", "  ")
 	if err != nil {
 		logError("save settings: %v", err)

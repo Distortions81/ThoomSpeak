@@ -22,8 +22,15 @@ var (
 	pcmCache = make(map[uint16][]byte)
 
 	audioContext *audio.Context
-	soundPlayers = make(map[*audio.Player]struct{})
+	// soundPlayers tracks active audio players and their individual
+	// auto-volume gains so that volume changes can be reapplied
+	// correctly when settings change.
+	soundPlayers = make(map[*audio.Player]float64)
 )
+
+func dbToVolume(db float64) float64 {
+	return math.Pow(10, db/20)
+}
 
 // stopAllSounds halts and disposes all currently playing audio players.
 func stopAllSounds() {
@@ -98,6 +105,7 @@ func playSound(ids ...uint16) {
 
 		var wg sync.WaitGroup
 		maxCh := make(chan int32, chunks)
+		rmsCh := make(chan float64, chunks)
 
 		for start := 0; start < maxSamples; start += chunkSize {
 			end := start + chunkSize
@@ -108,6 +116,7 @@ func playSound(ids ...uint16) {
 			go func(start, end int) {
 				defer wg.Done()
 				localMax := int32(0)
+				var localSum float64
 				for i := start; i < end; i++ {
 					var sum int32
 					for _, pcm := range sounds {
@@ -123,12 +132,15 @@ func playSound(ids ...uint16) {
 					if sum > localMax {
 						localMax = sum
 					}
+					localSum += float64(sum) * float64(sum)
 				}
 				maxCh <- localMax
+				rmsCh <- localSum
 			}(start, end)
 		}
 		wg.Wait()
 		close(maxCh)
+		close(rmsCh)
 
 		maxVal := int32(0)
 		for v := range maxCh {
@@ -136,11 +148,31 @@ func playSound(ids ...uint16) {
 				maxVal = v
 			}
 		}
+		var sumSquares float64
+		for v := range rmsCh {
+			sumSquares += v
+		}
 
 		// Apply peak normalization and reduce volume for overlapping sounds
 		scale := 1 / float64(len(sounds))
 		if maxVal > 0 {
 			scale *= math.Min(1.0, 32767.0/float64(maxVal))
+		}
+
+		// Calculate RMS of the mixed samples after scaling
+		rms := 0.0
+		if maxSamples > 0 {
+			rms = math.Sqrt(sumSquares/float64(maxSamples)) * scale
+		}
+		autoGain := 1.0
+		if gs.AutoVolume && rms > 0 {
+			// target RMS as a fraction of full scale (approx 25%)
+			target := 0.25 * 32767.0
+			g := target / rms
+			autoGain = 1 + (g-1)*gs.AutoVolumeStrength
+			if autoGain > 8 {
+				autoGain = 8
+			}
 		}
 
 		out := make([]byte, len(mixed)*2)
@@ -168,7 +200,7 @@ func playSound(ids ...uint16) {
 		wg.Wait()
 
 		p := audioContext.NewPlayerFromBytes(out)
-		vol := gs.Volume
+		vol := dbToVolume(gs.VolumeDB)
 		if gs.Mute {
 			vol = 0
 		}
@@ -187,7 +219,7 @@ func playSound(ids ...uint16) {
 			p.Close()
 			return
 		}
-		soundPlayers[p] = struct{}{}
+		soundPlayers[p] = autoGain
 		soundMu.Unlock()
 
 		//logDebug("playSound playing")
@@ -202,24 +234,29 @@ func initSoundContext() {
 }
 
 func updateSoundVolume() {
-	vol := gs.Volume
+	vol := dbToVolume(gs.VolumeDB)
+	gs.Volume = vol
 	if gs.Mute {
 		vol = 0
 	}
 
 	soundMu.Lock()
-	players := make([]*audio.Player, 0, len(soundPlayers))
-	for sp := range soundPlayers {
-		players = append(players, sp)
+	type playerGain struct {
+		p *audio.Player
+		g float64
+	}
+	players := make([]playerGain, 0, len(soundPlayers))
+	for sp, g := range soundPlayers {
+		players = append(players, playerGain{sp, g})
 	}
 	soundMu.Unlock()
 
 	stopped := make([]*audio.Player, 0)
-	for _, sp := range players {
-		if sp.IsPlaying() {
-			sp.SetVolume(vol)
+	for _, pg := range players {
+		if pg.p.IsPlaying() {
+			pg.p.SetVolume(vol * pg.g)
 		} else {
-			stopped = append(stopped, sp)
+			stopped = append(stopped, pg.p)
 		}
 	}
 
