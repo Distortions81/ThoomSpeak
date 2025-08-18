@@ -102,7 +102,6 @@ var gsdef settings = settings{
 	cacheWholeSheet:     true,
 	smoothMoving:        false,
 	dontShiftNewSprites: false,
-	fastBars:            true,
 	BarColorByValue:     false,
 	recordAssetStats:    false,
 }
@@ -182,7 +181,6 @@ type settings struct {
 	cacheWholeSheet     bool
 	smoothMoving        bool
 	dontShiftNewSprites bool
-	fastBars            bool
 	BarColorByValue     bool
 	recordAssetStats    bool
 	NoCaching           bool

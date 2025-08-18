@@ -1502,10 +1502,10 @@ func drawSpeechBubbles(screen *ebiten.Image, snap drawSnapshot, alpha float64) {
 	}
 }
 
-// lerpBar interpolates status bar values, skipping interpolation when
-// fastBars is enabled and the value decreases.
+// lerpBar interpolates status bar values, skipping interpolation when the
+// current value is lower than the previous.
 func lerpBar(prev, cur int, alpha float64) int {
-	if gs.fastBars && cur < prev {
+	if cur < prev {
 		return cur
 	}
 	return int(math.Round(float64(prev) + alpha*float64(cur-prev)))
