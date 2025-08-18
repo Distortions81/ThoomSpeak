@@ -233,25 +233,34 @@ func updateSoundVolume() {
 		}
 	}
 }
-func resampleLinear(src []int16, srcRate, dstRate int) []int16 {
+func resampleLinearPadDB(src []int16, srcRate, dstRate int, padDB float64) []int16 {
 	if srcRate == dstRate || len(src) == 0 {
-		return append([]int16(nil), src...)
+		out := make([]int16, len(src))
+		copy(out, src)
+		return out
 	}
 
 	n := int(math.Round(float64(len(src)) * float64(dstRate) / float64(srcRate)))
 	dst := make([]int16, n)
 
 	ratio := float64(srcRate) / float64(dstRate)
+	scale := math.Pow(10, padDB/20)
 	for i := 0; i < n; i++ {
 		pos := float64(i) * ratio
 		idx := int(pos)
 		frac := pos - float64(idx)
-		s0 := src[idx]
+		s0 := float64(src[idx])
 		s1 := s0
 		if idx+1 < len(src) {
-			s1 = src[idx+1]
+			s1 = float64(src[idx+1])
 		}
-		v := (1-frac)*float64(s0) + frac*float64(s1)
+		v := (1-frac)*s0 + frac*s1
+		v *= scale
+		if v > 32767 {
+			v = 32767
+		} else if v < -32768 {
+			v = -32768
+		}
 		dst[i] = int16(math.Round(v))
 	}
 
@@ -408,7 +417,9 @@ func loadSound(id uint16) []byte {
 	}
 
 	if srcRate != dstRate {
-		if srcRate < 16000 {
+		if gs.LowQualitySounds {
+			samples = resampleLinearPadDB(samples, srcRate, dstRate, dbPad)
+		} else if srcRate < 16000 {
 			samples = ResampleLanczosInt16PadDB(samples, srcRate, dstRate, dbPad)
 		} else {
 			samples = ResampleCubicInt16PadDB(samples, srcRate, dstRate, dbPad)
