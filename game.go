@@ -972,7 +972,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	worldRT.Clear()
 
 	// Render splash or live frame into worldRT using offscreen integer scale
-	if clmov == "" && tcpConn == nil && pcapPath == "" {
+	if clmov == "" && tcpConn == nil && pcapPath == "" && !fake {
 		prev := gs.GameScale
 		gs.GameScale = float64(offIntScale)
 		drawSplash(worldRT, 0, 0)

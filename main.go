@@ -33,6 +33,7 @@ var (
 	demo          bool
 	clmov         string
 	pcapPath      string
+	fake          bool
 	blockSound    bool
 	blockBubbles  bool
 	blockTTS      bool
@@ -42,6 +43,7 @@ var (
 func main() {
 	flag.StringVar(&clmov, "clmov", "", "play back a .clMov file")
 	flag.StringVar(&pcapPath, "pcap", "", "replay network frames from a .pcap/.pcapng file")
+	flag.BoolVar(&fake, "fake", false, "simulate server messages without connecting")
 	clientVer := flag.Int("client-version", 1445, "client version number (for testing)")
 	flag.BoolVar(&doDebug, "debug", false, "verbose/debug logging")
 	flag.BoolVar(&eui.CacheCheck, "cacheCheck", false, "display window and item render counts")
@@ -157,6 +159,18 @@ func main() {
 					log.Print("PCAP replay complete")
 				}
 			}()
+			<-ctx.Done()
+			return
+		}
+
+		if fake {
+			drawStateEncrypted = false
+			if (gs.precacheSounds || gs.precacheImages) && !assetsPrecached {
+				for !assetsPrecached {
+					time.Sleep(time.Millisecond * 100)
+				}
+			}
+			runFakeMode(ctx)
 			<-ctx.Done()
 			return
 		}
