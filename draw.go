@@ -804,7 +804,7 @@ func parseDrawState(data []byte) error {
 	state.balance = bal
 	state.balanceMax = balMax
 	changed := false
-	if gs.BlendMobiles {
+	if gs.BlendMobiles && !seekingMov {
 		if len(descs) > 0 {
 			changed = true
 		}
@@ -844,7 +844,7 @@ func parseDrawState(data []byte) error {
 		newPics[i].Again = false
 	}
 	dx, dy, bgIdxs, ok := pictureShift(prevPics, newPics)
-	if gs.MotionSmoothing {
+	if gs.MotionSmoothing && !seekingMov {
 		if gs.smoothMoving {
 			logDebug("interp pictures again=%d prev=%d cur=%d shift=(%d,%d) ok=%t", again, len(prevPics), len(newPics), dx, dy, ok)
 			if !ok {
@@ -961,7 +961,7 @@ func parseDrawState(data []byte) error {
 	}
 	state.pictures = kept
 
-	needPrev := (gs.MotionSmoothing || gs.BlendMobiles) && ok
+	needPrev := (gs.MotionSmoothing || gs.BlendMobiles) && ok && !seekingMov
 	if needPrev {
 		if state.prevMobiles == nil {
 			state.prevMobiles = make(map[uint8]frameMobile)
@@ -971,7 +971,7 @@ func parseDrawState(data []byte) error {
 			state.prevMobiles[idx] = m
 		}
 	}
-	needAnimUpdate := (gs.MotionSmoothing || (gs.BlendMobiles && changed)) && ok
+	needAnimUpdate := (gs.MotionSmoothing || (gs.BlendMobiles && changed)) && ok && !seekingMov
 	if needAnimUpdate {
 		frameMu.Lock()
 		interval := frameInterval
