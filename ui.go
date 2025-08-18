@@ -209,7 +209,7 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 	row1.AddItem(helpBtn)
 
 	shotBtn, shotEvents := eui.NewButton()
-	shotBtn.Text = "Screenshot"
+	shotBtn.Text = "Snapshot"
 	shotBtn.Size = eui.Point{X: buttonWidth, Y: buttonHeight}
 	shotBtn.FontSize = toolFontSize
 	shotEvents.Handle = func(ev eui.UIEvent) {

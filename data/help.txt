@@ -1,7 +1,7 @@
 Movement
 --------
-- Move using WASD or arrow keys. Hold Shift to run.
 - Left-click to walk toward the cursor. When "Click-to-Toggle Walk" is enabled, a single click sets a walk target.
+- Or, move using WASD or arrow keys. Hold Shift to run.
 
 Communication
 -------------
