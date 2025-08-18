@@ -127,7 +127,7 @@ func parseShareText(raw []byte, s string) bool {
 			playersDirty = true
 		}
 		return true
-	case strings.HasSuffix(s, " is no longer sharing experiences with you."):
+	case strings.Contains(s, " is no longer sharing experiences with you"):
 		name := firstTagContent(raw, 'p', 'n')
 		if name != "" {
 			playersMu.Lock()

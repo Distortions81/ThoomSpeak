@@ -110,7 +110,7 @@ func decodeBEPP(data []byte) string {
 		if text != "" {
 			return "info: " + text
 		}
-	case "sh":
+	case "sh", "su":
 		parseShareText(raw, text)
 		if text != "" {
 			return text
