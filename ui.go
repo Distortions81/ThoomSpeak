@@ -231,15 +231,19 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 	row1.AddItem(exitSessBtn)
 
 	volumeSlider, volumeEvents := eui.NewSlider()
-	volumeSlider.MinValue = 0
-	volumeSlider.MaxValue = 1
-	volumeSlider.Value = float32(gs.Volume)
+	volumeSlider.MinValue = -60
+	volumeSlider.MaxValue = 0
+	volumeSlider.Value = float32(gs.VolumeDB)
+	volumeSlider.IntOnly = true
 	volumeSlider.Size = eui.Point{X: 150, Y: buttonHeight}
 	volumeSlider.FontSize = 9
+	volumeSlider.Label = fmt.Sprintf("Volume: %.0f dB", gs.VolumeDB)
 	volumeEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
-			gs.Volume = float64(ev.Value)
+			gs.VolumeDB = float64(ev.Value)
 			settingsDirty = true
+			volumeSlider.Label = fmt.Sprintf("Volume: %.0f dB", ev.Value)
+			volumeSlider.Dirty = true
 			updateSoundVolume()
 		}
 	}

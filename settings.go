@@ -70,6 +70,7 @@ var gsdef settings = settings{
 	UIScale:           1.0,
 	Fullscreen:        false,
 	Volume:            0.10,
+	VolumeDB:          -20,
 	Mute:              false,
 	GameScale:         2,
 	BarPlacement:      BarPlacementBottom,
@@ -154,6 +155,7 @@ type settings struct {
 	UIScale           float64
 	Fullscreen        bool
 	Volume            float64
+	VolumeDB          float64
 	Mute              bool
 	AnyGameWindowSize bool // allow arbitrary game window sizes
 	GameScale         float64
