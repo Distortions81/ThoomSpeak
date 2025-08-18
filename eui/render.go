@@ -453,12 +453,12 @@ func (win *windowData) drawBorder(screen *ebiten.Image) {
 }
 
 func (win *windowData) drawResizeThumb(screen *ebiten.Image) {
-
 	size := float32(12) * win.scale()
 	step := float32(4) * win.scale()
 	pad := win.BorderPad * win.scale()
-	x1 := win.GetSize().X - pad
-	y1 := win.GetSize().Y - pad
+	pos := win.getPosition()
+	x1 := pos.X + win.GetSize().X - pad
+	y1 := pos.Y + win.GetSize().Y - pad
 
 	col := win.Theme.Window.BorderColor
 	if activeWindow == win {
