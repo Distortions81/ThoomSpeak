@@ -220,7 +220,8 @@ func updatePlayersWindow() {
 		t.Face = face
 		// Dim the name when fallen or stale/offline.
 		if p.Dead || offline {
-			t.TextColor = eui.NewColor(180, 180, 180, 255)
+			t.TextColor = eui.ColorVeryDarkGray
+			t.ForceTextColor = true
 		}
 		// Reserve space for two icons (avatar + profession) + margins.
 		t.Size = eui.Point{X: clientWAvail - float32(iconSize*2) - 8, Y: rowUnits}

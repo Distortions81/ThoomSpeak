@@ -387,7 +387,7 @@ func (win *windowData) drawWinTitle(screen *ebiten.Image) {
 				if c, ok := namedColors["disabled"]; ok {
 					color = c
 				} else {
-					color = ColorGray
+					color = ColorVeryDarkGray
 				}
 			}
 			if win.HoverPin {
@@ -1200,7 +1200,7 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 			op.GeoM.Translate(float64(offset.X), float64(offset.Y))
 			if item.Disabled {
 				// Lightly dim disabled images to indicate inactive/offline state.
-				op.ColorScale.Scale(0.7, 0.7, 0.7, 1.0)
+				op.ColorScale.Scale(0.35, 0.35, 0.35, 1.0)
 			}
 			subImg.DrawImage(item.Image, op)
 		}
@@ -1236,7 +1236,11 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 			float64(offset.Y))
 
 		top := &text.DrawOptions{DrawImageOptions: tdop, LayoutOptions: loo}
-		top.ColorScale.ScaleWithColor(style.TextColor)
+		tcolor := style.TextColor
+		if item.ForceTextColor {
+			tcolor = item.TextColor
+		}
+		top.ColorScale.ScaleWithColor(tcolor)
 		text.Draw(subImg, item.Text, face, top)
 
 	} else if item.ItemType == ITEM_PROGRESS {

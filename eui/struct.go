@@ -145,6 +145,7 @@ type itemData struct {
 
 	TextColor, Color, HoverColor,
 	ClickColor, OutlineColor, DisabledColor, SelectedColor Color
+	ForceTextColor bool
 
 	Action        func()
 	OnColorChange func(Color)
