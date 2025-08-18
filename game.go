@@ -890,10 +890,13 @@ func worldDrawInfo() (int, int, float64) {
 func (g *Game) Draw(screen *ebiten.Image) {
 	//Reduce render load while seeking clMov
 	if seekingMov {
-		if time.Since(lastSeekPrev) < time.Second {
+		if time.Since(lastSeekPrev) < time.Millisecond*200 {
 			return
 		}
 		lastSeekPrev = time.Now()
+		gameImageItem.Disabled = true
+	} else {
+		gameImageItem.Disabled = false
 	}
 	screen.Clear()
 
