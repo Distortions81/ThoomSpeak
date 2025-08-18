@@ -437,6 +437,7 @@ func (p *moviePlayer) skipForwardMilli(milli int) {
 
 func (p *moviePlayer) seek(idx int) {
 	seekingMov = true
+	defer func() { seekingMov = false }()
 
 	// Stop any currently playing sounds so scrubbing is silent.
 	stopAllSounds()
@@ -504,8 +505,6 @@ func (p *moviePlayer) seek(idx int) {
 	setInterpFPS(p.fps)
 	p.updateUI()
 	p.playing = wasPlaying
-
-	seekingMov = false
 }
 
 // maybeDecodeMessage applies a simple heuristic to determine whether a frame
