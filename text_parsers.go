@@ -97,7 +97,6 @@ func parseShareText(raw []byte, s string) bool {
 		off := bytes.Index(raw, []byte{0xC2, 'p', 'n'})
 		if off >= 0 {
 			names := parseNames(raw[off:])
-			playersMu.Lock()
 			changed = changed[:0]
 			for _, name := range names {
 				p := getPlayer(name)
@@ -106,7 +105,6 @@ func parseShareText(raw []byte, s string) bool {
 					changed = append(changed, name)
 				}
 			}
-			playersMu.Unlock()
 			for _, n := range changed {
 				killNameTagCacheFor(n)
 			}
