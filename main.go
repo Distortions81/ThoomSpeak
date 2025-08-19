@@ -18,6 +18,7 @@ import (
 	"gothoom/eui"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	clipboard "golang.design/x/clipboard"
 )
 
 var (
@@ -47,6 +48,10 @@ func main() {
 	genPGO := flag.Bool("pgo", false, "create default.pgo using test.clMov at 30 fps for 30s")
 	flag.Parse()
 	clientVersion = *clientVer
+
+	if err := clipboard.Init(); err != nil {
+		log.Printf("clipboard init: %v", err)
+	}
 
 	if *genPGO {
 		clmov = filepath.Join("clmovFiles", "test.clMov")
