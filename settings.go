@@ -79,6 +79,7 @@ var gsdef settings = settings{
 	ChatTTSVolume:     1.0,
 	ChatTimestamps:    false,
 	ConsoleTimestamps: false,
+	TimestampFormat:   "3:04PM",
 	WindowTiling:      false,
 	WindowSnapping:    false,
 	NoCaching:         false,
@@ -162,6 +163,7 @@ type settings struct {
 	ChatTTSVolume     float64
 	ChatTimestamps    bool
 	ConsoleTimestamps bool
+	TimestampFormat   string
 	WindowTiling      bool
 	WindowSnapping    bool
 

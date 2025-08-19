@@ -37,9 +37,13 @@ func getConsoleMessages() []string {
 	defer messageMu.Unlock()
 
 	out := make([]string, len(messages))
+	format := gs.TimestampFormat
+	if format == "" {
+		format = "3:04PM"
+	}
 	for i, msg := range messages {
 		if gs.ConsoleTimestamps {
-			out[i] = fmt.Sprintf("[%s] %s", msg.Time.Format("15:04"), msg.Text)
+			out[i] = fmt.Sprintf("[%s] %s", msg.Time.Format(format), msg.Text)
 		} else {
 			out[i] = msg.Text
 		}
