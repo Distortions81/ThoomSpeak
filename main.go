@@ -62,12 +62,13 @@ func main() {
 
 	var err error
 
+	loadSettings()
+
 	ring, err = openPortableRing()
 	if err != nil {
 		consoleMessage("Unable to open keyring for password storage.")
 	}
 
-	loadSettings()
 	loadCharacters()
 	initSoundContext()
 
