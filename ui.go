@@ -155,12 +155,7 @@ func initUI() {
 	// avatars/classes can show up immediately.
 	loadPlayersPersist()
 
-	if !gs.MessagesToConsole {
-		chatWin.MarkOpen()
-	}
-	consoleWin.MarkOpen()
-	inventoryWin.MarkOpen()
-	playersWin.MarkOpen()
+	restoreWindowSettings()
 
 	if status.NeedImages || status.NeedSounds {
 		downloadWin.MarkOpen()
