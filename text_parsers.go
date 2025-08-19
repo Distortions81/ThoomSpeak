@@ -182,9 +182,7 @@ func parseShareText(raw []byte, s string) bool {
 				killNameTagCacheFor(name)
 			}
 			playersDirty = true
-			if gs.NotifyShares {
-				showNotification(name + " is sharing with you")
-			}
+			showNotification(name + " is sharing with you")
 		}
 		return true
 	case strings.Contains(s, " is no longer sharing experiences with you"):
