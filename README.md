@@ -53,6 +53,7 @@ The Go client accepts the following flags:
 - `-pgo` – create `default.pgo` by playing `test.clMov` at 30 fps for 30 seconds
 - `-client-version` – client version number (`kVersionNumber`, default `1445`)
 - `-debug` – enable debug logging (default `true`)
+- `-dumpMusic` – save played music as a WAV file
 
 ## Setup
 
