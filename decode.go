@@ -115,6 +115,12 @@ func decodeBEPP(data []byte) string {
 		if text != "" {
 			return text
 		}
+	case "hf", "nf":
+		// Fallen or no-longer-fallen notices
+		parseFallenText(raw, text)
+		if text != "" {
+			return text
+		}
 	case "be":
 		// Back-end command: handle internally using raw (unstripped) data.
 		parseBackend(raw)

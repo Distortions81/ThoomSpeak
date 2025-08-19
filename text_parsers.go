@@ -238,7 +238,12 @@ func parseFallenText(raw []byte, s string) bool {
 		// Extract main player name
 		name := firstTagContent(raw, 'p', 'n')
 		if name == "" {
-			return true
+			if idx := strings.Index(s, " has fallen"); idx >= 0 {
+				name = strings.TrimSpace(s[:idx])
+			}
+		}
+		if name == "" {
+			return false
 		}
 		killer := firstTagContent(raw, 'm', 'n')
 		where := firstTagContent(raw, 'l', 'o')
@@ -258,7 +263,12 @@ func parseFallenText(raw []byte, s string) bool {
 	if strings.Contains(s, " is no longer fallen") {
 		name := firstTagContent(raw, 'p', 'n')
 		if name == "" {
-			return true
+			if idx := strings.Index(s, " is no longer fallen"); idx >= 0 {
+				name = strings.TrimSpace(s[:idx])
+			}
+		}
+		if name == "" {
+			return false
 		}
 		playersMu.Lock()
 		if p, ok := players[name]; ok {
