@@ -11,6 +11,7 @@ require (
 	github.com/hako/durafmt v0.0.0-20210608085754-5c1018a4e16b
 	github.com/hugolgst/rich-go v0.0.0-20240715122152-74618cc1ace2
 	github.com/remeh/sizedwaitgroup v1.0.0
+	github.com/sinshu/go-meltysynth v0.0.0-20230205031334-05d311382fc4
 	github.com/sqweek/dialog v0.0.0-20240226140203-065105509627
 	github.com/thiagokokada/dark-mode-go v0.0.1
 	golang.design/x/clipboard v0.7.1
@@ -19,7 +20,7 @@ require (
 	golang.org/x/time v0.12.0
 )
 
-require github.com/ebitengine/oto/v3 v3.3.3 // indirect
+require github.com/ebitengine/oto/v3 v3.3.3
 
 require (
 	github.com/TheTitanrain/w32 v0.0.0-20200114052255-2654d97dbd3d // indirect
