@@ -118,7 +118,6 @@ type settings struct {
 	BubbleMonsters     bool
 	BubbleNarration    bool
 
-
 	MotionSmoothing      bool
 	BlendMobiles         bool
 	BlendPicts           bool
@@ -152,6 +151,9 @@ type settings struct {
 	TimestampFormat      string
 	WindowTiling         bool
 	WindowSnapping       bool
+
+	WindowWidth  int
+	WindowHeight int
 
 	GameWindow      WindowState
 	InventoryWindow WindowState
