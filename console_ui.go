@@ -7,7 +7,6 @@ import "gothoom/eui"
 var consoleWin *eui.WindowData
 var messagesFlow *eui.ItemData
 var inputFlow *eui.ItemData
-var consolePrevCount int
 
 func updateConsoleWindow() {
 	if consoleWin == nil {
@@ -21,7 +20,7 @@ func updateConsoleWindow() {
 
 	msgs := getConsoleMessages()
 	updateTextWindow(consoleWin, messagesFlow, inputFlow, msgs, gs.ConsoleFontSize, inputMsg)
-	if messagesFlow != nil && len(msgs) > consolePrevCount {
+	if messagesFlow != nil {
 		// Scroll to bottom on new text; clamp occurs on Refresh.
 		if scrollit {
 			messagesFlow.Scroll.Y = 1e9
@@ -30,7 +29,6 @@ func updateConsoleWindow() {
 			consoleWin.Refresh()
 		}
 	}
-	consolePrevCount = len(lines)
 }
 
 func makeConsoleWindow() {
