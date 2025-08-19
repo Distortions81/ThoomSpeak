@@ -17,7 +17,6 @@ import (
 	"gothoom/clsnd"
 	"gothoom/eui"
 
-	keyring "github.com/99designs/keyring"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -39,7 +38,6 @@ var (
 	blockBubbles  bool
 	blockTTS      bool
 	clientVersion int
-	ring          keyring.Keyring
 )
 
 func main() {
@@ -63,11 +61,6 @@ func main() {
 	var err error
 
 	loadSettings()
-
-	ring, err = openPortableRing()
-	if err != nil {
-		consoleMessage("Unable to open keyring for password storage.")
-	}
 
 	loadCharacters()
 	initSoundContext()

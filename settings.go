@@ -83,7 +83,6 @@ type settings struct {
 	Version int
 
 	LastCharacter      string
-	KeyringBackend     string
 	ClickToToggle      bool
 	KBWalkSpeed        float64
 	MainFontSize       float64
