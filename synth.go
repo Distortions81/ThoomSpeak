@@ -69,21 +69,17 @@ func setupSynth() {
 	}
 }
 
-// Play renders the provided notes using the given SoundFont and plays them
-// through the provided audio context. The reader must point to a SoundFont2
-// (sf2) file. The function blocks until playback has finished.
-func Play(ctx *audio.Context, program int, notes []Note) error {
-
-	if ctx == nil {
-		return errors.New("nil audio context")
-	}
+// renderSong renders the provided notes using the current SoundFont and returns
+// the raw left and right channel samples. The caller can further process or mix
+// these samples before playback.
+func renderSong(program int, notes []Note) ([]float32, []float32, error) {
 	setupSynthOnce.Do(setupSynth)
 	if synth == nil {
-		return errors.New("synth not initialized")
+		return nil, nil, errors.New("synth not initialized")
 	}
 
 	const ch = 0
-	synth.ProcessMidiMessage(ch, 0xC0, int32(program), 0) // program change
+	synth.ProcessMidiMessage(ch, 0xC0, int32(program), 0)
 
 	type event struct {
 		key, vel   int
@@ -136,6 +132,12 @@ func Play(ctx *audio.Context, program int, notes []Note) error {
 		rightAll = append(rightAll, right...)
 	}
 
+	return leftAll, rightAll, nil
+}
+
+// mixPCM normalizes the provided samples and returns interleaved 16-bit PCM
+// data suitable for audio playback.
+func mixPCM(leftAll, rightAll []float32) []byte {
 	// Normalize to avoid clipping and boost quiet audio
 	var peak float32
 	for i := range leftAll {
@@ -156,7 +158,6 @@ func Play(ctx *audio.Context, program int, notes []Note) error {
 		}
 	}
 
-	// Interleave and convert to 16-bit PCM for the audio context.
 	pcm := make([]byte, len(leftAll)*4)
 	for i := range leftAll {
 		l := int16(leftAll[i] * 32767)
@@ -164,11 +165,28 @@ func Play(ctx *audio.Context, program int, notes []Note) error {
 		binary.LittleEndian.PutUint16(pcm[4*i:], uint16(l))
 		binary.LittleEndian.PutUint16(pcm[4*i+2:], uint16(r))
 	}
+	return pcm
+}
 
+// Play renders the provided notes using the given SoundFont, mixes the entire
+// song, and then plays it through the provided audio context. The function
+// blocks until playback has finished.
+func Play(ctx *audio.Context, program int, notes []Note) error {
+
+	if ctx == nil {
+		return errors.New("nil audio context")
+	}
+
+	leftAll, rightAll, err := renderSong(program, notes)
+	if err != nil {
+		return err
+	}
+
+	pcm := mixPCM(leftAll, rightAll)
 	player := ctx.NewPlayerFromBytes(pcm)
 	player.Play()
 
-	dur := time.Duration(float64(totalSamples) / sampleRate * float64(time.Second))
+	dur := time.Duration(len(leftAll)) * time.Second / sampleRate
 	time.Sleep(dur)
 	return player.Close()
 }
