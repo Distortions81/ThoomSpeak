@@ -1335,6 +1335,9 @@ func parseDrawState(data []byte, buildCache bool) error {
 	prev2Sounds = prevSounds
 	prevSounds = newSounds
 
+	stage = "inventory"
+	parseInventory(stateData)
+
 	return nil
 }
 
