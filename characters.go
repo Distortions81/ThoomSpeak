@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
-	keyring "github.com/tmc/keyring"
+	keyring "github.com/99designs/keyring"
 )
 
 // Character holds a saved character name and password hash.
@@ -25,30 +25,30 @@ const (
 	keyringService = "gothoom"
 )
 
-// loadCharacters reads the characters.json file if it exists and
-// populates the in-memory list, preferring password hashes from the OS
-// keyring when available.
+// loadCharacters populates the in-memory list of characters. It attempts to
+// read from the OS keyring first and falls back to characters.json only if the
+// keyring is unavailable or returns an error.
 func loadCharacters() {
+	if ring != nil {
+		keys, err := ring.Keys()
+		if err == nil {
+			for _, name := range keys {
+				item, err := ring.Get(name)
+				if err != nil {
+					logError("keyring get %q: %v", name, err)
+					characters = append(characters, Character{Name: name})
+					continue
+				}
+				characters = append(characters, Character{Name: name, PassHash: string(item.Data)})
+			}
+			return
+		}
+		logError("keyring keys: %v", err)
+	}
 
 	data, err := os.ReadFile(filepath.Join(dataDirPath, charsFilePath))
 	if err == nil {
 		_ = json.Unmarshal(data, &characters)
-	}
-
-	for i := range characters {
-		name := characters[i].Name
-		pw, err := keyring.Get(keyringService, name)
-		if err == nil && pw != "" {
-			characters[i].PassHash = pw
-		} else if errors.Is(err, keyring.ErrNotFound) {
-			if characters[i].PassHash != "" {
-				if err := keyring.Set(keyringService, name, characters[i].PassHash); err != nil && !errors.Is(err, keyring.ErrNotFound) {
-					logError("keyring set %q: %v", name, err)
-				}
-			}
-		} else if err != nil {
-			logError("keyring get %q: %v", name, err)
-		}
 	}
 }
 
@@ -73,20 +73,36 @@ func rememberCharacter(name, pass string) {
 	for i := range characters {
 		if characters[i].Name == name {
 			characters[i].PassHash = hash
-			if err := keyring.Set(keyringService, name, hash); err != nil && !errors.Is(err, keyring.ErrNotFound) {
-				logError("keyring set %q: %v", name, err)
+			useFile := ring == nil
+			if ring != nil {
+				if err := ring.Set(keyring.Item{Key: name, Data: []byte(hash)}); err != nil {
+					logError("keyring set %q: %v", name, err)
+					useFile = true
+				} else {
+					useFile = false
+				}
 			}
-			saveCharacters()
+			if useFile {
+				saveCharacters()
+			}
 			gs.LastCharacter = name
 			saveSettings()
 			return
 		}
 	}
 	characters = append(characters, Character{Name: name, PassHash: hash})
-	if err := keyring.Set(keyringService, name, hash); err != nil && !errors.Is(err, keyring.ErrNotFound) {
-		logError("keyring set %q: %v", name, err)
+	useFile := ring == nil
+	if ring != nil {
+		if err := ring.Set(keyring.Item{Key: name, Data: []byte(hash)}); err != nil {
+			logError("keyring set %q: %v", name, err)
+			useFile = true
+		} else {
+			useFile = false
+		}
 	}
-	saveCharacters()
+	if useFile {
+		saveCharacters()
+	}
 	gs.LastCharacter = name
 	saveSettings()
 }
@@ -96,10 +112,18 @@ func removeCharacter(name string) {
 	for i, c := range characters {
 		if c.Name == name {
 			characters = append(characters[:i], characters[i+1:]...)
-			if err := keyring.Set(keyringService, name, ""); err != nil && !errors.Is(err, keyring.ErrNotFound) {
-				logError("keyring set %q: %v", name, err)
+			useFile := ring == nil
+			if ring != nil {
+				if err := ring.Remove(name); err != nil && !errors.Is(err, keyring.ErrKeyNotFound) {
+					logError("keyring remove %q: %v", name, err)
+					useFile = true
+				} else {
+					useFile = false
+				}
 			}
-			saveCharacters()
+			if useFile {
+				saveCharacters()
+			}
 			if gs.LastCharacter == name {
 				gs.LastCharacter = ""
 				saveSettings()
