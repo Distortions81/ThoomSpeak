@@ -40,10 +40,13 @@ func stopAllSounds() {
 // Each ID is loaded, mixed with simple clipping and then played at the current
 // global volume. The function returns immediately after scheduling playback.
 func playSound(ids []uint16) {
-	if len(ids) == 0 {
+	if len(ids) == 0 || gs.Mute {
 		return
 	}
 	go func(ids []uint16) {
+		if gs.Mute {
+			return
+		}
 		//logDebug("playSound %v called", ids)
 		if blockSound {
 			logDebug("playSound blocked by blockSound")
@@ -215,6 +218,13 @@ func updateSoundVolume() {
 	}
 	soundMu.Unlock()
 
+	ttsPlayersMu.Lock()
+	tts := make([]*audio.Player, 0, len(ttsPlayers))
+	for p := range ttsPlayers {
+		tts = append(tts, p)
+	}
+	ttsPlayersMu.Unlock()
+
 	stopped := make([]*audio.Player, 0)
 	for _, sp := range players {
 		if sp.IsPlaying() {
@@ -224,13 +234,31 @@ func updateSoundVolume() {
 		}
 	}
 
+	ttsStopped := make([]*audio.Player, 0)
+	for _, p := range tts {
+		if p.IsPlaying() {
+			p.SetVolume(gs.ChatTTSVolume * vol)
+		} else {
+			ttsStopped = append(ttsStopped, p)
+		}
+	}
+
 	if len(stopped) > 0 {
 		soundMu.Lock()
-		defer soundMu.Unlock()
 		for _, sp := range stopped {
 			delete(soundPlayers, sp)
 			sp.Close()
 		}
+		soundMu.Unlock()
+	}
+
+	if len(ttsStopped) > 0 {
+		ttsPlayersMu.Lock()
+		for _, p := range ttsStopped {
+			delete(ttsPlayers, p)
+			p.Close()
+		}
+		ttsPlayersMu.Unlock()
 	}
 }
 
