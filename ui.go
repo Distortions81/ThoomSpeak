@@ -1838,6 +1838,48 @@ func resetAllSettings() {
 	saveSettings()
 	settingsDirty = false
 
+	// Close existing windows so they can be recreated in their default state.
+	if inventoryWin != nil {
+		inventoryWin.Close()
+		inventoryWin = nil
+	}
+	if playersWin != nil {
+		playersWin.Close()
+		playersWin = nil
+	}
+	if consoleWin != nil {
+		consoleWin.Close()
+		consoleWin = nil
+	}
+	if chatWin != nil {
+		chatWin.Close()
+		chatWin = nil
+	}
+
+	// Recreate windows according to default settings.
+	if gs.InventoryWindow.Open {
+		makeInventoryWindow()
+	}
+	if gs.PlayersWindow.Open {
+		makePlayersWindow()
+	}
+	if gs.MessagesWindow.Open {
+		makeConsoleWindow()
+	}
+	if gs.ChatWindow.Open {
+		_ = makeChatWindow()
+	}
+
+	restoreWindowSettings()
+
+	if inventoryWin != nil {
+		updateInventoryWindow()
+		inventoryWin.Refresh()
+	}
+	if playersWin != nil {
+		updatePlayersWindow()
+		playersWin.Refresh()
+	}
 	if consoleWin != nil {
 		updateConsoleWindow()
 		consoleWin.Refresh()
