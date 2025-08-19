@@ -42,7 +42,7 @@ func Play(sf io.ReadSeeker, program int, notes []Note) error {
 	}
 
 	const ch = 0
-	synth.ProcessMidiMessage(ch, 0xC0, program, 0) // program change
+	synth.ProcessMidiMessage(ch, 0xC0, int32(program), 0) // program change
 
 	type event struct {
 		key, vel   int
