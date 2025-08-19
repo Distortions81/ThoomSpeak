@@ -19,8 +19,8 @@ const (
 	sampleRate = 44100
 	block      = 512
 
-	// tailMultiplier extends the rendered length to allow reverb to decay.
-	tailMultiplier = 1
+	// tailSamples extends the rendered length by 2 seconds to allow reverb to decay.
+	tailSamples = sampleRate * 2
 )
 
 // Note represents a single MIDI note with a duration and start time.
@@ -99,7 +99,7 @@ func renderSong(program int, notes []Note) ([]float32, []float32, error) {
 			maxEnd = ev.end
 		}
 	}
-	totalSamples := maxEnd * tailMultiplier
+	totalSamples := maxEnd + tailSamples
 
 	leftAll := make([]float32, 0, totalSamples)
 	rightAll := make([]float32, 0, totalSamples)
