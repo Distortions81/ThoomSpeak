@@ -183,10 +183,52 @@ func Play(ctx *audio.Context, program int, notes []Note) error {
 	}
 
 	pcm := mixPCM(leftAll, rightAll)
+	if dumpMusic {
+		dumpPCMAsWAV(pcm)
+	}
 	player := ctx.NewPlayerFromBytes(pcm)
 	player.Play()
 
 	dur := time.Duration(len(leftAll)) * time.Second / sampleRate
 	time.Sleep(dur)
 	return player.Close()
+}
+
+// dumpPCMAsWAV writes the provided 16-bit stereo PCM data to a WAV file when
+// the -dumpMusic flag is set. Files are named music_YYYYMMDD_HHMMSS.wav.
+func dumpPCMAsWAV(pcm []byte) {
+	ts := time.Now().Format("20060102_150405")
+	name := "music_" + ts + ".wav"
+	f, err := os.Create(name)
+	if err != nil {
+		log.Printf("dump music: %v", err)
+		return
+	}
+	defer f.Close()
+
+	dataLen := uint32(len(pcm))
+	var header [44]byte
+	copy(header[0:], []byte("RIFF"))
+	binary.LittleEndian.PutUint32(header[4:], 36+dataLen)
+	copy(header[8:], []byte("WAVE"))
+	copy(header[12:], []byte("fmt "))
+	binary.LittleEndian.PutUint32(header[16:], 16)
+	binary.LittleEndian.PutUint16(header[20:], 1)
+	binary.LittleEndian.PutUint16(header[22:], 2)
+	binary.LittleEndian.PutUint32(header[24:], uint32(sampleRate))
+	binary.LittleEndian.PutUint32(header[28:], uint32(sampleRate*4))
+	binary.LittleEndian.PutUint16(header[32:], 4)
+	binary.LittleEndian.PutUint16(header[34:], 16)
+	copy(header[36:], []byte("data"))
+	binary.LittleEndian.PutUint32(header[40:], dataLen)
+
+	if _, err := f.Write(header[:]); err != nil {
+		log.Printf("dump music header: %v", err)
+		return
+	}
+	if _, err := f.Write(pcm); err != nil {
+		log.Printf("dump music data: %v", err)
+		return
+	}
+	log.Printf("wrote %s", name)
 }
