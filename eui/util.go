@@ -209,10 +209,114 @@ func (win *windowData) dragbarRect() rect {
 	}
 }
 
+func captureScroll(items []*itemData) map[*itemData]point {
+	saved := make(map[*itemData]point)
+	var walk func([]*itemData)
+	walk = func(list []*itemData) {
+		for _, it := range list {
+			if it == nil {
+				continue
+			}
+			if it.ItemType == ITEM_FLOW {
+				saved[it] = it.Scroll
+			}
+			if len(it.Tabs) > 0 {
+				for _, tab := range it.Tabs {
+					walk(tab.Contents)
+				}
+			}
+			if len(it.Contents) > 0 {
+				walk(it.Contents)
+			}
+		}
+	}
+	walk(items)
+	return saved
+}
+
+func restoreScroll(items []*itemData, saved map[*itemData]point) {
+	var walk func([]*itemData)
+	walk = func(list []*itemData) {
+		for _, it := range list {
+			if it == nil {
+				continue
+			}
+			if it.ItemType == ITEM_FLOW {
+				if sc, ok := saved[it]; ok {
+					it.Scroll = sc
+					clampFlowScroll(it)
+				}
+			}
+			if len(it.Tabs) > 0 {
+				for _, tab := range it.Tabs {
+					walk(tab.Contents)
+				}
+			}
+			if len(it.Contents) > 0 {
+				walk(it.Contents)
+			}
+		}
+	}
+	walk(items)
+}
+
+func clampFlowScroll(item *itemData) {
+	req := item.contentBounds()
+	size := item.GetSize()
+	if req.Y <= size.Y {
+		item.Scroll.Y = 0
+	} else {
+		max := req.Y - size.Y
+		if item.Scroll.Y > max {
+			item.Scroll.Y = max
+		}
+	}
+	if req.X <= size.X {
+		item.Scroll.X = 0
+	} else {
+		max := req.X - size.X
+		if item.Scroll.X > max {
+			item.Scroll.X = max
+		}
+	}
+}
+
+const scrollBottomSlop float32 = 1
+
+func scrolledToBottom(scrollY, contentH, viewH float32) bool {
+	if contentH <= viewH {
+		return true
+	}
+	max := contentH - viewH
+	return scrollY >= max-scrollBottomSlop
+}
+
+func (item *itemData) ScrollAtBottom() bool {
+	if item == nil {
+		return true
+	}
+	req := item.contentBounds()
+	size := item.GetSize()
+	return scrolledToBottom(item.Scroll.Y, req.Y, size.Y)
+}
+
+func (win *windowData) ScrollAtBottom() bool {
+	if win.NoScroll {
+		return true
+	}
+	pad := (win.Padding + win.BorderPad) * win.scale()
+	req := win.contentBounds()
+	availY := win.GetSize().Y - win.GetTitleSize() - 2*pad
+	return scrolledToBottom(win.Scroll.Y, req.Y, availY)
+}
+
 func (win *windowData) Refresh() {
 	if !win.IsOpen() {
 		return
 	}
+
+	savedWinScroll := win.Scroll
+	savedFlows := captureScroll(win.Contents)
 
 	win.resizeFlows()
 	if win.AutoSize {
@@ -225,6 +329,10 @@ func (win *windowData) Refresh() {
 			win.updateZonePosition()
 		}
 	}
+
+	win.Scroll = savedWinScroll
+	restoreScroll(win.Contents, savedFlows)
+	win.adjustScrollForResize()
 	win.markDirty()
 }
 
