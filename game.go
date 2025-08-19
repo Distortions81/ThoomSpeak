@@ -862,7 +862,11 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	} else {
 		gameImageItem.Disabled = false
 	}
-	screen.Fill(dimmedScreenBG)
+	if backgroundImg != nil {
+		drawBackground(screen)
+	} else {
+		screen.Fill(dimmedScreenBG)
+	}
 
 	// Ensure the game image item/buffer exists and matches window content.
 	updateGameImageSize()
