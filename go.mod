@@ -13,6 +13,7 @@ require (
 	github.com/remeh/sizedwaitgroup v1.0.0
 	github.com/sqweek/dialog v0.0.0-20240226140203-065105509627
 	github.com/thiagokokada/dark-mode-go v0.0.1
+	github.com/tmc/keyring v0.0.0-20230418032330-0c8bdba76fa8
 	golang.org/x/crypto v0.41.0
 	golang.org/x/text v0.28.0
 	golang.org/x/time v0.12.0
@@ -22,6 +23,7 @@ require github.com/ebitengine/oto/v3 v3.3.3 // indirect
 
 require (
 	github.com/TheTitanrain/w32 v0.0.0-20200114052255-2654d97dbd3d // indirect
+	github.com/danieljoos/wincred v1.1.2 // indirect
 	github.com/ebitengine/gomobile v0.0.0-20250329061421-6d0a8e981e4c // indirect
 	github.com/ebitengine/hideconsole v1.0.0 // indirect
 	github.com/ebitengine/purego v0.8.4 // indirect
