@@ -1,44 +1,20 @@
 package music
 
 import (
-	"bytes"
 	"encoding/binary"
+	"errors"
 	"io"
 	"math"
-	"sync"
 	"time"
 
-	"github.com/ebitengine/oto/v3"
+	"github.com/hajimehoshi/ebiten/v2/audio"
 	meltysynth "github.com/sinshu/go-meltysynth/meltysynth"
 )
 
 const (
 	sampleRate = 44100
-	channels   = 2
 	block      = 512
 )
-
-var (
-	ctxOnce sync.Once
-	ctx     *oto.Context
-	ctxErr  error
-)
-
-func getContext() (*oto.Context, error) {
-	ctxOnce.Do(func() {
-		var ready chan struct{}
-		ctx, ready, ctxErr = oto.NewContext(&oto.NewContextOptions{
-			SampleRate:   sampleRate,
-			ChannelCount: channels,
-			Format:       oto.FormatFloat32LE,
-		})
-		if ctxErr != nil {
-			return
-		}
-		<-ready
-	})
-	return ctx, ctxErr
-}
 
 // Note represents a single MIDI note with a duration.
 type Note struct {
@@ -50,10 +26,13 @@ type Note struct {
 	Duration time.Duration
 }
 
-// Play renders the provided notes using the given SoundFont and plays them.
-// The reader must point to a SoundFont2 (sf2) file. The function blocks until
-// playback has finished.
-func Play(sf io.ReadSeeker, program int, notes []Note) error {
+// Play renders the provided notes using the given SoundFont and plays them
+// through the provided audio context. The reader must point to a SoundFont2
+// (sf2) file. The function blocks until playback has finished.
+func Play(ctx *audio.Context, sf io.ReadSeeker, program int, notes []Note) error {
+	if ctx == nil {
+		return errors.New("nil audio context")
+	}
 	sfnt, err := meltysynth.NewSoundFont(sf)
 	if err != nil {
 		return err
@@ -135,23 +114,16 @@ func Play(sf io.ReadSeeker, program int, notes []Note) error {
 		}
 	}
 
-	// Interleave samples for oto
-	inter := make([]float32, 2*len(leftAll))
+	// Interleave and convert to 16-bit PCM for the audio context.
+	pcm := make([]byte, len(leftAll)*4)
 	for i := range leftAll {
-		inter[2*i] = leftAll[i]
-		inter[2*i+1] = rightAll[i]
+		l := int16(leftAll[i] * 32767)
+		r := int16(rightAll[i] * 32767)
+		binary.LittleEndian.PutUint16(pcm[4*i:], uint16(l))
+		binary.LittleEndian.PutUint16(pcm[4*i+2:], uint16(r))
 	}
 
-	ctx, err := getContext()
-	if err != nil {
-		return err
-	}
-
-	var pcm bytes.Buffer
-	if err := binary.Write(&pcm, binary.LittleEndian, inter); err != nil {
-		return err
-	}
-	player := ctx.NewPlayer(bytes.NewReader(pcm.Bytes()))
+	player := ctx.NewPlayerFromBytes(pcm)
 	player.Play()
 
 	dur := time.Duration(float64(totalSamples) / sampleRate * float64(time.Second))
