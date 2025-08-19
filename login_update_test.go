@@ -100,9 +100,17 @@ func (s *fakeServer) handle(conn net.Conn, attempt int) {
 	if attempt > 1 {
 		res = 0
 	}
-	resp := make([]byte, 4)
+
+	base := "https://example.com/"
+	resp := make([]byte, 16+len(base))
 	binary.BigEndian.PutUint16(resp[0:2], 13)
 	binary.BigEndian.PutUint16(resp[2:4], uint16(res))
+	// Include client, image, and sound versions to satisfy autoUpdate expectations.
+	binary.BigEndian.PutUint32(resp[4:8], 0)
+	binary.BigEndian.PutUint32(resp[8:12], 1<<8)
+	binary.BigEndian.PutUint32(resp[12:16], 1<<8)
+	copy(resp[16:], []byte(base))
+
 	binary.BigEndian.PutUint16(szBuf[:], uint16(len(resp)))
 	conn.Write(szBuf[:])
 	conn.Write(resp)
