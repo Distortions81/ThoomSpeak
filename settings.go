@@ -12,7 +12,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-const SETTINGS_VERSION = 5
+const SETTINGS_VERSION = 6
 
 type BarPlacement int
 
@@ -65,6 +65,8 @@ var gsdef settings = settings{
 	DenoiseAmount:     0.2,
 	ShowFPS:           true,
 	UIScale:           1.0,
+	WindowWidth:       initialWindowW,
+	WindowHeight:      initialWindowH,
 	Volume:            1.0,
 	GameScale:         2,
 	BarPlacement:      BarPlacementBottom,
@@ -126,6 +128,8 @@ type settings struct {
 	UIScale           float64
 	Fullscreen        bool
 	AlwaysOnTop       bool
+	WindowWidth       int
+	WindowHeight      int
 	Volume            float64
 	Mute              bool
 	GameScale         float64
@@ -218,6 +222,10 @@ func loadSettings() bool {
 	} else {
 		applyQualityPreset("High")
 		settingsLoaded = false
+	}
+
+	if gs.WindowWidth > 0 && gs.WindowHeight > 0 {
+		eui.SetScreenSize(gs.WindowWidth, gs.WindowHeight)
 	}
 
 	clampWindowSettings()
@@ -319,6 +327,12 @@ func syncWindowSettings() bool {
 		}
 	} else if gs.ChatWindow.Open {
 		gs.ChatWindow.Open = false
+		changed = true
+	}
+	w, h := ebiten.WindowSize()
+	if gs.WindowWidth != w || gs.WindowHeight != h {
+		gs.WindowWidth = w
+		gs.WindowHeight = h
 		changed = true
 	}
 	return changed
