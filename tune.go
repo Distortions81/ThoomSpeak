@@ -1,39 +1,118 @@
 package main
 
 import (
-	"math"
+	"bytes"
+	"log"
+	"os"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
 	"unicode"
+
+	"gothoom/music"
 )
 
+// instrument describes a playable instrument mapping Clan Lord's instrument
+// index to a General MIDI program number and an octave offset.
+type instrument struct {
+	program int
+	octave  int
+}
+
+// instruments holds the instrument table extracted from the classic client.
+// Only the program number and octave offset are currently used.
+var instruments = []instrument{
+	{47, 1},   // 0 Lucky Lyra
+	{73, 1},   // 1 Bone Flute
+	{47, 0},   // 2 Starbuck Harp
+	{106, 0},  // 3 Torjo
+	{13, 0},   // 4 Xylo
+	{25, 0},   // 5 Gitor
+	{76, 1},   // 6 Reed Flute
+	{17, -1},  // 7 Temple Organ
+	{94, -1},  // 8 Conch
+	{80, 1},   // 9 Ocarina
+	{77, 1},   // 10 Centaur Organ
+	{12, 0},   // 11 Vibra
+	{59, -1},  // 12 Tuborn
+	{110, 0},  // 13 Bagpipe
+	{117, -1}, // 14 Orga Drum
+	{115, 0},  // 15 Casserole
+	{41, 1},   // 16 Violène
+	{78, 1},   // 17 Pine Flute
+	{22, -1},  // 18 Groanbox
+	{108, -1}, // 19 Gho-To
+	{44, -2},  // 20 Mammoth Violène
+	{33, -2},  // 21 Gutbucket Bass
+	{77, 0},   // 22 Glass Jug
+}
+
+// noteEvent represents a parsed tune event. A single event may contain multiple
+// simultaneous notes (a chord).
 type noteEvent struct {
-	freqs []float64
+	keys  []int
 	durMS int
 }
 
-func dbToGain(db float64) float64 { return math.Pow(10, db/20) }
-
-// playClanLordTune decodes a Clan Lord music string into notes and plays it
-// using a simple sine wave synthesizer. The implementation only supports a
-// subset of the original format but is sufficient for basic melodies.
+// playClanLordTune decodes a Clan Lord music string and plays it using the
+// music package. The tune may optionally begin with an instrument index.
+// For example: "3 cde" plays on instrument #3.
 func playClanLordTune(tune string) {
 	if audioContext == nil {
 		return
 	}
+
+	inst := 0
+	fields := strings.Fields(tune)
+	if len(fields) > 1 {
+		if n, err := strconv.Atoi(fields[0]); err == nil && n >= 0 && n < len(instruments) {
+			inst = n
+			tune = strings.Join(fields[1:], " ")
+		}
+	}
+
 	events := parseClanLordTune(tune)
 	if len(events) == 0 {
 		return
 	}
-	rate := audioContext.SampleRate()
-	buf := make([]byte, 0)
-	for _, ev := range events {
-		samples := synthChord(ev.freqs, rate, ev.durMS)
-		for _, v := range samples {
-			buf = append(buf, byte(v), byte(v>>8))
-		}
+
+	sfPath := os.Getenv("CL_SOUNDFONT")
+	if sfPath == "" {
+		sfPath = "GeneralUser.sf2"
 	}
-	p := audioContext.NewPlayerFromBytes(buf)
-	p.SetVolume(dbToGain(-14))
-	p.Play()
+	sfData, err := os.ReadFile(sfPath)
+	if err != nil {
+		log.Printf("soundfont missing: %v", err)
+		return
+	}
+
+	prog := instruments[inst].program
+	oct := instruments[inst].octave
+
+	for _, ev := range events {
+		var wg sync.WaitGroup
+		for _, k := range ev.keys {
+			key := k + oct*12
+			if key < 0 || key > 127 {
+				continue
+			}
+			wg.Add(1)
+			go func(key int, dur int) {
+				defer wg.Done()
+				rs := bytes.NewReader(sfData)
+				notes := []music.Note{{
+					Key:      key,
+					Velocity: 100,
+					Duration: time.Duration(dur) * time.Millisecond,
+				}}
+				if err := music.Play(rs, prog, notes); err != nil {
+					log.Printf("play note: %v", err)
+				}
+			}(key, ev.durMS)
+		}
+		wg.Wait()
+	}
 }
 
 // parseClanLordTune converts Clan Lord music notation into a slice of note
@@ -82,16 +161,16 @@ func parseClanLordTune(s string) []noteEvent {
 			events = append(events, noteEvent{nil, int(durBeats * float64(quarter))})
 		case '[': // chord
 			i++
-			var freqs []float64
+			var keys []int
 			for i < len(s) && s[i] != ']' {
 				if handleOctave(&octave, s[i]) {
 					i++
 					continue
 				}
 				if isNoteLetter(s[i]) {
-					f, _ := parseNoteCL(s, &i, &octave)
-					if f != 0 {
-						freqs = append(freqs, f)
+					k, _ := parseNoteCL(s, &i, &octave)
+					if k != 0 {
+						keys = append(keys, k)
 					}
 					continue
 				}
@@ -105,14 +184,14 @@ func parseClanLordTune(s string) []noteEvent {
 				durBeats = 4.0 / float64(s[i]-'0')
 				i++
 			}
-			if len(freqs) > 0 {
-				events = append(events, noteEvent{freqs, int(durBeats * float64(quarter))})
+			if len(keys) > 0 {
+				events = append(events, noteEvent{keys, int(durBeats * float64(quarter))})
 			}
 		default:
 			if isNoteLetter(c) {
-				f, beats := parseNoteCL(s, &i, &octave)
-				if f != 0 {
-					events = append(events, noteEvent{[]float64{f}, int(beats * float64(quarter))})
+				k, beats := parseNoteCL(s, &i, &octave)
+				if k != 0 {
+					events = append(events, noteEvent{[]int{k}, int(beats * float64(quarter))})
 				}
 			} else {
 				i++
@@ -143,8 +222,8 @@ func handleOctave(oct *int, c byte) bool {
 	return false
 }
 
-// parseNoteCL parses a single note and returns its frequency and beat length.
-func parseNoteCL(s string, i *int, octave *int) (float64, float64) {
+// parseNoteCL parses a single note and returns its MIDI key and beat length.
+func parseNoteCL(s string, i *int, octave *int) (int, float64) {
 	c := s[*i]
 	isUpper := unicode.IsUpper(rune(c))
 	base := noteOffset(unicode.ToLower(rune(c)))
@@ -173,13 +252,11 @@ func parseNoteCL(s string, i *int, octave *int) (float64, float64) {
 		case ch == '_':
 			(*i)++ // ignore ties
 		default:
-			return midiToFreq(pitch), beats
+			return pitch, beats
 		}
 	}
-	return midiToFreq(pitch), beats
+	return pitch, beats
 }
-
-func midiToFreq(m int) float64 { return 440 * math.Pow(2, float64(m-69)/12) }
 
 func noteOffset(r rune) int {
 	switch r {
@@ -203,21 +280,4 @@ func noteOffset(r rune) int {
 
 func isNoteLetter(b byte) bool {
 	return (b >= 'a' && b <= 'g') || (b >= 'A' && b <= 'G')
-}
-
-// synthChord mixes one or more sine waves for the given duration.
-func synthChord(freqs []float64, rate, durMS int) []int16 {
-	n := rate * durMS / 1000
-	samples := make([]int16, n)
-	if len(freqs) == 0 {
-		return samples
-	}
-	gain := 1.0 / float64(len(freqs))
-	for _, f := range freqs {
-		for i := 0; i < n; i++ {
-			v := math.Sin(2 * math.Pi * f * float64(i) / float64(rate))
-			samples[i] += int16(v * gain * math.MaxInt16)
-		}
-	}
-	return samples
 }
