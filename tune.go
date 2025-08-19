@@ -79,7 +79,7 @@ func playClanLordTune(tune string) {
 
 	sfPath := os.Getenv("CL_SOUNDFONT")
 	if sfPath == "" {
-		sfPath = "GeneralUser.sf2"
+		sfPath = "soundfont.sf2"
 	}
 	sfData, err := os.ReadFile(sfPath)
 	if err != nil {
