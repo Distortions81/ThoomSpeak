@@ -1,13 +1,15 @@
 package main
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"log"
 	"os"
 	"path/filepath"
 )
 
-// Character holds a saved character name and password hash.
+// Character holds a saved character name and password hash. The hash is stored
+// on disk using a reversible scrambling to avoid exposing the raw hash.
 type Character struct {
 	Name     string `json:"name"`
 	PassHash string `json:"passHash"`
@@ -16,8 +18,8 @@ type Character struct {
 var characters []Character
 
 const (
-	charsFilePath    = "characters.json"
-	charsFileVersion = 1
+	charsFilePath = "characters.json"
+	hashKey       = "3k6XsAgldtz1vRw3e9WpfUtXQdKQO4P7a7dxmda4KTNpEJWu0lk08QEcJTbeqisH"
 )
 
 type charactersFile struct {
@@ -30,19 +32,24 @@ func loadCharacters() {
 	if err != nil {
 		return
 	}
-	var cf charactersFile
-	if err := json.Unmarshal(data, &cf); err != nil {
+
+	if err := json.Unmarshal(data, &characters); err != nil {
 		return
 	}
-	if cf.Version != charsFileVersion {
-		return
+	for i := range characters {
+		characters[i].PassHash = unscrambleHash(characters[i].Name, characters[i].PassHash)
 	}
 	characters = cf.Characters
 }
 
 func saveCharacters() {
-	cf := charactersFile{Version: charsFileVersion, Characters: characters}
-	data, err := json.MarshalIndent(cf, "", "  ")
+	toSave := make([]Character, len(characters))
+	copy(toSave, characters)
+	for i := range toSave {
+		toSave[i].PassHash = scrambleHash(toSave[i].Name, toSave[i].PassHash)
+	}
+	data, err := json.MarshalIndent(toSave, "", "  ")
+
 	if err != nil {
 		log.Printf("save characters: %v", err)
 		return
@@ -51,6 +58,23 @@ func saveCharacters() {
 		log.Printf("save characters: %v", err)
 	}
 }
+
+// scrambleHash obscures a hex-encoded hash by XORing with a key derived from a
+// hardcoded value and the character name.
+func scrambleHash(name, h string) string {
+	b, err := hex.DecodeString(h)
+	if err != nil {
+		return h
+	}
+	k := []byte(hashKey + name)
+	for i := range b {
+		b[i] ^= k[i%len(k)]
+	}
+	return hex.EncodeToString(b)
+}
+
+// unscrambleHash reverses the operation of scrambleHash.
+func unscrambleHash(name, h string) string { return scrambleHash(name, h) }
 
 // removeCharacter deletes a stored character by name.
 func removeCharacter(name string) {
