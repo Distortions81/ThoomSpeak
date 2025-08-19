@@ -1767,8 +1767,8 @@ func runGame(ctx context.Context) {
 	}
 	if gs.Fullscreen {
 		ebiten.SetFullscreen(true)
-		ebiten.SetWindowFloating(true)
 	}
+	ebiten.SetWindowFloating(gs.Fullscreen || gs.AlwaysOnTop)
 
 	op := &ebiten.RunGameOptions{ScreenTransparent: false}
 	if err := ebiten.RunGameWithOptions(&Game{}, op); err != nil {

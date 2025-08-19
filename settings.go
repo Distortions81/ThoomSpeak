@@ -68,6 +68,7 @@ var gsdef settings = settings{
 	ShowFPS:           true,
 	UIScale:           1.0,
 	Fullscreen:        false,
+	AlwaysOnTop:       false,
 	Volume:            1.0,
 	Mute:              false,
 	GameScale:         2,
@@ -148,6 +149,7 @@ type settings struct {
 	ShowFPS           bool
 	UIScale           float64
 	Fullscreen        bool
+	AlwaysOnTop       bool
 	Volume            float64
 	Mute              bool
 	GameScale         float64
@@ -252,7 +254,7 @@ func applySettings() {
 	}
 	ebiten.SetVsyncEnabled(gs.vsync)
 	ebiten.SetFullscreen(gs.Fullscreen)
-	ebiten.SetWindowFloating(gs.Fullscreen)
+	ebiten.SetWindowFloating(gs.Fullscreen || gs.AlwaysOnTop)
 	initFont()
 	updateSoundVolume()
 }

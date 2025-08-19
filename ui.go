@@ -1211,11 +1211,27 @@ func makeSettingsWindow() {
 
 			gs.Fullscreen = ev.Checked
 			ebiten.SetFullscreen(gs.Fullscreen)
-			ebiten.SetWindowFloating(gs.Fullscreen)
+			ebiten.SetWindowFloating(gs.Fullscreen || gs.AlwaysOnTop)
 			settingsDirty = true
 		}
 	}
 	right.AddItem(fullscreenCB)
+
+	alwaysTopCB, alwaysTopEvents := eui.NewCheckbox()
+	alwaysTopCB.Text = "Always on top"
+	alwaysTopCB.Size = eui.Point{X: rightW, Y: 24}
+	alwaysTopCB.Checked = gs.AlwaysOnTop
+	alwaysTopEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
+			gs.AlwaysOnTop = ev.Checked
+			ebiten.SetWindowFloating(gs.Fullscreen || gs.AlwaysOnTop)
+			settingsDirty = true
+		}
+	}
+	right.AddItem(alwaysTopCB)
 
 	bubbleMsgCB, bubbleMsgEvents := eui.NewCheckbox()
 	bubbleMsgCB.Text = "Combine chat + console"
@@ -1793,11 +1809,24 @@ func makeGraphicsWindow() {
 		if ev.Type == eui.EventCheckboxChanged {
 			gs.Fullscreen = ev.Checked
 			ebiten.SetFullscreen(gs.Fullscreen)
-			ebiten.SetWindowFloating(gs.Fullscreen)
+			ebiten.SetWindowFloating(gs.Fullscreen || gs.AlwaysOnTop)
 			settingsDirty = true
 		}
 	}
 	simple.AddItem(fullscreenCB)
+
+	alwaysTopCB, alwaysTopEvents := eui.NewCheckbox()
+	alwaysTopCB.Text = "Always on top"
+	alwaysTopCB.Size = eui.Point{X: width, Y: 24}
+	alwaysTopCB.Checked = gs.AlwaysOnTop
+	alwaysTopEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			gs.AlwaysOnTop = ev.Checked
+			ebiten.SetWindowFloating(gs.Fullscreen || gs.AlwaysOnTop)
+			settingsDirty = true
+		}
+	}
+	simple.AddItem(alwaysTopCB)
 
 	// Render scale (world zoom) 1x..10x, defaults to 2x
 	renderScale, renderScaleEvents := eui.NewSlider()
