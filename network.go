@@ -1,13 +1,11 @@
 package main
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
 	"io"
 	"net"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -204,85 +202,4 @@ func processServerMessage(msg []byte) {
 	} else {
 		logDebug("msg tag %d len %d", tag, len(msg))
 	}
-}
-
-// requestCharList fetches the list of characters for an account from the server.
-// When the user supplies an account on the command line, the client uses this
-// to prompt for which character to log in with.
-func requestCharList(connection net.Conn, account, accountPass string, challenge []byte, clientVersion, imagesVersion, soundsVersion uint32) ([]string, error) {
-	if err := sendCharListRequest(connection, account, accountPass, challenge, clientVersion, imagesVersion, soundsVersion); err != nil {
-		return nil, err
-	}
-	resp, err := readTCPMessage(connection)
-	if err != nil {
-		return nil, err
-	}
-	return parseCharListResponse(resp)
-}
-
-// sendCharListRequest builds and sends a character list request to the server
-// for the specified account.
-func sendCharListRequest(connection net.Conn, account, accountPass string, challenge []byte, clientVersion, imagesVersion, soundsVersion uint32) error {
-	answer, err := answerChallenge(accountPass, challenge)
-	if err != nil {
-		return err
-	}
-	const kMsgCharList = 14
-	accountBytes := encodeMacRoman(account)
-	packet := make([]byte, 16+len(accountBytes)+1+len(answer))
-	binary.BigEndian.PutUint16(packet[0:2], kMsgCharList)
-	binary.BigEndian.PutUint16(packet[2:4], 0)
-	binary.BigEndian.PutUint32(packet[4:8], clientVersion)
-	binary.BigEndian.PutUint32(packet[8:12], imagesVersion)
-	binary.BigEndian.PutUint32(packet[12:16], soundsVersion)
-	copy(packet[16:], accountBytes)
-	packet[16+len(accountBytes)] = 0
-	copy(packet[17+len(accountBytes):], answer)
-	simpleEncrypt(packet[16:])
-	logDebug("request character list for %v", account)
-	return sendTCPMessage(connection, packet)
-}
-
-// parseCharListResponse decrypts and parses the character list response,
-// returning the available character names.
-func parseCharListResponse(resp []byte) ([]string, error) {
-	const kMsgCharList = 14
-	if len(resp) < 16 {
-		return nil, fmt.Errorf("short char list resp")
-	}
-	resTag := binary.BigEndian.Uint16(resp[:2])
-	if resTag != kMsgCharList {
-		return nil, fmt.Errorf("unexpected tag %d", resTag)
-	}
-	result := int16(binary.BigEndian.Uint16(resp[2:4]))
-	simpleEncrypt(resp[16:])
-	if result != 0 {
-		msg := resp[16:]
-		if i := bytes.IndexByte(msg, 0); i >= 0 {
-			msg = msg[:i]
-		}
-		return nil, fmt.Errorf("%s", decodeMacRoman(msg))
-	}
-	if len(resp) < 28 {
-		return nil, fmt.Errorf("short char list resp")
-	}
-
-	data := resp[16:]
-	_ = binary.BigEndian.Uint32(data[0:4])
-	_ = binary.BigEndian.Uint32(data[4:8])
-	_ = binary.BigEndian.Uint32(data[8:12])
-
-	namesData := data[12:]
-	var names []string
-	for len(namesData) > 0 {
-		i := bytes.IndexByte(namesData, 0)
-		if i <= 0 {
-			break
-		}
-		name := strings.TrimSpace(decodeMacRoman(namesData[:i]))
-		names = append(names, name)
-		namesData = namesData[i+1:]
-	}
-	logDebug("server returned %d characters", len(names))
-	return names, nil
 }

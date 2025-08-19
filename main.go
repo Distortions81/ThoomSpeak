@@ -23,14 +23,11 @@ import (
 var (
 	clMovFPS int = 5
 
-	host        string = "server.deltatao.com:5010"
-	account     string
-	accountPass string
-	name        string
-	pass        string
-	passHash    string
+	host     string = "server.deltatao.com:5010"
+	name     string
+	pass     string
+	passHash string
 
-	demo          bool
 	clmov         string
 	pcapPath      string
 	fake          bool
