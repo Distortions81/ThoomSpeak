@@ -1,12 +1,6 @@
 # goThoom Client
 
-A open source (MIT) client for the Clan Lord MMORPG.
-
-This repository hosts the Go implementation of the client. The
-`old_mac_client/` directory contains a historical C implementation provided
-for reference only (do not modify).
-
-## Quick Start
+A open source (MIT) client for Clan Lord: https://www.deltatao.com/clanlord/
 
 ### Requirements
 
@@ -55,7 +49,7 @@ scripts/build_binaries.sh
 The Go client accepts the following flags:
 
 - `-clmov` – play back a `.clMov` movie file instead of connecting to a server
-- `-pcap` – replay network frames from a `.pcap/.pcapng` file
+- `-pcap` – replay network frames from a `.pcap/.pcapng` file (wireshark)
 - `-pgo` – create `default.pgo` by playing `test.clMov` at 30 fps for 30 seconds
 - `-client-version` – client version number (`kVersionNumber`, default `1445`)
 - `-debug` – enable debug logging (default `true`)
