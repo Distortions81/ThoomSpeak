@@ -20,7 +20,7 @@ const (
 	block      = 512
 
 	// tailMultiplier extends the rendered length to allow reverb to decay.
-	tailMultiplier = 4
+	tailMultiplier = 1
 )
 
 // Note represents a single MIDI note with a duration and start time.
