@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"strings"
+
+	"golang.org/x/text/encoding/charmap"
 )
 
 type thinkTarget int
@@ -82,7 +84,13 @@ var languageYellVerb = []string{
 	"yelps",           // Lepori
 }
 
-func decodeMacRoman(b []byte) string { return string(b) }
+func decodeMacRoman(b []byte) string {
+	s, err := charmap.Macintosh.NewDecoder().Bytes(b)
+	if err != nil {
+		return string(b)
+	}
+	return string(s)
+}
 
 /*
 BEPP tag reference (two-letter codes following the 0xC2 prefix):

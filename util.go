@@ -10,6 +10,7 @@ import (
 	"os"
 
 	"golang.org/x/crypto/twofish"
+	"golang.org/x/text/encoding/charmap"
 )
 
 func simpleEncrypt(data []byte) {
@@ -24,7 +25,13 @@ func simpleEncrypt(data []byte) {
 	}
 }
 
-func encodeMacRoman(s string) []byte { return []byte(s) }
+func encodeMacRoman(s string) []byte {
+	b, err := charmap.Macintosh.NewEncoder().Bytes([]byte(s))
+	if err != nil {
+		return []byte(s)
+	}
+	return b
+}
 
 func encodeFullVersion(v int) uint32 { return uint32(v) << 8 }
 
