@@ -35,6 +35,8 @@ func LoadWindowZones(table map[string]WindowZoneState) {
 			} else {
 				win.ClearZone()
 			}
+		} else {
+			win.ClearZone()
 		}
 	}
 }

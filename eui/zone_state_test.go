@@ -36,3 +36,25 @@ func TestSaveLoadWindowZones(t *testing.T) {
 	}
 	windows = nil
 }
+
+func TestLoadWindowZonesMissingEntry(t *testing.T) {
+	screenWidth = 100
+	screenHeight = 100
+	uiScale = 1
+
+	a := &windowData{Title: "a"}
+	b := &windowData{Title: "b"}
+	windows = []*windowData{a, b}
+
+	a.SetZone(HZoneLeft, VZoneTop)
+	saved := SaveWindowZones()
+	delete(saved, "b")
+
+	b.SetZone(HZoneRight, VZoneBottom)
+	LoadWindowZones(saved)
+
+	if b.zone != nil {
+		t.Fatalf("b zone should be cleared: %+v", b.zone)
+	}
+	windows = nil
+}
