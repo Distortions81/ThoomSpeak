@@ -8,12 +8,7 @@ import (
 	"unicode"
 )
 
-// instrument describes a playable instrument mapping Clan Lord's instrument
-// index to a General MIDI program number and an octave offset.
-type instrument struct {
-	program int
-	octave  int
-}
+const defaultInstrument = 10
 
 // instruments holds the instrument table extracted from the classic client.
 // Only the program number and octave offset are currently used.
@@ -43,6 +38,13 @@ var instruments = []instrument{
 	{77, 0},   // 22 Glass Jug
 }
 
+// instrument describes a playable instrument mapping Clan Lord's instrument
+// index to a General MIDI program number and an octave offset.
+type instrument struct {
+	program int
+	octave  int
+}
+
 // noteEvent represents a parsed tune event. A single event may contain multiple
 // simultaneous notes (a chord).
 type noteEvent struct {
@@ -58,7 +60,7 @@ func playClanLordTune(tune string) {
 		return
 	}
 
-	inst := 5
+	inst := defaultInstrument
 	fields := strings.Fields(tune)
 	if len(fields) > 1 {
 		if n, err := strconv.Atoi(fields[0]); err == nil && n >= 0 && n < len(instruments) {
