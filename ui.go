@@ -548,6 +548,8 @@ func makeDownloadsWindow() {
 			return
 		}
 		startedDownload = true
+		// Create a cancellable context for in-flight downloads.
+		downloadCtx, downloadCancel = context.WithCancel(context.Background())
 		// Reset UI state
 		dlStart = time.Time{}
 		currentName = ""
@@ -557,8 +559,23 @@ func makeDownloadsWindow() {
 		pb.Value = 0
 		pb.Dirty = true
 		statusText.Dirty = true
-		// Show only the live status + progress while downloading
-		flow.Contents = []*eui.ItemData{statusText, pb}
+		// Show the live status + progress and provide a cancel button
+		cancelRow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
+		cancelBtn, cancelEvents := eui.NewButton()
+		cancelBtn.Text = "Cancel"
+		cancelBtn.Size = eui.Point{X: 100, Y: 24}
+		cancelEvents.Handle = func(ev eui.UIEvent) {
+			if ev.Type == eui.EventClick {
+				if downloadCancel != nil {
+					downloadCancel()
+				}
+				if downloadStatus != nil {
+					downloadStatus("Download canceled")
+				}
+			}
+		}
+		cancelRow.AddItem(cancelBtn)
+		flow.Contents = []*eui.ItemData{statusText, pb, cancelRow}
 		downloadWin.Refresh()
 		go func() {
 			dlMutex.Lock()
@@ -567,6 +584,7 @@ func makeDownloadsWindow() {
 			if err := downloadDataFiles(clientVersion, status); err != nil {
 				logError("download data files: %v", err)
 				// Present inline Retry and Quit buttons
+				flow.Contents = []*eui.ItemData{statusText, pb}
 				retryRow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
 				retryBtn, retryEvents := eui.NewButton()
 				retryBtn.Text = "Retry"
