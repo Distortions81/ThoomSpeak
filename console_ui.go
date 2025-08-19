@@ -17,16 +17,16 @@ func updateConsoleWindow() {
 	if inputActive {
 		inputMsg = string(inputText)
 	}
-	msgs := getConsoleMessages()
-	updateTextWindow(consoleWin, messagesFlow, inputFlow, msgs, gs.ConsoleFontSize, inputMsg)
-	if messagesFlow != nil && len(msgs) > consolePrevCount {
+	lines := getConsoleMessages()
+	updateTextWindow(consoleWin, messagesFlow, inputFlow, lines, gs.ConsoleFontSize, inputMsg)
+	if messagesFlow != nil && len(lines) > consolePrevCount {
 		// Scroll to bottom on new text; clamp occurs on Refresh.
 		messagesFlow.Scroll.Y = 1e9
 		if consoleWin != nil {
 			consoleWin.Refresh()
 		}
 	}
-	consolePrevCount = len(msgs)
+	consolePrevCount = len(lines)
 }
 
 func makeConsoleWindow() {

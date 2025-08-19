@@ -1253,6 +1253,38 @@ func makeSettingsWindow() {
 	}
 	right.AddItem(bubbleMsgCB)
 
+	chatTSCB, chatTSEvents := eui.NewCheckbox()
+	chatTSCB.Text = "Chat timestamps"
+	chatTSCB.Size = eui.Point{X: rightW, Y: 24}
+	chatTSCB.Checked = gs.ChatTimestamps
+	chatTSEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
+			gs.ChatTimestamps = ev.Checked
+			settingsDirty = true
+			updateChatWindow()
+		}
+	}
+	right.AddItem(chatTSCB)
+
+	consoleTSCB, consoleTSEvents := eui.NewCheckbox()
+	consoleTSCB.Text = "Console timestamps"
+	consoleTSCB.Size = eui.Point{X: rightW, Y: 24}
+	consoleTSCB.Checked = gs.ConsoleTimestamps
+	consoleTSEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
+			gs.ConsoleTimestamps = ev.Checked
+			settingsDirty = true
+			updateConsoleWindow()
+		}
+	}
+	right.AddItem(consoleTSCB)
+
 	chatTTSRow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
 
 	chatTTSCB, chatTTSEvents := eui.NewCheckbox()

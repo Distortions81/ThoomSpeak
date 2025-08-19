@@ -1,6 +1,10 @@
 package main
 
-import "sync"
+import (
+	"fmt"
+	"sync"
+	"time"
+)
 
 const (
 	maxMessages = 1000
@@ -8,7 +12,7 @@ const (
 
 var (
 	messageMu sync.Mutex
-	messages  []string
+	messages  []timedMessage
 )
 
 func consoleMessage(msg string) {
@@ -17,7 +21,7 @@ func consoleMessage(msg string) {
 	}
 
 	messageMu.Lock()
-	messages = append(messages, msg)
+	messages = append(messages, timedMessage{Text: msg, Time: time.Now()})
 
 	//Remove oldest message if full
 	if len(messages) > maxMessages {
@@ -33,6 +37,12 @@ func getConsoleMessages() []string {
 	defer messageMu.Unlock()
 
 	out := make([]string, len(messages))
-	copy(out, messages)
+	for i, msg := range messages {
+		if gs.ConsoleTimestamps {
+			out[i] = fmt.Sprintf("[%s] %s", msg.Time.Format("15:04"), msg.Text)
+		} else {
+			out[i] = msg.Text
+		}
+	}
 	return out
 }
