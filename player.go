@@ -22,6 +22,7 @@ type Player struct {
 	Dead       bool // parsed from obit messages (future)
 	FellWhere  string
 	KillerName string
+	Bard       bool // true if player is in the Bards' Guild
 	// Presence tracking
 	LastSeen time.Time // last time we observed any activity/info for this player
 	Offline  bool      // explicitly observed as offline/logged off
