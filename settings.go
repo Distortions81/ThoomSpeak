@@ -377,6 +377,35 @@ func clampWindowState(st *WindowState, sx, sy float64) {
 	}
 }
 
+func applyWindowState(win *eui.WindowData, st *WindowState) {
+	if win == nil || st == nil {
+		return
+	}
+	if st.Size.X >= eui.MinWindowSize && st.Size.Y >= eui.MinWindowSize {
+		_ = win.SetSize(eui.Point{X: float32(st.Size.X), Y: float32(st.Size.Y)})
+	}
+	if st.Position.X != 0 || st.Position.Y != 0 {
+		_ = win.SetPos(eui.Point{X: float32(st.Position.X), Y: float32(st.Position.Y)})
+	}
+	if st.Open {
+		win.MarkOpen()
+	}
+}
+
+func restoreWindowSettings() {
+	applyWindowState(gameWin, &gs.GameWindow)
+	if gameWin != nil {
+		gameWin.MarkOpen()
+	}
+	applyWindowState(inventoryWin, &gs.InventoryWindow)
+	applyWindowState(playersWin, &gs.PlayersWindow)
+	applyWindowState(consoleWin, &gs.MessagesWindow)
+	applyWindowState(chatWin, &gs.ChatWindow)
+	if hudWin != nil {
+		hudWin.MarkOpen()
+	}
+}
+
 type qualityPreset struct {
 	DenoiseImages   bool
 	MotionSmoothing bool
