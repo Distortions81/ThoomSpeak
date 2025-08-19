@@ -145,6 +145,7 @@ func initUI() {
 	makeConsoleWindow()
 	makeSettingsWindow()
 	makeQualityWindow()
+	makeNotificationsWindow()
 	makeBubbleWindow()
 	makeDebugWindow()
 	initHelpUI()
@@ -1269,6 +1270,19 @@ func makeSettingsWindow() {
 	}
 	left.AddItem(notifCB)
 
+	notifBtn, notifBtnEvents := eui.NewButton()
+	notifBtn.Text = "Notification Settings"
+	notifBtn.Size = eui.Point{X: leftW, Y: 24}
+	notifBtnEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
+			notificationsWin.ToggleNear(ev.Item)
+		}
+	}
+	left.AddItem(notifBtn)
+
 	label, _ = eui.NewText()
 	label.Text = "\nWindow Behavior:"
 	label.FontSize = 15
@@ -2357,6 +2371,58 @@ func makeQualityWindow() {
 
 	qualityWin.AddItem(flow)
 	qualityWin.AddWindow(false)
+}
+
+func makeNotificationsWindow() {
+	if notificationsWin != nil {
+		return
+	}
+	var width float32 = 250
+	notificationsWin = eui.NewWindow()
+	notificationsWin.Title = "Notification Settings"
+	notificationsWin.Closable = true
+	notificationsWin.Resizable = false
+	notificationsWin.AutoSize = true
+	notificationsWin.Movable = true
+	notificationsWin.SetZone(eui.HZoneCenterLeft, eui.VZoneMiddleTop)
+
+	flow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
+
+	addCB := func(label string, val *bool) {
+		cb, events := eui.NewCheckbox()
+		cb.Text = label
+		cb.Size = eui.Point{X: width, Y: 24}
+		cb.Checked = *val
+		events.Handle = func(ev eui.UIEvent) {
+			if ev.Type == eui.EventCheckboxChanged {
+				*val = ev.Checked
+				settingsDirty = true
+			}
+		}
+		flow.AddItem(cb)
+	}
+
+	addCB("Fallen", &gs.NotifyFallen)
+	addCB("No longer fallen", &gs.NotifyUnfallen)
+	addCB("Shares", &gs.NotifyShares)
+	addCB("Friend online", &gs.NotifyFriendOnline)
+
+	durSlider, durEvents := eui.NewSlider()
+	durSlider.Label = "Display Duration (sec)"
+	durSlider.MinValue = 1
+	durSlider.MaxValue = 30
+	durSlider.Value = float32(gs.NotificationDuration)
+	durSlider.Size = eui.Point{X: width - 10, Y: 24}
+	durEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			gs.NotificationDuration = float64(ev.Value)
+			settingsDirty = true
+		}
+	}
+	flow.AddItem(durSlider)
+
+	notificationsWin.AddItem(flow)
+	notificationsWin.AddWindow(false)
 }
 
 func makeBubbleWindow() {

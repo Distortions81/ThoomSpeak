@@ -182,6 +182,9 @@ func parseShareText(raw []byte, s string) bool {
 				killNameTagCacheFor(name)
 			}
 			playersDirty = true
+			if gs.NotifyShares {
+				showNotification(name + " is sharing with you")
+			}
 		}
 		return true
 	case strings.Contains(s, " is no longer sharing experiences with you"):
@@ -246,6 +249,9 @@ func parseFallenText(raw []byte, s string) bool {
 		p.FellWhere = where
 		playersMu.Unlock()
 		playersDirty = true
+		if gs.NotifyFallen {
+			showNotification(name + " has fallen")
+		}
 		return true
 	}
 	// No longer fallen: "<pn name> is no longer fallen"
@@ -262,6 +268,9 @@ func parseFallenText(raw []byte, s string) bool {
 		}
 		playersMu.Unlock()
 		playersDirty = true
+		if gs.NotifyUnfallen {
+			showNotification(name + " is no longer fallen")
+		}
 		return true
 	}
 	return false
@@ -278,13 +287,18 @@ func parsePresenceText(raw []byte, s string) bool {
 	}
 	// Login-like phrases
 	if strings.Contains(lower, "has logged on") || strings.Contains(lower, "has entered the lands") || strings.Contains(lower, "has joined the world") || strings.Contains(lower, "has arrived") {
+		var friend bool
 		playersMu.Lock()
 		if p, ok := players[name]; ok {
 			p.LastSeen = time.Now()
 			p.Offline = false
+			friend = p.Friend
 		}
 		playersMu.Unlock()
 		playersDirty = true
+		if friend && gs.NotifyFriendOnline {
+			showNotification(name + " is online")
+		}
 		return true
 	}
 	// Logout-like phrases

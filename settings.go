@@ -56,21 +56,26 @@ var gsdef settings = settings{
 	BubbleMonsters:     true,
 	BubbleNarration:    true,
 
-	MotionSmoothing:   true,
-	BlendAmount:       1.0,
-	MobileBlendAmount: 0.33,
-	MobileBlendFrames: 10,
-	PictBlendFrames:   10,
-	DenoiseSharpness:  4.0,
-	DenoiseAmount:     0.2,
-	ShowFPS:           true,
-	UIScale:           1.0,
-	Volume:            1.0,
-	GameScale:         2,
-	BarPlacement:      BarPlacementBottom,
-	ChatTTSVolume:     1.0,
-	Notifications:     true,
-	TimestampFormat:   "3:04PM",
+	MotionSmoothing:      true,
+	BlendAmount:          1.0,
+	MobileBlendAmount:    0.33,
+	MobileBlendFrames:    10,
+	PictBlendFrames:      10,
+	DenoiseSharpness:     4.0,
+	DenoiseAmount:        0.2,
+	ShowFPS:              true,
+	UIScale:              1.0,
+	Volume:               1.0,
+	GameScale:            2,
+	BarPlacement:         BarPlacementBottom,
+	ChatTTSVolume:        1.0,
+	Notifications:        true,
+	NotifyFallen:         true,
+	NotifyUnfallen:       true,
+	NotifyShares:         true,
+	NotifyFriendOnline:   true,
+	NotificationDuration: 6,
+	TimestampFormat:      "3:04PM",
 
 	GameWindow:      WindowState{Open: true},
 	InventoryWindow: WindowState{Open: true},
@@ -113,34 +118,39 @@ type settings struct {
 	BubbleMonsters     bool
 	BubbleNarration    bool
 
-	MotionSmoothing   bool
-	BlendMobiles      bool
-	BlendPicts        bool
-	BlendAmount       float64
-	MobileBlendAmount float64
-	MobileBlendFrames int
-	PictBlendFrames   int
-	DenoiseImages     bool
-	DenoiseSharpness  float64
-	DenoiseAmount     float64
-	ShowFPS           bool
-	UIScale           float64
-	Fullscreen        bool
-	AlwaysOnTop       bool
-	Volume            float64
-	Mute              bool
-	GameScale         float64
-	BarPlacement      BarPlacement
-	Theme             string
-	MessagesToConsole bool
-	ChatTTS           bool
-	ChatTTSVolume     float64
-	Notifications     bool
-	ChatTimestamps    bool
-	ConsoleTimestamps bool
-	TimestampFormat   string
-	WindowTiling      bool
-	WindowSnapping    bool
+	MotionSmoothing      bool
+	BlendMobiles         bool
+	BlendPicts           bool
+	BlendAmount          float64
+	MobileBlendAmount    float64
+	MobileBlendFrames    int
+	PictBlendFrames      int
+	DenoiseImages        bool
+	DenoiseSharpness     float64
+	DenoiseAmount        float64
+	ShowFPS              bool
+	UIScale              float64
+	Fullscreen           bool
+	AlwaysOnTop          bool
+	Volume               float64
+	Mute                 bool
+	GameScale            float64
+	BarPlacement         BarPlacement
+	Theme                string
+	MessagesToConsole    bool
+	ChatTTS              bool
+	ChatTTSVolume        float64
+	Notifications        bool
+	NotifyFallen         bool
+	NotifyUnfallen       bool
+	NotifyShares         bool
+	NotifyFriendOnline   bool
+	NotificationDuration float64
+	ChatTimestamps       bool
+	ConsoleTimestamps    bool
+	TimestampFormat      string
+	WindowTiling         bool
+	WindowSnapping       bool
 
 	GameWindow      WindowState
 	InventoryWindow WindowState

@@ -19,6 +19,7 @@ type persistPlayer struct {
 	PictID     uint16 `json:"pict"`
 	Dead       bool   `json:"dead"`
 	GMLevel    int    `json:"gm,omitempty"`
+	Friend     bool   `json:"friend,omitempty"`
 	ColorsHex  string `json:"colors,omitempty"` // hex of [count][colors...]
 	FellWhere  string `json:"fell_where,omitempty"`
 	KillerName string `json:"killer,omitempty"`
@@ -68,6 +69,7 @@ func loadPlayersPersist() {
 		}
 		pr.Dead = p.Dead
 		pr.GMLevel = p.GMLevel
+		pr.Friend = p.Friend
 		pr.FellWhere = p.FellWhere
 		pr.KillerName = p.KillerName
 		playersMu.Unlock()
@@ -114,6 +116,7 @@ func savePlayersPersist() {
 			PictID:     p.PictID,
 			Dead:       p.Dead,
 			GMLevel:    p.GMLevel,
+			Friend:     p.Friend,
 			ColorsHex:  hex,
 			FellWhere:  p.FellWhere,
 			KillerName: p.KillerName,
