@@ -99,7 +99,7 @@ func layoutNotifications() {
 	margin := float32(8)
 	spacer := float32(4)
 	winSz := gameWin.GetSize()
-	y := winSz.Y - margin - 100
+	y := winSz.Y - margin - 150
 	for i := len(notifications) - 1; i >= 0; i-- {
 		it := notifications[i].item
 		sz := it.GetSize()
