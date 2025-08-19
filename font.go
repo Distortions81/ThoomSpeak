@@ -6,6 +6,7 @@ import (
 	"log"
 
 	text "github.com/hajimehoshi/ebiten/v2/text/v2"
+	"gothoom/eui"
 )
 
 //go:embed data/font/NotoSans-Regular.ttf
@@ -29,6 +30,7 @@ func initFont() {
 	if err != nil {
 		log.Fatalf("failed to parse font: %v", err)
 	}
+	eui.SetFontSource(regular)
 	mainFont = &text.GoTextFace{
 		Source: regular,
 		Size:   gs.MainFontSize * gs.GameScale,

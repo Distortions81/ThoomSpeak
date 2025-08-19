@@ -1,17 +1,10 @@
 package eui
 
-import (
-	_ "embed"
-	"log"
-)
+import "log"
 
-//go:embed fonts/NotoSans-Regular-Mini.ttf
-var defaultTTF []byte
-
+// init loads the default theme and style. A font source must be provided
+// by the application via SetFontSource or EnsureFontSource.
 func init() {
-	if err := EnsureFontSource(defaultTTF); err != nil {
-		log.Printf("default font load error: %v", err)
-	}
 	if err := LoadTheme(currentThemeName); err != nil {
 		log.Printf("LoadTheme error: %v", err)
 	}
