@@ -2,6 +2,7 @@ package main
 
 import (
 	"compress/gzip"
+	"context"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -24,13 +25,24 @@ var downloadStatus func(string)
 // total will be <= 0 if unknown.
 var downloadProgress func(name string, read, total int64)
 
+// downloadCtx and downloadCancel allow in-flight downloads to be aborted.
+var downloadCtx = context.Background()
+var downloadCancel context.CancelFunc = func() {}
+
 var downloadGZ = func(url, dest string) error {
 	consoleMessage(fmt.Sprintf("Downloading: %v...", url))
 	if downloadStatus != nil {
 		downloadStatus(fmt.Sprintf("Connecting to %s...", url))
 	}
 
-	resp, err := http.Get(url)
+	req, err := http.NewRequestWithContext(downloadCtx, http.MethodGet, url, nil)
+	if err != nil {
+		if downloadStatus != nil {
+			downloadStatus(fmt.Sprintf("Error creating request: %v", err))
+		}
+		return err
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		logError("GET %v: %v", url, err)
 		if downloadStatus != nil {
