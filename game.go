@@ -22,6 +22,7 @@ import (
 	text "github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	dark "github.com/thiagokokada/dark-mode-go"
+	clipboard "golang.design/x/clipboard"
 )
 
 const lateRatio = 80
@@ -591,6 +592,16 @@ func (g *Game) Update() error {
 		if newChars := ebiten.AppendInputChars(nil); len(newChars) > 0 {
 			inputText = append(inputText, newChars...)
 			changedInput = true
+		}
+		ctrl := ebiten.IsKeyPressed(ebiten.KeyControl) || ebiten.IsKeyPressed(ebiten.KeyControlLeft) || ebiten.IsKeyPressed(ebiten.KeyControlRight)
+		if ctrl && inpututil.IsKeyJustPressed(ebiten.KeyV) {
+			if txt := clipboard.Read(clipboard.FmtText); len(txt) > 0 {
+				inputText = append(inputText, []rune(string(txt))...)
+				changedInput = true
+			}
+		}
+		if ctrl && inpututil.IsKeyJustPressed(ebiten.KeyC) {
+			clipboard.Write(clipboard.FmtText, []byte(string(inputText)))
 		}
 		if inpututil.IsKeyJustPressed(ebiten.KeyArrowUp) {
 			if len(inputHistory) > 0 {

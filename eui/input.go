@@ -2,11 +2,13 @@ package eui
 
 import (
 	"math"
+	"strings"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
+	clipboard "golang.design/x/clipboard"
 )
 
 var (
@@ -293,6 +295,37 @@ func Update() error {
 				}
 			}
 		}
+
+		ctrl := ebiten.IsKeyPressed(ebiten.KeyControl) || ebiten.IsKeyPressed(ebiten.KeyControlLeft) || ebiten.IsKeyPressed(ebiten.KeyControlRight)
+		if ctrl && inpututil.IsKeyJustPressed(ebiten.KeyV) {
+			if txt := clipboard.Read(clipboard.FmtText); len(txt) > 0 {
+				runes := []rune(string(txt))
+				if focusedItem.HideText {
+					focusedItem.SecretText += string(runes)
+					focusedItem.Text += strings.Repeat("*", len(runes))
+					if focusedItem.TextPtr != nil {
+						*focusedItem.TextPtr = focusedItem.SecretText
+					}
+				} else {
+					focusedItem.Text += string(runes)
+					if focusedItem.TextPtr != nil {
+						*focusedItem.TextPtr = focusedItem.Text
+					}
+				}
+				focusedItem.markDirty()
+				if focusedItem.Handler != nil {
+					focusedItem.Handler.Emit(UIEvent{Item: focusedItem, Type: EventInputChanged, Text: focusedItem.Text})
+				}
+			}
+		}
+		if ctrl && inpututil.IsKeyJustPressed(ebiten.KeyC) {
+			text := focusedItem.Text
+			if focusedItem.HideText {
+				text = focusedItem.SecretText
+			}
+			clipboard.Write(clipboard.FmtText, []byte(text))
+		}
+
 		if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) {
 			runes := []rune(focusedItem.Text)
 			if len(runes) > 0 {
