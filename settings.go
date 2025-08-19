@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"time"
 
 	"gothoom/climg"
@@ -160,6 +161,7 @@ type settings struct {
 	PlayersWindow   WindowState
 	MessagesWindow  WindowState
 	ChatWindow      WindowState
+	WindowZones     map[string]eui.WindowZoneState
 
 	imgPlanesDebug      bool
 	smoothingDebug      bool
@@ -340,6 +342,11 @@ func syncWindowSettings() bool {
 		gs.ChatWindow.Open = false
 		changed = true
 	}
+	zones := eui.SaveWindowZones()
+	if !reflect.DeepEqual(zones, gs.WindowZones) {
+		gs.WindowZones = zones
+		changed = true
+	}
 	w, h := ebiten.WindowSize()
 	if gs.WindowWidth != w || gs.WindowHeight != h {
 		gs.WindowWidth = w
@@ -425,6 +432,7 @@ func applyWindowState(win *eui.WindowData, st *WindowState) {
 }
 
 func restoreWindowSettings() {
+	eui.LoadWindowZones(gs.WindowZones)
 	applyWindowState(gameWin, &gs.GameWindow)
 	if gameWin != nil {
 		gameWin.MarkOpen()
