@@ -231,11 +231,20 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 	volumeSlider, volumeEvents := eui.NewSlider()
 	volumeSlider.MinValue = 0
 	volumeSlider.MaxValue = 1
-	volumeSlider.Value = float32(gs.Volume)
+	if gs.Mute {
+		volumeSlider.Value = 0
+	} else {
+		volumeSlider.Value = float32(gs.Volume)
+	}
 	volumeSlider.Size = eui.Point{X: 150, Y: buttonHeight}
 	volumeSlider.FontSize = 9
 	volumeEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
+			if gs.Mute {
+				ev.Item.Value = 0
+				ev.Item.Dirty = true
+				return
+			}
 			gs.Volume = float64(ev.Value)
 			settingsDirty = true
 			updateSoundVolume()
@@ -255,10 +264,13 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 			gs.Mute = !gs.Mute
 			if gs.Mute {
 				muteBtn.Text = "Unmute"
+				volumeSlider.Value = 0
 			} else {
 				muteBtn.Text = "Mute"
+				volumeSlider.Value = float32(gs.Volume)
 			}
 			muteBtn.Dirty = true
+			volumeSlider.Dirty = true
 			settingsDirty = true
 			updateSoundVolume()
 		}

@@ -91,3 +91,54 @@ func TestPlaySoundIDs(t *testing.T) {
 		t.Fatalf("unexpected messages for unknown id: %v", messages)
 	}
 }
+
+func TestMutedSkipsSoundPlayback(t *testing.T) {
+	path := writeTestCLS(t)
+	var err error
+	clSounds, err = clsnd.Load(path)
+	if err != nil {
+		t.Fatalf("load CL_Sounds: %v", err)
+	}
+	initSoundContext()
+	gs.Volume = 1
+	gs.Mute = true
+
+	soundMu.Lock()
+	soundPlayers = make(map[*audio.Player]struct{})
+	soundMu.Unlock()
+
+	playSound([]uint16{1})
+	time.Sleep(50 * time.Millisecond)
+
+	soundMu.Lock()
+	have := len(soundPlayers)
+	soundMu.Unlock()
+	if have != 0 {
+		t.Fatalf("sound player created while muted: %d", have)
+	}
+}
+
+func TestMuteDoesNotOverrideVolume(t *testing.T) {
+	initSoundContext()
+	gs.Volume = 0.5
+	gs.Mute = true
+
+	// create a dummy player and register it
+	p := audioContext.NewPlayerFromBytes(make([]byte, 44100))
+	soundMu.Lock()
+	soundPlayers = map[*audio.Player]struct{}{p: {}}
+	soundMu.Unlock()
+
+	p.Play()
+	updateSoundVolume()
+
+	if gs.Volume != 0.5 {
+		t.Fatalf("volume changed while muted: got %v", gs.Volume)
+	}
+
+	if v := p.Volume(); v != 0 {
+		t.Fatalf("player volume = %v; want 0", v)
+	}
+
+	p.Close()
+}
