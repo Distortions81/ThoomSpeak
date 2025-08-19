@@ -53,3 +53,15 @@ func TestParseNamesSkipsDelimiters(t *testing.T) {
 		}
 	}
 }
+
+func TestParseNamesMacRoman(t *testing.T) {
+	nameBytes := []byte{'M', 0x8e, 'm', 'e'}
+	data := []byte{0xC2, 'p', 'n'}
+	data = append(data, nameBytes...)
+	data = append(data, 0xC2, 'p', 'n')
+	got := parseNames(data)
+	want := []string{"Méme"}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("parseNames() = %v, want %v", got, want)
+	}
+}
