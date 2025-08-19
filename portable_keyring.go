@@ -69,8 +69,9 @@ func defaultFileDir() string {
 	if d := os.Getenv("KEYRING_FILE_DIR"); d != "" {
 		return d
 	}
-	base := os.TempDir()
-	return filepath.Join(base, keyringService+"-keyring")
+	dir := filepath.Join(dataDirPath, "keyring")
+	_ = os.MkdirAll(dir, 0o755)
+	return dir
 }
 
 func envOr(k, def string) string {
