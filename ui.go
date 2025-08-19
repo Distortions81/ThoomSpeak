@@ -792,7 +792,7 @@ func makeAddCharacterWindow() {
 	addCharPassInput = passInput
 	flow.AddItem(passInput)
 	rememberCB, rememberEvents := eui.NewCheckbox()
-	rememberCB.Text = "Remember"
+	rememberCB.Text = "Remember Password"
 	rememberCB.Size = eui.Point{X: 200, Y: 24}
 	rememberCB.Checked = addCharRemember
 	rememberEvents.Handle = func(ev eui.UIEvent) {
