@@ -54,9 +54,9 @@ func updateDimmedScreenBG() {
 		}
 	}
 	dimmedScreenBG = color.RGBA{
-		R: uint8(uint16(c.R) * 3 / 4),
-		G: uint8(uint16(c.G) * 3 / 4),
-		B: uint8(uint16(c.B) * 3 / 4),
+		R: uint8(uint16(c.R) / 2),
+		G: uint8(uint16(c.G) / 2),
+		B: uint8(uint16(c.B) / 2),
 		A: 255,
 	}
 }
@@ -660,10 +660,6 @@ func (g *Game) Update() error {
 		if consoleWin != nil {
 			consoleWin.Refresh()
 		}
-	}
-
-	if inpututil.IsKeyJustPressed(ebiten.KeyF1) {
-		toggleHelpWindow(nil)
 	}
 
 	/* WASD / ARROWS */

@@ -8,21 +8,11 @@ Communication
 - Press Enter to start typing. Enter again sends the message.
 - Press Esc to cancel typing. Up/Down browse previous messages.
 
-Inventory
----------
-- Open the Inventory window from the toolbar->Windows button.
 
 UI Navigation
 -------------
-- Use the Windows button and window to toggle windows open or closed.
-- Drag window title bars to move; resize by dragging edges (not tops).
+- Use the Windows button to set windows open or closed.
 - Mouse wheel scrolls lists and text windows.
-- Press F1 to open this help window.
-
-Basics
-------
-- Settings are accessible from the Settings button; changes save automatically.
-- Explore with friends and share adventures.
 
 Extras
 -----
