@@ -43,6 +43,8 @@ var addCharWin *eui.WindowData
 var addCharName string
 var addCharPass string
 var addCharRemember bool
+var passWin *eui.WindowData
+var passInput *eui.ItemData
 
 // Keep references to inputs so we can clear text programmatically.
 var addCharNameInput *eui.ItemData
@@ -628,6 +630,7 @@ func makeDownloadsWindow() {
 			// Force reselect from LastCharacter if available
 			name = ""
 			passHash = ""
+			pass = ""
 			updateCharacterButtons()
 			if loginWin != nil {
 				loginWin.Refresh()
@@ -679,6 +682,7 @@ func updateCharacterButtons() {
 				if c.Name == gs.LastCharacter {
 					name = c.Name
 					passHash = c.passHash
+					pass = ""
 					break
 				}
 			}
@@ -686,6 +690,7 @@ func updateCharacterButtons() {
 		if name == "" && len(characters) == 1 {
 			name = characters[0].Name
 			passHash = characters[0].passHash
+			pass = ""
 		}
 	}
 	for i := range charactersList.Contents {
@@ -700,6 +705,7 @@ func updateCharacterButtons() {
 		charactersList.AddItem(empty)
 		name = ""
 		passHash = ""
+		pass = ""
 	} else {
 		for _, c := range characters {
 			row := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
@@ -712,11 +718,13 @@ func updateCharacterButtons() {
 			hashCopy := c.passHash
 			if name == c.Name {
 				passHash = c.passHash
+				pass = ""
 			}
 			radioEvents.Handle = func(ev eui.UIEvent) {
 				if ev.Type == eui.EventRadioSelected {
 					name = nameCopy
 					passHash = hashCopy
+					pass = ""
 					gs.LastCharacter = nameCopy
 					saveSettings()
 					// Rebuild the list so only the selected radio is checked
@@ -741,6 +749,7 @@ func updateCharacterButtons() {
 					if name == delName {
 						name = ""
 						passHash = ""
+						pass = ""
 					}
 					updateCharacterButtons()
 					// Preserve window position while contents change size
@@ -799,6 +808,9 @@ func makeAddCharacterWindow() {
 		if ev.Type == eui.EventClick {
 			h := md5.Sum([]byte(addCharPass))
 			hash := hex.EncodeToString(h[:])
+			if !addCharRemember {
+				hash = ""
+			}
 			exists := false
 			for i := range characters {
 				if characters[i].Name == addCharName {
@@ -810,14 +822,13 @@ func makeAddCharacterWindow() {
 			if !exists {
 				characters = append(characters, Character{Name: addCharName, passHash: hash})
 			}
-			if addCharRemember {
-				saveCharacters()
-				// Reload to ensure in-memory state matches persisted data.
-				loadCharacters()
-			}
+			saveCharacters()
+			// Reload to ensure in-memory state matches persisted data.
+			loadCharacters()
 			// Update selection to the newly added character
 			name = addCharName
 			passHash = hash
+			pass = ""
 			gs.LastCharacter = addCharName
 			saveSettings()
 			// Ensure the login window is open before updating its contents
@@ -861,6 +872,78 @@ func makeAddCharacterWindow() {
 	addCharWin.AddWindow(false)
 }
 
+func makePasswordWindow() {
+	if passWin != nil {
+		return
+	}
+	passWin = eui.NewWindow()
+	passWin.Title = "Enter Password"
+	passWin.Closable = false
+	passWin.Resizable = false
+	passWin.AutoSize = true
+	passWin.Movable = true
+
+	flow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
+
+	input, _ := eui.NewInput()
+	input.Label = "Password"
+	input.TextPtr = &pass
+	input.HideText = true
+	input.Size = eui.Point{X: 200, Y: 24}
+	passInput = input
+	flow.AddItem(input)
+
+	btnFlow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
+
+	okBtn, okEvents := eui.NewButton()
+	okBtn.Text = "Connect"
+	okBtn.Size = eui.Point{X: 96, Y: 24}
+	okEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			if pass == "" {
+				makeErrorWindow("Error: Login: password is empty")
+				return
+			}
+			passWin.Close()
+			startLogin()
+		}
+	}
+	btnFlow.AddItem(okBtn)
+
+	cancelBtn, cancelEvents := eui.NewButton()
+	cancelBtn.Text = "Cancel"
+	cancelBtn.Size = eui.Point{X: 96, Y: 24}
+	cancelEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			pass = ""
+			passWin.Close()
+		}
+	}
+	btnFlow.AddItem(cancelBtn)
+
+	flow.AddItem(btnFlow)
+
+	passWin.AddItem(flow)
+	passWin.AddWindow(false)
+}
+
+func startLogin() {
+	loginWin.Close()
+	go func() {
+		ctx, cancel := context.WithCancel(gameCtx)
+		loginMu.Lock()
+		loginCancel = cancel
+		loginMu.Unlock()
+		if err := login(ctx, clientVersion); err != nil {
+			logError("login: %v", err)
+			pass = ""
+			// Bring login forward first so the popup stays on top
+			loginWin.MarkOpen()
+			makeErrorWindow("Error: Login: " + err.Error())
+		}
+	}()
+}
+
 func makeLoginWindow() {
 	if loginWin != nil {
 		return
@@ -900,6 +983,28 @@ func makeLoginWindow() {
 	}
 	loginFlow.AddItem(addBtn)
 
+	demoBtn, demoEvents := eui.NewButton()
+	demoBtn.Text = "Try the demo"
+	demoBtn.Size = eui.Point{X: 200, Y: 24}
+	demoEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			go func() {
+				n, err := fetchRandomDemoCharacter(clientVersion)
+				if err != nil {
+					logError("demo: %v", err)
+					loginWin.MarkOpen()
+					makeErrorWindow("Error: Demo: " + err.Error())
+					return
+				}
+				name = n
+				passHash = ""
+				pass = "demo"
+				startLogin()
+			}()
+		}
+	}
+	loginFlow.AddItem(demoBtn)
+
 	loginFlow.AddItem(charactersList)
 
 	label, _ := eui.NewText()
@@ -918,26 +1023,21 @@ func makeLoginWindow() {
 				makeErrorWindow("Error: Login: login is empty")
 				return
 			}
-			// Ensure a password exists (either stored hash or plain) before attempting login
-			if !demo && passHash == "" && pass == "" {
-				makeErrorWindow("Error: Login: password is empty")
+			if passHash == "" && pass == "" {
+				if passWin == nil {
+					makePasswordWindow()
+				}
+				pass = ""
+				if passInput != nil {
+					passInput.Text = ""
+					passInput.Dirty = true
+				}
+				passWin.MarkOpenNear(ev.Item)
 				return
 			}
 			gs.LastCharacter = name
 			saveSettings()
-			loginWin.Close()
-			go func() {
-				ctx, cancel := context.WithCancel(gameCtx)
-				loginMu.Lock()
-				loginCancel = cancel
-				loginMu.Unlock()
-				if err := login(ctx, clientVersion); err != nil {
-					logError("login: %v", err)
-					// Bring login forward first so the popup stays on top
-					loginWin.MarkOpen()
-					makeErrorWindow("Error: Login: " + err.Error())
-				}
-			}()
+			startLogin()
 		}
 	}
 	loginFlow.AddItem(connBtn)
