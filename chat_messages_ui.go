@@ -41,5 +41,6 @@ func makeChatWindow() error {
 		}
 	}
 	updateChatWindow()
+	chatWin.Refresh()
 	return nil
 }
