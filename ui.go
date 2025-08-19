@@ -1256,7 +1256,7 @@ func makeSettingsWindow() {
 	chatTTSRow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
 
 	chatTTSCB, chatTTSEvents := eui.NewCheckbox()
-	chatTTSCB.Text = "Read chat messages aloud"
+	chatTTSCB.Text = "Chat TTS"
 	chatTTSCB.Size = eui.Point{X: rightW - 110, Y: 24}
 	chatTTSCB.Checked = gs.ChatTTS
 	chatTTSEvents.Handle = func(ev eui.UIEvent) {
@@ -1279,6 +1279,7 @@ func makeSettingsWindow() {
 	chatTTSSlider.Value = float32(gs.ChatTTSVolume)
 	chatTTSSlider.Size = eui.Point{X: 100, Y: 24}
 	chatTTSSlider.FontSize = 9
+	chatTTSSlider.Label = "TTS Volume"
 	chatTTSSliderEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
 			SettingsLock.Lock()
