@@ -1,31 +1,30 @@
 package main
 
 import (
-	"encoding/xml"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"sort"
 )
 
 type persistPlayers struct {
-	XMLName xml.Name        `xml:"players"`
-	Players []persistPlayer `xml:"player"`
+	Players []persistPlayer `json:"players"`
 }
 
 type persistPlayer struct {
-	Name       string `xml:"name,attr"`
-	Gender     string `xml:"gender,attr"`
-	Class      string `xml:"class,attr"`
-	Clan       string `xml:"clan,attr"`
-	PictID     uint16 `xml:"pict,attr"`
-	Dead       bool   `xml:"dead,attr"`
-	GMLevel    int    `xml:"gm,attr,omitempty"`
-	ColorsHex  string `xml:"colors,attr,omitempty"` // hex of [count][colors...]
-	FellWhere  string `xml:"fell_where,omitempty"`
-	KillerName string `xml:"killer,omitempty"`
+	Name       string `json:"name"`
+	Gender     string `json:"gender"`
+	Class      string `json:"class"`
+	Clan       string `json:"clan"`
+	PictID     uint16 `json:"pict"`
+	Dead       bool   `json:"dead"`
+	GMLevel    int    `json:"gm,omitempty"`
+	ColorsHex  string `json:"colors,omitempty"` // hex of [count][colors...]
+	FellWhere  string `json:"fell_where,omitempty"`
+	KillerName string `json:"killer,omitempty"`
 }
 
-const PlayersFile = "GT_Players.xml"
+const PlayersFile = "GT_Players.json"
 
 var (
 	lastPlayersSave     = lastSettingsSave
@@ -39,7 +38,7 @@ func loadPlayersPersist() {
 		return
 	}
 	var pp persistPlayers
-	if err := xml.Unmarshal(data, &pp); err != nil {
+	if err := json.Unmarshal(data, &pp); err != nil {
 		return
 	}
 	if len(pp.Players) == 0 {
@@ -123,7 +122,7 @@ func savePlayersPersist() {
 	playersMu.RUnlock()
 
 	pp := persistPlayers{Players: list}
-	data, err := xml.MarshalIndent(pp, "", "  ")
+	data, err := json.MarshalIndent(pp, "", "  ")
 	if err != nil {
 		return
 	}

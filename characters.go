@@ -19,20 +19,27 @@ var characters []Character
 
 const (
 	charsFilePath = "characters.json"
-	hashKey       = "GothoomHashKey"
+	hashKey       = "3k6XsAgldtz1vRw3e9WpfUtXQdKQO4P7a7dxmda4KTNpEJWu0lk08QEcJTbeqisH"
 )
+
+type charactersFile struct {
+	Version    int         `json:"version"`
+	Characters []Character `json:"characters"`
+}
 
 func loadCharacters() {
 	data, err := os.ReadFile(filepath.Join(dataDirPath, charsFilePath))
 	if err != nil {
 		return
 	}
+
 	if err := json.Unmarshal(data, &characters); err != nil {
 		return
 	}
 	for i := range characters {
 		characters[i].PassHash = unscrambleHash(characters[i].Name, characters[i].PassHash)
 	}
+	characters = cf.Characters
 }
 
 func saveCharacters() {
@@ -42,6 +49,7 @@ func saveCharacters() {
 		toSave[i].PassHash = scrambleHash(toSave[i].Name, toSave[i].PassHash)
 	}
 	data, err := json.MarshalIndent(toSave, "", "  ")
+
 	if err != nil {
 		log.Printf("save characters: %v", err)
 		return
