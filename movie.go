@@ -257,7 +257,11 @@ func parseMobileTable(data []byte, pos int, version, revision uint16) int {
 		d := frameDescriptor{Index: uint8(idx)}
 		d.Type = uint8(binary.BigEndian.Uint32(buf[16:20]))
 		pict := binary.BigEndian.Uint32(buf[0:4])
-		d.PictID = uint16(pict & 0xffff)
+		if pict == 0xffffffff || uint16(pict) == 0xffff {
+			d.PictID = 0
+		} else {
+			d.PictID = uint16(pict)
+		}
 
 		numColors := int(binary.BigEndian.Uint32(buf[l.numColorsOffset : l.numColorsOffset+4]))
 		if numColors < 0 || numColors > 30 {

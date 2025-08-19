@@ -107,6 +107,9 @@ func makeMobileKey(id uint16, state uint8, colors []byte) mobileKey {
 // regardless of the pictDef flags. Mobile sprites require this behavior
 // since the original client always treats index 0 as transparent for them.
 func loadSheet(id uint16, colors []byte, forceTransparent bool) *ebiten.Image {
+	if id == 0xffff {
+		return nil
+	}
 	key := makeSheetKey(id, colors, forceTransparent)
 	if !gs.NoCaching {
 		imageMu.Lock()
