@@ -107,7 +107,7 @@ func playClanLordTune(tune string) {
 					Velocity: 100,
 					Duration: time.Duration(dur) * time.Millisecond,
 				}}
-				if err := music.Play(rs, prog, notes); err != nil {
+				if err := music.Play(audioContext, rs, prog, notes); err != nil {
 					log.Printf("play note: %v", err)
 				}
 			}(key, ev.durMS)
