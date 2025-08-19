@@ -5,11 +5,40 @@ import (
 	"encoding/binary"
 	"io"
 	"math"
+	"sync"
 	"time"
 
 	"github.com/ebitengine/oto/v3"
 	meltysynth "github.com/sinshu/go-meltysynth/meltysynth"
 )
+
+const (
+	sampleRate = 44100
+	channels   = 2
+	block      = 512
+)
+
+var (
+	ctxOnce sync.Once
+	ctx     *oto.Context
+	ctxErr  error
+)
+
+func getContext() (*oto.Context, error) {
+	ctxOnce.Do(func() {
+		var ready chan struct{}
+		ctx, ready, ctxErr = oto.NewContext(&oto.NewContextOptions{
+			SampleRate:   sampleRate,
+			ChannelCount: channels,
+			Format:       oto.FormatFloat32LE,
+		})
+		if ctxErr != nil {
+			return
+		}
+		<-ready
+	})
+	return ctx, ctxErr
+}
 
 // Note represents a single MIDI note with a duration.
 type Note struct {
@@ -25,12 +54,6 @@ type Note struct {
 // The reader must point to a SoundFont2 (sf2) file. The function blocks until
 // playback has finished.
 func Play(sf io.ReadSeeker, program int, notes []Note) error {
-	const (
-		sampleRate = 44100
-		channels   = 2
-		block      = 512
-	)
-
 	sfnt, err := meltysynth.NewSoundFont(sf)
 	if err != nil {
 		return err
@@ -119,15 +142,10 @@ func Play(sf io.ReadSeeker, program int, notes []Note) error {
 		inter[2*i+1] = rightAll[i]
 	}
 
-	ctx, ready, err := oto.NewContext(&oto.NewContextOptions{
-		SampleRate:   sampleRate,
-		ChannelCount: channels,
-		Format:       oto.FormatFloat32LE,
-	})
+	ctx, err := getContext()
 	if err != nil {
 		return err
 	}
-	<-ready
 
 	var pcm bytes.Buffer
 	if err := binary.Write(&pcm, binary.LittleEndian, inter); err != nil {
