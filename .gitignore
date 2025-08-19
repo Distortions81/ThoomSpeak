@@ -17,3 +17,4 @@ ClanLord.xml
 .gobin/staticcheck
 data/Screenshots/
 data/GT_Players.json
+data/*.sf2
