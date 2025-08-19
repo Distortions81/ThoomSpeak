@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"io"
 	"sync"
 	"time"
 
@@ -41,13 +39,7 @@ func speakChatMessage(msg string) {
 		}
 		defer rc.Close()
 
-		data, err := io.ReadAll(rc)
-		if err != nil {
-			logDebug("chat tts read: %v", err)
-			return
-		}
-
-		stream, err := mp3.Decode(audioContext, bytes.NewReader(data))
+		stream, err := mp3.DecodeWithSampleRate(44100, rc)
 		if err != nil {
 			logDebug("chat tts decode: %v", err)
 			return

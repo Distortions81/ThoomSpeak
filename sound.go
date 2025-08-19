@@ -234,31 +234,6 @@ func updateSoundVolume() {
 	}
 }
 
-func resampleLinear(src []int16, srcRate, dstRate int) []int16 {
-	if srcRate == dstRate || len(src) == 0 {
-		return append([]int16(nil), src...)
-	}
-
-	n := int(math.Round(float64(len(src)) * float64(dstRate) / float64(srcRate)))
-	dst := make([]int16, n)
-
-	ratio := float64(srcRate) / float64(dstRate)
-	for i := 0; i < n; i++ {
-		pos := float64(i) * ratio
-		idx := int(pos)
-		frac := pos - float64(idx)
-		s0 := src[idx]
-		s1 := s0
-		if idx+1 < len(src) {
-			s1 = src[idx+1]
-		}
-		v := (1-frac)*float64(s0) + frac*float64(s1)
-		dst[i] = int16(math.Round(v))
-	}
-
-	return dst
-}
-
 // fast xorshift32 PRNG
 type rnd32 uint32
 

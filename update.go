@@ -248,16 +248,3 @@ func downloadDataFiles(clientVer int, status dataFilesStatus) error {
 	}
 	return nil
 }
-
-// plannedDownloadURLs returns the URLs that would be downloaded for the given
-// missing data file status and client version.
-func plannedDownloadURLs(clientVer int, status dataFilesStatus) []string {
-	urls := make([]string, 0, 2)
-	if status.NeedImages {
-		urls = append(urls, fmt.Sprintf("%v/data/CL_Images.%d.gz", defaultUpdateBase, clientVer))
-	}
-	if status.NeedSounds {
-		urls = append(urls, fmt.Sprintf("%v/data/CL_Sounds.%d.gz", defaultUpdateBase, clientVer))
-	}
-	return urls
-}

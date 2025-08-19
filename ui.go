@@ -1808,7 +1808,7 @@ func confirmResetSettings() {
 func confirmQuit() {
 	showPopup(
 		"Confirm Quit",
-		"Quit the app? Unsaved state will be lost.",
+		"Are you sure you would like to quit?",
 		[]popupButton{
 			{Text: "Cancel"},
 			{Text: "Quit", Color: &eui.ColorDarkRed, HoverColor: &eui.ColorRed, Action: func() {
@@ -1818,124 +1818,6 @@ func confirmQuit() {
 			}},
 		},
 	)
-}
-
-func makeGraphicsWindow() {
-	if graphicsWin != nil {
-		return
-	}
-	// Column width
-	var width float32 = 260
-
-	graphicsWin = eui.NewWindow()
-	graphicsWin.Title = "Screen Size Settings"
-	graphicsWin.Closable = true
-	graphicsWin.Resizable = false
-	graphicsWin.AutoSize = true
-	graphicsWin.Movable = true
-	graphicsWin.SetZone(eui.HZoneCenterLeft, eui.VZoneMiddleTop)
-
-	simple := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
-	simple.Size = eui.Point{X: width, Y: 10}
-
-	// Simple (left) controls
-	uiScaleSlider, uiScaleEvents := eui.NewSlider()
-	uiScaleSlider.Label = "UI Scaling"
-	uiScaleSlider.MinValue = 1.0
-	uiScaleSlider.MaxValue = 2.5
-	uiScaleSlider.Value = float32(gs.UIScale)
-	pendingUIScale := gs.UIScale
-	uiScaleEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventSliderChanged {
-			pendingUIScale = float64(ev.Value)
-		}
-	}
-
-	uiScaleApplyBtn, uiScaleApplyEvents := eui.NewButton()
-	uiScaleApplyBtn.Text = "Apply UI Scale"
-	uiScaleApplyBtn.Size = eui.Point{X: 140, Y: 24}
-	uiScaleApplyEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventClick {
-			gs.UIScale = pendingUIScale
-			eui.SetUIScale(float32(gs.UIScale))
-			updateGameWindowSize()
-			settingsDirty = true
-		}
-	}
-
-	// Place the slider and button on the same row
-	uiScaleRow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
-	uiScaleSlider.Size = eui.Point{X: width - uiScaleApplyBtn.Size.X - 10, Y: 24}
-	uiScaleRow.AddItem(uiScaleSlider)
-	uiScaleRow.AddItem(uiScaleApplyBtn)
-	simple.AddItem(uiScaleRow)
-
-	fullscreenCB, fullscreenEvents := eui.NewCheckbox()
-	fullscreenCB.Text = "Fullscreen"
-	fullscreenCB.Size = eui.Point{X: width, Y: 24}
-	fullscreenCB.Checked = gs.Fullscreen
-	fullscreenEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventCheckboxChanged {
-			gs.Fullscreen = ev.Checked
-			ebiten.SetFullscreen(gs.Fullscreen)
-			ebiten.SetWindowFloating(gs.Fullscreen || gs.AlwaysOnTop)
-			settingsDirty = true
-		}
-	}
-	simple.AddItem(fullscreenCB)
-
-	alwaysTopCB, alwaysTopEvents := eui.NewCheckbox()
-	alwaysTopCB.Text = "Always on top"
-	alwaysTopCB.Size = eui.Point{X: width, Y: 24}
-	alwaysTopCB.Checked = gs.AlwaysOnTop
-	alwaysTopEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventCheckboxChanged {
-			gs.AlwaysOnTop = ev.Checked
-			ebiten.SetWindowFloating(gs.Fullscreen || gs.AlwaysOnTop)
-			settingsDirty = true
-		}
-	}
-	simple.AddItem(alwaysTopCB)
-
-	// Render scale (world zoom) 1x..10x, defaults to 2x
-	renderScale, renderScaleEvents := eui.NewSlider()
-	renderScale.Label = "Render Scale"
-	renderScale.MinValue = 1
-	renderScale.MaxValue = 10
-	renderScale.IntOnly = true
-	// Snap to integer steps by rounding the current setting
-	if gs.GameScale < 1 {
-		gs.GameScale = 1
-	}
-	if gs.GameScale > 10 {
-		gs.GameScale = 10
-	}
-	renderScale.Value = float32(math.Round(gs.GameScale))
-	renderScale.Size = eui.Point{X: width - 10, Y: 24}
-	renderScale.Tooltip = "Game render zoom (1x–10x)."
-	renderScaleEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventSliderChanged {
-			// Round to integer steps and clamp
-			v := math.Round(float64(ev.Value))
-			if v < 1 {
-				v = 1
-			}
-			if v > 10 {
-				v = 10
-			}
-			gs.GameScale = v
-			// Reflect the snapped value on the slider UI
-			renderScale.Value = float32(v)
-			settingsDirty = true
-			if gameWin != nil {
-				gameWin.Refresh()
-			}
-		}
-	}
-	simple.AddItem(renderScale)
-
-	graphicsWin.AddItem(simple)
-	graphicsWin.AddWindow(false)
 }
 
 func makeQualityWindow() {

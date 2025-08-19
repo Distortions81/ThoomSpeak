@@ -529,12 +529,6 @@ func maybeDecodeMessage(m []byte) {
 	}
 }
 
-func resetDrawState() {
-	stateMu.Lock()
-	state = cloneDrawState(initialState)
-	stateMu.Unlock()
-}
-
 func resetInterpolation() {
 	stateMu.Lock()
 	state.prevMobiles = make(map[uint8]frameMobile)

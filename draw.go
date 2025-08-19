@@ -111,12 +111,6 @@ func sortMobilesNameTags(mobs []frameMobile) {
 	})
 }
 
-func sortDescriptors(descs []frameDescriptor) {
-	sort.Slice(descs, func(i, j int) bool {
-		return descs[i].Index < descs[j].Index
-	})
-}
-
 // bitReader helps decode the packed picture fields.
 type bitReader struct {
 	data   []byte
@@ -1341,13 +1335,6 @@ func parseDrawState(data []byte, buildCache bool) error {
 	prev2Sounds = prevSounds
 	prevSounds = newSounds
 
-	//Why is this never used
-	stage = "inventory"
-	var invOK bool
-	stateData, invOK = parseInventory(stateData)
-	if !invOK {
-		return errors.New(stage)
-	}
 	return nil
 }
 

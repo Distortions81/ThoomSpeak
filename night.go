@@ -186,7 +186,7 @@ func drawNightOverlay(screen *ebiten.Image, ox, oy int) {
 	}
 
 	// Scale overlay exactly to the current game view size so it fully covers it.
-	iw, ih := img.Size()
+	iw, ih := img.Bounds().Dx(), img.Bounds().Dy()
 	vw := float64(int(math.Round(float64(gameAreaSizeX) * gs.GameScale)))
 	vh := float64(int(math.Round(float64(gameAreaSizeY) * gs.GameScale)))
 	sx := 0.0

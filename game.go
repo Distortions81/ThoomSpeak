@@ -803,7 +803,7 @@ func worldDrawInfo() (int, int, float64) {
 		fit = 1
 	}
 
-	offIntScale := int(math.Ceil(float64(fit)))
+	offIntScale := fit
 	if desired > offIntScale {
 		offIntScale = desired
 	}
@@ -879,7 +879,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		fit = 1
 	}
 
-	offIntScale := int(math.Ceil(float64(fit)))
+	offIntScale := fit
 	if desired > offIntScale {
 		offIntScale = desired
 	}
@@ -1703,51 +1703,6 @@ func equippedItemPicts() (uint16, uint16) {
 	return rightID, leftID
 }
 
-// drawEquippedItems renders icons for all currently equipped items in the top left.
-func drawEquippedItems(screen *ebiten.Image, ox, oy int) {
-	rightID, leftID := equippedItemPicts()
-	x := ox + int(4*gs.GameScale)
-	y := oy + int(4*gs.GameScale)
-	if rightID == 0 && leftID == 0 {
-		img := loadImage(defaultHandPictID)
-		if img == nil {
-			return
-		}
-		w := int(float64(img.Bounds().Dx()) * gs.GameScale)
-		opRight := &ebiten.DrawImageOptions{Filter: ebiten.FilterLinear, DisableMipmaps: true}
-		opRight.GeoM.Scale(gs.GameScale, gs.GameScale)
-		opRight.GeoM.Translate(float64(x), float64(y))
-		screen.DrawImage(img, opRight)
-
-		opLeft := &ebiten.DrawImageOptions{Filter: ebiten.FilterLinear, DisableMipmaps: true}
-		opLeft.GeoM.Scale(-gs.GameScale, gs.GameScale)
-		opLeft.GeoM.Translate(float64(w), 0)
-		opLeft.GeoM.Translate(float64(x+w)+4*gs.GameScale, float64(y))
-		screen.DrawImage(img, opLeft)
-		return
-	}
-
-	if rightID != 0 {
-		if img := loadImage(rightID); img != nil {
-			op := &ebiten.DrawImageOptions{Filter: ebiten.FilterLinear, DisableMipmaps: true}
-			op.GeoM.Scale(gs.GameScale, gs.GameScale)
-			op.GeoM.Translate(float64(x), float64(y))
-			screen.DrawImage(img, op)
-			x += int(float64(img.Bounds().Dx())*gs.GameScale) + int(4*gs.GameScale)
-		}
-	}
-	if leftID != 0 {
-		if img := loadImage(leftID); img != nil {
-			w := int(float64(img.Bounds().Dx()) * gs.GameScale)
-			op := &ebiten.DrawImageOptions{Filter: ebiten.FilterLinear, DisableMipmaps: true}
-			op.GeoM.Scale(-gs.GameScale, gs.GameScale)
-			op.GeoM.Translate(float64(w), 0)
-			op.GeoM.Translate(float64(x), float64(y))
-			screen.DrawImage(img, op)
-		}
-	}
-}
-
 // drawInputOverlay renders the text entry box when chatting.
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 	eui.Layout(outsideWidth, outsideHeight)
@@ -1859,18 +1814,6 @@ func makeGameWindow() {
 		updateGameImageSize()
 	}
 	updateGameWindowSize()
-	updateGameImageSize()
-}
-
-// maximizeGameWindow resizes the game window to fill the Ebiten screen area.
-func maximizeGameWindow() {
-	if gameWin == nil {
-		return
-	}
-	w, h := eui.ScreenSize()
-	gameWin.ClearZone()
-	_ = gameWin.SetPos(eui.Point{X: 0, Y: 0})
-	_ = gameWin.SetSize(eui.Point{X: float32(w), Y: float32(h)})
 	updateGameImageSize()
 }
 

@@ -1,8 +1,6 @@
 package main
 
 import (
-	"crypto/md5"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"log"
@@ -64,47 +62,6 @@ func saveCharacters() {
 	if err := os.WriteFile(filepath.Join(dataDirPath, charsFilePath), data, 0644); err != nil {
 		log.Printf("save characters: %v", err)
 	}
-}
-
-// rememberCharacter stores the given name and password hash.
-func rememberCharacter(name, pass string) {
-	h := md5.Sum([]byte(pass))
-	hash := hex.EncodeToString(h[:])
-	for i := range characters {
-		if characters[i].Name == name {
-			characters[i].PassHash = hash
-			useFile := ring == nil
-			if ring != nil {
-				if err := ring.Set(keyring.Item{Key: name, Data: []byte(hash)}); err != nil {
-					logError("keyring set %q: %v", name, err)
-					useFile = true
-				} else {
-					useFile = false
-				}
-			}
-			if useFile {
-				saveCharacters()
-			}
-			gs.LastCharacter = name
-			saveSettings()
-			return
-		}
-	}
-	characters = append(characters, Character{Name: name, PassHash: hash})
-	useFile := ring == nil
-	if ring != nil {
-		if err := ring.Set(keyring.Item{Key: name, Data: []byte(hash)}); err != nil {
-			logError("keyring set %q: %v", name, err)
-			useFile = true
-		} else {
-			useFile = false
-		}
-	}
-	if useFile {
-		saveCharacters()
-	}
-	gs.LastCharacter = name
-	saveSettings()
 }
 
 // removeCharacter deletes a stored character by name.

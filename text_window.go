@@ -39,7 +39,7 @@ func makeTextWindow(title string, hz eui.HZone, vz eui.VZone, withInput bool) (*
 
 // updateTextWindow refreshes a text window's content and optional input message.
 func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []string, fontSize float64, inputMsg string) {
-	if list == nil {
+	if list == nil || win == nil {
 		return
 	}
 
