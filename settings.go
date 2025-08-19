@@ -348,10 +348,12 @@ func syncWindowSettings() bool {
 		changed = true
 	}
 	w, h := ebiten.WindowSize()
-	if gs.WindowWidth != w || gs.WindowHeight != h {
-		gs.WindowWidth = w
-		gs.WindowHeight = h
-		changed = true
+	if w > 0 && h > 0 {
+		if gs.WindowWidth != w || gs.WindowHeight != h {
+			gs.WindowWidth = w
+			gs.WindowHeight = h
+			changed = true
+		}
 	}
 	return changed
 }
