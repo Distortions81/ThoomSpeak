@@ -12,6 +12,11 @@ import (
 	"gothoom/clsnd"
 )
 
+func TestMain(m *testing.M) {
+	initSoundContext()
+	os.Exit(m.Run())
+}
+
 // writeTestCLS creates a minimal CL_Sounds archive containing
 // a single 8-bit mono sound with ID 1.
 func writeTestCLS(t *testing.T) string {
@@ -64,7 +69,6 @@ func TestPlaySoundIDs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load CL_Sounds: %v", err)
 	}
-	initSoundContext()
 	gs.Volume = 1
 
 	messages = nil
@@ -99,7 +103,6 @@ func TestMutedSkipsSoundPlayback(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load CL_Sounds: %v", err)
 	}
-	initSoundContext()
 	gs.Volume = 1
 	gs.Mute = true
 
@@ -119,7 +122,6 @@ func TestMutedSkipsSoundPlayback(t *testing.T) {
 }
 
 func TestMuteDoesNotOverrideVolume(t *testing.T) {
-	initSoundContext()
 	gs.Volume = 0.5
 	gs.Mute = true
 

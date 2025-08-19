@@ -22,8 +22,9 @@ var (
 	clSounds *clsnd.CLSounds
 	pcmCache = make(map[uint16][]byte)
 
-	audioContext *audio.Context
-	soundPlayers = make(map[*audio.Player]struct{})
+	audioContext  *audio.Context
+	audioInitOnce sync.Once
+	soundPlayers  = make(map[*audio.Player]struct{})
 )
 
 // stopAllSounds halts and disposes all currently playing audio players.
@@ -201,8 +202,10 @@ func playSound(ids []uint16) {
 
 // initSoundContext initializes the global audio context.
 func initSoundContext() {
-	rate := 44100
-	audioContext = audio.NewContext(rate)
+	audioInitOnce.Do(func() {
+		rate := 44100
+		audioContext = audio.NewContext(rate)
+	})
 }
 
 func updateSoundVolume() {
