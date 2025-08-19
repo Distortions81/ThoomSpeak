@@ -10,9 +10,6 @@ func pointInUI(x, y int) bool {
 
 	windows := eui.Windows()
 	for _, win := range windows {
-		if win == gameWin {
-			continue
-		}
 		if !win.IsOpen() {
 			continue
 		}
@@ -24,6 +21,11 @@ func pointInUI(x, y int) bool {
 		x0, y0 := pos.X+1, pos.Y+1
 		x1 := x0 + size.X + frame*2
 		y1 := y0 + size.Y + frame*2 + title
+		if win == gameWin {
+			// Treat only the title bar of the game window as UI so
+			// world clicks still pass through to the game.
+			y1 = y0 + frame + title
+		}
 		if fx >= x0 && fx < x1 && fy >= y0 && fy < y1 {
 			return true
 		}
@@ -39,11 +41,12 @@ func pointInUI(x, y int) bool {
 }
 
 func pointInItems(items []*eui.ItemData, fx, fy float32) bool {
-	for _, it := range items {
-		if it == nil || it.Invisible {
+	for i := len(items) - 1; i >= 0; i-- {
+		it := items[i]
+		if it == nil || it.Invisible || it == gameImageItem {
 			continue
 		}
-		if fx >= it.DrawRect.X0 && fx < it.DrawRect.X1 && fy >= it.DrawRect.Y0 && fy < it.DrawRect.Y1 {
+		if fx >= it.DrawRect.X0 && fx <= it.DrawRect.X1 && fy >= it.DrawRect.Y0 && fy <= it.DrawRect.Y1 {
 			return true
 		}
 		if len(it.Contents) > 0 && pointInItems(it.Contents, fx, fy) {
