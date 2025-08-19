@@ -77,6 +77,8 @@ var gsdef settings = settings{
 	MessagesToConsole: false,
 	ChatTTS:           false,
 	ChatTTSVolume:     1.0,
+	ChatTimestamps:    false,
+	ConsoleTimestamps: false,
 	WindowTiling:      false,
 	WindowSnapping:    false,
 	NoCaching:         false,
@@ -158,6 +160,8 @@ type settings struct {
 	MessagesToConsole bool
 	ChatTTS           bool
 	ChatTTSVolume     float64
+	ChatTimestamps    bool
+	ConsoleTimestamps bool
 	WindowTiling      bool
 	WindowSnapping    bool
 
