@@ -29,7 +29,7 @@ func makeTextWindow(title string, hz eui.HZone, vz eui.VZone, withInput bool) (*
 
 	var input *eui.ItemData
 	if withInput {
-		input = &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL, Fixed: true}
+		input = &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL, Fixed: true, Scrollable: true}
 		flow.AddItem(input)
 	}
 
@@ -111,7 +111,9 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 		list.Contents = list.Contents[:len(msgs)]
 	}
 
+	var scrollInput bool
 	if input != nil {
+		scrollInput = input.ScrollAtBottom()
 		// Soft-wrap the input message to the available width and grow the input area.
 		_, inLines := wrapText(inputMsg, face, wrapWidthPx)
 		wrappedIn := strings.Join(inLines, "\n")
@@ -119,13 +121,21 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 		if inLinesN < 1 {
 			inLinesN = 1
 		}
+		inputContentH := rowUnits * float32(inLinesN)
+		maxInputH := clientHAvail / 2
+		if inputContentH > maxInputH {
+			input.Size.Y = maxInputH
+			input.Scrollable = true
+		} else {
+			input.Size.Y = inputContentH
+			input.Scrollable = false
+		}
 		input.Size.X = clientWAvail
-		input.Size.Y = rowUnits + 1*float32(inLinesN)
 		if len(input.Contents) == 0 {
 			t, _ := eui.NewText()
 			t.Text = wrappedIn
 			t.FontSize = float32(fontSize)
-			t.Size = eui.Point{X: clientWAvail, Y: rowUnits * float32(inLinesN)}
+			t.Size = eui.Point{X: clientWAvail, Y: inputContentH}
 			t.Filled = true
 			input.AddItem(t)
 		} else {
@@ -134,7 +144,10 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 				input.Contents[0].FontSize = float32(fontSize)
 			}
 			input.Contents[0].Size.X = clientWAvail
-			input.Contents[0].Size.Y = rowUnits * float32(inLinesN)
+			input.Contents[0].Size.Y = inputContentH
+		}
+		if scrollInput {
+			input.Scroll.Y = 1e9
 		}
 	}
 
