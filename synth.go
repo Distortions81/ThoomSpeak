@@ -1,10 +1,14 @@
-package music
+package main
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
-	"io"
+	"log"
 	"math"
+	"os"
+	"path"
+	"sync"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2/audio"
@@ -29,22 +33,41 @@ type Note struct {
 	Duration time.Duration
 }
 
+var synth *meltysynth.Synthesizer
+var setupSynthOnce sync.Once
+
+func setupSynth() {
+	var err error
+
+	sfPath := path.Join(dataDirPath, "soundfont.sf2")
+
+	var sfData []byte
+	sfData, err = os.ReadFile(sfPath)
+	if err != nil {
+		log.Printf("soundfont missing: %v", err)
+		return
+	}
+	rs := bytes.NewReader(sfData)
+	sfnt, err := meltysynth.NewSoundFont(rs)
+	if err != nil {
+		return
+	}
+	settings := meltysynth.NewSynthesizerSettings(sampleRate)
+	synth, err = meltysynth.NewSynthesizer(sfnt, settings)
+	if err != nil {
+		return
+	}
+}
+
 // Play renders the provided notes using the given SoundFont and plays them
 // through the provided audio context. The reader must point to a SoundFont2
 // (sf2) file. The function blocks until playback has finished.
-func Play(ctx *audio.Context, sf io.ReadSeeker, program int, notes []Note) error {
+func Play(ctx *audio.Context, program int, notes []Note) error {
+
 	if ctx == nil {
 		return errors.New("nil audio context")
 	}
-	sfnt, err := meltysynth.NewSoundFont(sf)
-	if err != nil {
-		return err
-	}
-	settings := meltysynth.NewSynthesizerSettings(sampleRate)
-	synth, err := meltysynth.NewSynthesizer(sfnt, settings)
-	if err != nil {
-		return err
-	}
+	setupSynthOnce.Do(setupSynth)
 
 	const ch = 0
 	synth.ProcessMidiMessage(ch, 0xC0, int32(program), 0) // program change

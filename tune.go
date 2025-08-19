@@ -1,17 +1,11 @@
 package main
 
 import (
-	"bytes"
 	"log"
-	"os"
-	"path"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 	"unicode"
-
-	"gothoom/music"
 )
 
 // instrument describes a playable instrument mapping Clan Lord's instrument
@@ -64,7 +58,7 @@ func playClanLordTune(tune string) {
 		return
 	}
 
-	inst := 0
+	inst := 5
 	fields := strings.Fields(tune)
 	if len(fields) > 1 {
 		if n, err := strconv.Atoi(fields[0]); err == nil && n >= 0 && n < len(instruments) {
@@ -78,41 +72,24 @@ func playClanLordTune(tune string) {
 		return
 	}
 
-	sfPath := os.Getenv("CL_SOUNDFONT")
-	if sfPath == "" {
-		sfPath = path.Join(dataDirPath, "soundfont.sf2")
-	}
-	sfData, err := os.ReadFile(sfPath)
-	if err != nil {
-		log.Printf("soundfont missing: %v", err)
-		return
-	}
-
 	prog := instruments[inst].program
 	oct := instruments[inst].octave
 
 	for _, ev := range events {
-		var wg sync.WaitGroup
 		for _, k := range ev.keys {
 			key := k + oct*12
 			if key < 0 || key > 127 {
 				continue
 			}
-			wg.Add(1)
-			go func(key int, dur int) {
-				defer wg.Done()
-				rs := bytes.NewReader(sfData)
-				notes := []music.Note{{
-					Key:      key,
-					Velocity: 100,
-					Duration: time.Duration(dur) * time.Millisecond,
-				}}
-				if err := music.Play(audioContext, rs, prog, notes); err != nil {
-					log.Printf("play note: %v", err)
-				}
-			}(key, ev.durMS)
+			notes := []Note{{
+				Key:      key,
+				Velocity: 100,
+				Duration: time.Duration(ev.durMS) * time.Millisecond,
+			}}
+			if err := Play(audioContext, prog, notes); err != nil {
+				log.Printf("play note: %v", err)
+			}
 		}
-		wg.Wait()
 	}
 }
 

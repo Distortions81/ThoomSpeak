@@ -642,7 +642,7 @@ func (g *Game) Update() error {
 			txt := strings.TrimSpace(string(inputText))
 			if txt != "" {
 				if strings.HasPrefix(txt, "/play ") {
-					playClanLordTune(strings.TrimSpace(txt[len("/play "):]))
+					go playClanLordTune(strings.TrimSpace(txt[len("/play "):]))
 				} else {
 					pendingCommand = txt
 					//consoleMessage("> " + txt)
