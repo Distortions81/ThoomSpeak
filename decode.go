@@ -116,7 +116,7 @@ func decodeBEPP(data []byte) string {
 			return text
 		}
 	case "hf", "nf":
-		// Fallen or no-longer-fallen notices
+		// Fallen or not-fallen notices
 		parseFallenText(raw, text)
 		if text != "" {
 			return text

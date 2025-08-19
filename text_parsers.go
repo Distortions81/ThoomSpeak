@@ -228,7 +228,7 @@ func parseShareText(raw []byte, s string) bool {
 	return false
 }
 
-// parseFallenText detects fallen/no-longer-fallen messages and updates state.
+// parseFallenText detects fallen/not-fallen messages and updates state.
 // Returns true if handled.
 func parseFallenText(raw []byte, s string) bool {
 	// Fallen: "<pn name> has fallen" (with optional -mn and -lo tags)
@@ -257,7 +257,7 @@ func parseFallenText(raw []byte, s string) bool {
 		}
 		return true
 	}
-	// No longer fallen: "<pn name> is no longer fallen"
+	// Not fallen: "<pn name> is no longer fallen"
 	if strings.Contains(s, " is no longer fallen") {
 		name := firstTagContent(raw, 'p', 'n')
 		if name == "" {
@@ -276,7 +276,7 @@ func parseFallenText(raw []byte, s string) bool {
 		}
 		playersMu.Unlock()
 		playersDirty = true
-		if gs.NotifyUnfallen {
+		if gs.NotifyNotFallen {
 			showNotification(name + " is no longer fallen")
 		}
 		return true
