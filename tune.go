@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"log"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 	"sync"
@@ -79,7 +80,7 @@ func playClanLordTune(tune string) {
 
 	sfPath := os.Getenv("CL_SOUNDFONT")
 	if sfPath == "" {
-		sfPath = "soundfont.sf2"
+		sfPath = path.Join(dataDirPath, "soundfont.sf2")
 	}
 	sfData, err := os.ReadFile(sfPath)
 	if err != nil {
