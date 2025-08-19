@@ -281,6 +281,35 @@ func clampFlowScroll(item *itemData) {
 	}
 }
 
+const scrollBottomSlop float32 = 1
+
+func scrolledToBottom(scrollY, contentH, viewH float32) bool {
+	if contentH <= viewH {
+		return true
+	}
+	max := contentH - viewH
+	return scrollY >= max-scrollBottomSlop
+}
+
+func (item *itemData) scrollAtBottom() bool {
+	if item == nil {
+		return true
+	}
+	req := item.contentBounds()
+	size := item.GetSize()
+	return scrolledToBottom(item.Scroll.Y, req.Y, size.Y)
+}
+
+func (win *windowData) scrollAtBottom() bool {
+	if win.NoScroll {
+		return true
+	}
+	pad := (win.Padding + win.BorderPad) * win.scale()
+	req := win.contentBounds()
+	availY := win.GetSize().Y - win.GetTitleSize() - 2*pad
+	return scrolledToBottom(win.Scroll.Y, req.Y, availY)
+}
+
 func (win *windowData) Refresh() {
 	if !win.IsOpen() {
 		return
