@@ -69,6 +69,7 @@ var gsdef settings = settings{
 	GameScale:         2,
 	BarPlacement:      BarPlacementBottom,
 	ChatTTSVolume:     1.0,
+	Notifications:     true,
 	TimestampFormat:   "3:04PM",
 
 	GameWindow:      WindowState{Open: true},
@@ -134,6 +135,7 @@ type settings struct {
 	MessagesToConsole bool
 	ChatTTS           bool
 	ChatTTSVolume     float64
+	Notifications     bool
 	ChatTimestamps    bool
 	ConsoleTimestamps bool
 	TimestampFormat   string
