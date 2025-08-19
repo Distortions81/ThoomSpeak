@@ -683,14 +683,14 @@ func updateCharacterButtons() {
 			for _, c := range characters {
 				if c.Name == gs.LastCharacter {
 					name = c.Name
-					passHash = c.PassHash
+					passHash = c.passHash
 					break
 				}
 			}
 		}
 		if name == "" && len(characters) == 1 {
 			name = characters[0].Name
-			passHash = characters[0].PassHash
+			passHash = characters[0].passHash
 		}
 	}
 	for i := range charactersList.Contents {
@@ -714,9 +714,9 @@ func updateCharacterButtons() {
 			radio.Size = eui.Point{X: 160, Y: 24}
 			radio.Checked = name == c.Name
 			nameCopy := c.Name
-			hashCopy := c.PassHash
+			hashCopy := c.passHash
 			if name == c.Name {
-				passHash = c.PassHash
+				passHash = c.passHash
 			}
 			radioEvents.Handle = func(ev eui.UIEvent) {
 				if ev.Type == eui.EventRadioSelected {
@@ -807,13 +807,13 @@ func makeAddCharacterWindow() {
 			exists := false
 			for i := range characters {
 				if characters[i].Name == addCharName {
-					characters[i].PassHash = hash
+					characters[i].passHash = hash
 					exists = true
 					break
 				}
 			}
 			if !exists {
-				characters = append(characters, Character{Name: addCharName, PassHash: hash})
+				characters = append(characters, Character{Name: addCharName, passHash: hash})
 			}
 			if addCharRemember {
 				saveCharacters()

@@ -12,7 +12,8 @@ import (
 // on disk using a reversible scrambling to avoid exposing the raw hash.
 type Character struct {
 	Name     string `json:"name"`
-	PassHash string `json:"passHash"`
+	passHash string `json:"-"`
+	Key      string `json:"key"`
 }
 
 var characters []Character
@@ -40,21 +41,19 @@ func loadCharacters() {
 	if charList.Version == 1 {
 		characters = charList.Characters
 		for i := range characters {
-			characters[i].PassHash = unscrambleHash(characters[i].Name, characters[i].PassHash)
+			characters[i].passHash = unscrambleHash(characters[i].Name, characters[i].Key)
 		}
 	}
 }
 
 func saveCharacters() {
-	toSave := make([]Character, len(characters))
-	copy(toSave, characters)
-	for i := range toSave {
-		toSave[i].PassHash = scrambleHash(toSave[i].Name, toSave[i].PassHash)
+	for i := range characters {
+		characters[i].Key = scrambleHash(characters[i].Name, characters[i].passHash)
 	}
 
 	var charList charactersFile
 	charList.Version = 1
-	charList.Characters = toSave
+	charList.Characters = characters
 	data, err := json.MarshalIndent(charList, "", "  ")
 
 	if err != nil {
