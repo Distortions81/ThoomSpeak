@@ -2463,7 +2463,7 @@ func makeNotificationsWindow() {
 	}
 
 	addCB("Fallen", &gs.NotifyFallen)
-	addCB("No longer fallen", &gs.NotifyUnfallen)
+	addCB("Not fallen", &gs.NotifyNotFallen)
 	addCB("Shares", &gs.NotifyShares)
 	addCB("Friend online", &gs.NotifyFriendOnline)
 

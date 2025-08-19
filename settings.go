@@ -72,7 +72,7 @@ var gsdef settings = settings{
 	ChatTTSVolume:        1.0,
 	Notifications:        true,
 	NotifyFallen:         true,
-	NotifyUnfallen:       true,
+	NotifyNotFallen:      true,
 	NotifyShares:         true,
 	NotifyFriendOnline:   true,
 	NotificationDuration: 6,
@@ -143,7 +143,7 @@ type settings struct {
 	ChatTTSVolume        float64
 	Notifications        bool
 	NotifyFallen         bool
-	NotifyUnfallen       bool
+	NotifyNotFallen      bool
 	NotifyShares         bool
 	NotifyFriendOnline   bool
 	NotificationDuration float64
