@@ -1975,6 +1975,7 @@ func makeQualityWindow() {
 	if qualityWin != nil {
 		return
 	}
+
 	var width float32 = 250
 	qualityWin = eui.NewWindow()
 	qualityWin.Title = "Quality Options"
@@ -1985,6 +1986,12 @@ func makeQualityWindow() {
 	qualityWin.SetZone(eui.HZoneCenterLeft, eui.VZoneMiddleTop)
 
 	flow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
+
+	label, _ := eui.NewText()
+	label.Text = "Image denoising:"
+	label.FontSize = 15
+	label.Size = eui.Point{X: width, Y: 50}
+	flow.AddItem(label)
 
 	dCB, denoiseEvents := eui.NewCheckbox()
 	denoiseCB = dCB
@@ -2042,6 +2049,12 @@ func makeQualityWindow() {
 	}
 	flow.AddItem(denoiseAmtSlider)
 
+	label, _ = eui.NewText()
+	label.Text = "\nMotion Smoothing Options:"
+	label.FontSize = 15
+	label.Size = eui.Point{X: width, Y: 50}
+	flow.AddItem(label)
+
 	mCB, motionEvents := eui.NewCheckbox()
 	motionCB = mCB
 	motionCB.Text = "Smooth Motion"
@@ -2069,6 +2082,11 @@ func makeQualityWindow() {
 		}
 	}
 	flow.AddItem(noSmoothCB)
+
+	label.Text = "\nAnimation Blending Options:"
+	label.FontSize = 15
+	label.Size = eui.Point{X: width, Y: 50}
+	flow.AddItem(label)
 
 	aCB, animEvents := eui.NewCheckbox()
 	animCB = aCB
