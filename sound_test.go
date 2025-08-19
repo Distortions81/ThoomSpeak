@@ -72,8 +72,16 @@ func TestPlaySoundIDs(t *testing.T) {
 	soundPlayers = make(map[*audio.Player]struct{})
 	soundMu.Unlock()
 
+	ch := make(chan *audio.Player, 1)
+	playSoundDone = ch
+	t.Cleanup(func() { playSoundDone = nil })
+
 	playSound([]uint16{1})
-	time.Sleep(50 * time.Millisecond)
+	select {
+	case <-ch:
+	case <-time.After(time.Second):
+		t.Fatalf("timeout waiting for playSound")
+	}
 	if len(messages) != 0 {
 		t.Fatalf("unexpected messages for valid id: %v", messages)
 	}
@@ -85,8 +93,17 @@ func TestPlaySoundIDs(t *testing.T) {
 	}
 
 	messages = nil
+	ch = make(chan *audio.Player, 1)
+	playSoundDone = ch
 	playSound([]uint16{2})
-	time.Sleep(50 * time.Millisecond)
+	select {
+	case p := <-ch:
+		if p != nil {
+			t.Fatalf("sound player created for unknown id")
+		}
+	case <-time.After(time.Second):
+		t.Fatalf("timeout waiting for playSound")
+	}
 	if len(messages) != 0 {
 		t.Fatalf("unexpected messages for unknown id: %v", messages)
 	}

@@ -24,6 +24,8 @@ var (
 
 	audioContext *audio.Context
 	soundPlayers = make(map[*audio.Player]struct{})
+
+	playSoundDone chan *audio.Player // testing hook to signal playSound completion
 )
 
 // stopAllSounds halts and disposes all currently playing audio players.
@@ -41,9 +43,24 @@ func stopAllSounds() {
 // global volume. The function returns immediately after scheduling playback.
 func playSound(ids []uint16) {
 	if len(ids) == 0 || gs.Mute {
+		if playSoundDone != nil {
+			select {
+			case playSoundDone <- nil:
+			default:
+			}
+		}
 		return
 	}
 	go func(ids []uint16) {
+		var p *audio.Player
+		defer func() {
+			if playSoundDone != nil {
+				select {
+				case playSoundDone <- p:
+				default:
+				}
+			}
+		}()
 		if gs.Mute {
 			return
 		}
@@ -171,7 +188,7 @@ func playSound(ids []uint16) {
 		}
 		wg.Wait()
 
-		p := audioContext.NewPlayerFromBytes(out)
+		p = audioContext.NewPlayerFromBytes(out)
 		vol := gs.Volume
 		if gs.Mute {
 			vol = 0
