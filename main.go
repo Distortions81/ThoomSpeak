@@ -62,9 +62,7 @@ func main() {
 
 	var err error
 
-	ring, err = keyring.Open(keyring.Config{
-		ServiceName: keyringService,
-	})
+	ring, err = openPortableRing()
 	if err != nil {
 		consoleMessage("Unable to open keyring for password storage.")
 	}
