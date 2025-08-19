@@ -33,13 +33,16 @@ func loadCharacters() {
 		return
 	}
 
-	if err := json.Unmarshal(data, &characters); err != nil {
+	var charList charactersFile
+	if err := json.Unmarshal(data, &charList); err != nil {
 		return
 	}
-	for i := range characters {
-		characters[i].PassHash = unscrambleHash(characters[i].Name, characters[i].PassHash)
+	if charList.Version == 1 {
+		characters = charList.Characters
+		for i := range characters {
+			characters[i].PassHash = unscrambleHash(characters[i].Name, characters[i].PassHash)
+		}
 	}
-	characters = cf.Characters
 }
 
 func saveCharacters() {
@@ -48,7 +51,11 @@ func saveCharacters() {
 	for i := range toSave {
 		toSave[i].PassHash = scrambleHash(toSave[i].Name, toSave[i].PassHash)
 	}
-	data, err := json.MarshalIndent(toSave, "", "  ")
+
+	var charList charactersFile
+	charList.Version = 1
+	charList.Characters = toSave
+	data, err := json.MarshalIndent(charList, "", "  ")
 
 	if err != nil {
 		log.Printf("save characters: %v", err)
