@@ -637,8 +637,6 @@ func makeDownloadsWindow() {
 				logError("failed to load CL_Sounds: %v", err)
 				return
 			}
-			// Reload characters in case data dir was created during download
-			loadCharacters()
 			// Force reselect from LastCharacter if available
 			name = ""
 			passHash = ""
@@ -827,16 +825,15 @@ func makeAddCharacterWindow() {
 			for i := range characters {
 				if characters[i].Name == addCharName {
 					characters[i].passHash = hash
+					characters[i].DontRemember = !addCharRemember
 					exists = true
 					break
 				}
 			}
 			if !exists {
-				characters = append(characters, Character{Name: addCharName, passHash: hash})
+				characters = append(characters, Character{Name: addCharName, passHash: hash, DontRemember: !addCharRemember})
 			}
 			saveCharacters()
-			// Reload to ensure in-memory state matches persisted data.
-			loadCharacters()
 			// Update selection to the newly added character
 			name = addCharName
 			passHash = hash

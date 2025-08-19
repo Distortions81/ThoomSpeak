@@ -35,11 +35,15 @@ func handleDisconnect() {
 	clmov = ""
 	pcapPath = ""
 	pass = ""
-	if passHash == "" && name != "" {
+	if name != "" {
 		for i := range characters {
-			if characters[i].Name == name && characters[i].passHash != "" {
-				characters[i].passHash = ""
-				saveCharacters()
+			if characters[i].Name == name {
+				if passHash == "" && (!characters[i].DontRemember || characters[i].passHash != "") {
+					characters[i].passHash = ""
+					characters[i].DontRemember = true
+					characters[i].Key = ""
+					saveCharacters()
+				}
 				break
 			}
 		}
