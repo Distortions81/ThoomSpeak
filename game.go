@@ -1778,7 +1778,9 @@ func makeGameWindow() {
 	gameWin.NoCache = true
 	gameWin.NoScale = true
 	gameWin.AlwaysDrawFirst = true
-	gameWin.SetZone(eui.HZoneCenter, eui.VZoneTop)
+	if !settingsLoaded {
+		gameWin.SetZone(eui.HZoneCenter, eui.VZoneTop)
+	}
 	gameWin.Size = eui.Point{X: 8000, Y: 8000}
 	gameWin.MarkOpen()
 	gameWin.OnResize = func() { onGameWindowResize() }
