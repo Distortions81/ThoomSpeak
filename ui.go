@@ -1609,8 +1609,8 @@ func makeSettingsWindow() {
 
 	consoleFontSlider, consoleFontEvents := eui.NewSlider()
 	consoleFontSlider.Label = "Console Font Size"
-	consoleFontSlider.MinValue = 6
-	consoleFontSlider.MaxValue = 24
+	consoleFontSlider.MinValue = 4
+	consoleFontSlider.MaxValue = 48
 	consoleFontSlider.Value = float32(gs.ConsoleFontSize)
 	consoleFontSlider.Size = eui.Point{X: leftW - 10, Y: 24}
 	consoleFontEvents.Handle = func(ev eui.UIEvent) {
@@ -1630,8 +1630,8 @@ func makeSettingsWindow() {
 
 	chatWindowFontSlider, chatWindowFontEvents := eui.NewSlider()
 	chatWindowFontSlider.Label = "Chat Window Font Size"
-	chatWindowFontSlider.MinValue = 6
-	chatWindowFontSlider.MaxValue = 24
+	chatWindowFontSlider.MinValue = 4
+	chatWindowFontSlider.MaxValue = 48
 	chatWindowFontSlider.Value = float32(gs.ChatFontSize)
 	chatWindowFontSlider.Size = eui.Point{X: leftW - 10, Y: 24}
 	chatWindowFontEvents.Handle = func(ev eui.UIEvent) {
@@ -1648,6 +1648,21 @@ func makeSettingsWindow() {
 		}
 	}
 	left.AddItem(chatWindowFontSlider)
+
+	chatFontSlider, chatFontEvents := eui.NewSlider()
+	chatFontSlider.Label = "Chat Bubble Font Size"
+	chatFontSlider.MinValue = 4
+	chatFontSlider.MaxValue = 48
+	chatFontSlider.Value = float32(gs.BubbleFontSize)
+	chatFontSlider.Size = eui.Point{X: leftW - 10, Y: 24}
+	chatFontEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			gs.BubbleFontSize = float64(ev.Value)
+			initFont()
+			settingsDirty = true
+		}
+	}
+	left.AddItem(chatFontSlider)
 
 	label, _ = eui.NewText()
 	label.Text = "\nOpacity Settings:"
@@ -1674,24 +1689,25 @@ func makeSettingsWindow() {
 	}
 	left.AddItem(nameBgSlider)
 
-	bubbleBtn, bubbleEvents := eui.NewButton()
-	bubbleBtn.Text = "Bubble Settings..."
-	bubbleBtn.Size = eui.Point{X: rightW, Y: 24}
-	bubbleEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventClick {
-			SettingsLock.Lock()
-			defer SettingsLock.Unlock()
-
-			bubbleWin.ToggleNear(ev.Item)
+	bubbleOpSlider, bubbleOpEvents := eui.NewSlider()
+	bubbleOpSlider.Label = "Bubble Opacity"
+	bubbleOpSlider.MinValue = 0
+	bubbleOpSlider.MaxValue = 1
+	bubbleOpSlider.Value = float32(gs.BubbleOpacity)
+	bubbleOpSlider.Size = eui.Point{X: leftW - 10, Y: 24}
+	bubbleOpEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			gs.BubbleOpacity = float64(ev.Value)
+			settingsDirty = true
 		}
 	}
-	left.AddItem(bubbleBtn)
+	left.AddItem(bubbleOpSlider)
 
 	label, _ = eui.NewText()
-	label.Text = "\nQuality Settings:"
+	label.Text = "\nQuality Options:"
 	label.FontSize = 15
 	label.Size = eui.Point{X: rightW, Y: 50}
-	right.AddItem(label)
+	left.AddItem(label)
 
 	qualityPresetDD, qpEvents := eui.NewDropdown()
 	qualityPresetDD.Options = []string{"Ultra-Low", "Low", "Standard", "High", "Ultimate", "Custom"}
@@ -1715,10 +1731,10 @@ func makeSettingsWindow() {
 			qualityPresetDD.Selected = detectQualityPreset()
 		}
 	}
-	right.AddItem(qualityPresetDD)
+	left.AddItem(qualityPresetDD)
 
 	qualityBtn, qualityEvents := eui.NewButton()
-	qualityBtn.Text = "Quality Options"
+	qualityBtn.Text = "Quality Settings"
 	qualityBtn.Size = eui.Point{X: rightW, Y: 24}
 	qualityEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
@@ -1728,13 +1744,25 @@ func makeSettingsWindow() {
 			qualityWin.ToggleNear(ev.Item)
 		}
 	}
-	right.AddItem(qualityBtn)
+	left.AddItem(qualityBtn)
 
 	label, _ = eui.NewText()
 	label.Text = "\nAdvanced:"
 	label.FontSize = 15
 	label.Size = eui.Point{X: rightW, Y: 50}
 	right.AddItem(label)
+	bubbleBtn, bubbleEvents := eui.NewButton()
+	bubbleBtn.Text = "Message Bubbles"
+	bubbleBtn.Size = eui.Point{X: rightW, Y: 24}
+	bubbleEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
+			bubbleWin.ToggleNear(ev.Item)
+		}
+	}
+	right.AddItem(bubbleBtn)
 
 	debugBtn, debugEvents := eui.NewButton()
 	debugBtn.Text = "Debug Settings"
@@ -2373,35 +2401,6 @@ func makeBubbleWindow() {
 	addBubbleCB("Other Players", &gs.BubbleOtherPlayers)
 	addBubbleCB("Monsters", &gs.BubbleMonsters)
 	addBubbleCB("Narration", &gs.BubbleNarration)
-
-	bubbleOpSlider, bubbleOpEvents := eui.NewSlider()
-	bubbleOpSlider.Label = "Bubble Opacity"
-	bubbleOpSlider.MinValue = 0
-	bubbleOpSlider.MaxValue = 1
-	bubbleOpSlider.Value = float32(gs.BubbleOpacity)
-	bubbleOpSlider.Size = eui.Point{X: width - 10, Y: 24}
-	bubbleOpEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventSliderChanged {
-			gs.BubbleOpacity = float64(ev.Value)
-			settingsDirty = true
-		}
-	}
-	flow.AddItem(bubbleOpSlider)
-
-	chatFontSlider, chatFontEvents := eui.NewSlider()
-	chatFontSlider.Label = "Chat Bubble Font Size"
-	chatFontSlider.MinValue = 6
-	chatFontSlider.MaxValue = 48
-	chatFontSlider.Value = float32(gs.BubbleFontSize)
-	chatFontSlider.Size = eui.Point{X: width - 10, Y: 24}
-	chatFontEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventSliderChanged {
-			gs.BubbleFontSize = float64(ev.Value)
-			initFont()
-			settingsDirty = true
-		}
-	}
-	flow.AddItem(chatFontSlider)
 
 	bubbleWin.AddItem(flow)
 	bubbleWin.AddWindow(false)
