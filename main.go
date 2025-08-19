@@ -54,6 +54,12 @@ func main() {
 	}
 
 	loadSettings()
+	if gs.WindowWidth < 512 {
+		gs.WindowWidth = initialWindowW
+	}
+	if gs.WindowHeight < 384 {
+		gs.WindowHeight = initialWindowH
+	}
 	ebiten.SetWindowSize(gs.WindowWidth, gs.WindowHeight)
 
 	var err error

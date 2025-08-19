@@ -65,6 +65,7 @@ func SetScreenSize(w, h int) {
 	if needDirty {
 		markAllDirty()
 	}
+
 }
 
 // ScreenSize returns the current screen size.

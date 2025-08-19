@@ -215,22 +215,20 @@ func loadSettings() bool {
 		return false
 	}
 
-	var tmp struct {
-		settings
-		CacheWholeSheet bool `json:"cacheWholeSheet,omitempty"`
-	}
-	tmp.settings = gsdef
+	tmp := settings{}
+	tmp = gsdef
 	if err := json.Unmarshal(data, &tmp); err != nil {
 		settingsLoaded = false
 		return false
 	}
 
 	if tmp.Version == SETTINGS_VERSION {
-		gs = tmp.settings
+		gs = tmp
 		settingsLoaded = true
 	} else {
 		applyQualityPreset("High")
 		settingsLoaded = false
+		return false
 	}
 
 	if gs.WindowWidth > 0 && gs.WindowHeight > 0 {
@@ -311,9 +309,11 @@ func saveSettings() {
 		return
 	}
 	path := filepath.Join(dataDirPath, settingsFile)
-	if err := os.WriteFile(path, data, 0644); err != nil {
+	if err := os.WriteFile(path+".tmp", data, 0644); err != nil {
 		logError("save settings: %v", err)
 	}
+
+	os.Rename(path+".tmp", path)
 }
 
 func syncWindowSettings() bool {
