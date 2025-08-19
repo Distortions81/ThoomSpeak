@@ -30,7 +30,7 @@ func updateConsoleWindow() {
 			consoleWin.Refresh()
 		}
 	}
-	consolePrevCount = len(msgs)
+	consolePrevCount = len(lines)
 }
 
 func makeConsoleWindow() {

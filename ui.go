@@ -548,6 +548,8 @@ func makeDownloadsWindow() {
 			return
 		}
 		startedDownload = true
+		// Create a cancellable context for in-flight downloads.
+		downloadCtx, downloadCancel = context.WithCancel(context.Background())
 		// Reset UI state
 		dlStart = time.Time{}
 		currentName = ""
@@ -557,8 +559,23 @@ func makeDownloadsWindow() {
 		pb.Value = 0
 		pb.Dirty = true
 		statusText.Dirty = true
-		// Show only the live status + progress while downloading
-		flow.Contents = []*eui.ItemData{statusText, pb}
+		// Show the live status + progress and provide a cancel button
+		cancelRow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
+		cancelBtn, cancelEvents := eui.NewButton()
+		cancelBtn.Text = "Cancel"
+		cancelBtn.Size = eui.Point{X: 100, Y: 24}
+		cancelEvents.Handle = func(ev eui.UIEvent) {
+			if ev.Type == eui.EventClick {
+				if downloadCancel != nil {
+					downloadCancel()
+				}
+				if downloadStatus != nil {
+					downloadStatus("Download canceled")
+				}
+			}
+		}
+		cancelRow.AddItem(cancelBtn)
+		flow.Contents = []*eui.ItemData{statusText, pb, cancelRow}
 		downloadWin.Refresh()
 		go func() {
 			dlMutex.Lock()
@@ -567,6 +584,7 @@ func makeDownloadsWindow() {
 			if err := downloadDataFiles(clientVersion, status); err != nil {
 				logError("download data files: %v", err)
 				// Present inline Retry and Quit buttons
+				flow.Contents = []*eui.ItemData{statusText, pb}
 				retryRow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
 				retryBtn, retryEvents := eui.NewButton()
 				retryBtn.Text = "Retry"
@@ -1253,10 +1271,42 @@ func makeSettingsWindow() {
 	}
 	right.AddItem(bubbleMsgCB)
 
+	chatTSCB, chatTSEvents := eui.NewCheckbox()
+	chatTSCB.Text = "Chat timestamps"
+	chatTSCB.Size = eui.Point{X: rightW, Y: 24}
+	chatTSCB.Checked = gs.ChatTimestamps
+	chatTSEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
+			gs.ChatTimestamps = ev.Checked
+			settingsDirty = true
+			updateChatWindow()
+		}
+	}
+	right.AddItem(chatTSCB)
+
+	consoleTSCB, consoleTSEvents := eui.NewCheckbox()
+	consoleTSCB.Text = "Console timestamps"
+	consoleTSCB.Size = eui.Point{X: rightW, Y: 24}
+	consoleTSCB.Checked = gs.ConsoleTimestamps
+	consoleTSEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
+			gs.ConsoleTimestamps = ev.Checked
+			settingsDirty = true
+			updateConsoleWindow()
+		}
+	}
+	right.AddItem(consoleTSCB)
+
 	chatTTSRow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
 
 	chatTTSCB, chatTTSEvents := eui.NewCheckbox()
-	chatTTSCB.Text = "Read chat messages aloud"
+	chatTTSCB.Text = "Chat TTS"
 	chatTTSCB.Size = eui.Point{X: rightW - 110, Y: 24}
 	chatTTSCB.Checked = gs.ChatTTS
 	chatTTSEvents.Handle = func(ev eui.UIEvent) {
@@ -1279,6 +1329,7 @@ func makeSettingsWindow() {
 	chatTTSSlider.Value = float32(gs.ChatTTSVolume)
 	chatTTSSlider.Size = eui.Point{X: 100, Y: 24}
 	chatTTSSlider.FontSize = 9
+	chatTTSSlider.Label = "TTS Volume"
 	chatTTSSliderEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
 			SettingsLock.Lock()

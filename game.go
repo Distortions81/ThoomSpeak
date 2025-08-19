@@ -836,6 +836,7 @@ func worldDrawInfo() (int, int, float64) {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
+
 	//Reduce render load while seeking clMov
 	if seekingMov {
 		if time.Since(lastSeekPrev) < time.Millisecond*200 {
