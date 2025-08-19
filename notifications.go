@@ -104,7 +104,7 @@ func layoutNotifications() {
 		it := notifications[i].item
 		sz := it.GetSize()
 		y -= sz.Y
-		x := winSz.X - sz.X - margin
+		x := winSz.X - sz.X - (margin * 2)
 		it.Position = eui.Point{X: x / eui.UIScale(), Y: y / eui.UIScale()}
 		y -= spacer
 		it.Dirty = true
