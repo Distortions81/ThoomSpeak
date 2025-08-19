@@ -53,11 +53,10 @@ func main() {
 		clMovFPS = 30
 	}
 
-	ebiten.SetWindowSize(1920, 1080)
+	loadSettings()
+	ebiten.SetWindowSize(gs.WindowWidth, gs.WindowHeight)
 
 	var err error
-
-	loadSettings()
 
 	loadCharacters()
 	initSoundContext()

@@ -12,7 +12,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-const SETTINGS_VERSION = 5
+const SETTINGS_VERSION = 6
 
 type BarPlacement int
 
@@ -117,6 +117,7 @@ type settings struct {
 	BubbleOtherPlayers bool
 	BubbleMonsters     bool
 	BubbleNarration    bool
+
 
 	MotionSmoothing      bool
 	BlendMobiles         bool
@@ -232,6 +233,10 @@ func loadSettings() bool {
 		settingsLoaded = false
 	}
 
+	if gs.WindowWidth > 0 && gs.WindowHeight > 0 {
+		eui.SetScreenSize(gs.WindowWidth, gs.WindowHeight)
+	}
+
 	clampWindowSettings()
 	return settingsLoaded
 }
@@ -331,6 +336,12 @@ func syncWindowSettings() bool {
 		}
 	} else if gs.ChatWindow.Open {
 		gs.ChatWindow.Open = false
+		changed = true
+	}
+	w, h := ebiten.WindowSize()
+	if gs.WindowWidth != w || gs.WindowHeight != h {
+		gs.WindowWidth = w
+		gs.WindowHeight = h
 		changed = true
 	}
 	return changed

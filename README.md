@@ -2,12 +2,6 @@
 
 A open source (MIT) client for the Clan Lord MMORPG.
 
-This repository hosts the Go implementation of the client. The
-`old_mac_client/` directory contains a historical C implementation provided
-for reference only (do not modify).
-
-## Quick Start
-
 ### Requirements
 
 - Go 1.24 or newer
@@ -63,4 +57,5 @@ The Go client accepts the following flags:
 ## Setup
 
 - Missing `CL_Images` or `CL_Sounds` archives in `data` are fetched automatically
+- Custom splash and background images, just place background.png and/or splash.png into the data directory.
 
