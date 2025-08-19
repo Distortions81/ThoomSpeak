@@ -159,6 +159,12 @@ func decodeBEPP(data []byte) string {
 		if text != "" {
 			return text
 		}
+	case "ba":
+		// Bard guild messages
+		parseBardText(raw, text)
+		if text != "" {
+			return text
+		}
 	case "lg":
 		// Login/logout presence notices
 		parsePresenceText(raw, text)
@@ -407,6 +413,9 @@ func handleInfoText(data []byte) {
 			continue
 		}
 		if parseFallenText(line, s) {
+			continue
+		}
+		if parseBardText(line, s) {
 			continue
 		}
 		if parsePresenceText(line, s) {

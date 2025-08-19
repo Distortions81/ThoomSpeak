@@ -322,6 +322,49 @@ func parsePresenceText(raw []byte, s string) bool {
 	return false
 }
 
+// parseBardText detects bard guild messages and updates bard status.
+// Returns true if handled.
+func parseBardText(_ []byte, s string) bool {
+	s = strings.TrimSpace(s)
+	if strings.HasPrefix(s, "* ") {
+		s = strings.TrimSpace(s[2:])
+	}
+	if strings.HasPrefix(s, "¥ ") {
+		s = strings.TrimSpace(s[2:])
+	}
+	phrases := []struct {
+		suffix string
+		bard   bool
+	}{
+		{" is a Bard Crafter", true},
+		{" is a Bard Master", true},
+		{" is a Bard Trustee", true},
+		{" is a Bard Quester", true},
+		{" is a Bard Guest", true},
+		{" is a Bard", true},
+		{" is not in the Bards' Guild", false},
+		{" is not a Bard", false},
+	}
+	for _, ph := range phrases {
+		if strings.HasSuffix(s, ph.suffix) {
+			name := strings.TrimSpace(strings.TrimSuffix(s, ph.suffix))
+			if name == "" {
+				return false
+			}
+			p := getPlayer(name)
+			playersMu.Lock()
+			p.Bard = ph.bard
+			p.LastSeen = time.Now()
+			p.Offline = false
+			playersMu.Unlock()
+			playersDirty = true
+			playersPersistDirty = true
+			return true
+		}
+	}
+	return false
+}
+
 // firstTagContent extracts the first bracketed content for a given 2-letter BEPP tag.
 func firstTagContent(b []byte, a, b2 byte) string {
 	i := bytes.Index(b, []byte{0xC2, a, b2})
