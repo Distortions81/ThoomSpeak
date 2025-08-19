@@ -36,10 +36,18 @@ func loadCharacters() {
 	}
 
 	for i := range characters {
-		if pw, err := keyring.Get(keyringService, characters[i].Name); err == nil && pw != "" {
+		name := characters[i].Name
+		pw, err := keyring.Get(keyringService, name)
+		if err == nil && pw != "" {
 			characters[i].PassHash = pw
-		} else if errors.Is(err, keyring.ErrNotFound) && characters[i].PassHash != "" {
-			_ = keyring.Set(keyringService, characters[i].Name, characters[i].PassHash)
+		} else if errors.Is(err, keyring.ErrNotFound) {
+			if characters[i].PassHash != "" {
+				if err := keyring.Set(keyringService, name, characters[i].PassHash); err != nil && !errors.Is(err, keyring.ErrNotFound) {
+					logError("keyring set %q: %v", name, err)
+				}
+			}
+		} else if err != nil {
+			logError("keyring get %q: %v", name, err)
 		}
 	}
 }
@@ -65,7 +73,9 @@ func rememberCharacter(name, pass string) {
 	for i := range characters {
 		if characters[i].Name == name {
 			characters[i].PassHash = hash
-			_ = keyring.Set(keyringService, name, hash)
+			if err := keyring.Set(keyringService, name, hash); err != nil && !errors.Is(err, keyring.ErrNotFound) {
+				logError("keyring set %q: %v", name, err)
+			}
 			saveCharacters()
 			gs.LastCharacter = name
 			saveSettings()
@@ -73,7 +83,9 @@ func rememberCharacter(name, pass string) {
 		}
 	}
 	characters = append(characters, Character{Name: name, PassHash: hash})
-	_ = keyring.Set(keyringService, name, hash)
+	if err := keyring.Set(keyringService, name, hash); err != nil && !errors.Is(err, keyring.ErrNotFound) {
+		logError("keyring set %q: %v", name, err)
+	}
 	saveCharacters()
 	gs.LastCharacter = name
 	saveSettings()
@@ -84,7 +96,9 @@ func removeCharacter(name string) {
 	for i, c := range characters {
 		if c.Name == name {
 			characters = append(characters[:i], characters[i+1:]...)
-			_ = keyring.Set(keyringService, name, "")
+			if err := keyring.Set(keyringService, name, ""); err != nil && !errors.Is(err, keyring.ErrNotFound) {
+				logError("keyring set %q: %v", name, err)
+			}
 			saveCharacters()
 			if gs.LastCharacter == name {
 				gs.LastCharacter = ""
