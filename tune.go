@@ -75,21 +75,24 @@ func playClanLordTune(tune string) {
 	prog := instruments[inst].program
 	oct := instruments[inst].octave
 
+	var notes []Note
 	for _, ev := range events {
 		for _, k := range ev.keys {
 			key := k + oct*12
 			if key < 0 || key > 127 {
 				continue
 			}
-			notes := []Note{{
+
+			var newNote = Note{
 				Key:      key,
 				Velocity: 100,
 				Duration: time.Duration(ev.durMS) * time.Millisecond,
-			}}
-			if err := Play(audioContext, prog, notes); err != nil {
-				log.Printf("play note: %v", err)
 			}
+			notes = append(notes, newNote)
 		}
+	}
+	if err := Play(audioContext, prog, notes); err != nil {
+		log.Printf("play note: %v", err)
 	}
 }
 
