@@ -34,8 +34,23 @@ func handleDisconnect() {
 	// Reset session sources so we return to splash state
 	clmov = ""
 	pcapPath = ""
+	pass = ""
+	if name != "" {
+		for i := range characters {
+			if characters[i].Name == name {
+				if passHash == "" && (!characters[i].DontRemember || characters[i].passHash != "") {
+					characters[i].passHash = ""
+					characters[i].DontRemember = true
+					characters[i].Key = ""
+					saveCharacters()
+				}
+				break
+			}
+		}
+	}
 	consoleMessage("Disconnected from server.")
 	loginWin.MarkOpen()
+	updateCharacterButtons()
 }
 
 const CL_ImagesFile = "CL_Images"

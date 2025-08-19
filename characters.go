@@ -11,9 +11,10 @@ import (
 // Character holds a saved character name and password hash. The hash is stored
 // on disk using a reversible scrambling to avoid exposing the raw hash.
 type Character struct {
-	Name     string `json:"name"`
-	passHash string `json:"-"`
-	Key      string `json:"key"`
+	Name         string `json:"name"`
+	passHash     string `json:"-"`
+	Key          string `json:"key"`
+	DontRemember bool   `json:"-"`
 }
 
 var characters []Character
@@ -47,13 +48,18 @@ func loadCharacters() {
 }
 
 func saveCharacters() {
+	var persisted []Character
 	for i := range characters {
+		if characters[i].DontRemember {
+			continue
+		}
 		characters[i].Key = scrambleHash(characters[i].Name, characters[i].passHash)
+		persisted = append(persisted, characters[i])
 	}
 
 	var charList charactersFile
 	charList.Version = 1
-	charList.Characters = characters
+	charList.Characters = persisted
 	data, err := json.MarshalIndent(charList, "", "  ")
 
 	if err != nil {
