@@ -46,9 +46,13 @@ func getChatMessages() []string {
 	defer chatMsgMu.Unlock()
 
 	out := make([]string, len(chatMsgs))
+	format := gs.TimestampFormat
+	if format == "" {
+		format = "3:04PM"
+	}
 	for i, msg := range chatMsgs {
 		if gs.ChatTimestamps {
-			out[i] = fmt.Sprintf("[%s] %s", msg.Time.Format("15:04"), msg.Text)
+			out[i] = fmt.Sprintf("[%s] %s", msg.Time.Format(format), msg.Text)
 		} else {
 			out[i] = msg.Text
 		}
