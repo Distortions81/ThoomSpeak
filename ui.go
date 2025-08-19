@@ -1206,6 +1206,7 @@ func makeSettingsWindow() {
 				gs.Theme = name
 				settingsDirty = true
 				settingsWin.Refresh()
+				updateDimmedScreenBG()
 			}
 		}
 	}

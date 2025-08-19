@@ -42,9 +42,24 @@ var gameImageItem *eui.ItemData
 var gameImage *ebiten.Image
 var inAspectResize bool
 
-// gameWindowBG picks a background color for the game window content area.
-// Prefers the game window's theme BGColor when opaque, otherwise falls
-// back to any other window's BGColor, and finally to black.
+// dimmedScreenBG holds the theme window background color dimmed by 25%.
+// updateDimmedScreenBG refreshes this color when the theme changes.
+var dimmedScreenBG = color.RGBA{0, 0, 0, 255}
+
+func updateDimmedScreenBG() {
+	c := color.RGBA{0, 0, 0, 255}
+	if gameWin != nil && gameWin.Theme != nil {
+		if tc := color.RGBA(gameWin.Theme.Window.BGColor); tc.A > 0 {
+			c = tc
+		}
+	}
+	dimmedScreenBG = color.RGBA{
+		R: uint8(uint16(c.R) * 3 / 4),
+		G: uint8(uint16(c.G) * 3 / 4),
+		B: uint8(uint16(c.B) * 3 / 4),
+		A: 255,
+	}
+}
 func ensureWorldRT(w, h int) {
 	if w < 1 {
 		w = 1
@@ -847,7 +862,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	} else {
 		gameImageItem.Disabled = false
 	}
-	screen.Clear()
+	screen.Fill(dimmedScreenBG)
 
 	// Ensure the game image item/buffer exists and matches window content.
 	updateGameImageSize()
@@ -1759,6 +1774,7 @@ func initGame() {
 	eui.LoadTheme(theme)
 	eui.LoadStyle("RoundHybrid")
 	initUI()
+	updateDimmedScreenBG()
 	updateCharacterButtons()
 
 	close(gameStarted)
