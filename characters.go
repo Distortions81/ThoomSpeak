@@ -16,18 +16,33 @@ type Character struct {
 var characters []Character
 
 const (
-	charsFilePath = "characters.json"
+	charsFilePath    = "characters.json"
+	charsFileVersion = 1
 )
+
+type charactersFile struct {
+	Version    int         `json:"version"`
+	Characters []Character `json:"characters"`
+}
 
 func loadCharacters() {
 	data, err := os.ReadFile(filepath.Join(dataDirPath, charsFilePath))
-	if err == nil {
-		_ = json.Unmarshal(data, &characters)
+	if err != nil {
+		return
 	}
+	var cf charactersFile
+	if err := json.Unmarshal(data, &cf); err != nil {
+		return
+	}
+	if cf.Version != charsFileVersion {
+		return
+	}
+	characters = cf.Characters
 }
 
 func saveCharacters() {
-	data, err := json.MarshalIndent(characters, "", "  ")
+	cf := charactersFile{Version: charsFileVersion, Characters: characters}
+	data, err := json.MarshalIndent(cf, "", "  ")
 	if err != nil {
 		log.Printf("save characters: %v", err)
 		return
