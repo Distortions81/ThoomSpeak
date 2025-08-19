@@ -25,6 +25,9 @@ const (
 
 var gs settings = gsdef
 
+// settingsLoaded reports whether settings were successfully loaded from disk.
+var settingsLoaded bool
+
 var gsdef settings = settings{
 	Version: SETTINGS_VERSION,
 
@@ -195,6 +198,7 @@ func loadSettings() bool {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		applyQualityPreset("High")
+		settingsLoaded = false
 		return false
 	}
 
@@ -204,17 +208,20 @@ func loadSettings() bool {
 	}
 	tmp.settings = gsdef
 	if err := json.Unmarshal(data, &tmp); err != nil {
+		settingsLoaded = false
 		return false
 	}
 
 	if tmp.Version == SETTINGS_VERSION {
 		gs = tmp.settings
+		settingsLoaded = true
 	} else {
 		applyQualityPreset("High")
+		settingsLoaded = false
 	}
 
 	clampWindowSettings()
-	return true
+	return settingsLoaded
 }
 
 func applySettings() {
