@@ -291,7 +291,7 @@ func scrolledToBottom(scrollY, contentH, viewH float32) bool {
 	return scrollY >= max-scrollBottomSlop
 }
 
-func (item *itemData) scrollAtBottom() bool {
+func (item *itemData) ScrollAtBottom() bool {
 	if item == nil {
 		return true
 	}
@@ -300,7 +300,7 @@ func (item *itemData) scrollAtBottom() bool {
 	return scrolledToBottom(item.Scroll.Y, req.Y, size.Y)
 }
 
-func (win *windowData) scrollAtBottom() bool {
+func (win *windowData) ScrollAtBottom() bool {
 	if win.NoScroll {
 		return true
 	}
