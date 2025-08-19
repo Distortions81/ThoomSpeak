@@ -57,4 +57,5 @@ The Go client accepts the following flags:
 ## Setup
 
 - Missing `CL_Images` or `CL_Sounds` archives in `data` are fetched automatically
+- Custom splash and background images, just place background.png and/or splash.png into the data directory.
 
