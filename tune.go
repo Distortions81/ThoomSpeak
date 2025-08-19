@@ -75,25 +75,33 @@ func playClanLordTune(tune string) {
 	prog := instruments[inst].program
 	oct := instruments[inst].octave
 
+	notes := eventsToNotes(events, oct)
+	if err := Play(audioContext, prog, notes); err != nil {
+		log.Printf("play note: %v", err)
+	}
+}
+
+// eventsToNotes converts parsed note events into synth notes with explicit start
+// times. All notes in the same event (a chord) share the same start time.
+func eventsToNotes(events []noteEvent, oct int) []Note {
 	var notes []Note
+	startMS := 0
 	for _, ev := range events {
 		for _, k := range ev.keys {
 			key := k + oct*12
 			if key < 0 || key > 127 {
 				continue
 			}
-
-			var newNote = Note{
+			notes = append(notes, Note{
 				Key:      key,
 				Velocity: 100,
+				Start:    time.Duration(startMS) * time.Millisecond,
 				Duration: time.Duration(ev.durMS) * time.Millisecond,
-			}
-			notes = append(notes, newNote)
+			})
 		}
+		startMS += ev.durMS
 	}
-	if err := Play(audioContext, prog, notes); err != nil {
-		log.Printf("play note: %v", err)
-	}
+	return notes
 }
 
 // parseClanLordTune converts Clan Lord music notation into a slice of note

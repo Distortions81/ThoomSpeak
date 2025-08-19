@@ -23,17 +23,27 @@ const (
 	tailMultiplier = 4
 )
 
-// Note represents a single MIDI note with a duration.
+// Note represents a single MIDI note with a duration and start time.
 type Note struct {
 	// Key is the MIDI note number (e.g. 60 = middle C).
 	Key int
 	// Velocity is the MIDI velocity 1..127.
 	Velocity int
+	// Start is the time offset from the beginning when the note starts.
+	Start time.Duration
 	// Duration specifies how long the note should sound.
 	Duration time.Duration
 }
 
-var synth *meltysynth.Synthesizer
+// synthesizer abstracts the subset of meltysynth.Synthesizer used by Play.
+type synthesizer interface {
+	ProcessMidiMessage(channel int32, command int32, data1, data2 int32)
+	NoteOn(channel, key, vel int32)
+	NoteOff(channel, key int32)
+	Render(left, right []float32)
+}
+
+var synth synthesizer
 var setupSynthOnce sync.Once
 
 func setupSynth() {
@@ -68,6 +78,9 @@ func Play(ctx *audio.Context, program int, notes []Note) error {
 		return errors.New("nil audio context")
 	}
 	setupSynthOnce.Do(setupSynth)
+	if synth == nil {
+		return errors.New("synth not initialized")
+	}
 
 	const ch = 0
 	synth.ProcessMidiMessage(ch, 0xC0, int32(program), 0) // program change
@@ -76,18 +89,21 @@ func Play(ctx *audio.Context, program int, notes []Note) error {
 		key, vel   int
 		start, end int
 	}
-	cursor := 0
 	var events []event
+	var maxEnd int
 	for _, n := range notes {
-		durSamples := int(float64(sampleRate) * n.Duration.Seconds())
+		durSamples := int(n.Duration.Nanoseconds() * sampleRate / int64(time.Second))
 		if durSamples <= 0 {
 			continue
 		}
-		ev := event{key: n.Key, vel: n.Velocity, start: cursor, end: cursor + durSamples}
+		startSamples := int(n.Start.Nanoseconds() * sampleRate / int64(time.Second))
+		ev := event{key: n.Key, vel: n.Velocity, start: startSamples, end: startSamples + durSamples}
 		events = append(events, ev)
-		cursor += durSamples
+		if ev.end > maxEnd {
+			maxEnd = ev.end
+		}
 	}
-	totalSamples := cursor * tailMultiplier
+	totalSamples := maxEnd * tailMultiplier
 
 	leftAll := make([]float32, 0, totalSamples)
 	rightAll := make([]float32, 0, totalSamples)
