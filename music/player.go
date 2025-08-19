@@ -14,6 +14,9 @@ import (
 const (
 	sampleRate = 44100
 	block      = 512
+
+	// tailMultiplier extends the rendered length to allow reverb to decay.
+	tailMultiplier = 4
 )
 
 // Note represents a single MIDI note with a duration.
@@ -61,7 +64,7 @@ func Play(ctx *audio.Context, sf io.ReadSeeker, program int, notes []Note) error
 		events = append(events, ev)
 		cursor += durSamples
 	}
-	totalSamples := cursor
+	totalSamples := cursor * tailMultiplier
 
 	leftAll := make([]float32, 0, totalSamples)
 	rightAll := make([]float32, 0, totalSamples)
