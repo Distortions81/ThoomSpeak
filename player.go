@@ -18,6 +18,7 @@ type Player struct {
 	Sharee     bool // we are sharing to this player
 	Sharing    bool // player is sharing to us
 	GMLevel    int  // parsed from be-who; not rendered
+	Friend     bool // marked as friend
 	Dead       bool // parsed from obit messages (future)
 	FellWhere  string
 	KillerName string

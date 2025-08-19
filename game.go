@@ -193,6 +193,7 @@ var debugWin *eui.WindowData
 var qualityWin *eui.WindowData
 var graphicsWin *eui.WindowData
 var bubbleWin *eui.WindowData
+var notificationsWin *eui.WindowData
 
 var (
 	lastDebugStatsUpdate   time.Time

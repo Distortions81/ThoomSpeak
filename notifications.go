@@ -14,8 +14,6 @@ type notification struct {
 
 var notifications []*notification
 
-const notificationDuration = 6 * time.Second
-
 // showNotification displays msg in the Clan Lord window if notifications are
 // enabled. Messages disappear after a timeout or when clicked.
 func showNotification(msg string) {
@@ -49,7 +47,11 @@ func showNotification(msg string) {
 		}
 	}
 
-	notifications = append(notifications, &notification{item: btn, expiry: time.Now().Add(notificationDuration)})
+	dur := time.Duration(gs.NotificationDuration * float64(time.Second))
+	if dur <= 0 {
+		dur = 6 * time.Second
+	}
+	notifications = append(notifications, &notification{item: btn, expiry: time.Now().Add(dur)})
 	gameWin.AddItem(btn)
 	layoutNotifications()
 }
