@@ -84,6 +84,44 @@ var languageYellVerb = []string{
 
 func decodeMacRoman(b []byte) string { return string(b) }
 
+/*
+BEPP tag reference (two-letter codes following the 0xC2 prefix):
+
+| Tag | Meaning             |
+|-----|---------------------|
+| ba  | bard message        |
+| be  | back-end command    |
+| cn  | clan name           |
+| cf  | config              |
+| dd  | do not display      |
+| de  | demo notice         |
+| dp  | depart              |
+| dl  | download            |
+| er  | error message       |
+| gm  | game master         |
+| hf  | has fallen          |
+| nf  | no longer fallen    |
+| hp  | help                |
+| in  | info                |
+| iv  | inventory           |
+| ka  | karma               |
+| kr  | karma received      |
+| lf  | log off             |
+| lg  | log on              |
+| lo  | location            |
+| ml  | multilingual        |
+| mn  | monster name        |
+| mu  | music               |
+| nw  | news                |
+| pn  | player name         |
+| sh  | share               |
+| su  | unshare             |
+| tl  | text log only       |
+| th  | think               |
+| tt  | monospaced style    |
+| wh  | who list            |
+| yk  | you killed          |
+*/
 func decodeBEPP(data []byte) string {
 	if len(data) < 3 || data[0] != 0xC2 {
 		return ""
@@ -121,12 +159,18 @@ func decodeBEPP(data []byte) string {
 		if text != "" {
 			return text
 		}
+	case "lg":
+		// Login/logout presence notices
+		parsePresenceText(raw, text)
+		if text != "" {
+			return text
+		}
 	case "be":
 		// Back-end command: handle internally using raw (unstripped) data.
 		parseBackend(raw)
 		return ""
-	case "yk", "iv", "hp", "cf", "pn", "lg":
-		// Known simple pass-through prefixes (e.g., iv: item/verb, lg: login/clan notices)
+	case "yk", "iv", "hp", "cf", "pn":
+		// Known simple pass-through prefixes (e.g., iv: item/verb)
 		if text != "" {
 			return text
 		}
