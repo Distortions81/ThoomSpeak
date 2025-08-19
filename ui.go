@@ -1251,6 +1251,24 @@ func makeSettingsWindow() {
 	}
 	left.AddItem(keySpeedSlider)
 
+	notifCB, notifEvents := eui.NewCheckbox()
+	notifCB.Text = "Game Notifications"
+	notifCB.Size = eui.Point{X: leftW, Y: 24}
+	notifCB.Checked = gs.Notifications
+	notifCB.Tooltip = "Show in-game notifications"
+	notifEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			SettingsLock.Lock()
+			gs.Notifications = ev.Checked
+			SettingsLock.Unlock()
+			settingsDirty = true
+			if !ev.Checked {
+				clearNotifications()
+			}
+		}
+	}
+	left.AddItem(notifCB)
+
 	label, _ = eui.NewText()
 	label.Text = "\nWindow Behavior:"
 	label.FontSize = 15

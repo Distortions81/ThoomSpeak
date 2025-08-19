@@ -525,6 +525,7 @@ func (g *Game) Update() error {
 	default:
 	}
 	eui.Update() //We really need this to return eaten clicks
+	updateNotifications()
 
 	once.Do(func() {
 		initGame()
@@ -1830,9 +1831,11 @@ func makeGameWindow() {
 		}
 		_ = gameWin.SetPos(eui.Point{X: float32(newX), Y: 0})
 		updateGameImageSize()
+		layoutNotifications()
 	}
 	updateGameWindowSize()
 	updateGameImageSize()
+	layoutNotifications()
 }
 
 // onGameWindowResize enforces the game's aspect ratio on the window's
@@ -1879,6 +1882,7 @@ func onGameWindowResize() {
 		inAspectResize = false
 	}
 	updateGameImageSize()
+	layoutNotifications()
 }
 
 func noteFrame() {
