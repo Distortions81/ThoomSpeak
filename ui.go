@@ -1307,7 +1307,7 @@ func makeSettingsWindow() {
 	tsFormatInput.Label = "Timestamp format"
 	tsFormatInput.TextPtr = &gs.TimestampFormat
 	tsFormatInput.Size = eui.Point{X: rightW, Y: 24}
-	tsFormatInput.Tooltip = "01 Month, 02 Day, 03 Hour, 04 minute, 05 second (golang)"
+	tsFormatInput.Tooltip = "Golang Date Format"
 	tsFormatEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventInputChanged {
 			SettingsLock.Lock()
