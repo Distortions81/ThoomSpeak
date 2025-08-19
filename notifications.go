@@ -100,12 +100,16 @@ func layoutNotifications() {
 	spacer := float32(4)
 	winSz := gameWin.GetSize()
 	y := winSz.Y - margin - 100
+	scale := eui.UIScale()
+	if gameWin.NoScale {
+		scale = 1
+	}
 	for i := len(notifications) - 1; i >= 0; i-- {
 		it := notifications[i].item
 		sz := it.GetSize()
 		y -= sz.Y
 		x := winSz.X - sz.X - margin
-		it.Position = eui.Point{X: x / eui.UIScale(), Y: y / eui.UIScale()}
+		it.Position = eui.Point{X: x / scale, Y: y / scale}
 		y -= spacer
 		it.Dirty = true
 	}
