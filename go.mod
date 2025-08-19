@@ -14,7 +14,6 @@ require (
 	github.com/remeh/sizedwaitgroup v1.0.0
 	github.com/sqweek/dialog v0.0.0-20240226140203-065105509627
 	github.com/thiagokokada/dark-mode-go v0.0.1
-	github.com/tmc/keyring v0.0.0-20230418032330-0c8bdba76fa8
 	golang.org/x/crypto v0.41.0
 	golang.org/x/text v0.28.0
 	golang.org/x/time v0.12.0

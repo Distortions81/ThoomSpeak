@@ -71,8 +71,6 @@ github.com/stretchr/testify v1.7.0 h1:nwc3DEeHmmLAfoZucVR881uASk0Mfjw8xYJ99tb5Cc
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/thiagokokada/dark-mode-go v0.0.1 h1:layfdBOM9xaxBa1Dw6f97ng/GbRJh+f8+afBOvDzXz4=
 github.com/thiagokokada/dark-mode-go v0.0.1/go.mod h1:IQrRBLMIz8vfFZ/sdZr7ASfW1SpE9TJwUCDbKbG2AQU=
-github.com/tmc/keyring v0.0.0-20230418032330-0c8bdba76fa8 h1:DljNLO6GK8JXxL2VTe3dSGhraDappqRW7yrGvsW4U7w=
-github.com/tmc/keyring v0.0.0-20230418032330-0c8bdba76fa8/go.mod h1:uoVDLzTSIrXs7nwzzMuUSkaYZaebq/pggiv4BgYRcmg=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550/go.mod h1:yigFU9vqHzYiE8UmvKecakEJjdnWj3jj499lnFckfCI=
 golang.org/x/crypto v0.41.0 h1:WKYxWedPGCTVVl5+WHSSrOBT0O8lx32+zxmHxijgXp4=
