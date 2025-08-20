@@ -135,4 +135,5 @@ func checkForNewVersion() {
 	if latest.Version > appVersion {
 		consoleMessage(fmt.Sprintf("New goThoom version %d available", latest.Version))
 	}
+	consoleMessage("This version of goThoom is the latest version!")
 }
