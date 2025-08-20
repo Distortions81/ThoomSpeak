@@ -1083,7 +1083,7 @@ func makeLoginWindow() {
 	loginFlow.AddItem(label2)
 
 	openBtn, openEvents := eui.NewButton()
-	openBtn.Text = "Play movie file (clMov)"
+	openBtn.Text = "Play movie file"
 	openBtn.Size = eui.Point{X: 200, Y: 24}
 	openEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
@@ -1137,14 +1137,15 @@ func makeLoginWindow() {
 
 	verFlow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL, Size: eui.Point{X: 200, Y: 24}}
 	verLabel, _ := eui.NewText()
-	verLabel.Text = fmt.Sprintf("goThoom v%d (CL v%d)", appVersion, clientVersion)
-	verLabel.FontSize = 15
+	verLabel.Text = fmt.Sprintf("goThoom test %d, CL v%d", appVersion, clientVersion)
+	verLabel.FontSize = 8
 	verLabel.Size = eui.Point{X: 130, Y: 24}
 	verFlow.AddItem(verLabel)
 
 	changeBtn, changeEvents := eui.NewButton()
 	changeBtn.Text = "Changelog"
 	changeBtn.Size = eui.Point{X: 70, Y: 24}
+	changeBtn.FontSize = 10
 	changeEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
 			makeChangelogWindow()

@@ -1,3 +1,14 @@
 {
-  "versions": []
+  "versions": [
+    {
+      "Version": 21,
+      "CLVersion": 1445,
+      "Changelog": "Tweaked sound code to make the volume much more consistent.\nAdded better quality 8-bit to 16-bit sound conversion.\nSwitched from simple linear resampling to Lanczos-3 resampling for much clearer, less noisy, and more natural sounding audio.\nAdded sound de-duplication so two copies of the same sound don’t stack and become louder.\nAdded “Throttle sounds” setting (default on) that mutes sounds played less than 0.4s ago (previous two frames).\nRendering and clmov seeking speed increased.\nCharacter names and chat bubbles are now native resolution and much sharper.\nClicking an item in the inventory window now equips or unequips the item.\nAdded cancel button for restarting downloads.\nAdded separate “always on top” window option.\nFixed resize thumb in corner of main game window.\nScroll position in windows is preserved when refreshed.\nChat/Console windows preserve scroll location unless at the bottom, then they auto-scroll.\nChanged characters.json format (saved character list will reset).\nAdded “Try the demo” button to main screen, chooses random available demo character slot.\nImproved mute button mechanics, preserves previous volume.\nAdded customizable console/chat window time-stamp options.\nAll window positions and states (open/closed/pinned/size) are now fully restored from previous sessions.\nAdded support for custom splash and background images (background.png and/or splash.png in the data directory).\nDefault background color is now based on the theme’s window color at 50% brightness instead of plain black.\nThe UI library EUI now uses full TTF fonts from goThoom.\nEbiten main window size is now saved and restored between sessions.\nWindow positions/states are reset if “reset all settings” is chosen.\nNotification system added (similar to Steam banners). Current options: Fallen, No longer fallen, sharing/no longer sharing. Includes a slider for duration. Clicking the notification closes it early (buggy atm, wip).\nFallen/Not fallen status now properly updates in the players list.\nAdded basic copy/paste to the console input bar. Ctrl-V pastes, Ctrl-C copies the entire input line."
+    },
+    {
+      "Version": 22,
+      "CLVersion": 1445,
+      "ChangeLog": ""
+    }
+  ]
 }
