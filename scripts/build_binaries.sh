@@ -14,6 +14,20 @@ platforms=(
 
 have() { command -v "$1" >/dev/null 2>&1; }
 
+ensure_cmd() {
+  local cmd="$1"
+  local pkg="${2:-$1}"
+  if ! have "$cmd"; then
+    if have apt-get; then
+      echo "Installing $pkg..."
+      sudo apt-get update -qq
+      sudo apt-get install -y "$pkg"
+    else
+      echo "$cmd not found and apt-get unavailable; please install $pkg" >&2
+    fi
+  fi
+}
+
 install_linux_deps() {
   echo "Installing Linux build dependencies..."
   sudo apt-get update -qq
@@ -114,6 +128,9 @@ MSG
   cd - >/dev/null
 }
 
+# Ensure zip is available for packaging on Ubuntu systems
+ensure_cmd zip
+
 for platform in "${platforms[@]}"; do
   IFS=":" read -r GOOS GOARCH <<<"$platform"
   BIN_NAME="gothoom-${GOOS}-${GOARCH}"
@@ -176,6 +193,27 @@ for platform in "${platforms[@]}"; do
       "${extra_args[@]}" \
       -ldflags "$LDFLAGS" \
       -o "${OUTPUT_DIR}/${BIN_NAME}" .
+
+  if [ "$GOOS" = "windows" ]; then
+    cert_file="${WINDOWS_CERT_FILE:-certs/fullchain.pem}"
+    key_file="${WINDOWS_KEY_FILE:-certs/privkey.pem}"
+    ensure_cmd osslsigncode osslsigncode
+    if command -v osslsigncode >/dev/null 2>&1 && [ -f "$cert_file" ] && [ -f "$key_file" ]; then
+      echo "Signing ${BIN_NAME}..."
+      signed_tmp="${OUTPUT_DIR}/${BIN_NAME}.signed"
+      osslsigncode sign \
+        -certs "$cert_file" \
+        -key "$key_file" \
+        ${WINDOWS_KEY_PASS:+-pass "$WINDOWS_KEY_PASS"} \
+        -n "${WINDOWS_CERT_NAME:-goThoom}" \
+        ${WINDOWS_TIMESTAMP_URL:+-t "$WINDOWS_TIMESTAMP_URL"} \
+        -in "${OUTPUT_DIR}/${BIN_NAME}" \
+        -out "$signed_tmp"
+      mv "$signed_tmp" "${OUTPUT_DIR}/${BIN_NAME}"
+    else
+      echo "Skipping Windows signing; osslsigncode or certificate not configured." >&2
+    fi
+  fi
   if [ "$GOOS" = "darwin" ]; then
     APP_NAME="gothoom"
     APP_DIR="${OUTPUT_DIR}/${APP_NAME}.app"
@@ -204,6 +242,13 @@ for platform in "${platforms[@]}"; do
 </dict>
 </plist>
 EOF
+
+    if command -v codesign >/dev/null 2>&1; then
+      echo "Codesigning ${APP_NAME}.app..."
+      codesign --force --deep --sign "${MAC_SIGN_IDENTITY:--}" "$APP_DIR" || echo "codesign failed, continuing" >&2
+    else
+      echo "codesign tool not found; skipping macOS signing." >&2
+    fi
 
     echo "Zipping ${APP_NAME}.app..."
     (
