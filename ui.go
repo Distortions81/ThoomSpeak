@@ -1140,7 +1140,7 @@ func makeLoginWindow() {
 
 	verFlow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL, Size: eui.Point{X: 200, Y: 24}}
 	verLabel, _ := eui.NewText()
-	verLabel.Text = fmt.Sprintf("goThoom test %d, CL v%d", appVersion, clientVersion)
+	verLabel.Text = fmt.Sprintf("goThoom test %d", appVersion)
 	verLabel.FontSize = 8
 	verLabel.Size = eui.Point{X: 130, Y: 24}
 	verFlow.AddItem(verLabel)
@@ -1208,7 +1208,7 @@ func makeChangelogWindow() {
 
 func updateChangelogWindow() {
 	lines := strings.Split(changelog, "\n")
-	header := fmt.Sprintf("goThoom test %d, CL v%d", appVersion, clientVersion)
+	header := fmt.Sprintf("goThoom test %d", appVersion)
 	lines = append([]string{header, ""}, lines...)
 	updateTextWindow(changelogWin, changelogList, nil, lines, 14, "")
 	if changelogPrevBtn != nil {
@@ -1272,7 +1272,7 @@ func makeSettingsWindow() {
 		return
 	}
 	settingsWin = eui.NewWindow()
-	settingsWin.Title = fmt.Sprintf("Settings -- goThoom test %d, CL v%d", appVersion, clientVersion)
+	settingsWin.Title = fmt.Sprintf("Settings -- goThoom test %d", appVersion)
 	settingsWin.Closable = true
 	settingsWin.Resizable = false
 	settingsWin.AutoSize = true
