@@ -46,6 +46,5 @@ func MODE_NAME() string {
 func CHANGE_MODE(mode int) {
 	gameMode = mode
 	gameModeName = MODE_NAME()
-
-	//Change discord status here
+	updateDiscordMode(mode)
 }
