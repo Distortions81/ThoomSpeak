@@ -269,6 +269,7 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 				stopAllAudioPlayers()
 			} else {
 				muteBtn.Text = "Mute"
+				muteBtn.Tooltip = "Mutes, and ends Music or TTS"
 				volumeSlider.Value = float32(gs.Volume)
 			}
 			muteBtn.Dirty = true
