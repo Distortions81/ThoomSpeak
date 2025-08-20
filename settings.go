@@ -13,7 +13,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-const SETTINGS_VERSION = 6
+const SETTINGS_VERSION = 7
 
 type BarPlacement int
 
@@ -67,6 +67,7 @@ var gsdef settings = settings{
 	ShowFPS:              true,
 	UIScale:              1.0,
 	Volume:               1.0,
+	MusicVolume:          1.0,
 	GameScale:            2,
 	BarPlacement:         BarPlacementBottom,
 	ChatTTSVolume:        1.0,
@@ -134,6 +135,7 @@ type settings struct {
 	Fullscreen           bool
 	AlwaysOnTop          bool
 	Volume               float64
+	MusicVolume          float64
 	Mute                 bool
 	GameScale            float64
 	BarPlacement         BarPlacement

@@ -56,7 +56,7 @@ type noteEvent struct {
 // music package. The tune may optionally begin with an instrument index.
 // For example: "3 cde" plays on instrument #3.
 func playClanLordTune(tune string) {
-	if audioContext == nil {
+	if audioContext == nil || gs.Mute || gs.Volume <= 0 || gs.MusicVolume <= 0 {
 		return
 	}
 
