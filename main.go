@@ -40,6 +40,7 @@ var (
 )
 
 func main() {
+	clientVersion = clVersion
 	flag.StringVar(&clmov, "clmov", "", "play back a .clMov file")
 	flag.StringVar(&pcapPath, "pcap", "", "replay network frames from a .pcap/.pcapng file")
 	flag.BoolVar(&fake, "fake", false, "simulate server messages without connecting")
