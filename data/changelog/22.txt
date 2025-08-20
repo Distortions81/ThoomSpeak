@@ -28,3 +28,9 @@ First music tests is in, doesn't support every feature yet.
 21 Gutbucket Bass
 22 Glass Jug
 Will require you add soundfont.sf2 to the data directory, you can use any you like but here is the one I am currently using: https://musical-artifacts.com/artifacts/3506 
+Added self-signed cert for windows so it will complain less.
+Added possible work-around for GateKeeper on newer versions of OS X (i do not have a way to test it).
+Added dialog box that allows goThoom to run on newer versions of ClanLord until there is an update.
+Updated PGO file for better performance.
+Added version number to login window as well as settings window titlebar.
+Automatically informs of new versions of goThoom. (Does not auto-update yet but soon)
