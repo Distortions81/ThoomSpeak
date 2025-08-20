@@ -171,7 +171,7 @@ func parseShareText(raw []byte, s string) bool {
 		}
 		return true
 	case strings.HasSuffix(s, " is sharing experiences with you."):
-		name := firstTagContent(raw, 'p', 'n')
+		name := utfFold(firstTagContent(raw, 'p', 'n'))
 		if name != "" {
 			p := getPlayer(name)
 			playersMu.Lock()
@@ -186,7 +186,7 @@ func parseShareText(raw []byte, s string) bool {
 		}
 		return true
 	case strings.Contains(s, " is no longer sharing experiences with you"):
-		name := firstTagContent(raw, 'p', 'n')
+		name := utfFold(firstTagContent(raw, 'p', 'n'))
 		if name != "" {
 			playersMu.Lock()
 			changed := false
@@ -234,16 +234,16 @@ func parseFallenText(raw []byte, s string) bool {
 	// Fallen: "<pn name> has fallen" (with optional -mn and -lo tags)
 	if strings.Contains(s, " has fallen") {
 		// Extract main player name
-		name := firstTagContent(raw, 'p', 'n')
+		name := utfFold(firstTagContent(raw, 'p', 'n'))
 		if name == "" {
 			if idx := strings.Index(s, " has fallen"); idx >= 0 {
-				name = strings.TrimSpace(s[:idx])
+				name = utfFold(strings.TrimSpace(s[:idx]))
 			}
 		}
 		if name == "" {
 			return false
 		}
-		killer := firstTagContent(raw, 'm', 'n')
+		killer := utfFold(firstTagContent(raw, 'm', 'n'))
 		where := firstTagContent(raw, 'l', 'o')
 		p := getPlayer(name)
 		playersMu.Lock()
@@ -259,10 +259,10 @@ func parseFallenText(raw []byte, s string) bool {
 	}
 	// Not fallen: "<pn name> is no longer fallen"
 	if strings.Contains(s, " is no longer fallen") {
-		name := firstTagContent(raw, 'p', 'n')
+		name := utfFold(firstTagContent(raw, 'p', 'n'))
 		if name == "" {
 			if idx := strings.Index(s, " is no longer fallen"); idx >= 0 {
-				name = strings.TrimSpace(s[:idx])
+				name = utfFold(strings.TrimSpace(s[:idx]))
 			}
 		}
 		if name == "" {
@@ -289,7 +289,7 @@ func parsePresenceText(raw []byte, s string) bool {
 	// Attempt to detect common phrases. Names are provided in -pn tags.
 	// We treat any recognized login as Online and any recognized logout as Offline.
 	lower := strings.ToLower(s)
-	name := firstTagContent(raw, 'p', 'n')
+	name := utfFold(firstTagContent(raw, 'p', 'n'))
 	if name == "" {
 		return false
 	}

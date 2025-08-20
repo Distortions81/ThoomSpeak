@@ -203,7 +203,7 @@ func parseNames(data []byte) []string {
 		if end < 0 {
 			break
 		}
-		name := strings.TrimSpace(decodeMacRoman(data[:end]))
+		name := utfFold(strings.TrimSpace(decodeMacRoman(data[:end])))
 		names = append(names, name)
 		data = data[end+3:]
 		for {

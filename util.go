@@ -8,9 +8,13 @@ import (
 	"io"
 	"log"
 	"os"
+	"unicode"
 
 	"golang.org/x/crypto/twofish"
 	"golang.org/x/text/encoding/charmap"
+	"golang.org/x/text/runes"
+	"golang.org/x/text/transform"
+	"golang.org/x/text/unicode/norm"
 )
 
 func simpleEncrypt(data []byte) {
@@ -31,6 +35,15 @@ func encodeMacRoman(s string) []byte {
 		return []byte(s)
 	}
 	return b
+}
+
+func utfFold(s string) string {
+	t := transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
+	out, _, err := transform.String(t, s)
+	if err != nil {
+		return s
+	}
+	return out
 }
 
 func encodeFullVersion(v int) uint32 { return uint32(v) << 8 }

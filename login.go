@@ -303,7 +303,7 @@ func login(ctx context.Context, clientVersion int) error {
 			udpConn.Close()
 			return fmt.Errorf("character password required")
 		}
-		playerName = name
+		playerName = utfFold(name)
 
 		var resp []byte
 		var result int16
