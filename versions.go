@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -145,12 +146,13 @@ func checkForNewVersion() {
 			}
 			showPopup(
 				"Update Available",
-				fmt.Sprintf("goThoom version %d is available.", ver),
+				fmt.Sprintf("goThoom version %d is available!", ver),
 				[]popupButton{
-					{Text: "Open in Browser", Action: func() {
+					{Text: "Cancel"},
+					{Text: "Download", Action: func() {
 						browser.OpenURL("https://github.com/Distortions81/goThoom/releases")
+						os.Exit(0)
 					}},
-					{Text: "OK"},
 				},
 			)
 		}(latest.Version)
