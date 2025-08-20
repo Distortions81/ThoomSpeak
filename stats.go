@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"time"
 )
@@ -15,7 +16,17 @@ type assetStats struct {
 }
 
 const statsFile = "stats.json"
-const dataDirPath = "data"
+
+var dataDirPath = "data"
+
+func init() {
+	if runtime.GOOS == "darwin" {
+		if home, err := os.UserHomeDir(); err == nil {
+			dataDirPath = filepath.Join(home, "Library", "Application Support", "goThoom")
+			_ = os.MkdirAll(dataDirPath, 0o755)
+		}
+	}
+}
 
 var (
 	stats      assetStats
