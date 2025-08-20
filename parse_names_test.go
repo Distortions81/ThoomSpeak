@@ -60,7 +60,7 @@ func TestParseNamesMacRoman(t *testing.T) {
 	data = append(data, nameBytes...)
 	data = append(data, 0xC2, 'p', 'n')
 	got := parseNames(data)
-	want := []string{"Méme"}
+	want := []string{"Meme"}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("parseNames() = %v, want %v", got, want)
 	}

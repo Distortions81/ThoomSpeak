@@ -654,7 +654,7 @@ func parseDrawState(data []byte, buildCache bool) error {
 		d.PictID = binary.BigEndian.Uint16(data[p+2:])
 		p += 4
 		if idx := bytes.IndexByte(data[p:], 0); idx >= 0 {
-			d.Name = string(data[p : p+idx])
+			d.Name = utfFold(decodeMacRoman(data[p : p+idx]))
 			p += idx + 1
 			if d.Name == playerName {
 				playerIndex = d.Index

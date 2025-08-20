@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"log"
 
-	"embed"
+	_ "embed"
 )
 
 //go:embed data/versions.json
