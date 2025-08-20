@@ -638,6 +638,9 @@ func makeDownloadsWindow() {
 				logError("failed to load CL_Sounds: %v", err)
 				return
 			}
+			if s, err := checkDataFiles(clientVersion); err == nil {
+				status = s
+			}
 			// Force reselect from LastCharacter if available
 			name = ""
 			passHash = ""

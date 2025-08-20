@@ -367,10 +367,14 @@ func login(ctx context.Context, clientVersion int) error {
 
 		if result == -30972 || result == -30973 {
 			logDebug("server requested update, downloading...")
-			if err := autoUpdate(resp, dataDirPath); err != nil {
+			newVer, err := autoUpdate(resp, dataDirPath)
+			if err != nil {
 				tcpConn.Close()
 				udpConn.Close()
 				return fmt.Errorf("auto update: %w", err)
+			}
+			if s, err := checkDataFiles(newVer); err == nil {
+				status = s
 			}
 			logDebug("update complete, reconnecting...")
 			tcpConn.Close()

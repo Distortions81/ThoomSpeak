@@ -154,13 +154,13 @@ func (pc *progCounter) Write(p []byte) (int, error) {
 	return n, nil
 }
 
-func autoUpdate(resp []byte, dataDir string) error {
+func autoUpdate(resp []byte, dataDir string) (int, error) {
 	if len(resp) < 16 {
-		return fmt.Errorf("short response for update")
+		return 0, fmt.Errorf("short response for update")
 	}
 	if err := os.MkdirAll(dataDir, 0755); err != nil {
 		logError("create %v: %v", dataDir, err)
-		return err
+		return 0, err
 	}
 	base := string(resp[16:])
 	if i := strings.IndexByte(base, 0); i >= 0 {
@@ -176,16 +176,16 @@ func autoUpdate(resp []byte, dataDir string) error {
 	imgPath := filepath.Join(dataDir, CL_ImagesFile)
 	if err := downloadGZ(imgURL, imgPath); err != nil {
 		logError("download %v: %v", imgURL, err)
-		return err
+		return 0, err
 	}
 	sndURL := fmt.Sprintf("%v/data/CL_Sounds.%d.gz", base, sndVer>>8)
 	logDebug("downloading %v", sndURL)
 	sndPath := filepath.Join(dataDir, CL_SoundsFile)
 	if err := downloadGZ(sndURL, sndPath); err != nil {
 		logError("download %v: %v", sndURL, err)
-		return err
+		return 0, err
 	}
-	return nil
+	return int(clientVer >> 8), nil
 }
 
 type dataFilesStatus struct {
