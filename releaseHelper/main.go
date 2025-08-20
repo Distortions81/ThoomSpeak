@@ -23,7 +23,6 @@ type FileInfo struct {
 type Version struct {
 	Version   int        `json:"version"`
 	CLVersion int        `json:"cl_version"`
-	Changelog string     `json:"changelog"`
 	Files     []FileInfo `json:"files"`
 }
 
@@ -82,10 +81,20 @@ func main() {
 		os.Exit(1)
 	}
 
-	vf.Versions = append(vf.Versions, Version{Version: nextVer, CLVersion: *clVer, Changelog: *changelog, Files: entries})
+	vf.Versions = append(vf.Versions, Version{Version: nextVer, CLVersion: *clVer, Files: entries})
 
 	if err := saveVersionFile(*versionPath, vf); err != nil {
 		fmt.Fprintln(os.Stderr, "save version file:", err)
+		os.Exit(1)
+	}
+
+	clPath := filepath.Join(filepath.Dir(*versionPath), "changelog", fmt.Sprintf("%d.txt", nextVer))
+	if err := os.MkdirAll(filepath.Dir(clPath), 0o755); err != nil {
+		fmt.Fprintln(os.Stderr, "make changelog dir:", err)
+		os.Exit(1)
+	}
+	if err := os.WriteFile(clPath, []byte(*changelog), 0o644); err != nil {
+		fmt.Fprintln(os.Stderr, "write changelog:", err)
 		os.Exit(1)
 	}
 

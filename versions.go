@@ -1,14 +1,17 @@
 package main
 
 import (
+	"embed"
 	"encoding/json"
+	"fmt"
 	"log"
-
-	_ "embed"
 )
 
 //go:embed data/versions.json
 var versionsJSON []byte
+
+//go:embed data/changelog/*
+var changelogFS embed.FS
 
 var (
 	appVersion int
@@ -17,9 +20,8 @@ var (
 )
 
 type versionEntry struct {
-	Version   int    `json:"version"`
-	CLVersion int    `json:"cl_version"`
-	Changelog string `json:"changelog"`
+	Version   int `json:"version"`
+	CLVersion int `json:"cl_version"`
 }
 
 type versionFile struct {
@@ -45,5 +47,10 @@ func init() {
 	if latest.CLVersion != 0 {
 		clVersion = latest.CLVersion
 	}
-	changelog = latest.Changelog
+	b, err := changelogFS.ReadFile(fmt.Sprintf("data/changelog/%d.txt", latest.Version))
+	if err != nil {
+		log.Printf("read changelog: %v", err)
+	} else {
+		changelog = string(b)
+	}
 }
