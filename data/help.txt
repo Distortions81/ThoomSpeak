@@ -18,3 +18,5 @@ Extras
 -----
 - Want a custom background image? Save it as background.png in the data directory.
 - Want a custom splash image (game window image while not logged in) put your own splash.png in the data directory.
+- Want to test music? download soundfont, name it soundfont.sf2 and place it in data and use /play <instrument number> <music>
+- Example soundfont: https://musical-artifacts.com/artifacts/3506
