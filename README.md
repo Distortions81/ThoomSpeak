@@ -1,72 +1,100 @@
-# goThoom Client
+# goThoom
 
-A open source (MIT) client for the Clan Lord MMORPG.
+An open-source (MIT) client for the classic **Clan Lord** MMORPG
 
-### Requirements
+> Status: actively developed, cross-platform builds provided in Releases.
 
-- Go 1.24 or newer
-- OpenGL and X11 development libraries
+---
 
-On Debian/Ubuntu:
+## Why this exists
 
+- The original client is old and finicky. This one isn’t.
+- Single binary, fast rendering (OpenGL), and fewer weird dependencies.
+- Higher framerates, de-dithering of old graphics, multi-platform.
+
+---
+
+## Download
+
+**Easiest:** grab the latest build from **Releases** on this repo (Windows, macOS, Linux).
+
+If you build from source, you'll need Go **1.24+** and OpenGL/X11 dev libs on Linux. See "Build from source."
+
+---
+
+## Quick start (players)
+
+1. **Download** a release for your OS and unzip it.  
+2. **Run** the app:
+   - **Windows/macOS:** launch the executable/app bundle.
+   - **Linux:** `./gothoom` (you may need `chmod +x gothoom`).
+3. On first run, the client **auto-fetches missing game assets** (images, sounds) into `data/`. No manual wrangling.
+
+### Optional extras
+- Drop a `background.png` and/or `splash.png` into `data/` for a custom look.
+
+---
+
+## Power-user tricks
+
+You can run the client with flags:
+
+- `-clmov` - play a recorded `.clMov` movie file
+- `-pcap`  - replay network frames from a `.pcap/.pcapng` (good for testing UI/parse)  
+- `-pgo`   - create `default.pgo` by playing `test.clMov` at 30fps for 30s  
+- `-debug` - verbose logging  
+- `-dumpMusic` - save played music as WAV  
+
+Examples:
 ```bash
-sudo apt-get update
-sudo apt-get install -y golang-go build-essential libgl1-mesa-dev libglu1-mesa-dev xorg-dev
-```
-
-### Build
-
-From the repository root run:
-
-```bash
-go build
-```
-
-### Run
-
-Launch the client with:
-
-```bash
-go build
-./gothoom
-```
-
-To exercise parsing and the GUI without a server, replay a captured
-network trace:
-
-```bash
+# Replay a capture to kick the tires
 go run . -pcap reference-client.pcapng
 ```
 
-To build release binaries for Linux and Windows, use:
+---
 
+## Build from source (devs)
+
+### Linux (Debian/Ubuntu)
 ```bash
-scripts/build_binaries.sh
+sudo apt-get update
+sudo apt-get install -y golang-go build-essential libgl1-mesa-dev libglu1-mesa-dev xorg-dev
+go build
+./gothoom
 ```
+Requirements: Go **1.24+**, OpenGL + X11 development libraries.
 
-The script optionally self-signs Windows executables and macOS `.app` bundles.
-On Ubuntu, it attempts to install missing tools like `zip` and `osslsigncode` automatically.
-Provide certificate paths via environment variables before running:
-
+### Cross-platform release builds
+A helper script builds **Linux + Windows** binaries (and can sign Windows EXEs and macOS `.app` bundles). On Ubuntu it will install missing tools like `zip`/`osslsigncode` automatically. Set cert env vars, then run:
 ```bash
 export WINDOWS_CERT_FILE=certs/fullchain.pem
-export WINDOWS_KEY_FILE=certs/privkey.pem   # optional WINDOWS_KEY_PASS, WINDOWS_CERT_NAME, WINDOWS_TIMESTAMP_URL
+export WINDOWS_KEY_FILE=certs/privkey.pem   # optional: WINDOWS_KEY_PASS, WINDOWS_CERT_NAME, WINDOWS_TIMESTAMP_URL
 export MAC_SIGN_IDENTITY="-"                # ad-hoc by default; set to your certificate name to sign
 scripts/build_binaries.sh
 ```
 
-## Command-line Flags
+---
 
-The Go client accepts the following flags:
+## Troubleshooting
 
-- `-clmov` – play back a `.clMov` movie file instead of connecting to a server
-- `-pcap` – replay network frames from a `.pcap/.pcapng` file
-- `-pgo` – create `default.pgo` by playing `test.clMov` at 30 fps for 30 seconds
-- `-debug` – enable debug logging (default `true`)
-- `-dumpMusic` – save played music as a WAV file
+- **Missing assets**: the client will fetch `CL_Images` / `CL_Sounds` archives on first run. If you interrupted it, delete partial files in `data/` and relaunch.
+- **Linux can’t start**: ensure OpenGL and X11 dev libs are installed (see commands above).
+- **Weird graphics/audio**: try `-debug` to see logs, and file an issue with your OS/GPU/driver info.
 
-## Setup
+---
 
-- Missing `CL_Images` or `CL_Sounds` archives in `data` are fetched automatically
-- Custom splash and background images, just place background.png and/or splash.png into the data directory.
+## Contributing
 
+PRs welcome. Keep changes focused and testable. If you’re adding protocol or UI tweaks, include a small `.pcap` or `.clMov` so others can reproduce quickly. The repo includes tests for text parsing, sound, synthesis, and more—use them.
+
+---
+
+## License
+
+MIT. Game assets and “Clan Lord” are property of their respective owners; this project ships **a client**, not server content.
+
+---
+
+## Credits
+
+Built in Go with a sprinkle of pragmatism and a lot of late-night packet spelunking. If you enjoy this, star the repo or link it.
