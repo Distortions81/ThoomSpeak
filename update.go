@@ -179,16 +179,24 @@ func autoUpdate(resp []byte, dataDir string) (int, error) {
 	sndVer := int(binary.BigEndian.Uint32(resp[12:16]) >> 8)
 	imgPath := filepath.Join(dataDir, CL_ImagesFile)
 	if old, err := readKeyFileVersion(imgPath); err == nil {
-		patchURL := fmt.Sprintf("%v/data/CL_Images.%dto%d.gz", base, int(old>>8), imgVer)
-		if err := downloadPatch(patchURL, imgPath, climg.ApplyPatch); err != nil {
-			if errors.Is(err, os.ErrNotExist) {
-				imgURL := fmt.Sprintf("%v/data/CL_Images.%d.gz", base, imgVer)
-				if err := downloadGZ(imgURL, imgPath); err != nil {
-					logError("download %v: %v", imgURL, err)
+		if experimental {
+			patchURL := fmt.Sprintf("%v/data/CL_Images.%dto%d.gz", base, int(old>>8), imgVer)
+			if err := downloadPatch(patchURL, imgPath, climg.ApplyPatch); err != nil {
+				if errors.Is(err, os.ErrNotExist) {
+					imgURL := fmt.Sprintf("%v/data/CL_Images.%d.gz", base, imgVer)
+					if err := downloadGZ(imgURL, imgPath); err != nil {
+						logError("download %v: %v", imgURL, err)
+						return 0, err
+					}
+				} else {
+					logError("patch %v: %v", patchURL, err)
 					return 0, err
 				}
-			} else {
-				logError("patch %v: %v", patchURL, err)
+			}
+		} else {
+			imgURL := fmt.Sprintf("%v/data/CL_Images.%d.gz", base, imgVer)
+			if err := downloadGZ(imgURL, imgPath); err != nil {
+				logError("download %v: %v", imgURL, err)
 				return 0, err
 			}
 		}
@@ -201,16 +209,24 @@ func autoUpdate(resp []byte, dataDir string) (int, error) {
 	}
 	sndPath := filepath.Join(dataDir, CL_SoundsFile)
 	if old, err := readKeyFileVersion(sndPath); err == nil {
-		patchURL := fmt.Sprintf("%v/data/CL_Sounds.%dto%d.gz", base, int(old>>8), sndVer)
-		if err := downloadPatch(patchURL, sndPath, clsnd.ApplyPatch); err != nil {
-			if errors.Is(err, os.ErrNotExist) {
-				sndURL := fmt.Sprintf("%v/data/CL_Sounds.%d.gz", base, sndVer)
-				if err := downloadGZ(sndURL, sndPath); err != nil {
-					logError("download %v: %v", sndURL, err)
+		if experimental {
+			patchURL := fmt.Sprintf("%v/data/CL_Sounds.%dto%d.gz", base, int(old>>8), sndVer)
+			if err := downloadPatch(patchURL, sndPath, clsnd.ApplyPatch); err != nil {
+				if errors.Is(err, os.ErrNotExist) {
+					sndURL := fmt.Sprintf("%v/data/CL_Sounds.%d.gz", base, sndVer)
+					if err := downloadGZ(sndURL, sndPath); err != nil {
+						logError("download %v: %v", sndURL, err)
+						return 0, err
+					}
+				} else {
+					logError("patch %v: %v", patchURL, err)
 					return 0, err
 				}
-			} else {
-				logError("patch %v: %v", patchURL, err)
+			}
+		} else {
+			sndURL := fmt.Sprintf("%v/data/CL_Sounds.%d.gz", base, sndVer)
+			if err := downloadGZ(sndURL, sndPath); err != nil {
+				logError("download %v: %v", sndURL, err)
 				return 0, err
 			}
 		}
@@ -284,7 +300,7 @@ func downloadDataFiles(clientVer int, status dataFilesStatus) error {
 	}
 	if status.NeedImages {
 		imgPath := filepath.Join(dataDirPath, CL_ImagesFile)
-		if status.ImageVersion > 0 {
+		if status.ImageVersion > 0 && experimental {
 			patchURL := fmt.Sprintf("%v/data/CL_Images.%dto%d.gz", updateBase, status.ImageVersion, clientVer)
 			if err := downloadPatch(patchURL, imgPath, climg.ApplyPatch); err != nil {
 				if errors.Is(err, os.ErrNotExist) {
@@ -308,7 +324,7 @@ func downloadDataFiles(clientVer int, status dataFilesStatus) error {
 	}
 	if status.NeedSounds {
 		sndPath := filepath.Join(dataDirPath, CL_SoundsFile)
-		if status.SoundVersion > 0 {
+		if status.SoundVersion > 0 && experimental {
 			patchURL := fmt.Sprintf("%v/data/CL_Sounds.%dto%d.gz", updateBase, status.SoundVersion, clientVer)
 			if err := downloadPatch(patchURL, sndPath, clsnd.ApplyPatch); err != nil {
 				if errors.Is(err, os.ErrNotExist) {
