@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"sort"
+	"strconv"
+	"strings"
 )
 
 //go:embed data/versions.json
@@ -17,6 +20,9 @@ var (
 	appVersion int
 	clVersion  = baseVersion
 	changelog  string
+
+	changelogVersions   []int
+	changelogVersionIdx int
 )
 
 type versionEntry struct {
@@ -47,10 +53,50 @@ func init() {
 	if latest.CLVersion != 0 {
 		clVersion = latest.CLVersion
 	}
-	b, err := changelogFS.ReadFile(fmt.Sprintf("data/changelog/%d.txt", latest.Version))
+
+	// Discover available changelog versions.
+	entries, err := changelogFS.ReadDir("data/changelog")
+	if err == nil {
+		for _, e := range entries {
+			if e.IsDir() {
+				continue
+			}
+			name := strings.TrimSuffix(e.Name(), ".txt")
+			if v, err := strconv.Atoi(name); err == nil {
+				changelogVersions = append(changelogVersions, v)
+			}
+		}
+		sort.Ints(changelogVersions)
+		for i, v := range changelogVersions {
+			if v == appVersion {
+				changelogVersionIdx = i
+				break
+			}
+		}
+	}
+
+	loadChangelogAt(changelogVersionIdx)
+	if changelog == "" {
+		b, err := changelogFS.ReadFile(fmt.Sprintf("data/changelog/%d.txt", appVersion))
+		if err != nil {
+			log.Printf("read changelog: %v", err)
+		} else {
+			changelog = string(b)
+		}
+	}
+}
+
+func loadChangelogAt(idx int) bool {
+	if idx < 0 || idx >= len(changelogVersions) {
+		return false
+	}
+	v := changelogVersions[idx]
+	b, err := changelogFS.ReadFile(fmt.Sprintf("data/changelog/%d.txt", v))
 	if err != nil {
 		log.Printf("read changelog: %v", err)
-	} else {
-		changelog = string(b)
+		return false
 	}
+	changelog = string(b)
+	changelogVersionIdx = idx
+	return true
 }
