@@ -1271,7 +1271,7 @@ func makeSettingsWindow() {
 		return
 	}
 	settingsWin = eui.NewWindow()
-	settingsWin.Title = "Settings"
+	settingsWin.Title = fmt.Sprintf("Settings -- goThoom test %d, CL v%d", appVersion, clientVersion)
 	settingsWin.Closable = true
 	settingsWin.Resizable = false
 	settingsWin.AutoSize = true
