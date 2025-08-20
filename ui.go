@@ -1458,6 +1458,25 @@ func makeSettingsWindow() {
 	}
 	right.AddItem(tsFormatInput)
 
+	musicSlider, musicEvents := eui.NewSlider()
+	musicSlider.MinValue = 0
+	musicSlider.MaxValue = 1
+	musicSlider.Value = float32(gs.MusicVolume)
+	musicSlider.Size = eui.Point{X: rightW, Y: 24}
+	musicSlider.FontSize = 9
+	musicSlider.Label = "Music Volume"
+	musicEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
+			gs.MusicVolume = float64(ev.Value)
+			settingsDirty = true
+			updateSoundVolume()
+		}
+	}
+	right.AddItem(musicSlider)
+
 	chatTTSRow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
 
 	chatTTSCB, chatTTSEvents := eui.NewCheckbox()

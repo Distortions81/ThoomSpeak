@@ -43,8 +43,13 @@ type synthesizer interface {
 	Render(left, right []float32)
 }
 
-var synth synthesizer
-var setupSynthOnce sync.Once
+var (
+	synth          synthesizer
+	setupSynthOnce sync.Once
+
+	musicPlayers   = make(map[*audio.Player]struct{})
+	musicPlayersMu sync.Mutex
+)
 
 func setupSynth() {
 	var err error
@@ -187,10 +192,26 @@ func Play(ctx *audio.Context, program int, notes []Note) error {
 		dumpPCMAsWAV(pcm)
 	}
 	player := ctx.NewPlayerFromBytes(pcm)
+
+	vol := gs.MusicVolume * gs.Volume
+	if gs.Mute {
+		vol = 0
+	}
+	player.SetVolume(vol)
+
+	musicPlayersMu.Lock()
+	musicPlayers[player] = struct{}{}
+	musicPlayersMu.Unlock()
+
 	player.Play()
 
 	dur := time.Duration(len(leftAll)) * time.Second / sampleRate
 	time.Sleep(dur)
+
+	musicPlayersMu.Lock()
+	delete(musicPlayers, player)
+	musicPlayersMu.Unlock()
+
 	return player.Close()
 }
 

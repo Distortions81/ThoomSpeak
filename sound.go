@@ -225,6 +225,13 @@ func updateSoundVolume() {
 	}
 	ttsPlayersMu.Unlock()
 
+	musicPlayersMu.Lock()
+	music := make([]*audio.Player, 0, len(musicPlayers))
+	for p := range musicPlayers {
+		music = append(music, p)
+	}
+	musicPlayersMu.Unlock()
+
 	stopped := make([]*audio.Player, 0)
 	for _, sp := range players {
 		if sp.IsPlaying() {
@@ -240,6 +247,15 @@ func updateSoundVolume() {
 			p.SetVolume(gs.ChatTTSVolume * vol)
 		} else {
 			ttsStopped = append(ttsStopped, p)
+		}
+	}
+
+	musicStopped := make([]*audio.Player, 0)
+	for _, p := range music {
+		if p.IsPlaying() {
+			p.SetVolume(gs.MusicVolume * vol)
+		} else {
+			musicStopped = append(musicStopped, p)
 		}
 	}
 
@@ -259,6 +275,15 @@ func updateSoundVolume() {
 			p.Close()
 		}
 		ttsPlayersMu.Unlock()
+	}
+
+	if len(musicStopped) > 0 {
+		musicPlayersMu.Lock()
+		for _, p := range musicStopped {
+			delete(musicPlayers, p)
+			p.Close()
+		}
+		musicPlayersMu.Unlock()
 	}
 }
 
