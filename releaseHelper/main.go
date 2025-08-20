@@ -30,8 +30,8 @@ type VersionFile struct {
 
 func main() {
 	var (
-		versionPath = flag.String("version-file", "versions.json", "path to versions json")
-		binariesDir = flag.String("binaries", "binaries", "directory containing release zips")
+		versionPath = flag.String("version-file", "../data/versions.json", "path to versions json")
+		binariesDir = flag.String("dataPath", "../binaries", "directory containing release zips")
 		baseURL     = flag.String("base-url", "", "base URL for downloading binaries")
 		remote      = flag.String("remote", "", "scp target like user@host:/path/")
 		changelog   = flag.String("changelog", "", "changelog entry for this release")
