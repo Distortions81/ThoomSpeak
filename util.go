@@ -49,7 +49,7 @@ func utfFold(s string) string {
 func encodeFullVersion(v int) uint32 { return uint32(v) << 8 }
 
 const (
-	baseVersion  = 1445
+	baseVersion  = 1353
 	kDescPlayer  = 1
 	kDescMonster = 2
 	kDescNPC     = 3
