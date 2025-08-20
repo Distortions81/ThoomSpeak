@@ -134,6 +134,13 @@ func fetchRandomDemoCharacter(clientVersion int) (string, error) {
 	if binary.BigEndian.Uint16(msg[:2]) != kMsgChallenge {
 		return "", fmt.Errorf("unexpected msg tag %d", binary.BigEndian.Uint16(msg[:2]))
 	}
+	// The server echoes its current Clan Lord version in the challenge
+	// message. If we are newer than the server, fall back to the server's
+	// version so we remain compatible with older servers.
+	serverVersion := int(binary.BigEndian.Uint32(msg[4:8]) >> 8)
+	if sendVersion > serverVersion {
+		sendVersion = serverVersion
+	}
 	challenge := msg[16 : 16+16]
 
 	answer, err := answerChallenge("demo", challenge)
@@ -295,6 +302,12 @@ func login(ctx context.Context, clientVersion int) error {
 			tcpConn.Close()
 			udpConn.Close()
 			return fmt.Errorf("unexpected msg tag %d", tag)
+		}
+		// Obtain the server's client version from the challenge and, if
+		// ours is newer, downgrade so we can connect to an older server.
+		serverVersion := int(binary.BigEndian.Uint32(msg[4:8]) >> 8)
+		if sendVersion > serverVersion {
+			sendVersion = serverVersion
 		}
 		challenge := msg[16 : 16+16]
 
