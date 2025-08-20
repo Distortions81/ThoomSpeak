@@ -36,6 +36,13 @@ func stopAllSounds() {
 	}
 }
 
+// stopAllAudioPlayers stops and disposes every active audio player type.
+func stopAllAudioPlayers() {
+	stopAllSounds()
+	stopAllTTS()
+	stopAllMusic()
+}
+
 // playSound mixes the provided sound IDs and plays the result asynchronously.
 // Each ID is loaded, mixed with simple clipping and then played at the current
 // global volume. The function returns immediately after scheduling playback.

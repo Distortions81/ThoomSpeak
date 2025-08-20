@@ -142,3 +142,43 @@ func TestMuteDoesNotOverrideVolume(t *testing.T) {
 
 	p.Close()
 }
+
+func TestStopAllAudioPlayers(t *testing.T) {
+	initSoundContext()
+
+	sp := audioContext.NewPlayerFromBytes(make([]byte, 44100))
+	tp := audioContext.NewPlayerFromBytes(make([]byte, 44100))
+	mp := audioContext.NewPlayerFromBytes(make([]byte, 44100))
+
+	soundMu.Lock()
+	soundPlayers = map[*audio.Player]struct{}{sp: {}}
+	soundMu.Unlock()
+
+	ttsPlayersMu.Lock()
+	ttsPlayers = map[*audio.Player]struct{}{tp: {}}
+	ttsPlayersMu.Unlock()
+
+	musicPlayersMu.Lock()
+	musicPlayers = map[*audio.Player]struct{}{mp: {}}
+	musicPlayersMu.Unlock()
+
+	stopAllAudioPlayers()
+
+	soundMu.Lock()
+	if len(soundPlayers) != 0 {
+		t.Fatalf("sound players not cleared: %d", len(soundPlayers))
+	}
+	soundMu.Unlock()
+
+	ttsPlayersMu.Lock()
+	if len(ttsPlayers) != 0 {
+		t.Fatalf("tts players not cleared: %d", len(ttsPlayers))
+	}
+	ttsPlayersMu.Unlock()
+
+	musicPlayersMu.Lock()
+	if len(musicPlayers) != 0 {
+		t.Fatalf("music players not cleared: %d", len(musicPlayers))
+	}
+	musicPlayersMu.Unlock()
+}

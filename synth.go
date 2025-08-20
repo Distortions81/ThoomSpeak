@@ -51,6 +51,15 @@ var (
 	musicPlayersMu sync.Mutex
 )
 
+func stopAllMusic() {
+	musicPlayersMu.Lock()
+	defer musicPlayersMu.Unlock()
+	for p := range musicPlayers {
+		_ = p.Close()
+		delete(musicPlayers, p)
+	}
+}
+
 func setupSynth() {
 	var err error
 
