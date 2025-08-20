@@ -28,9 +28,12 @@ var (
 
 const versionsURL = "https://m45sci.xyz/u/dist/goThoom/versions.json"
 
+// versionEntry mirrors the structure of the entries in data/versions.json.
+// The JSON file uses capitalized field names, so the tags here must match
+// those exactly in order for decoding to succeed.
 type versionEntry struct {
-	Version   int `json:"version"`
-	CLVersion int `json:"cl_version"`
+	Version   int `json:"Version"`
+	CLVersion int `json:"CLVersion"`
 }
 
 type versionFile struct {
