@@ -1,1 +1,30 @@
+input bar now dynamically resizes as you type.
+Added proper MacRoman character map translation, so diacritics display correctly.
+Added version file with changelog.
 
+First music tests is in, doesn't support every feature yet. 
+/play <instrument number> <music> 
+0 Lucky Lyra
+1 Bone Flute
+2 Starbuck Harp
+3 Torjo
+4 Xylo
+5 Gitor
+6 Reed Flute
+7 Temple Organ
+8 Conch
+9 Ocarina
+10 Centaur Organ
+11 Vibra
+12 Tuborn
+13 Bagpipe
+14 Orga Drum
+15 Casserole
+16 Violène
+17 Pine Flute
+18 Groanbox
+19 Gho-To
+20 Mammoth Violène
+21 Gutbucket Bass
+22 Glass Jug
+Will require you add soundfont.sf2 to the data directory, you can use any you like but here is the one I am currently using: https://musical-artifacts.com/artifacts/3506 
