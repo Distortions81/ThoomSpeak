@@ -9,6 +9,9 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/pkg/browser"
 )
 
 //go:embed data/versions.json
@@ -27,6 +30,8 @@ var (
 )
 
 const versionsURL = "https://m45sci.xyz/u/dist/goThoom/versions.json"
+
+var uiReady bool
 
 // versionEntry mirrors the structure of the entries in data/versions.json.
 // The JSON file uses capitalized field names, so the tags here must match
@@ -134,6 +139,22 @@ func checkForNewVersion() {
 	}
 	if latest.Version > appVersion {
 		consoleMessage(fmt.Sprintf("New goThoom version %d available", latest.Version))
+		go func(ver int) {
+			for !uiReady {
+				time.Sleep(100 * time.Millisecond)
+			}
+			showPopup(
+				"Update Available",
+				fmt.Sprintf("goThoom version %d is available.", ver),
+				[]popupButton{
+					{Text: "Open in Browser", Action: func() {
+						browser.OpenURL("https://github.com/Distortions81/goThoom/releases")
+					}},
+					{Text: "OK"},
+				},
+			)
+		}(latest.Version)
+		return
 	}
 	consoleMessage("This version of goThoom is the latest version!")
 }
