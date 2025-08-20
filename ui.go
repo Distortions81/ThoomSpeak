@@ -1166,6 +1166,7 @@ func makeLoginWindow() {
 func makeChangelogWindow() {
 	if changelogWin == nil {
 		changelogWin, changelogList, _ = makeTextWindow("Changelog", eui.HZoneCenter, eui.VZoneMiddleTop, false)
+		changelogWin.OnResize = updateChangelogWindow
 		flow := changelogWin.Contents[0]
 
 		navFlow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL, Fixed: true, Alignment: eui.ALIGN_RIGHT}
