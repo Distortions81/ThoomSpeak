@@ -1,0 +1,26 @@
+Tweaked sound code to make the volume much more consistent.
+Added better quality 8-bit to 16-bit sound conversion.
+Switched from simple linear resampling to Lanczos-3 resampling for much clearer, less noisy, and more natural sounding audio.
+Added sound de-duplication so two copies of the same sound don’t stack and become louder.
+Added “Throttle sounds” setting (default on) that mutes sounds played less than 0.4s ago (previous two frames).
+Rendering and clmov seeking speed increased.
+Character names and chat bubbles are now native resolution and much sharper.
+Clicking an item in the inventory window now equips or unequips the item.
+Added cancel button for restarting downloads.
+Added separate “always on top” window option.
+Fixed resize thumb in corner of main game window.
+Scroll position in windows is preserved when refreshed.
+Chat/Console windows preserve scroll location unless at the bottom, then they auto-scroll.
+Changed characters.json format (saved character list will reset).
+Added “Try the demo” button to main screen, chooses random available demo character slot.
+Improved mute button mechanics, preserves previous volume.
+Added customizable console/chat window time-stamp options.
+All window positions and states (open/closed/pinned/size) are now fully restored from previous sessions.
+Added support for custom splash and background images (background.png and/or splash.png in the data directory).
+Default background color is now based on the theme’s window color at 50% brightness instead of plain black.
+The UI library EUI now uses full TTF fonts from goThoom.
+Ebiten main window size is now saved and restored between sessions.
+Window positions/states are reset if “reset all settings” is chosen.
+Notification system added (similar to Steam banners). Current options: Fallen, No longer fallen, sharing/no longer sharing. Includes a slider for duration. Clicking the notification closes it early (buggy atm, wip).
+Fallen/Not fallen status now properly updates in the players list.
+Added basic copy/paste to the console input bar. Ctrl-V pastes, Ctrl-C copies the entire input line.
