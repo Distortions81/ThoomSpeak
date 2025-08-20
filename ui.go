@@ -2591,6 +2591,21 @@ func makeDebugWindow() {
 	}
 	debugFlow.AddItem(nightCB)
 
+	maxNightSlider, maxNightEvents := eui.NewSlider()
+	maxNightSlider.Label = "Max Night Level"
+	maxNightSlider.MinValue = 0
+	maxNightSlider.MaxValue = 100
+	maxNightSlider.IntOnly = true
+	maxNightSlider.Value = float32(gs.MaxNightLevel)
+	maxNightSlider.Size = eui.Point{X: width - 10, Y: 24}
+	maxNightEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			gs.MaxNightLevel = int(ev.Value)
+			settingsDirty = true
+		}
+	}
+	debugFlow.AddItem(maxNightSlider)
+
 	lateInputCB, lateInputEvents := eui.NewCheckbox()
 	lateInputCB.Text = "Late Input Updates (experimental)"
 	lateInputCB.Size = eui.Point{X: width, Y: 24}

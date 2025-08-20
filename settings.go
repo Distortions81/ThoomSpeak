@@ -13,7 +13,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-const SETTINGS_VERSION = 7
+const SETTINGS_VERSION = 8
 
 type BarPlacement int
 
@@ -70,6 +70,7 @@ var gsdef settings = settings{
 	MusicVolume:          1.0,
 	GameScale:            2,
 	BarPlacement:         BarPlacementBottom,
+	MaxNightLevel:        100,
 	ChatTTSVolume:        1.0,
 	Notifications:        true,
 	NotifyFallen:         true,
@@ -139,6 +140,7 @@ type settings struct {
 	Mute                 bool
 	GameScale            float64
 	BarPlacement         BarPlacement
+	MaxNightLevel        int
 	Theme                string
 	MessagesToConsole    bool
 	ChatTTS              bool

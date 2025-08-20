@@ -175,7 +175,16 @@ func init() {
 func drawNightOverlay(screen *ebiten.Image, ox, oy int) {
 	gNight.mu.Lock()
 	lvl := gNight.Level
+	flags := gNight.Flags
 	gNight.mu.Unlock()
+
+	limit := gs.MaxNightLevel
+	if flags&kLightForce100Pct != 0 {
+		limit = 100
+	}
+	if lvl > limit {
+		lvl = limit
+	}
 	if lvl <= 0 {
 		return
 	}
