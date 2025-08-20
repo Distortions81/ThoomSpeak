@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"sort"
 	"strconv"
 	"strings"
@@ -24,6 +25,8 @@ var (
 	changelogVersions   []int
 	changelogVersionIdx int
 )
+
+const versionsURL = "https://m45sci.xyz/downloads/goThoom/versions.jso"
 
 type versionEntry struct {
 	Version   int `json:"version"`
@@ -99,4 +102,34 @@ func loadChangelogAt(idx int) bool {
 	changelog = string(b)
 	changelogVersionIdx = idx
 	return true
+}
+
+func checkForNewVersion() {
+	resp, err := http.Get(versionsURL)
+	if err != nil {
+		log.Printf("check new version: %v", err)
+		return
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("check new version: %v", resp.Status)
+		return
+	}
+	var vf versionFile
+	if err := json.NewDecoder(resp.Body).Decode(&vf); err != nil {
+		log.Printf("check new version: %v", err)
+		return
+	}
+	if len(vf.Versions) == 0 {
+		return
+	}
+	latest := vf.Versions[0]
+	for _, v := range vf.Versions[1:] {
+		if v.Version > latest.Version {
+			latest = v
+		}
+	}
+	if latest.Version > appVersion {
+		consoleMessage(fmt.Sprintf("New goThoom version %d available", latest.Version))
+	}
 }
