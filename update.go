@@ -192,18 +192,24 @@ type dataFilesStatus struct {
 	NeedImages bool
 	NeedSounds bool
 	Files      []string
+	Version    int
 }
 
 func checkDataFiles(clientVer int) (dataFilesStatus, error) {
 	var status dataFilesStatus
+
 	imgPath := filepath.Join(dataDirPath, CL_ImagesFile)
 	if v, err := readKeyFileVersion(imgPath); err != nil {
 		if !os.IsNotExist(err) {
 			logError("read %v: %v", imgPath, err)
 		}
 		status.NeedImages = true
-	} else if int(v>>8) != clientVer {
-		status.NeedImages = true
+	} else {
+		ver := int(v >> 8)
+		status.Version = ver
+		if ver < clientVer {
+			status.NeedImages = true
+		}
 	}
 
 	sndPath := filepath.Join(dataDirPath, CL_SoundsFile)
@@ -212,8 +218,14 @@ func checkDataFiles(clientVer int) (dataFilesStatus, error) {
 			logError("read %v: %v", sndPath, err)
 		}
 		status.NeedSounds = true
-	} else if int(v>>8) != clientVer {
-		status.NeedSounds = true
+	} else {
+		ver := int(v >> 8)
+		if status.Version == 0 || ver > status.Version {
+			status.Version = ver
+		}
+		if ver < clientVer {
+			status.NeedSounds = true
+		}
 	}
 
 	if status.NeedImages {

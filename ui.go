@@ -938,6 +938,22 @@ func makePasswordWindow() {
 }
 
 func startLogin() {
+	if status.Version > 0 && clientVersion < status.Version {
+		msg := fmt.Sprintf("goThoom is not tested with client version %d. It may still work with version %d.", clientVersion, status.Version)
+		showPopup(
+			"Untested Version",
+			msg,
+			[]popupButton{
+				{Text: "Cancel"},
+				{Text: "Proceed", Action: func() {
+					clientVersion = status.Version
+					startLogin()
+				}},
+			},
+		)
+		return
+	}
+
 	loginWin.Close()
 	go func() {
 		ctx, cancel := context.WithCancel(gameCtx)
