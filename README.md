@@ -44,6 +44,17 @@ To build release binaries for Linux and Windows, use:
 scripts/build_binaries.sh
 ```
 
+The script optionally self-signs Windows executables and macOS `.app` bundles.
+On Ubuntu, it attempts to install missing tools like `zip` and `osslsigncode` automatically.
+Provide certificate paths via environment variables before running:
+
+```bash
+export WINDOWS_CERT_FILE=certs/fullchain.pem
+export WINDOWS_KEY_FILE=certs/privkey.pem   # optional WINDOWS_KEY_PASS, WINDOWS_CERT_NAME, WINDOWS_TIMESTAMP_URL
+export MAC_SIGN_IDENTITY="-"                # ad-hoc by default; set to your certificate name to sign
+scripts/build_binaries.sh
+```
+
 ## Command-line Flags
 
 The Go client accepts the following flags:
