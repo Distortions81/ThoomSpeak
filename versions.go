@@ -114,6 +114,9 @@ func loadChangelogAt(idx int) bool {
 }
 
 func checkForNewVersion() {
+	gs.LastUpdateCheck = time.Now()
+	settingsDirty = true
+
 	resp, err := http.Get(versionsURL)
 	if err != nil {
 		log.Printf("check new version: %v", err)
@@ -140,6 +143,22 @@ func checkForNewVersion() {
 	}
 	if latest.Version > appVersion {
 		consoleMessage(fmt.Sprintf("New goThoom version %d available", latest.Version))
+		if tcpConn != nil {
+			if gs.NotifiedVersion >= latest.Version {
+				return
+			}
+			gs.NotifiedVersion = latest.Version
+			settingsDirty = true
+			go func(ver int) {
+				for !uiReady {
+					time.Sleep(100 * time.Millisecond)
+				}
+				showNotification(fmt.Sprintf("goThoom version %d is available!", ver))
+			}(latest.Version)
+			return
+		}
+		gs.NotifiedVersion = latest.Version
+		settingsDirty = true
 		go func(ver int) {
 			for !uiReady {
 				time.Sleep(100 * time.Millisecond)
@@ -159,4 +178,14 @@ func checkForNewVersion() {
 		return
 	}
 	consoleMessage("This version of goThoom is the latest version!")
+}
+
+func versionCheckLoop() {
+	for {
+		wait := 3*time.Hour - time.Since(gs.LastUpdateCheck)
+		if wait > 0 {
+			time.Sleep(wait)
+		}
+		checkForNewVersion()
+	}
 }

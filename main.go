@@ -77,7 +77,7 @@ func main() {
 
 	applySettings()
 	setupLogging(doDebug)
-	go checkForNewVersion()
+	go versionCheckLoop()
 	defer func() {
 		if r := recover(); r != nil {
 			logPanic(r)
