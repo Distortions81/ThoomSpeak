@@ -55,6 +55,20 @@ export MAC_SIGN_IDENTITY="-"                # ad-hoc by default; set to your cer
 scripts/build_binaries.sh
 ```
 
+To produce only the macOS `.app` bundle you can run:
+
+```bash
+scripts/build_mac_app.sh v1.2.3
+```
+
+On macOS, create a self-signed certificate for codesigning with:
+
+```bash
+scripts/macos_create_cert.sh gothoom-dev
+```
+
+Use the resulting certificate name with `MAC_SIGN_IDENTITY` when building.
+
 ## Command-line Flags
 
 The Go client accepts the following flags:
