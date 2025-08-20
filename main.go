@@ -37,6 +37,7 @@ var (
 	blockTTS      bool
 	dumpMusic     bool
 	clientVersion int
+	experimental  bool
 )
 
 func main() {
@@ -47,6 +48,7 @@ func main() {
 	flag.BoolVar(&doDebug, "debug", false, "verbose/debug logging")
 	flag.BoolVar(&eui.CacheCheck, "cacheCheck", false, "display window and item render counts")
 	flag.BoolVar(&dumpMusic, "dumpMusic", false, "write played music as a .wav file")
+	flag.BoolVar(&experimental, "experimental", false, "enable experimental features like CL_Images/CL_Sounds patching")
 	genPGO := flag.Bool("pgo", false, "create default.pgo using test.clMov at 30 fps for 30s")
 	flag.Parse()
 
@@ -75,7 +77,6 @@ func main() {
 
 	applySettings()
 	setupLogging(doDebug)
-	go checkForNewVersion()
 	defer func() {
 		if r := recover(); r != nil {
 			logPanic(r)
