@@ -170,6 +170,7 @@ func initUI() {
 	} else if clmov == "" && pcapPath == "" && !fake {
 		loginWin.MarkOpen()
 	}
+	uiReady = true
 }
 
 func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData {
