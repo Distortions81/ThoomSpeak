@@ -1477,8 +1477,6 @@ func makeSettingsWindow() {
 	}
 	right.AddItem(musicSlider)
 
-	chatTTSRow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
-
 	chatTTSCB, chatTTSEvents := eui.NewCheckbox()
 	chatTTSCB.Text = "Chat TTS"
 	chatTTSCB.Size = eui.Point{X: rightW - 110, Y: 24}
@@ -1495,13 +1493,13 @@ func makeSettingsWindow() {
 			}
 		}
 	}
-	chatTTSRow.AddItem(chatTTSCB)
+	right.AddItem(chatTTSCB)
 
 	chatTTSSlider, chatTTSSliderEvents := eui.NewSlider()
 	chatTTSSlider.MinValue = 0
 	chatTTSSlider.MaxValue = 1
 	chatTTSSlider.Value = float32(gs.ChatTTSVolume)
-	chatTTSSlider.Size = eui.Point{X: 100, Y: 24}
+	chatTTSSlider.Size = eui.Point{X: rightW, Y: 24}
 	chatTTSSlider.FontSize = 9
 	chatTTSSlider.Label = "TTS Volume"
 	chatTTSSliderEvents.Handle = func(ev eui.UIEvent) {
@@ -1513,9 +1511,7 @@ func makeSettingsWindow() {
 			settingsDirty = true
 		}
 	}
-	chatTTSRow.AddItem(chatTTSSlider)
-
-	right.AddItem(chatTTSRow)
+	right.AddItem(chatTTSSlider)
 
 	label, _ = eui.NewText()
 	label.Text = "\nStatus Bar Options:"
