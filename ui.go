@@ -1207,6 +1207,8 @@ func makeChangelogWindow() {
 
 func updateChangelogWindow() {
 	lines := strings.Split(changelog, "\n")
+	header := fmt.Sprintf("goThoom test %d, CL v%d", appVersion, clientVersion)
+	lines = append([]string{header, ""}, lines...)
 	updateTextWindow(changelogWin, changelogList, nil, lines, 14, "")
 	if changelogPrevBtn != nil {
 		changelogPrevBtn.Disabled = changelogVersionIdx <= 0
