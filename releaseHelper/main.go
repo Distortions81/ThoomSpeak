@@ -12,6 +12,8 @@ import (
 	"strings"
 )
 
+const defaultCLVersion = 1353
+
 type FileInfo struct {
 	OS   string `json:"os"`
 	Arch string `json:"arch"`
@@ -20,6 +22,7 @@ type FileInfo struct {
 
 type Version struct {
 	Version   int        `json:"version"`
+	CLVersion int        `json:"cl_version"`
 	Changelog string     `json:"changelog"`
 	Files     []FileInfo `json:"files"`
 }
@@ -35,6 +38,7 @@ func main() {
 		baseURL     = flag.String("base-url", "", "base URL for downloading binaries")
 		remote      = flag.String("remote", "", "scp target like user@host:/path/")
 		changelog   = flag.String("changelog", "", "changelog entry for this release")
+		clVer       = flag.Int("cl-version", defaultCLVersion, "Clan Lord client version for this release")
 	)
 	flag.Parse()
 
@@ -78,7 +82,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	vf.Versions = append(vf.Versions, Version{Version: nextVer, Changelog: *changelog, Files: entries})
+	vf.Versions = append(vf.Versions, Version{Version: nextVer, CLVersion: *clVer, Changelog: *changelog, Files: entries})
 
 	if err := saveVersionFile(*versionPath, vf); err != nil {
 		fmt.Fprintln(os.Stderr, "save version file:", err)

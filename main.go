@@ -43,13 +43,16 @@ func main() {
 	flag.StringVar(&clmov, "clmov", "", "play back a .clMov file")
 	flag.StringVar(&pcapPath, "pcap", "", "replay network frames from a .pcap/.pcapng file")
 	flag.BoolVar(&fake, "fake", false, "simulate server messages without connecting")
-	clientVer := flag.Int("client-version", 1445, "client version number (for testing)")
+	clientVer := flag.Int("client-version", 0, "client version number (for testing)")
 	flag.BoolVar(&doDebug, "debug", false, "verbose/debug logging")
 	flag.BoolVar(&eui.CacheCheck, "cacheCheck", false, "display window and item render counts")
 	flag.BoolVar(&dumpMusic, "dumpMusic", false, "write played music as a .wav file")
 	genPGO := flag.Bool("pgo", false, "create default.pgo using test.clMov at 30 fps for 30s")
 	flag.Parse()
-	clientVersion = *clientVer
+	clientVersion = clVersion
+	if *clientVer != 0 {
+		clientVersion = *clientVer
+	}
 
 	if err := clipboard.Init(); err != nil {
 		log.Printf("clipboard init: %v", err)

@@ -91,7 +91,7 @@ func fetchRandomDemoCharacter(clientVersion int) (string, error) {
 		log.Printf("warning: CL_Sounds version %d does not match client version %d", soundsVersion>>8, sendVersion)
 	}
 	if imagesMissing || soundsMissing || soundsOutdated || sendVersion == 0 {
-		sendVersion = baseVersion - 1
+		sendVersion = clVersion - 1
 	}
 
 	tcpConn, err := net.Dial("tcp", host)
@@ -237,7 +237,7 @@ func login(ctx context.Context, clientVersion int) error {
 		}
 
 		if imagesMissing || soundsMissing || soundsOutdated || sendVersion == 0 {
-			sendVersion = baseVersion - 1
+			sendVersion = clVersion - 1
 		}
 
 		var errDial error

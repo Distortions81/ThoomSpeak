@@ -46,6 +46,9 @@ var addCharRemember bool
 var passWin *eui.WindowData
 var passInput *eui.ItemData
 
+var changelogWin *eui.WindowData
+var changelogList *eui.ItemData
+
 // Keep references to inputs so we can clear text programmatically.
 var addCharNameInput *eui.ItemData
 var addCharPassInput *eui.ItemData
@@ -1131,8 +1134,42 @@ func makeLoginWindow() {
 		}
 	}
 	loginFlow.AddItem(quitBttn)
+
+	verFlow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL, Size: eui.Point{X: 200, Y: 24}}
+	verLabel, _ := eui.NewText()
+	verLabel.Text = fmt.Sprintf("goThoom v%d (CL v%d)", appVersion, clientVersion)
+	verLabel.FontSize = 15
+	verLabel.Size = eui.Point{X: 130, Y: 24}
+	verFlow.AddItem(verLabel)
+
+	changeBtn, changeEvents := eui.NewButton()
+	changeBtn.Text = "Changelog"
+	changeBtn.Size = eui.Point{X: 70, Y: 24}
+	changeEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			makeChangelogWindow()
+			if changelogWin != nil {
+				changelogWin.MarkOpenNear(ev.Item)
+			}
+		}
+	}
+	verFlow.AddItem(changeBtn)
+	loginFlow.AddItem(verFlow)
+
 	loginWin.AddItem(loginFlow)
 	loginWin.AddWindow(false)
+}
+
+func makeChangelogWindow() {
+	if changelogWin == nil {
+		changelogWin, changelogList, _ = makeTextWindow("Changelog", eui.HZoneCenter, eui.VZoneMiddleTop, false)
+	}
+	if changelogList != nil {
+		lines := strings.Split(changelog, "\n")
+		updateTextWindow(changelogWin, changelogList, nil, lines, 14, "")
+		changelogWin.Refresh()
+	}
+	changelogWin.MarkOpen()
 }
 
 // explainError returns a plain-English explanation and suggestions for an error message.
