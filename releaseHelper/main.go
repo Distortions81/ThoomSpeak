@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io/fs"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,6 +14,8 @@ import (
 )
 
 const defaultCLVersion = 1353
+
+const versionsURL = "https://m45sci.xyz/downloads/goThoom/versions.jso"
 
 type FileInfo struct {
 	OS   string `json:"os"`
@@ -50,6 +53,10 @@ func main() {
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		fmt.Fprintln(os.Stderr, "load version file:", err)
 		os.Exit(1)
+	}
+	rvf, err := loadVersionURL(versionsURL)
+	if err == nil && len(rvf.Versions) > 0 {
+		vf = rvf
 	}
 
 	nextVer := 1
@@ -154,6 +161,22 @@ func saveVersionFile(path string, vf VersionFile) error {
 		return err
 	}
 	return os.WriteFile(path, b, 0o644)
+}
+
+func loadVersionURL(url string) (VersionFile, error) {
+	var vf VersionFile
+	resp, err := http.Get(url)
+	if err != nil {
+		return vf, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return vf, fmt.Errorf("GET %s: %s", url, resp.Status)
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&vf); err != nil {
+		return vf, err
+	}
+	return vf, nil
 }
 
 func scp(local, remote string) error {
