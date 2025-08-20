@@ -62,7 +62,6 @@ The Go client accepts the following flags:
 - `-clmov` – play back a `.clMov` movie file instead of connecting to a server
 - `-pcap` – replay network frames from a `.pcap/.pcapng` file
 - `-pgo` – create `default.pgo` by playing `test.clMov` at 30 fps for 30 seconds
-- `-client-version` – client version number (`kVersionNumber`, default `1445`)
 - `-debug` – enable debug logging (default `true`)
 - `-dumpMusic` – save played music as a WAV file
 
