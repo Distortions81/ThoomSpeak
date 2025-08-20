@@ -26,7 +26,7 @@ var (
 	changelogVersionIdx int
 )
 
-const versionsURL = "https://m45sci.xyz/downloads/goThoom/versions.jso"
+const versionsURL = "https://m45sci.xyz/u/dist/goThoom/versions.json"
 
 type versionEntry struct {
 	Version   int `json:"version"`

@@ -16,6 +16,7 @@ Players.xml
 ClanLord.xml
 .gobin/staticcheck
 data/Screenshots/
-data/GT_Players.json
-data/*.sf2
+GT_Players.json
+*.sf2
 music_*.wav
+*.pem
