@@ -13,7 +13,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-const SETTINGS_VERSION = 8
+const SETTINGS_VERSION = 9
 
 type BarPlacement int
 
@@ -79,6 +79,8 @@ var gsdef settings = settings{
 	NotifyFriendOnline:   true,
 	NotificationDuration: 6,
 	TimestampFormat:      "3:04PM",
+	LastUpdateCheck:      time.Time{},
+	NotifiedVersion:      0,
 
 	GameWindow:      WindowState{Open: true},
 	InventoryWindow: WindowState{Open: true},
@@ -154,6 +156,8 @@ type settings struct {
 	ChatTimestamps       bool
 	ConsoleTimestamps    bool
 	TimestampFormat      string
+	LastUpdateCheck      time.Time
+	NotifiedVersion      int
 	WindowTiling         bool
 	WindowSnapping       bool
 
