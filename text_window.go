@@ -152,16 +152,23 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 	}
 
 	if win != nil {
-		// Size the flow to the client area, and the list to fill above the input.
+		// Size the flow to the client area, and the list to fill above any bottom items and optional input.
+		var extraH float32
 		if list.Parent != nil {
 			list.Parent.Size.X = clientWAvail
 			list.Parent.Size.Y = clientHAvail
+			for _, c := range list.Parent.Contents {
+				if c != list && c != input {
+					c.Size.X = clientWAvail
+					extraH += c.Size.Y
+				}
+			}
 		}
 		list.Size.X = clientWAvail
 		if input != nil {
-			list.Size.Y = clientHAvail - input.Size.Y
+			list.Size.Y = clientHAvail - input.Size.Y - extraH
 		} else {
-			list.Size.Y = clientHAvail
+			list.Size.Y = clientHAvail - extraH
 		}
 		// Do not refresh here unconditionally; callers decide when to refresh.
 	}

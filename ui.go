@@ -48,6 +48,8 @@ var passInput *eui.ItemData
 
 var changelogWin *eui.WindowData
 var changelogList *eui.ItemData
+var changelogPrevBtn *eui.ItemData
+var changelogNextBtn *eui.ItemData
 
 // Keep references to inputs so we can clear text programmatically.
 var addCharNameInput *eui.ItemData
@@ -1164,13 +1166,56 @@ func makeLoginWindow() {
 func makeChangelogWindow() {
 	if changelogWin == nil {
 		changelogWin, changelogList, _ = makeTextWindow("Changelog", eui.HZoneCenter, eui.VZoneMiddleTop, false)
+		flow := changelogWin.Contents[0]
+
+		navFlow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL, Fixed: true, Alignment: eui.ALIGN_RIGHT}
+		navFlow.Size = eui.Point{Y: 24}
+		flow.AddItem(navFlow)
+
+		prevBtn, prevEvents := eui.NewButton()
+		prevBtn.Text = "<"
+		prevBtn.Size = eui.Point{X: 24, Y: 24}
+		prevEvents.Handle = func(ev eui.UIEvent) {
+			if ev.Type == eui.EventClick {
+				if loadChangelogAt(changelogVersionIdx - 1) {
+					updateChangelogWindow()
+				}
+			}
+		}
+		navFlow.AddItem(prevBtn)
+		changelogPrevBtn = prevBtn
+
+		nextBtn, nextEvents := eui.NewButton()
+		nextBtn.Text = ">"
+		nextBtn.Size = eui.Point{X: 24, Y: 24}
+		nextEvents.Handle = func(ev eui.UIEvent) {
+			if ev.Type == eui.EventClick {
+				if loadChangelogAt(changelogVersionIdx + 1) {
+					updateChangelogWindow()
+				}
+			}
+		}
+		navFlow.AddItem(nextBtn)
+		changelogNextBtn = nextBtn
 	}
 	if changelogList != nil {
-		lines := strings.Split(changelog, "\n")
-		updateTextWindow(changelogWin, changelogList, nil, lines, 14, "")
-		changelogWin.Refresh()
+		updateChangelogWindow()
 	}
 	changelogWin.MarkOpen()
+}
+
+func updateChangelogWindow() {
+	lines := strings.Split(changelog, "\n")
+	updateTextWindow(changelogWin, changelogList, nil, lines, 14, "")
+	if changelogPrevBtn != nil {
+		changelogPrevBtn.Disabled = changelogVersionIdx <= 0
+		changelogPrevBtn.Dirty = true
+	}
+	if changelogNextBtn != nil {
+		changelogNextBtn.Disabled = changelogVersionIdx >= len(changelogVersions)-1
+		changelogNextBtn.Dirty = true
+	}
+	changelogWin.Refresh()
 }
 
 // explainError returns a plain-English explanation and suggestions for an error message.
