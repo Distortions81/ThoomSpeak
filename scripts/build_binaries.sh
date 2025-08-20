@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 OUTPUT_DIR="binaries"
 mkdir -p "$OUTPUT_DIR"
 
@@ -195,8 +197,8 @@ for platform in "${platforms[@]}"; do
       -o "${OUTPUT_DIR}/${BIN_NAME}" .
 
   if [ "$GOOS" = "windows" ]; then
-    cert_file="${WINDOWS_CERT_FILE:-certs/fullchain.pem}"
-    key_file="${WINDOWS_KEY_FILE:-certs/privkey.pem}"
+    cert_file="${WINDOWS_CERT_FILE:-${SCRIPT_DIR}/fullchain.pem}"
+    key_file="${WINDOWS_KEY_FILE:-${SCRIPT_DIR}/privkey.pem}"
     ensure_cmd osslsigncode osslsigncode
     if command -v osslsigncode >/dev/null 2>&1 && [ -f "$cert_file" ] && [ -f "$key_file" ]; then
       echo "Signing ${BIN_NAME}..."
