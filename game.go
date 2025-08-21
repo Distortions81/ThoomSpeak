@@ -1058,10 +1058,11 @@ func drawMobile(screen *ebiten.Image, ox, oy int, m frameMobile, descMap map[uin
 		if pm, ok := prevMobiles[m.Index]; ok {
 			dh := int(m.H) - int(pm.H) - shiftX
 			dv := int(m.V) - int(pm.V) - shiftY
-			if dh*dh+dv*dv <= maxMobileInterpPixels*maxMobileInterpPixels {
+			dist := dh*dh + dv*dv
+			if dist <= maxMobileInterpPixels*maxMobileInterpPixels {
 				h = float64(pm.H)*(1-alpha) + float64(m.H)*alpha
 				v = float64(pm.V)*(1-alpha) + float64(m.V)*alpha
-			}
+			} // else skip interpolation for this mobile
 		}
 	}
 	x := roundToInt((h + float64(fieldCenterX)) * gs.GameScale)

@@ -821,9 +821,9 @@ func parseDrawState(data []byte, buildCache bool) error {
 		again = 0
 		newPics = append([]framePicture(nil), pics...)
 		state.prevDescs = nil
-		state.prevMobiles = nil
 		state.prevTime = time.Time{}
 		state.curTime = time.Time{}
+		logDebug("pictureShift failed; mobile interpolation may be degraded")
 	}
 	if state.descriptors == nil {
 		state.descriptors = make(map[uint8]frameDescriptor)
@@ -972,6 +972,13 @@ func parseDrawState(data []byte, buildCache bool) error {
 			}
 		}
 		state.mobiles[m.Index] = m
+	}
+	if !ok && state.prevMobiles != nil {
+		for idx := range state.prevMobiles {
+			if _, present := state.mobiles[idx]; !present {
+				delete(state.prevMobiles, idx)
+			}
+		}
 	}
 	// Prepare render caches now that state has been updated when requested.
 	if buildCache {
