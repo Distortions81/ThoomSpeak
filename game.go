@@ -823,16 +823,8 @@ func worldDrawInfo() (int, int, float64) {
 		desired = 10
 	}
 
-	// Max integer fit into current buffer.
-	fit := int(math.Floor(math.Min(float64(bufW)/float64(worldW), float64(bufH)/float64(worldH))))
-	if fit < 1 {
-		fit = 1
-	}
-
-	offIntScale := fit
-	if desired > offIntScale {
-		offIntScale = desired
-	}
+	// Use the slider-selected scale directly for the offscreen render target.
+	offIntScale := desired
 	if offIntScale > maxSuperSampleScale {
 		offIntScale = maxSuperSampleScale
 	}
@@ -903,16 +895,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	if desired > 10 {
 		desired = 10
 	}
-	// Maximum scale that fits the current buffer without clipping
-	fit := int(math.Floor(math.Min(float64(bufW)/float64(worldW), float64(bufH)/float64(worldH))))
-	if fit < 1 {
-		fit = 1
-	}
-
-	offIntScale := fit
-	if desired > offIntScale {
-		offIntScale = desired
-	}
+	// Use the slider-selected scale directly for offscreen rendering
+	offIntScale := desired
 	if offIntScale > maxSuperSampleScale {
 		offIntScale = maxSuperSampleScale
 	}
