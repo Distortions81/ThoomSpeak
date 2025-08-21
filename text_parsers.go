@@ -414,6 +414,7 @@ func parseMusicCommand(s string) bool {
 		if n, err := strconv.Atoi(v); err == nil {
 			inst = n
 		}
+
 	}
 
 	notes := ""
