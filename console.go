@@ -1,52 +1,25 @@
 package main
 
-import (
-	"fmt"
-	"sync"
-	"time"
-)
-
 const (
 	maxMessages = 1000
 )
 
-var (
-	messageMu sync.Mutex
-	messages  []timedMessage
-)
+var consoleLog = messageLog{max: maxMessages}
 
 func consoleMessage(msg string) {
 	if msg == "" {
 		return
 	}
 
-	messageMu.Lock()
-	messages = append(messages, timedMessage{Text: msg, Time: time.Now()})
-
-	//Remove oldest message if full
-	if len(messages) > maxMessages {
-		messages = messages[len(messages)-maxMessages:]
-	}
-	messageMu.Unlock()
+	consoleLog.Add(msg)
 
 	updateConsoleWindow()
 }
 
 func getConsoleMessages() []string {
-	messageMu.Lock()
-	defer messageMu.Unlock()
-
-	out := make([]string, len(messages))
 	format := gs.TimestampFormat
 	if format == "" {
 		format = "3:04PM"
 	}
-	for i, msg := range messages {
-		if gs.ConsoleTimestamps {
-			out[i] = fmt.Sprintf("[%s] %s", msg.Time.Format(format), msg.Text)
-		} else {
-			out[i] = msg.Text
-		}
-	}
-	return out
+	return consoleLog.Entries(format, gs.ConsoleTimestamps)
 }
