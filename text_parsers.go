@@ -380,14 +380,17 @@ func parseMusicCommand(s string) bool {
 		s = s[len("/music/"):]
 	}
 
-	switch {
-	case strings.HasPrefix(s, "/play"):
-		s = s[len("/play"):]
-	case strings.HasPrefix(s, "play"):
+	// Search for the play command anywhere in the string. The server may
+	// prefix it with parameters like "/who" before the actual "/play".
+	if idx := strings.Index(s, "/play"); idx >= 0 {
+		s = s[idx+len("/play"):]
+	} else if idx := strings.Index(s, "/P"); idx >= 0 {
+		s = s[idx+len("/P"):]
+	} else if strings.HasPrefix(s, "play") {
 		s = s[len("play"):]
-	case len(s) > 0 && (s[0] == 'P' || s[0] == 'p'):
+	} else if len(s) > 0 && (s[0] == 'P' || s[0] == 'p') {
 		s = s[1:]
-	default:
+	} else {
 		return false
 	}
 
