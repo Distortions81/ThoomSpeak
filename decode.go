@@ -143,7 +143,7 @@ func decodeBEPP(data []byte) string {
 	// For displayable text, strip BEPP tags and non-printables.
 	cleaned := stripBEPPTags(append([]byte(nil), raw...))
 	text := strings.TrimSpace(decodeMacRoman(cleaned))
-	if text == "" && prefix != "be" { // backend commands may have no printable text
+	if text == "" && prefix != "be" && prefix != "mu" { // backend commands or music may have no printable text
 		return ""
 	}
 
@@ -169,7 +169,8 @@ func decodeBEPP(data []byte) string {
 		}
 	case "ba", "mu":
 		// Bard guild messages or tunes
-		if !parseBardText(raw, text) && text != "" {
+		handled := parseBardText(raw, text)
+		if !handled && text != "" {
 			return text
 		}
 	case "lg":
