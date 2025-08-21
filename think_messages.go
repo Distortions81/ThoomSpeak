@@ -38,16 +38,12 @@ func showThinkMessage(msg string) {
 	textSize := (btn.FontSize * eui.UIScale()) + 2
 	face := &text.GoTextFace{Source: eui.FontSource(), Size: float64(textSize)}
 
-	singleWidth, _ := text.Measure(msg, face, 0)
 	metrics := face.Metrics()
 	lineHeight := math.Ceil(metrics.HAscent) + math.Ceil(metrics.HDescent) + math.Ceil(metrics.HLineGap)
-	ideal := math.Sqrt(singleWidth / (2 * lineHeight))
-	linesWanted := int(math.Round(ideal))
-	if linesWanted < 1 {
-		linesWanted = 1
-	}
 
-	maxWidth := singleWidth / float64(linesWanted)
+	winSize := gameWin.GetSize()
+	pad := float64((btn.Padding + btn.BorderPad) * eui.UIScale())
+	maxWidth := float64(winSize.X)/4 - 2*pad
 	usedWidth, lines := wrapText(msg, face, maxWidth)
 	btn.Text = strings.Join(lines, "\n")
 	btn.Size = eui.Point{
