@@ -731,6 +731,11 @@ func (c *CLImages) NonTransparentPixels(id uint32) int {
 	if imgLoc == nil || colLoc == nil {
 		return 0
 	}
+
+	if c.IsSemiTransparent(id) {
+		return 0
+	}
+
 	r := bytes.NewReader(c.data)
 	if _, err := r.Seek(int64(imgLoc.offset), io.SeekStart); err != nil {
 		log.Printf("seek image %d: %v", id, err)
@@ -805,11 +810,6 @@ func (c *CLImages) NonTransparentPixels(id uint32) int {
 
 	if ref.flags&pictDefCustomColors != 0 && len(data) >= width {
 		data = data[width:]
-	}
-
-	_, transparent := alphaTransparentForFlags(ref.flags)
-	if !transparent {
-		return len(data)
 	}
 
 	col := colLoc.colorBytes

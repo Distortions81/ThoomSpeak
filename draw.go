@@ -204,10 +204,19 @@ func nonTransparentPixels(id uint16) int {
 // pictureOnEdge reports whether the given picture's bounding box touches the
 // edge of the visible game field.
 func pictureOnEdge(p framePicture) bool {
-	return int(p.H) <= -fieldCenterX ||
-		int(p.H) >= fieldCenterX ||
-		int(p.V) <= -fieldCenterY ||
-		int(p.V) >= fieldCenterY
+	if clImages == nil {
+		return false
+	}
+	w, h := clImages.Size(uint32(p.PictID))
+	halfW := w / 2
+	halfH := h / 2
+	if int(p.H)-halfW <= -fieldCenterX ||
+		int(p.H)+halfW >= fieldCenterX ||
+		int(p.V)-halfH <= -fieldCenterY ||
+		int(p.V)+halfH >= fieldCenterY {
+		return true
+	}
+	return false
 }
 
 // buildNameTagImage creates a cached image for a mobile name tag using the
@@ -906,6 +915,9 @@ func parseDrawState(data []byte, buildCache bool) error {
 				continue
 			}
 			if pp.Plane > 0 {
+				continue
+			}
+			if clImages.IsSemiTransparent(uint32(pp.PictID)) {
 				continue
 			}
 			oldH, oldV := pp.H, pp.V
