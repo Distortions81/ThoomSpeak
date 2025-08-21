@@ -420,9 +420,8 @@ func parseMusicCommand(s string) bool {
 
 		if musicDebug {
 			msg := "/play " + strconv.Itoa(inst) + " " + strings.TrimSpace(notes)
-			if gs.MessagesToConsole {
-				consoleMessage(msg)
-			} else {
+			consoleMessage(msg)
+			if !gs.MessagesToConsole {
 				chatMessage(msg)
 			}
 		}
