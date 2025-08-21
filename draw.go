@@ -907,23 +907,22 @@ func parseDrawState(data []byte, buildCache bool) error {
 	// disappearing during camera pans.
 	if (state.picShiftX != 0 || state.picShiftY != 0) && len(prevPics) > 0 {
 		for _, pp := range prevPics {
-			if pp.Owned {
-				continue
-			}
-			if _, skip := skipPictShift[pp.PictID]; skip {
+			if pp.Again {
 				continue
 			}
 			if !pictureOnEdge(pp) {
 				continue
 			}
+
 			oldH, oldV := pp.H, pp.V
 			pp.H = int16(int(pp.H) + state.picShiftX)
 			pp.V = int16(int(pp.V) + state.picShiftY)
 			pp.PrevH = oldH
 			pp.PrevV = oldV
-			pp.Moving = true
-			pp.Background = false
+			pp.Moving = false
+			pp.Background = true
 			pp.Again = true
+
 			newPics = append(newPics, pp)
 		}
 	}
