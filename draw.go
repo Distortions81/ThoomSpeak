@@ -219,54 +219,6 @@ func pictureOnEdge(p framePicture) bool {
 	return false
 }
 
-// pictureVisible reports whether a picture's bounding box intersects
-// the visible playfield in game coordinates.
-func pictureVisible(p framePicture) bool {
-	if clImages == nil {
-		// Without metadata, conservatively keep.
-		return true
-	}
-	w, h := clImages.Size(uint32(p.PictID))
-	halfW := w / 2
-	halfH := h / 2
-	// Intersect against [-fieldCenterX, fieldCenterX] × [-fieldCenterY, fieldCenterY].
-	minX := int(p.H) - halfW
-	maxX := int(p.H) + halfW
-	minY := int(p.V) - halfH
-	maxY := int(p.V) + halfH
-	if maxX <= -fieldCenterX || minX >= fieldCenterX || maxY <= -fieldCenterY || minY >= fieldCenterY {
-		return false
-	}
-	return true
-}
-
-// mobileVisible reports whether a mobile's bounding box intersects the
-// visible playfield. It uses descriptor info for size when available.
-func mobileVisible(m frameMobile, descByIndex map[uint8]frameDescriptor) bool {
-	if clImages == nil {
-		return true
-	}
-	d, ok := descByIndex[m.Index]
-	if !ok {
-		// No descriptor yet; keep to avoid over-culling.
-		return true
-	}
-	size := mobileSize(d.PictID)
-	if size <= 0 {
-		// Fallback: unknown size, keep.
-		return true
-	}
-	half := size / 2
-	minX := int(m.H) - half
-	maxX := int(m.H) + half
-	minY := int(m.V) - half
-	maxY := int(m.V) + half
-	if maxX <= -fieldCenterX || minX >= fieldCenterX || maxY <= -fieldCenterY || minY >= fieldCenterY {
-		return false
-	}
-	return true
-}
-
 // buildNameTagImage creates a cached image for a mobile name tag using the
 // current font and settings. Returns the image and its width/height in pixels.
 func buildNameTagImage(name string, colorCode uint8, opacity uint8, style uint8) (*ebiten.Image, int, int) {
@@ -948,19 +900,6 @@ func parseDrawState(data []byte, buildCache bool) error {
 	}
 
 	state.pictures = newPics
-	// Build descriptor index → descriptor map for visibility checks.
-	descByIndex := make(map[uint8]frameDescriptor, len(state.descriptors))
-	for idx, d := range state.descriptors {
-		descByIndex[idx] = d
-	}
-	// Cull pictures that are entirely outside the field of view.
-	kept := newPics[:0]
-	for _, p := range newPics {
-		if pictureVisible(p) {
-			kept = append(kept, p)
-		}
-	}
-	state.pictures = kept
 
 	needPrev := (gs.MotionSmoothing || gs.BlendMobiles) && ok && !seekingMov
 	if needPrev {
@@ -999,9 +938,6 @@ func parseDrawState(data []byte, buildCache bool) error {
 		}
 	}
 	for _, m := range mobiles {
-		if !mobileVisible(m, descByIndex) {
-			continue
-		}
 		if d, ok := state.descriptors[m.Index]; ok && d.Name != "" {
 			style := styleRegular
 			playersMu.RLock()
