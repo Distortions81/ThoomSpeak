@@ -20,6 +20,8 @@ import (
 )
 
 const defaultUpdateBase = "https://m45sci.xyz/downloads/clanlord"
+const soundFontURL = "https://m45sci.xyz/u/dist/goThoom/soundfont.sf2"
+const soundFontFile = "soundfont.sf2"
 
 var updateBase = defaultUpdateBase
 
@@ -140,6 +142,103 @@ var downloadGZ = func(url, dest string) error {
 	return nil
 }
 
+var downloadFile = func(url, dest string) error {
+	consoleMessage(fmt.Sprintf("Downloading: %v...", url))
+	if downloadStatus != nil {
+		downloadStatus(fmt.Sprintf("Connecting to %s...", url))
+	}
+
+	req, err := http.NewRequestWithContext(downloadCtx, http.MethodGet, url, nil)
+	if err != nil {
+		if downloadStatus != nil {
+			downloadStatus(fmt.Sprintf("Error creating request: %v", err))
+		}
+		return err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		logError("GET %v: %v", url, err)
+		if downloadStatus != nil {
+			downloadStatus(fmt.Sprintf("Error connecting: %v", err))
+		}
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		err := fmt.Errorf("GET %v: %v", url, resp.Status)
+		logError("download %v: %v", url, err)
+		if downloadStatus != nil {
+			downloadStatus(fmt.Sprintf("HTTP error: %v", resp.Status))
+		}
+		return err
+	}
+	if downloadStatus != nil {
+		host := resp.Request.URL.Host
+		humanTotal := "unknown"
+		if resp.ContentLength > 0 {
+			humanTotal = humanize.Bytes(uint64(resp.ContentLength))
+		}
+		downloadStatus(fmt.Sprintf("Connected to %s — starting download (%s)", host, humanTotal))
+	}
+	pc := &progCounter{name: filepath.Base(dest), size: resp.ContentLength}
+	if downloadProgress != nil {
+		downloadProgress(pc.name, 0, pc.size)
+	}
+	body := io.TeeReader(resp.Body, pc)
+	tmp := dest + ".tmp"
+	f, err := os.Create(tmp)
+	if err != nil {
+		logError("create %v: %v", tmp, err)
+		if downloadStatus != nil {
+			downloadStatus(fmt.Sprintf("Error: %v", err))
+		}
+		return err
+	}
+	removeTmp := true
+	defer func() {
+		if removeTmp {
+			os.Remove(tmp)
+		}
+	}()
+	if _, err := io.Copy(f, body); err != nil {
+		f.Close()
+		logError("copy %v: %v", tmp, err)
+		if downloadStatus != nil {
+			downloadStatus(fmt.Sprintf("Error: %v", err))
+		}
+		return err
+	}
+	if err := f.Close(); err != nil {
+		logError("close %v: %v", tmp, err)
+		if downloadStatus != nil {
+			downloadStatus(fmt.Sprintf("Error: %v", err))
+		}
+		return err
+	}
+	if downloadProgress != nil && pc.size > 0 {
+		downloadProgress(pc.name, pc.size, pc.size)
+	}
+	consoleMessage("Download complete.")
+	if downloadStatus != nil {
+		downloadStatus(fmt.Sprintf("Download complete: %s", filepath.Base(dest)))
+	}
+	if err := os.Rename(tmp, dest); err != nil {
+		logError("rename %v to %v: %v", tmp, dest, err)
+		return err
+	}
+	removeTmp = false
+	return nil
+}
+
+func headSize(url string) int64 {
+	resp, err := http.Head(url)
+	if err != nil {
+		return -1
+	}
+	resp.Body.Close()
+	return resp.ContentLength
+}
+
 // progCounter tracks compressed bytes for progress percentage.
 type progCounter struct {
 	last  time.Time
@@ -240,13 +339,20 @@ func autoUpdate(resp []byte, dataDir string) (int, error) {
 	return int(clientVer >> 8), nil
 }
 
+type fileInfo struct {
+	Name string
+	Size int64
+}
+
 type dataFilesStatus struct {
-	NeedImages   bool
-	NeedSounds   bool
-	Files        []string
-	Version      int
-	ImageVersion int
-	SoundVersion int
+	NeedImages    bool
+	NeedSounds    bool
+	NeedSoundfont bool
+	Files         []fileInfo
+	SoundfontSize int64
+	Version       int
+	ImageVersion  int
+	SoundVersion  int
 }
 
 func checkDataFiles(clientVer int) (dataFilesStatus, error) {
@@ -285,15 +391,26 @@ func checkDataFiles(clientVer int) (dataFilesStatus, error) {
 	}
 
 	if status.NeedImages {
-		status.Files = append(status.Files, fmt.Sprintf("CL_Images.%d.gz", clientVer))
+		name := fmt.Sprintf("CL_Images.%d.gz", clientVer)
+		size := headSize(fmt.Sprintf("%v/data/%s", updateBase, name))
+		status.Files = append(status.Files, fileInfo{Name: name, Size: size})
 	}
 	if status.NeedSounds {
-		status.Files = append(status.Files, fmt.Sprintf("CL_Sounds.%d.gz", clientVer))
+		name := fmt.Sprintf("CL_Sounds.%d.gz", clientVer)
+		size := headSize(fmt.Sprintf("%v/data/%s", updateBase, name))
+		status.Files = append(status.Files, fileInfo{Name: name, Size: size})
 	}
+
+	sfPath := filepath.Join(dataDirPath, soundFontFile)
+	if _, err := os.Stat(sfPath); errors.Is(err, os.ErrNotExist) {
+		status.NeedSoundfont = true
+		status.SoundfontSize = headSize(soundFontURL)
+	}
+
 	return status, nil
 }
 
-func downloadDataFiles(clientVer int, status dataFilesStatus) error {
+func downloadDataFiles(clientVer int, status dataFilesStatus, getSoundfont bool) error {
 	if err := os.MkdirAll(dataDirPath, 0755); err != nil {
 		logError("create %v: %v", dataDirPath, err)
 		return err
@@ -344,6 +461,13 @@ func downloadDataFiles(clientVer int, status dataFilesStatus) error {
 				logError("download %v: %v", sndURL, err)
 				return fmt.Errorf("download CL_Sounds: %w", err)
 			}
+		}
+	}
+	if getSoundfont {
+		sfPath := filepath.Join(dataDirPath, soundFontFile)
+		if err := downloadFile(soundFontURL, sfPath); err != nil {
+			logError("download %v: %v", soundFontURL, err)
+			return fmt.Errorf("download soundfont: %w", err)
 		}
 	}
 	return nil
