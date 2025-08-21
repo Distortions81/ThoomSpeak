@@ -562,7 +562,7 @@ func makeDownloadsWindow() {
 		sfCB, sfEvents := eui.NewCheckbox()
 		label := "Download soundfont"
 		if status.SoundfontSize > 0 {
-			label = fmt.Sprintf("Download soundfont (%s)", humanize.Bytes(uint64(status.SoundfontSize)))
+			label = fmt.Sprintf("Download soundfont (%s) (music test)", humanize.Bytes(uint64(status.SoundfontSize)))
 		}
 		sfCB.Text = label
 		sfCB.Size = eui.Point{X: 320, Y: 24}
