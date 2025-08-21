@@ -92,7 +92,7 @@ var gsdef settings = settings{
 	nightEffect:         true,
 	throttleSounds:      true,
 	lateInputUpdates:    true,
-	lateInputAdjustment: 70,
+	lateInputAdjustment: 30,
 }
 
 type settings struct {
