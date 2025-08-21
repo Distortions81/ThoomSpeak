@@ -739,20 +739,6 @@ func SetUIScale(scale float32) {
 	markAllDirty()
 }
 
-// SyncHiDPIScale adjusts the UI scale when the device scale factor changes.
-// It preserves the current UI scale relative to the previous factor so the
-// interface keeps the same on-screen size.
-func SyncHiDPIScale() {
-	ds := ebiten.Monitor().DeviceScaleFactor()
-	if ds <= 0 {
-		ds = 1
-	}
-	if ds != lastDeviceScale {
-		SetUIScale(uiScale * float32(ds/lastDeviceScale))
-		lastDeviceScale = ds
-	}
-}
-
 func UIScale() float32 { return uiScale }
 
 func (win *windowData) scale() float32 {
