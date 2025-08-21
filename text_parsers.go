@@ -417,7 +417,7 @@ func parseMusicCommand(s string) bool {
 			return false
 		}
 		go playClanLordTune(strconv.Itoa(inst) + " " + strings.TrimSpace(notes))
-		return true
+		return !musicDebug
 	}
 	return false
 }
