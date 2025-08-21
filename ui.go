@@ -435,6 +435,45 @@ func confirmExitSession() {
 var dlMutex sync.Mutex
 var status dataFilesStatus
 
+// handleDownloadAssetError presents error options when a required asset fails to load.
+// It resets the download state and provides Retry and Quit buttons so the user
+// can recover or exit.
+func handleDownloadAssetError(flow, statusText, pb *eui.ItemData, retryFn func(), started *bool, msg string) {
+	if downloadStatus != nil {
+		downloadStatus(msg)
+	}
+	flow.Contents = []*eui.ItemData{statusText, pb}
+	retryRow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
+	retryBtn, retryEvents := eui.NewButton()
+	retryBtn.Text = "Retry"
+	retryBtn.Size = eui.Point{X: 100, Y: 24}
+	retryEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			*started = false
+			retryFn()
+		}
+	}
+	retryRow.AddItem(retryBtn)
+
+	quitBtn, quitEvents := eui.NewButton()
+	quitBtn.Text = "Quit"
+	quitBtn.Size = eui.Point{X: 100, Y: 24}
+	quitEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			confirmQuit()
+		}
+	}
+	retryRow.AddItem(quitBtn)
+
+	flow.AddItem(retryRow)
+	*started = false
+	downloadStatus = nil
+	downloadProgress = nil
+	if downloadWin != nil {
+		downloadWin.Refresh()
+	}
+}
+
 func makeDownloadsWindow() {
 
 	if downloadWin != nil {
@@ -654,6 +693,7 @@ func makeDownloadsWindow() {
 			img, err := climg.Load(filepath.Join(dataDirPath, CL_ImagesFile))
 			if err != nil {
 				logError("failed to load CL_Images: %v", err)
+				handleDownloadAssetError(flow, statusText, pb, startDownload, &startedDownload, "Failed to load CL_Images")
 				return
 			} else {
 				img.Denoise = gs.DenoiseImages
@@ -665,6 +705,7 @@ func makeDownloadsWindow() {
 			clSounds, err = clsnd.Load(filepath.Join("data/CL_Sounds"))
 			if err != nil {
 				logError("failed to load CL_Sounds: %v", err)
+				handleDownloadAssetError(flow, statusText, pb, startDownload, &startedDownload, "Failed to load CL_Sounds")
 				return
 			}
 			if s, err := checkDataFiles(clientVersion); err == nil {
