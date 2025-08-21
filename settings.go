@@ -91,7 +91,7 @@ var gsdef settings = settings{
 	vsync:          true,
 	nightEffect:    true,
 	throttleSounds: true,
-	nameTagsNative: true,
+	nameTagsNative: false,
 }
 
 type settings struct {

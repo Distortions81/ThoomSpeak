@@ -2385,6 +2385,7 @@ func makeQualityWindow() {
 			gs.GameScale = v
 			renderScale.Value = float32(v)
 			settingsDirty = true
+			initFont()
 			if gameWin != nil {
 				gameWin.Refresh()
 			}
