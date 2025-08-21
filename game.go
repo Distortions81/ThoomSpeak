@@ -217,6 +217,7 @@ var (
 	frameMu       sync.Mutex
 	serverFPS     float64
 	netLatency    time.Duration
+	netJitter     time.Duration
 	lastInputSent time.Time
 	latencyMu     sync.Mutex
 )
@@ -1653,7 +1654,8 @@ func drawServerFPS(screen *ebiten.Image, ox, oy int, fps float64) {
 		lastFPS = time.Now()
 
 		lat := netLatency
-		msg := fmt.Sprintf("FPS: %0.2f Server: %0.2f Ping: %-3v ms", ebiten.ActualFPS(), fps, lat.Milliseconds())
+		jit := netJitter
+		msg := fmt.Sprintf("FPS: %0.2f Server: %0.2f Ping: %-3v ms Jit: %-3v ms", ebiten.ActualFPS(), fps, lat.Milliseconds(), jit.Milliseconds())
 		w, h := text.Measure(msg, mainFont, 0)
 
 		if fpsImage == nil || fpsHeight != h {
@@ -1960,6 +1962,10 @@ func sendInputLoop(ctx context.Context, conn net.Conn) {
 			latencyMu.Lock()
 			lat := netLatency
 			latencyMu.Unlock()
+			target := time.Duration(gs.lateInputTargetPing) * time.Millisecond
+			if target > lat {
+				lat = target
+			}
 			// Send the input early enough for the server to receive it
 			// before the next update, adding a safety margin to the
 			// measured latency.
@@ -2056,7 +2062,13 @@ func udpReadLoop(ctx context.Context, conn net.Conn) {
 			rtt := time.Since(lastInputSent)
 			if netLatency == 0 {
 				netLatency = rtt
+				netJitter = 0
 			} else {
+				diff := rtt - netLatency
+				if diff < 0 {
+					diff = -diff
+				}
+				netJitter = (netJitter*7 + diff) / 8
 				netLatency = (netLatency*7 + rtt) / 8
 			}
 			lastInputSent = time.Time{}
