@@ -20,3 +20,4 @@ GT_Players.json
 *.sf2
 music_*.wav
 *.pem
+data/*.gz
