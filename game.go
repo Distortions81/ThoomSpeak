@@ -976,7 +976,9 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			bottom = bufH
 		}
 		worldView := gameImage.SubImage(image.Rect(left, top, right, bottom)).(*ebiten.Image)
-		drawMobileNameTags(worldView, snap, alpha)
+		if gs.nameTagsNative {
+			drawMobileNameTags(worldView, snap, alpha)
+		}
 		drawSpeechBubbles(worldView, snap, alpha)
 		gs.GameScale = prev
 	}
@@ -1022,6 +1024,9 @@ func drawScene(screen *ebiten.Image, ox, oy int, snap drawSnapshot, alpha float6
 		}
 	} else {
 		for _, m := range dead {
+			if !gs.nameTagsNative {
+				drawMobileNameTag(screen, snap, m, alpha)
+			}
 			drawMobile(screen, ox, oy, m, descMap, snap.prevMobiles, snap.prevDescs, snap.picShiftX, snap.picShiftY, alpha, mobileFade)
 		}
 		i, j := 0, 0
@@ -1039,6 +1044,9 @@ func drawScene(screen *ebiten.Image, ox, oy int, snap drawSnapshot, alpha float6
 			}
 			if mV < pV || (mV == pV && mH <= pH) {
 				if live[i].State != poseDead {
+					if !gs.nameTagsNative {
+						drawMobileNameTag(screen, snap, live[i], alpha)
+					}
 					drawMobile(screen, ox, oy, live[i], descMap, snap.prevMobiles, snap.prevDescs, snap.picShiftX, snap.picShiftY, alpha, mobileFade)
 				}
 				i++
@@ -1357,107 +1365,113 @@ func pictureMobileOffset(p framePicture, mobiles []frameMobile, prevMobiles map[
 	return 0, 0, false
 }
 
+// drawMobileNameTag renders the name tag and color bar for a single mobile.
+// It respects motion smoothing and the native name tag setting based on the
+// current gs.GameScale.
+func drawMobileNameTag(screen *ebiten.Image, snap drawSnapshot, m frameMobile, alpha float64) {
+	h := float64(m.H)
+	v := float64(m.V)
+	if gs.MotionSmoothing {
+		if pm, ok := snap.prevMobiles[m.Index]; ok {
+			dh := int(m.H) - int(pm.H) - snap.picShiftX
+			dv := int(m.V) - int(pm.V) - snap.picShiftY
+			if dh*dh+dv*dv <= maxMobileInterpPixels*maxMobileInterpPixels {
+				h = float64(pm.H)*(1-alpha) + float64(m.H)*alpha
+				v = float64(pm.V)*(1-alpha) + float64(m.V)*alpha
+			}
+		}
+	}
+	x := roundToInt((h + float64(fieldCenterX)) * gs.GameScale)
+	y := roundToInt((v + float64(fieldCenterY)) * gs.GameScale)
+	if d, ok := snap.descriptors[m.Index]; ok {
+		nameAlpha := uint8(gs.NameBgOpacity * 255)
+		if d.Name != "" {
+			style := styleRegular
+			playersMu.RLock()
+			if p, ok := players[d.Name]; ok {
+				if p.Sharing && p.Sharee {
+					style = styleBoldItalic
+				} else if p.Sharing {
+					style = styleBold
+				} else if p.Sharee {
+					style = styleItalic
+				}
+			}
+			playersMu.RUnlock()
+			if m.nameTag != nil && m.nameTagKey.FontGen == fontGen && m.nameTagKey.Opacity == nameAlpha && m.nameTagKey.Text == d.Name && m.nameTagKey.Colors == m.Colors && m.nameTagKey.Style == style {
+				scale := 1.0
+				if !gs.nameTagsNative {
+					scale = gs.GameScale
+				}
+				top := y + int(20*gs.GameScale)
+				left := x - int(float64(m.nameTagW)/2*scale)
+				op := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
+				op.GeoM.Scale(scale, scale)
+				op.GeoM.Translate(float64(left), float64(top))
+				screen.DrawImage(m.nameTag, op)
+			} else {
+				textClr, bgClr, frameClr := mobileNameColors(m.Colors)
+				bgClr.A = nameAlpha
+				frameClr.A = nameAlpha
+				face := mainFont
+				switch style {
+				case styleBold:
+					face = mainFontBold
+				case styleItalic:
+					face = mainFontItalic
+				case styleBoldItalic:
+					face = mainFontBoldItalic
+				}
+				w, h := text.Measure(d.Name, face, 0)
+				iw := int(math.Ceil(w))
+				ih := int(math.Ceil(h))
+				scale := 1.0
+				if !gs.nameTagsNative {
+					scale = gs.GameScale
+				}
+				top := y + int(20*gs.GameScale)
+				left := x - int(float64(iw)/2*scale)
+				op := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
+				op.GeoM.Scale(float64(iw+5)*scale, float64(ih)*scale)
+				op.GeoM.Translate(float64(left), float64(top))
+				op.ColorScale.ScaleWithColor(bgClr)
+				screen.DrawImage(whiteImage, op)
+				vector.StrokeRect(screen, float32(left), float32(top), float32(iw+5)*float32(scale), float32(ih)*float32(scale), 1, frameClr, false)
+				opTxt := &text.DrawOptions{}
+				opTxt.GeoM.Scale(scale, scale)
+				opTxt.GeoM.Translate(float64(left)+2*scale, float64(top)+2*scale)
+				opTxt.ColorScale.ScaleWithColor(textClr)
+				text.Draw(screen, d.Name, face, opTxt)
+			}
+		} else {
+			back := int((m.Colors >> 4) & 0x0f)
+			if back != kColorCodeBackWhite && back != kColorCodeBackBlue && !(back == kColorCodeBackBlack && d.Type == kDescMonster) {
+				if back >= len(nameBackColors) {
+					back = 0
+				}
+				barClr := nameBackColors[back]
+				barClr.A = nameAlpha
+				size := mobileSize(d.PictID)
+				top := y + int(float64(size)*gs.GameScale/2+2*gs.GameScale)
+				left := x - int(6*gs.GameScale)
+				op := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
+				op.GeoM.Scale(12*gs.GameScale, 2*gs.GameScale)
+				op.GeoM.Translate(float64(left), float64(top))
+				op.ColorScale.ScaleWithColor(barClr)
+				screen.DrawImage(whiteImage, op)
+			}
+		}
+	}
+}
+
 // drawMobileNameTags renders mobile name tags and color bars either at native
 // resolution or scaled with the game world.
 func drawMobileNameTags(screen *ebiten.Image, snap drawSnapshot, alpha float64) {
 	if gs.hideMobiles {
 		return
 	}
-	descMap := snap.descriptors
 	for _, m := range snap.mobiles {
-		h := float64(m.H)
-		v := float64(m.V)
-		if gs.MotionSmoothing {
-			if pm, ok := snap.prevMobiles[m.Index]; ok {
-				dh := int(m.H) - int(pm.H) - snap.picShiftX
-				dv := int(m.V) - int(pm.V) - snap.picShiftY
-				if dh*dh+dv*dv <= maxMobileInterpPixels*maxMobileInterpPixels {
-					h = float64(pm.H)*(1-alpha) + float64(m.H)*alpha
-					v = float64(pm.V)*(1-alpha) + float64(m.V)*alpha
-				}
-			}
-		}
-		x := roundToInt((h + float64(fieldCenterX)) * gs.GameScale)
-		y := roundToInt((v + float64(fieldCenterY)) * gs.GameScale)
-		if d, ok := descMap[m.Index]; ok {
-			nameAlpha := uint8(gs.NameBgOpacity * 255)
-			if d.Name != "" {
-				style := styleRegular
-				playersMu.RLock()
-				if p, ok := players[d.Name]; ok {
-					if p.Sharing && p.Sharee {
-						style = styleBoldItalic
-					} else if p.Sharing {
-						style = styleBold
-					} else if p.Sharee {
-						style = styleItalic
-					}
-				}
-				playersMu.RUnlock()
-				if m.nameTag != nil && m.nameTagKey.FontGen == fontGen && m.nameTagKey.Opacity == nameAlpha && m.nameTagKey.Text == d.Name && m.nameTagKey.Colors == m.Colors && m.nameTagKey.Style == style {
-					scale := 1.0
-					if !gs.nameTagsNative {
-						scale = gs.GameScale
-					}
-					top := y + int(20*gs.GameScale)
-					left := x - int(float64(m.nameTagW)/2*scale)
-					op := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
-					op.GeoM.Scale(scale, scale)
-					op.GeoM.Translate(float64(left), float64(top))
-					screen.DrawImage(m.nameTag, op)
-				} else {
-					textClr, bgClr, frameClr := mobileNameColors(m.Colors)
-					bgClr.A = nameAlpha
-					frameClr.A = nameAlpha
-					face := mainFont
-					switch style {
-					case styleBold:
-						face = mainFontBold
-					case styleItalic:
-						face = mainFontItalic
-					case styleBoldItalic:
-						face = mainFontBoldItalic
-					}
-					w, h := text.Measure(d.Name, face, 0)
-					iw := int(math.Ceil(w))
-					ih := int(math.Ceil(h))
-					scale := 1.0
-					if !gs.nameTagsNative {
-						scale = gs.GameScale
-					}
-					top := y + int(20*gs.GameScale)
-					left := x - int(float64(iw)/2*scale)
-					op := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
-					op.GeoM.Scale(float64(iw+5)*scale, float64(ih)*scale)
-					op.GeoM.Translate(float64(left), float64(top))
-					op.ColorScale.ScaleWithColor(bgClr)
-					screen.DrawImage(whiteImage, op)
-					vector.StrokeRect(screen, float32(left), float32(top), float32(iw+5)*float32(scale), float32(ih)*float32(scale), 1, frameClr, false)
-					opTxt := &text.DrawOptions{}
-					opTxt.GeoM.Scale(scale, scale)
-					opTxt.GeoM.Translate(float64(left)+2*scale, float64(top)+2*scale)
-					opTxt.ColorScale.ScaleWithColor(textClr)
-					text.Draw(screen, d.Name, face, opTxt)
-				}
-			} else {
-				back := int((m.Colors >> 4) & 0x0f)
-				if back != kColorCodeBackWhite && back != kColorCodeBackBlue && !(back == kColorCodeBackBlack && d.Type == kDescMonster) {
-					if back >= len(nameBackColors) {
-						back = 0
-					}
-					barClr := nameBackColors[back]
-					barClr.A = nameAlpha
-					size := mobileSize(d.PictID)
-					top := y + int(float64(size)*gs.GameScale/2+2*gs.GameScale)
-					left := x - int(6*gs.GameScale)
-					op := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
-					op.GeoM.Scale(12*gs.GameScale, 2*gs.GameScale)
-					op.GeoM.Translate(float64(left), float64(top))
-					op.ColorScale.ScaleWithColor(barClr)
-					screen.DrawImage(whiteImage, op)
-				}
-			}
-		}
+		drawMobileNameTag(screen, snap, m, alpha)
 	}
 }
 
