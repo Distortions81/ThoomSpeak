@@ -707,17 +707,6 @@ func (c *CLImages) Size(id uint32) (int, int) {
 	return int(w), int(h)
 }
 
-// IsSemiTransparent reports whether the sprite with the given ID uses a blend
-// mode that results in a base alpha below full opacity. Missing IDs or sprites
-// without blend flags return false.
-func (c *CLImages) IsSemiTransparent(id uint32) bool {
-	if ref := c.idrefs[id]; ref != nil {
-		alpha, _ := alphaTransparentForFlags(ref.flags)
-		return alpha < 0xFF
-	}
-	return false
-}
-
 // NonTransparentPixels returns the number of pixels with non-zero alpha for
 // the specified image ID. It decodes the image data directly from the archive
 // to avoid GPU readbacks.
