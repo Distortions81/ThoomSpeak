@@ -91,6 +91,7 @@ var gsdef settings = settings{
 	vsync:          true,
 	nightEffect:    true,
 	throttleSounds: true,
+	nameTagsNative: true,
 }
 
 type settings struct {
@@ -185,6 +186,7 @@ type settings struct {
 	lateInputUpdates    bool
 	smoothMoving        bool
 	dontShiftNewSprites bool
+	nameTagsNative      bool
 	BarColorByValue     bool
 	recordAssetStats    bool
 	NoCaching           bool

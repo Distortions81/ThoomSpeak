@@ -2825,6 +2825,18 @@ func makeDebugWindow() {
 		}
 	}
 	debugFlow.AddItem(shiftSpriteCB)
+	nameTagsCB, nameTagsEvents := eui.NewCheckbox()
+	nameTagsCB.Text = "Name Tags Native Res"
+	nameTagsCB.Size = eui.Point{X: width, Y: 24}
+	nameTagsCB.Checked = gs.nameTagsNative
+	nameTagsCB.Tooltip = "Render name tags at native resolution instead of in the game world"
+	nameTagsEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			gs.nameTagsNative = ev.Checked
+			settingsDirty = true
+		}
+	}
+	debugFlow.AddItem(nameTagsCB)
 	cacheLabel, _ := eui.NewText()
 	cacheLabel.Text = "Caches:"
 	cacheLabel.Size = eui.Point{X: width, Y: 24}
