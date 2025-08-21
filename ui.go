@@ -2783,13 +2783,33 @@ func makeDebugWindow() {
 	lateInputCB.Size = eui.Point{X: width, Y: 24}
 	lateInputCB.Checked = gs.lateInputUpdates
 	lateInputCB.Tooltip = "Polls for user input at last moment, sends update to server early by predicted ping"
+	var targetPingSlider *eui.ItemData
 	lateInputEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventCheckboxChanged {
 			gs.lateInputUpdates = ev.Checked
+			if targetPingSlider != nil {
+				targetPingSlider.Disabled = !ev.Checked
+			}
 			settingsDirty = true
 		}
 	}
 	debugFlow.AddItem(lateInputCB)
+
+	targetPingSlider, targetPingEvents := eui.NewSlider()
+	targetPingSlider.Label = "Target Ping (ms)"
+	targetPingSlider.MinValue = 0
+	targetPingSlider.MaxValue = 500
+	targetPingSlider.IntOnly = true
+	targetPingSlider.Value = float32(gs.lateInputTargetPing)
+	targetPingSlider.Size = eui.Point{X: width - 10, Y: 24}
+	targetPingSlider.Disabled = !gs.lateInputUpdates
+	targetPingEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			gs.lateInputTargetPing = int(ev.Value)
+			settingsDirty = true
+		}
+	}
+	debugFlow.AddItem(targetPingSlider)
 
 	recordStatsCB, recordStatsEvents := eui.NewCheckbox()
 	recordStatsCB.Text = "Record Asset Stats"

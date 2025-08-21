@@ -88,10 +88,11 @@ var gsdef settings = settings{
 	MessagesWindow:  WindowState{Open: true},
 	ChatWindow:      WindowState{Open: true},
 
-	vsync:          true,
-	nightEffect:    true,
-	throttleSounds: true,
-	nameTagsNative: false,
+	vsync:               true,
+	nightEffect:         true,
+	throttleSounds:      true,
+	nameTagsNative:      false,
+	lateInputTargetPing: 100,
 }
 
 type settings struct {
@@ -184,6 +185,7 @@ type settings struct {
 	precacheImages      bool
 	throttleSounds      bool
 	lateInputUpdates    bool
+	lateInputTargetPing int
 	smoothMoving        bool
 	dontShiftNewSprites bool
 	nameTagsNative      bool
