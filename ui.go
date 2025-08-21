@@ -90,6 +90,7 @@ var (
 	precacheImageCB *eui.ItemData
 	noCacheCB       *eui.ItemData
 	potatoCB        *eui.ItemData
+	upresSlider     *eui.ItemData
 )
 
 // lastWhoRequest tracks the last time we requested a backend who list so we
@@ -2359,20 +2360,20 @@ func makeQualityWindow() {
 	}
 	flow.AddItem(pictFramesSlider)
 
-	renderScale, renderScaleEvents := eui.NewSlider()
-	renderScale.Label = "Upscale game amount"
-	renderScale.MinValue = 1
-	renderScale.MaxValue = 4
-	renderScale.IntOnly = true
+	upresSlider, renderScaleEvents := eui.NewSlider()
+	upresSlider.Label = "Game upres"
+	upresSlider.MinValue = 1
+	upresSlider.MaxValue = 4
+	upresSlider.IntOnly = true
 	if gs.GameScale < 1 {
 		gs.GameScale = 1
 	}
 	if gs.GameScale > 4 {
 		gs.GameScale = 4
 	}
-	renderScale.Value = float32(math.Round(gs.GameScale))
-	renderScale.Size = eui.Point{X: width - 10, Y: 24}
-	renderScale.Tooltip = "Game render resolution (1x - 4x). Higher will be shaper on higher-res displays."
+	upresSlider.Value = float32(math.Round(gs.GameScale))
+	upresSlider.Size = eui.Point{X: width - 10, Y: 24}
+	upresSlider.Tooltip = "Game render resolution (1x - 4x). Higher results in a sharper image."
 	renderScaleEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
 			v := math.Round(float64(ev.Value))
@@ -2383,14 +2384,14 @@ func makeQualityWindow() {
 				v = 10
 			}
 			gs.GameScale = v
-			renderScale.Value = float32(v)
+			upresSlider.Value = float32(v)
 			settingsDirty = true
 			if gameWin != nil {
 				gameWin.Refresh()
 			}
 		}
 	}
-	flow.AddItem(renderScale)
+	flow.AddItem(upresSlider)
 
 	showFPSCB, showFPSEvents := eui.NewCheckbox()
 	showFPSCB.Text = "Show FPS + UPS"
