@@ -1,18 +1,21 @@
 package main
 
 import (
+	"archive/zip"
 	"embed"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/pkg/browser"
 )
 
 //go:embed data/versions.json
@@ -31,6 +34,7 @@ var (
 )
 
 const versionsURL = "https://m45sci.xyz/u/dist/goThoom/versions.json"
+const binaryURLFmt = "https://m45sci.xyz/u/dist/goThoom/gothoom-%d.zip"
 
 var uiReady bool
 
@@ -169,8 +173,11 @@ func checkForNewVersion() {
 				[]popupButton{
 					{Text: "Cancel"},
 					{Text: "Download", Action: func() {
-						browser.OpenURL("https://github.com/Distortions81/goThoom/releases")
-						os.Exit(0)
+						go func(v int) {
+							if err := downloadAndInstall(v); err != nil {
+								log.Printf("download update: %v", err)
+							}
+						}(ver)
 					}},
 				},
 			)
@@ -188,4 +195,113 @@ func versionCheckLoop() {
 		}
 		checkForNewVersion()
 	}
+}
+
+func downloadAndInstall(ver int) error {
+	url := fmt.Sprintf(binaryURLFmt, ver)
+	exePath, err := os.Executable()
+	if err != nil {
+		return err
+	}
+	exeDir := filepath.Dir(exePath)
+	tmpDir, err := os.MkdirTemp(exeDir, "update-")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(tmpDir)
+	zipPath := filepath.Join(tmpDir, "gothoom.zip")
+	if err := downloadFile(url, zipPath); err != nil {
+		return err
+	}
+	newExe, err := unzipExecutable(zipPath, tmpDir)
+	if err != nil {
+		return err
+	}
+	if runtime.GOOS == "windows" {
+		bat := filepath.Join(tmpDir, "update.bat")
+		script := fmt.Sprintf(`@echo off
+ping 127.0.0.1 -n 2 > nul
+move /y "%s" "%s"
+start "" "%s"
+`, filepath.ToSlash(newExe), filepath.ToSlash(exePath), filepath.ToSlash(exePath))
+		if err := os.WriteFile(bat, []byte(script), 0644); err != nil {
+			return err
+		}
+		cmd := exec.Command("cmd", "/C", "start", "", bat)
+		cmd.Dir = tmpDir
+		if err := cmd.Start(); err != nil {
+			return err
+		}
+		os.Exit(0)
+		return nil
+	}
+	if err := os.Chmod(newExe, 0755); err != nil {
+		return err
+	}
+	if err := os.Rename(newExe, exePath); err != nil {
+		return err
+	}
+	if err := exec.Command(exePath).Start(); err != nil {
+		return err
+	}
+	os.Exit(0)
+	return nil
+}
+
+func downloadFile(url, dest string) error {
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("GET %s: %s", url, resp.Status)
+	}
+	f, err := os.Create(dest)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	if _, err := io.Copy(f, resp.Body); err != nil {
+		return err
+	}
+	return nil
+}
+
+func unzipExecutable(zipPath, dir string) (string, error) {
+	r, err := zip.OpenReader(zipPath)
+	if err != nil {
+		return "", err
+	}
+	defer r.Close()
+	for _, f := range r.File {
+		if f.FileInfo().IsDir() {
+			continue
+		}
+		name := filepath.Base(f.Name)
+		if runtime.GOOS == "windows" && !strings.HasSuffix(strings.ToLower(name), ".exe") {
+			continue
+		}
+		outPath := filepath.Join(dir, name)
+		if err := extractZipFile(f, outPath); err != nil {
+			return "", err
+		}
+		return outPath, nil
+	}
+	return "", fmt.Errorf("executable not found in zip")
+}
+
+func extractZipFile(f *zip.File, dest string) error {
+	rc, err := f.Open()
+	if err != nil {
+		return err
+	}
+	defer rc.Close()
+	out, err := os.Create(dest)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	_, err = io.Copy(out, rc)
+	return err
 }
