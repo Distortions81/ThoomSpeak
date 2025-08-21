@@ -1083,6 +1083,16 @@ func parseDrawState(data []byte, buildCache bool) error {
 			} else if bubbleName == ThinkUnknownName {
 				name = "Someone"
 			}
+			if verb == "thinks" && idx == playerIndex && bubbleName != "" {
+				stateMu.Lock()
+				for i, d := range state.descriptors {
+					if d.Name == bubbleName {
+						idx = i
+						break
+					}
+				}
+				stateMu.Unlock()
+			}
 			bubbleType := typ & kBubbleTypeMask
 			showBubble := gs.SpeechBubbles && txt != "" && !blockBubbles
 			if showBubble {
