@@ -323,7 +323,8 @@ func parsePresenceText(raw []byte, s string) bool {
 }
 
 // parseBardText detects bard guild messages and updates bard status.
-// Returns true if handled.
+// It also handles bard tune messages. Returns true if the message was fully
+// handled and should not be displayed.
 func parseBardText(_ []byte, s string) bool {
 	s = strings.TrimSpace(s)
 	if strings.HasPrefix(s, "* ") {
@@ -332,6 +333,12 @@ func parseBardText(_ []byte, s string) bool {
 	if strings.HasPrefix(s, "¥ ") {
 		s = strings.TrimSpace(s[2:])
 	}
+
+	if strings.HasPrefix(s, "/play ") {
+		go playClanLordTune(strings.TrimSpace(s[len("/play "):]))
+		return true
+	}
+
 	phrases := []struct {
 		suffix string
 		bard   bool
@@ -359,7 +366,7 @@ func parseBardText(_ []byte, s string) bool {
 			playersMu.Unlock()
 			playersDirty = true
 			playersPersistDirty = true
-			return true
+			return false
 		}
 	}
 	return false

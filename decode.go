@@ -168,9 +168,8 @@ func decodeBEPP(data []byte) string {
 			return text
 		}
 	case "ba":
-		// Bard guild messages
-		parseBardText(raw, text)
-		if text != "" {
+		// Bard guild messages or tunes
+		if !parseBardText(raw, text) && text != "" {
 			return text
 		}
 	case "lg":
