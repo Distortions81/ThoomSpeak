@@ -248,15 +248,16 @@ func Update() error {
 		prevWinHovered := win.Hovered
 		prevActiveWindow := activeWindow
 		win.Hovered = false
-		win.clickWindowItems(mpos, click)
+		handled := win.clickWindowItems(mpos, click)
 		if win.Hovered != prevWinHovered {
 			win.markDirty()
 		}
 
 		// Bring window forward on click if the cursor is over it or an
 		// expanded dropdown. Break so windows behind don't receive the
-		// event.
-		if win.getWinRect().containsPoint(mpos) || dropdownOpenContains(win.Contents, mpos) {
+		// event. The check includes clicks on dropdown menus which may
+		// have closed during handling.
+		if handled || win.getWinRect().containsPoint(mpos) || dropdownOpenContains(win.Contents, mpos) {
 			if click || midClick {
 				if activeWindow == prevActiveWindow {
 					if activeWindow != win || windows[len(windows)-1] != win {
@@ -393,13 +394,13 @@ func Update() error {
 	return nil
 }
 
-func (win *windowData) clickWindowItems(mpos point, click bool) {
+func (win *windowData) clickWindowItems(mpos point, click bool) bool {
 	// If the mouse isn't within the window or any open dropdown, just return
 	if !win.getMainRect().containsPoint(mpos) && !dropdownOpenContains(win.Contents, mpos) {
-		return
+		return false
 	}
 	if clickOpenDropdown(win.Contents, mpos, click) {
-		return
+		return true
 	}
 	win.Hovered = true
 
@@ -412,16 +413,17 @@ func (win *windowData) clickWindowItems(mpos point, click bool) {
 					dragWin = win
 					dragFlow = item
 				}
-				return
+				return true
 			}
 			handled = item.clickFlows(mpos, click)
 		} else {
 			handled = item.clickItem(mpos, click)
 		}
 		if handled {
-			return
+			return true
 		}
 	}
+	return false
 }
 
 func (item *itemData) clickFlows(mpos point, click bool) bool {
