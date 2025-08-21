@@ -1693,7 +1693,7 @@ func drawTabShape(screen *ebiten.Image, pos point, size point, col Color, fillet
 		vertices[i].ColorA = float32(c.A) / 255
 	}
 
-	op := &ebiten.DrawTrianglesOptions{}
+	op := &ebiten.DrawTrianglesOptions{AntiAlias: true}
 	op.FillRule = ebiten.FillRuleNonZero
 	op.AntiAlias = origFillet > 0
 	screen.DrawTriangles(vertices, indices, whiteSubImage, op)
