@@ -379,55 +379,66 @@ func parseMusicCommand(s string) bool {
 	if strings.HasPrefix(s, "/music/") {
 		s = s[len("/music/"):]
 	}
-	if strings.HasPrefix(s, "/play") {
-		s = s[len("/play"):]
-		s = strings.TrimPrefix(s, "/")
-		inst := defaultInstrument
-		if idx := strings.Index(s, "/inst"); idx >= 0 {
-			v := s[idx+len("/inst"):]
-			v = strings.TrimPrefix(v, "/")
-			if j := strings.IndexByte(v, '/'); j >= 0 {
-				v = v[:j]
-			}
-			if n, err := strconv.Atoi(v); err == nil {
-				inst = n
-			}
-		} else if idx := strings.Index(s, "/I"); idx >= 0 {
-			v := s[idx+len("/I"):]
-			if len(v) > 0 && v[0] == '/' {
-				v = v[1:]
-			}
-			if j := strings.IndexByte(v, '/'); j >= 0 {
-				v = v[:j]
-			}
-			if n, err := strconv.Atoi(v); err == nil {
-				inst = n
-			}
-		}
-		notes := ""
-		if idx := strings.Index(s, "/notes"); idx >= 0 {
-			notes = s[idx+len("/notes"):]
-		} else if idx := strings.Index(s, "/N"); idx >= 0 {
-			notes = s[idx+len("/N"):]
-		} else {
-			notes = s
-		}
-		notes = strings.Trim(notes, "/")
-		if notes == "" {
-			return false
-		}
-		go playClanLordTune(strconv.Itoa(inst) + " " + strings.TrimSpace(notes))
 
-		if musicDebug {
-			msg := "/play " + strconv.Itoa(inst) + " " + strings.TrimSpace(notes)
-			consoleMessage(msg)
-			if !gs.MessagesToConsole {
-				chatMessage(msg)
-			}
-		}
-		return true
+	switch {
+	case strings.HasPrefix(s, "/play"):
+		s = s[len("/play"):]
+	case strings.HasPrefix(s, "play"):
+		s = s[len("play"):]
+	case len(s) > 0 && (s[0] == 'P' || s[0] == 'p'):
+		s = s[1:]
+	default:
+		return false
 	}
-	return false
+
+	s = strings.TrimSpace(s)
+
+	inst := defaultInstrument
+	if idx := strings.Index(s, "/inst"); idx >= 0 {
+		v := s[idx+len("/inst"):]
+		v = strings.TrimPrefix(v, "/")
+		if j := strings.IndexByte(v, '/'); j >= 0 {
+			v = v[:j]
+		}
+		if n, err := strconv.Atoi(v); err == nil {
+			inst = n
+		}
+	} else if idx := strings.Index(s, "/I"); idx >= 0 {
+		v := s[idx+len("/I"):]
+		if len(v) > 0 && v[0] == '/' {
+			v = v[1:]
+		}
+		if j := strings.IndexByte(v, '/'); j >= 0 {
+			v = v[:j]
+		}
+		if n, err := strconv.Atoi(v); err == nil {
+			inst = n
+		}
+
+	}
+
+	notes := ""
+	if idx := strings.Index(s, "/notes"); idx >= 0 {
+		notes = s[idx+len("/notes"):]
+	} else if idx := strings.Index(s, "/N"); idx >= 0 {
+		notes = s[idx+len("/N"):]
+	} else {
+		notes = s
+	}
+	notes = strings.Trim(notes, "/")
+	if notes == "" {
+		return false
+	}
+	go playClanLordTune(strconv.Itoa(inst) + " " + strings.TrimSpace(notes))
+
+	if musicDebug {
+		msg := "/play " + strconv.Itoa(inst) + " " + strings.TrimSpace(notes)
+		consoleMessage(msg)
+		if !gs.MessagesToConsole {
+			chatMessage(msg)
+		}
+	}
+	return true
 }
 
 // firstTagContent extracts the first bracketed content for a given 2-letter BEPP tag.
