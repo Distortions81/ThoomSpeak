@@ -67,6 +67,10 @@ func init() {
 // Pass Ebiten's outside size values to this from your Layout function.
 func Layout(outsideWidth, outsideHeight int) (int, int) {
 	scale := 1.0
+	if AutoHiDPI {
+		scale = ebiten.Monitor().DeviceScaleFactor()
+		lastDeviceScale = scale
+	}
 
 	scaledW := int(float64(outsideWidth) * scale)
 	scaledH := int(float64(outsideHeight) * scale)
