@@ -449,6 +449,7 @@ func makeDownloadsWindow() {
 	downloadWin.SetZone(eui.HZoneCenter, eui.VZoneMiddleTop)
 
 	startedDownload := false
+	downloadSoundfont := false
 
 	flow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
 
@@ -547,10 +548,30 @@ func makeDownloadsWindow() {
 
 	for _, f := range status.Files {
 		t, _ := eui.NewText()
-		t.Text = f
+		if f.Size > 0 {
+			t.Text = fmt.Sprintf("%s (%s)", f.Name, humanize.Bytes(uint64(f.Size)))
+		} else {
+			t.Text = f.Name
+		}
 		t.FontSize = 15
 		t.Size = eui.Point{X: 320, Y: 25}
 		flow.AddItem(t)
+	}
+
+	if status.NeedSoundfont {
+		sfCB, sfEvents := eui.NewCheckbox()
+		label := "Download soundfont"
+		if status.SoundfontSize > 0 {
+			label = fmt.Sprintf("Download soundfont (%s)", humanize.Bytes(uint64(status.SoundfontSize)))
+		}
+		sfCB.Text = label
+		sfCB.Size = eui.Point{X: 320, Y: 24}
+		sfEvents.Handle = func(ev eui.UIEvent) {
+			if ev.Type == eui.EventCheckboxChanged {
+				downloadSoundfont = ev.Checked
+			}
+		}
+		flow.AddItem(sfCB)
 	}
 
 	z, _ := eui.NewText()
@@ -599,7 +620,7 @@ func makeDownloadsWindow() {
 			dlMutex.Lock()
 			defer dlMutex.Unlock()
 
-			if err := downloadDataFiles(clientVersion, status); err != nil {
+			if err := downloadDataFiles(clientVersion, status, downloadSoundfont); err != nil {
 				logError("download data files: %v", err)
 				// Present inline Retry and Quit buttons
 				flow.Contents = []*eui.ItemData{statusText, pb}
