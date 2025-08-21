@@ -42,11 +42,18 @@ func denoiseImage(img *image.RGBA, sharpness, maxPercent float64) {
 	// Apply low-pass filter in frequency domain.
 	apply := func(ch [][]float64) {
 		freq := fft.FFT2Real(ch)
+		r2 := radius * radius
 		for y := 0; y < h; y++ {
+			dy := float64(y)
+			if y > h/2 {
+				dy = float64(y - h)
+			}
 			for x := 0; x < w; x++ {
-				du := float64(x - w/2)
-				dv := float64(y - h/2)
-				mask := math.Exp(-(du*du + dv*dv) / (2 * radius * radius))
+				dx := float64(x)
+				if x > w/2 {
+					dx = float64(x - w)
+				}
+				mask := math.Exp(-(dx*dx + dy*dy) / (2 * r2))
 				if sharpness != 0 {
 					mask = math.Pow(mask, sharpness)
 				}
