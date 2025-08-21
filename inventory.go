@@ -213,21 +213,29 @@ func toggleInventoryEquip(id uint16) {
 
 func renameInventoryItem(id uint16, idx int, name string) {
 	inventoryMu.Lock()
-	index := -1
-	if idx >= 0 && idx < len(inventoryItems) && inventoryItems[idx].ID == id {
-		inventoryItems[idx].Name = name
-		index = idx
-	} else {
+	if idx >= 0 {
+		// Template items are addressed by a per-ID index. Update only the
+		// matching instance so multiple containers of the same type can
+		// retain distinct names.
 		for i := range inventoryItems {
-			if inventoryItems[i].ID == id {
+			if inventoryItems[i].ID == id && inventoryItems[i].IDIndex == idx {
 				inventoryItems[i].Name = name
-				index = i
+				if name != "" {
+					inventoryNames[inventoryKey{ID: id, Index: uint16(i)}] = name
+				}
 				break
 			}
 		}
-	}
-	if name != "" && index >= 0 {
-		inventoryNames[inventoryKey{ID: id, Index: uint16(index)}] = name
+	} else {
+		// Legacy items without a template index: rename all matching IDs.
+		for i := range inventoryItems {
+			if inventoryItems[i].ID == id && inventoryItems[i].IDIndex < 0 {
+				inventoryItems[i].Name = name
+				if name != "" {
+					inventoryNames[inventoryKey{ID: id, Index: uint16(i)}] = name
+				}
+			}
+		}
 	}
 	inventoryMu.Unlock()
 	inventoryDirty = true
