@@ -208,8 +208,13 @@ func pictureOnEdge(p framePicture) bool {
 		return false
 	}
 	w, h := clImages.Size(uint32(p.PictID))
-	halfW := w / 3
-	halfH := h / 3
+	// Use half the sprite's dimensions to determine its bounding box.
+	// The previous implementation divided by 3 which shrunk the box and
+	// marked sprites as "on edge" even when they were well within the
+	// visible field. This caused us to keep copies of sprites that still
+	// existed in the current frame.
+	halfW := w / 2
+	halfH := h / 2
 	if int(p.H)-halfW <= -fieldCenterX ||
 		int(p.H)+halfW >= fieldCenterX ||
 		int(p.V)-halfH <= -fieldCenterY ||
