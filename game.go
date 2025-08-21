@@ -1338,11 +1338,20 @@ func drawPicture(screen *ebiten.Image, ox, oy int, p framePicture, alpha float64
 }
 
 // pictureMobileOffset returns the interpolated offset for a picture that
-// aligns with a mobile which moved between frames.
+// should track a mobile which moved between frames. If the picture remains at
+// the same offset from a nearby mobile across frames, it will be rendered at
+// the mobile's interpolated position preserving that offset.
 func pictureMobileOffset(p framePicture, mobiles []frameMobile, prevMobiles map[uint8]frameMobile, alpha float64, shiftX, shiftY int) (float64, float64, bool) {
 	for _, m := range mobiles {
-		if m.H == p.H && m.V == p.V {
-			if pm, ok := prevMobiles[m.Index]; ok {
+		offH := int(p.H) - int(m.H)
+		offV := int(p.V) - int(m.V)
+		if offH*offH+offV*offV > maxMobileInterpPixels*maxMobileInterpPixels {
+			continue
+		}
+		if pm, ok := prevMobiles[m.Index]; ok {
+			prevOffH := int(p.PrevH) - int(pm.H)
+			prevOffV := int(p.PrevV) - int(pm.V)
+			if prevOffH == offH && prevOffV == offV {
 				dh := int(m.H) - int(pm.H) - shiftX
 				dv := int(m.V) - int(pm.V) - shiftY
 				if dh != 0 || dv != 0 {
@@ -1353,7 +1362,6 @@ func pictureMobileOffset(p framePicture, mobiles []frameMobile, prevMobiles map[
 					}
 				}
 			}
-			break
 		}
 	}
 	return 0, 0, false
