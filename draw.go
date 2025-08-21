@@ -908,6 +908,9 @@ func parseDrawState(data []byte, buildCache bool) error {
 	//	<crosses scrreen edge>
 	if (state.picShiftX != 0 || state.picShiftY != 0) && len(prevPics) > 0 {
 		for _, pp := range prevPics {
+			if pp.Owned {
+				continue
+			}
 			if pp.Again {
 				continue
 			}
@@ -917,9 +920,9 @@ func parseDrawState(data []byte, buildCache bool) error {
 			if pp.Plane > 0 {
 				continue
 			}
-			if clImages.IsSemiTransparent(uint32(pp.PictID)) {
-				continue
-			}
+			//if clImages.IsSemiTransparent(uint32(pp.PictID)) {
+			//	continue
+			//}
 			oldH, oldV := pp.H, pp.V
 			pp.H = int16(int(pp.H) + state.picShiftX)
 			pp.V = int16(int(pp.V) + state.picShiftY)
