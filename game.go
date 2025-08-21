@@ -1356,7 +1356,8 @@ func pictureMobileOffset(p framePicture, mobiles []frameMobile, prevMobiles map[
 	return 0, 0, false
 }
 
-// drawMobileNameTags renders mobile name tags and color bars at native resolution.
+// drawMobileNameTags renders mobile name tags and color bars either at native
+// resolution or scaled with the game world.
 func drawMobileNameTags(screen *ebiten.Image, snap drawSnapshot, alpha float64) {
 	if gs.hideMobiles {
 		return
@@ -1393,9 +1394,14 @@ func drawMobileNameTags(screen *ebiten.Image, snap drawSnapshot, alpha float64) 
 				}
 				playersMu.RUnlock()
 				if m.nameTag != nil && m.nameTagKey.FontGen == fontGen && m.nameTagKey.Opacity == nameAlpha && m.nameTagKey.Text == d.Name && m.nameTagKey.Colors == m.Colors && m.nameTagKey.Style == style {
+					scale := 1.0
+					if !gs.nameTagsNative {
+						scale = gs.GameScale
+					}
 					top := y + int(20*gs.GameScale)
-					left := x - m.nameTagW/2
+					left := x - int(float64(m.nameTagW)/2*scale)
 					op := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
+					op.GeoM.Scale(scale, scale)
 					op.GeoM.Translate(float64(left), float64(top))
 					screen.DrawImage(m.nameTag, op)
 				} else {
@@ -1414,16 +1420,21 @@ func drawMobileNameTags(screen *ebiten.Image, snap drawSnapshot, alpha float64) 
 					w, h := text.Measure(d.Name, face, 0)
 					iw := int(math.Ceil(w))
 					ih := int(math.Ceil(h))
+					scale := 1.0
+					if !gs.nameTagsNative {
+						scale = gs.GameScale
+					}
 					top := y + int(20*gs.GameScale)
-					left := x - iw/2
+					left := x - int(float64(iw)/2*scale)
 					op := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
-					op.GeoM.Scale(float64(iw+5), float64(ih))
+					op.GeoM.Scale(float64(iw+5)*scale, float64(ih)*scale)
 					op.GeoM.Translate(float64(left), float64(top))
 					op.ColorScale.ScaleWithColor(bgClr)
 					screen.DrawImage(whiteImage, op)
-					vector.StrokeRect(screen, float32(left), float32(top), float32(iw+5), float32(ih), 1, frameClr, false)
+					vector.StrokeRect(screen, float32(left), float32(top), float32(iw+5)*float32(scale), float32(ih)*float32(scale), 1, frameClr, false)
 					opTxt := &text.DrawOptions{}
-					opTxt.GeoM.Translate(float64(left+2), float64(top+2))
+					opTxt.GeoM.Scale(scale, scale)
+					opTxt.GeoM.Translate(float64(left)+2*scale, float64(top)+2*scale)
 					opTxt.ColorScale.ScaleWithColor(textClr)
 					text.Draw(screen, d.Name, face, opTxt)
 				}
