@@ -309,7 +309,7 @@ func makeToolbar() {
 
 	hudWin = eui.NewWindow()
 	hudWin.Title = "Toolbar"
-	hudWin.Closable = true
+	hudWin.Closable = false
 	hudWin.Resizable = false
 	hudWin.AutoSize = true
 	hudWin.Movable = true
@@ -978,6 +978,17 @@ func makePasswordWindow() {
 
 	btnFlow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
 
+	cancelBtn, cancelEvents := eui.NewButton()
+	cancelBtn.Text = "Cancel"
+	cancelBtn.Size = eui.Point{X: 96, Y: 24}
+	cancelEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			pass = ""
+			passWin.Close()
+		}
+	}
+	btnFlow.AddItem(cancelBtn)
+
 	okBtn, okEvents := eui.NewButton()
 	okBtn.Text = "Connect"
 	okBtn.Size = eui.Point{X: 96, Y: 24}
@@ -992,17 +1003,6 @@ func makePasswordWindow() {
 		}
 	}
 	btnFlow.AddItem(okBtn)
-
-	cancelBtn, cancelEvents := eui.NewButton()
-	cancelBtn.Text = "Cancel"
-	cancelBtn.Size = eui.Point{X: 96, Y: 24}
-	cancelEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventClick {
-			pass = ""
-			passWin.Close()
-		}
-	}
-	btnFlow.AddItem(cancelBtn)
 
 	flow.AddItem(btnFlow)
 
@@ -1137,6 +1137,7 @@ func makeLoginWindow() {
 			gs.LastCharacter = name
 			saveSettings()
 			startLogin()
+			updateCharacterButtons()
 		}
 	}
 	loginFlow.AddItem(connBtn)
