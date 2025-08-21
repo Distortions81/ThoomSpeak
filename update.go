@@ -20,6 +20,8 @@ import (
 )
 
 const defaultUpdateBase = "https://m45sci.xyz/downloads/clanlord"
+const soundFontURL = "https://m45sci.xyz/u/dist/goThoom/soundfont.sf2.gz"
+const soundFontFile = "soundfont.sf2"
 
 var updateBase = defaultUpdateBase
 
@@ -140,6 +142,15 @@ var downloadGZ = func(url, dest string) error {
 	return nil
 }
 
+func headSize(url string) int64 {
+	resp, err := http.Head(url)
+	if err != nil {
+		return -1
+	}
+	resp.Body.Close()
+	return resp.ContentLength
+}
+
 // progCounter tracks compressed bytes for progress percentage.
 type progCounter struct {
 	last  time.Time
@@ -240,13 +251,20 @@ func autoUpdate(resp []byte, dataDir string) (int, error) {
 	return int(clientVer >> 8), nil
 }
 
+type fileInfo struct {
+	Name string
+	Size int64
+}
+
 type dataFilesStatus struct {
-	NeedImages   bool
-	NeedSounds   bool
-	Files        []string
-	Version      int
-	ImageVersion int
-	SoundVersion int
+	NeedImages    bool
+	NeedSounds    bool
+	NeedSoundfont bool
+	Files         []fileInfo
+	SoundfontSize int64
+	Version       int
+	ImageVersion  int
+	SoundVersion  int
 }
 
 func checkDataFiles(clientVer int) (dataFilesStatus, error) {
@@ -285,15 +303,26 @@ func checkDataFiles(clientVer int) (dataFilesStatus, error) {
 	}
 
 	if status.NeedImages {
-		status.Files = append(status.Files, fmt.Sprintf("CL_Images.%d.gz", clientVer))
+		name := fmt.Sprintf("CL_Images.%d.gz", clientVer)
+		size := headSize(fmt.Sprintf("%v/data/%s", updateBase, name))
+		status.Files = append(status.Files, fileInfo{Name: name, Size: size})
 	}
 	if status.NeedSounds {
-		status.Files = append(status.Files, fmt.Sprintf("CL_Sounds.%d.gz", clientVer))
+		name := fmt.Sprintf("CL_Sounds.%d.gz", clientVer)
+		size := headSize(fmt.Sprintf("%v/data/%s", updateBase, name))
+		status.Files = append(status.Files, fileInfo{Name: name, Size: size})
 	}
+
+	sfPath := filepath.Join(dataDirPath, soundFontFile)
+	if _, err := os.Stat(sfPath); errors.Is(err, os.ErrNotExist) {
+		status.NeedSoundfont = true
+		status.SoundfontSize = headSize(soundFontURL)
+	}
+
 	return status, nil
 }
 
-func downloadDataFiles(clientVer int, status dataFilesStatus) error {
+func downloadDataFiles(clientVer int, status dataFilesStatus, getSoundfont bool) error {
 	if err := os.MkdirAll(dataDirPath, 0755); err != nil {
 		logError("create %v: %v", dataDirPath, err)
 		return err
@@ -344,6 +373,13 @@ func downloadDataFiles(clientVer int, status dataFilesStatus) error {
 				logError("download %v: %v", sndURL, err)
 				return fmt.Errorf("download CL_Sounds: %w", err)
 			}
+		}
+	}
+	if getSoundfont {
+		sfPath := filepath.Join(dataDirPath, soundFontFile)
+		if err := downloadGZ(soundFontURL, sfPath); err != nil {
+			logError("download %v: %v", soundFontURL, err)
+			return fmt.Errorf("download soundfont: %w", err)
 		}
 	}
 	return nil
