@@ -1,6 +1,8 @@
 package main
 
 import (
+	"math"
+	"strings"
 	"time"
 
 	text "github.com/hajimehoshi/ebiten/v2/text/v2"
@@ -35,10 +37,21 @@ func showThinkMessage(msg string) {
 
 	textSize := (btn.FontSize * eui.UIScale()) + 2
 	face := &text.GoTextFace{Source: eui.FontSource(), Size: float64(textSize)}
-	w, h := text.Measure(msg, face, 0)
+
+	singleWidth, _ := text.Measure(msg, face, 0)
+	metrics := face.Metrics()
+	lineHeight := math.Ceil(metrics.HAscent) + math.Ceil(metrics.HDescent) + math.Ceil(metrics.HLineGap)
+	linesWanted := 1
+	for singleWidth/float64(linesWanted) > 2*lineHeight {
+		linesWanted++
+	}
+
+	maxWidth := singleWidth / float64(linesWanted)
+	usedWidth, lines := wrapText(msg, face, maxWidth)
+	btn.Text = strings.Join(lines, "\n")
 	btn.Size = eui.Point{
-		X: float32(w)/eui.UIScale() + btn.Padding*2 + btn.BorderPad*2,
-		Y: float32(h)/eui.UIScale() + btn.Padding*2 + btn.BorderPad*2,
+		X: float32(usedWidth)/eui.UIScale() + btn.Padding*2 + btn.BorderPad*2,
+		Y: float32(lineHeight*float64(len(lines)))/eui.UIScale() + btn.Padding*2 + btn.BorderPad*2,
 	}
 
 	events.Handle = func(ev eui.UIEvent) {
@@ -82,15 +95,25 @@ func layoutThinkMessages() {
 	spacer := float32(4)
 	x := margin
 	y := margin
+	rowHeight := float32(0)
 	scale := eui.UIScale()
 	if gameWin.NoScale {
 		scale = 1
 	}
+	winSize := gameWin.GetSize()
 	for _, m := range thinkMessages {
 		it := m.item
 		sz := it.GetSize()
+		if x+sz.X > winSize.X-margin {
+			x = margin
+			y += rowHeight + spacer
+			rowHeight = 0
+		}
 		it.Position = eui.Point{X: x / scale, Y: y / scale}
 		x += sz.X + spacer
+		if sz.Y > rowHeight {
+			rowHeight = sz.Y
+		}
 		it.Dirty = true
 	}
 	gameWin.Refresh()
