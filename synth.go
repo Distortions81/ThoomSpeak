@@ -187,6 +187,8 @@ func mixPCM(leftAll, rightAll []float32) []byte {
 // blocks until playback has finished.
 func Play(ctx *audio.Context, program int, notes []Note) error {
 
+	return nil
+
 	if ctx == nil {
 		return errors.New("nil audio context")
 	}

@@ -208,8 +208,8 @@ func pictureOnEdge(p framePicture) bool {
 		return false
 	}
 	w, h := clImages.Size(uint32(p.PictID))
-	halfW := w / 2
-	halfH := h / 2
+	halfW := w / 3
+	halfH := h / 3
 	if int(p.H)-halfW <= -fieldCenterX ||
 		int(p.H)+halfW >= fieldCenterX ||
 		int(p.V)-halfH <= -fieldCenterY ||
@@ -905,6 +905,7 @@ func parseDrawState(data []byte, buildCache bool) error {
 	// keep it for one more frame using its previous position shifted by the
 	// detected picture movement. This prevents edge pictures from abruptly
 	// disappearing during camera pans.
+	//	<crosses scrreen edge>
 	if (state.picShiftX != 0 || state.picShiftY != 0) && len(prevPics) > 0 {
 		for _, pp := range prevPics {
 			if pp.Again {
@@ -913,7 +914,9 @@ func parseDrawState(data []byte, buildCache bool) error {
 			if !pictureOnEdge(pp) {
 				continue
 			}
-
+			if pp.Plane > 0 {
+				continue
+			}
 			oldH, oldV := pp.H, pp.V
 			pp.H = int16(int(pp.H) + state.picShiftX)
 			pp.V = int16(int(pp.V) + state.picShiftY)

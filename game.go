@@ -1306,14 +1306,6 @@ func drawPicture(screen *ebiten.Image, ox, oy int, p framePicture, alpha float64
 			text.Draw(screen, lbl, mainFont, opTxt)
 		}
 	} else {
-		clr := color.RGBA{0, 0, 0xff, 0xff}
-		if gs.smoothingDebug && p.Moving {
-			clr = color.RGBA{0xff, 0, 0, 0xff}
-		}
-		if gs.pictAgainDebug && p.Again {
-			clr = color.RGBA{0, 0, 0xff, 0xff}
-		}
-		vector.DrawFilledRect(screen, float32(float64(x)-2*gs.GameScale), float32(float64(y)-2*gs.GameScale), float32(4*gs.GameScale), float32(4*gs.GameScale), clr, false)
 		if gs.pictIDDebug {
 			metrics := mainFont.Metrics()
 			lbl := fmt.Sprintf("%d", p.PictID)
