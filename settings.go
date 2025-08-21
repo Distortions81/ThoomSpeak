@@ -91,6 +91,7 @@ var gsdef settings = settings{
 	vsync:               true,
 	nightEffect:         true,
 	throttleSounds:      true,
+	lateInputUpdates:    true,
 	lateInputAdjustment: 70,
 }
 

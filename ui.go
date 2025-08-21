@@ -2800,7 +2800,7 @@ func makeDebugWindow() {
 	debugFlow.AddItem(lateInputCB)
 
 	targetPingSlider, targetPingEvents := eui.NewSlider()
-	targetPingSlider.Label = "Rate Adjustment"
+	targetPingSlider.Label = "Target ping"
 	targetPingSlider.MinValue = 5
 	targetPingSlider.MaxValue = 175
 	targetPingSlider.IntOnly = true
