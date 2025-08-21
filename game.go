@@ -1051,6 +1051,8 @@ func drawScene(screen *ebiten.Image, ox, oy int, snap drawSnapshot, alpha float6
 }
 
 // drawMobile renders a single mobile object with optional interpolation and onion skinning.
+// When a mobile lacks history but the world shifts, a pseudo-previous position
+// derived from picShift provides a one-frame interpolation.
 func drawMobile(screen *ebiten.Image, ox, oy int, m frameMobile, descMap map[uint8]frameDescriptor, prevMobiles map[uint8]frameMobile, prevDescs map[uint8]frameDescriptor, shiftX, shiftY int, alpha float64, fade float32) {
 	h := float64(m.H)
 	v := float64(m.V)
@@ -1061,6 +1063,15 @@ func drawMobile(screen *ebiten.Image, ox, oy int, m frameMobile, descMap map[uin
 			if dh*dh+dv*dv <= maxMobileInterpPixels*maxMobileInterpPixels {
 				h = float64(pm.H)*(1-alpha) + float64(m.H)*alpha
 				v = float64(pm.V)*(1-alpha) + float64(m.V)*alpha
+			}
+		} else if shiftX != 0 || shiftY != 0 {
+			dh := shiftX
+			dv := shiftY
+			if dh*dh+dv*dv <= maxMobileInterpPixels*maxMobileInterpPixels {
+				prevH := float64(int(m.H) - shiftX)
+				prevV := float64(int(m.V) - shiftY)
+				h = prevH*(1-alpha) + float64(m.H)*alpha
+				v = prevV*(1-alpha) + float64(m.V)*alpha
 			}
 		}
 	}
