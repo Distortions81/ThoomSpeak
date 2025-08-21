@@ -162,7 +162,7 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 		vs[i].ColorB = float32(bgB) / 0xffff
 		vs[i].ColorA = float32(bgA) / 0xffff
 	}
-	op := &ebiten.DrawTrianglesOptions{ColorScaleMode: ebiten.ColorScaleModePremultipliedAlpha}
+	op := &ebiten.DrawTrianglesOptions{ColorScaleMode: ebiten.ColorScaleModePremultipliedAlpha, AntiAlias: true}
 	screen.DrawTriangles(vs, is, whiteImage, op)
 
 	if !far && !noArrow {
