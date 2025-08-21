@@ -66,7 +66,7 @@ var gsdef settings = settings{
 	DenoiseAmount:        0.2,
 	ShowFPS:              true,
 	UIScale:              1.0,
-	Volume:               1.0,
+	Volume:               0.25,
 	MusicVolume:          1.0,
 	GameScale:            2,
 	BarPlacement:         BarPlacementBottom,

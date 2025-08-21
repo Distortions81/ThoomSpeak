@@ -1769,6 +1769,21 @@ func makeSettingsWindow() {
 	}
 	center.AddItem(barOpacitySlider)
 
+	maxNightSlider, maxNightEvents := eui.NewSlider()
+	maxNightSlider.Label = "Max Night Level"
+	maxNightSlider.MinValue = 0
+	maxNightSlider.MaxValue = 100
+	maxNightSlider.IntOnly = true
+	maxNightSlider.Value = float32(gs.MaxNightLevel)
+	maxNightSlider.Size = eui.Point{X: centerW - 10, Y: 24}
+	maxNightEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			gs.MaxNightLevel = int(ev.Value)
+			settingsDirty = true
+		}
+	}
+	center.AddItem(maxNightSlider)
+
 	label, _ = eui.NewText()
 	label.Text = "\nText Sizes:"
 	label.FontSize = 15
@@ -2773,39 +2788,11 @@ func makeDebugWindow() {
 
 	debugFlow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
 
-	nightCB, nightEvents := eui.NewCheckbox()
-	nightCB.Text = "Night Effect"
-	nightCB.Size = eui.Point{X: width, Y: 24}
-	nightCB.Checked = gs.nightEffect
-	nightCB.Tooltip = "Enable night vingette effect"
-	nightEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventCheckboxChanged {
-			gs.nightEffect = ev.Checked
-			settingsDirty = true
-		}
-	}
-	debugFlow.AddItem(nightCB)
-
-	maxNightSlider, maxNightEvents := eui.NewSlider()
-	maxNightSlider.Label = "Max Night Level"
-	maxNightSlider.MinValue = 0
-	maxNightSlider.MaxValue = 100
-	maxNightSlider.IntOnly = true
-	maxNightSlider.Value = float32(gs.MaxNightLevel)
-	maxNightSlider.Size = eui.Point{X: width - 10, Y: 24}
-	maxNightEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventSliderChanged {
-			gs.MaxNightLevel = int(ev.Value)
-			settingsDirty = true
-		}
-	}
-	debugFlow.AddItem(maxNightSlider)
-
 	lateInputCB, lateInputEvents := eui.NewCheckbox()
-	lateInputCB.Text = "Late Input Updates (experimental)"
+	lateInputCB.Text = "Smart input updates"
+	lateInputCB.Tooltip = "Polls for user input at last moment, sends update to server early by predicted ping"
 	lateInputCB.Size = eui.Point{X: width, Y: 24}
 	lateInputCB.Checked = gs.lateInputUpdates
-	lateInputCB.Tooltip = "Polls for user input at last moment, sends update to server early by predicted ping"
 	var targetPingSlider *eui.ItemData
 	lateInputEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventCheckboxChanged {
@@ -2820,6 +2807,7 @@ func makeDebugWindow() {
 
 	targetPingSlider, targetPingEvents := eui.NewSlider()
 	targetPingSlider.Label = "Target ping"
+	targetPingSlider.Tooltip = "Keep this well above (2-3x) your network jitter. ( 3 - 30ms )"
 	targetPingSlider.MinValue = 5
 	targetPingSlider.MaxValue = 175
 	targetPingSlider.IntOnly = true
