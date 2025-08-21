@@ -1632,6 +1632,25 @@ func makeSettingsWindow() {
 	}
 	right.AddItem(tsFormatInput)
 
+	gameSlider, gameEvents := eui.NewSlider()
+	gameSlider.MinValue = 0
+	gameSlider.MaxValue = 1
+	gameSlider.Value = float32(gs.Volume)
+	gameSlider.Size = eui.Point{X: rightW, Y: 24}
+	gameSlider.FontSize = 9
+	gameSlider.Label = "Game Volume"
+	gameEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
+			gs.Volume = float64(ev.Value)
+			settingsDirty = true
+			updateSoundVolume()
+		}
+	}
+	right.AddItem(gameSlider)
+
 	musicSlider, musicEvents := eui.NewSlider()
 	musicSlider.MinValue = 0
 	musicSlider.MaxValue = 1

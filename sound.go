@@ -213,9 +213,13 @@ func initSoundContext() {
 }
 
 func updateSoundVolume() {
-	vol := gs.Volume
+	gameVol := gs.Volume
+	ttsVol := gs.ChatTTSVolume
+	musicVol := gs.MusicVolume
 	if gs.Mute {
-		vol = 0
+		gameVol = 0
+		ttsVol = 0
+		musicVol = 0
 	}
 
 	soundMu.Lock()
@@ -242,7 +246,7 @@ func updateSoundVolume() {
 	stopped := make([]*audio.Player, 0)
 	for _, sp := range players {
 		if sp.IsPlaying() {
-			sp.SetVolume(vol)
+			sp.SetVolume(gameVol)
 		} else {
 			stopped = append(stopped, sp)
 		}
@@ -251,7 +255,7 @@ func updateSoundVolume() {
 	ttsStopped := make([]*audio.Player, 0)
 	for _, p := range tts {
 		if p.IsPlaying() {
-			p.SetVolume(gs.ChatTTSVolume * vol)
+			p.SetVolume(ttsVol)
 		} else {
 			ttsStopped = append(ttsStopped, p)
 		}
@@ -260,7 +264,7 @@ func updateSoundVolume() {
 	musicStopped := make([]*audio.Player, 0)
 	for _, p := range music {
 		if p.IsPlaying() {
-			p.SetVolume(gs.MusicVolume * vol)
+			p.SetVolume(musicVol)
 		} else {
 			musicStopped = append(musicStopped, p)
 		}

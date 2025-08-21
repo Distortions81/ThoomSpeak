@@ -55,7 +55,7 @@ func speakChatMessage(msg string) {
 		ttsPlayers[p] = struct{}{}
 		ttsPlayersMu.Unlock()
 
-		vol := gs.ChatTTSVolume * gs.Volume
+		vol := gs.ChatTTSVolume
 		if gs.Mute {
 			vol = 0
 		}
