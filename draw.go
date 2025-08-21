@@ -1094,7 +1094,7 @@ func parseDrawState(data []byte, buildCache bool) error {
 				stateMu.Unlock()
 			}
 			bubbleType := typ & kBubbleTypeMask
-			showBubble := gs.SpeechBubbles && txt != "" && !blockBubbles
+			showBubble := gs.SpeechBubbles && txt != "" && !blockBubbles && verb != "thinks"
 			if showBubble {
 				typeOK := true
 				switch bubbleType {
