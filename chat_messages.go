@@ -1,38 +1,17 @@
 package main
 
-import (
-	"fmt"
-	"sync"
-	"time"
-)
-
 const (
 	maxChatMessages = 1000
 )
 
-type timedMessage struct {
-	Text string
-	Time time.Time
-}
-
-var (
-	chatMsgMu sync.Mutex
-	chatMsgs  []timedMessage
-)
+var chatLog = messageLog{max: maxChatMessages}
 
 func chatMessage(msg string) {
 	if msg == "" {
 		return
 	}
-	chatMsgMu.Lock()
-	chatMsgs = append(chatMsgs, timedMessage{Text: msg, Time: time.Now()})
 
-	//Remove oldest message if full
-	if len(chatMsgs) > maxChatMessages {
-		chatMsgs = chatMsgs[len(chatMsgs)-maxChatMessages:]
-	}
-
-	chatMsgMu.Unlock()
+	chatLog.Add(msg)
 
 	updateChatWindow()
 
@@ -42,20 +21,9 @@ func chatMessage(msg string) {
 }
 
 func getChatMessages() []string {
-	chatMsgMu.Lock()
-	defer chatMsgMu.Unlock()
-
-	out := make([]string, len(chatMsgs))
 	format := gs.TimestampFormat
 	if format == "" {
 		format = "3:04PM"
 	}
-	for i, msg := range chatMsgs {
-		if gs.ChatTimestamps {
-			out[i] = fmt.Sprintf("[%s] %s", msg.Time.Format(format), msg.Text)
-		} else {
-			out[i] = msg.Text
-		}
-	}
-	return out
+	return chatLog.Entries(format, gs.ChatTimestamps)
 }
