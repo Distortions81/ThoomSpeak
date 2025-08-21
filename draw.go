@@ -1223,6 +1223,7 @@ func parseDrawState(data []byte, buildCache bool) error {
 						default:
 							msg = fmt.Sprintf("%v thinks, %v", bubbleName, txt)
 						}
+						showThinkMessage(msg)
 					} else if typ&kBubbleNotCommon != 0 {
 						langWord := lang
 						lw := strings.ToLower(langWord)
