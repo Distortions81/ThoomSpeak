@@ -1728,7 +1728,7 @@ func equippedItemPicts() (uint16, uint16) {
 
 // drawInputOverlay renders the text entry box when chatting.
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
-	eui.Layout(outsideWidth, outsideHeight)
+	scaledW, scaledH := eui.Layout(outsideWidth, outsideHeight)
 
 	if outsideWidth > 512 && outsideHeight > 384 {
 		if gs.WindowWidth != outsideWidth || gs.WindowHeight != outsideHeight {
@@ -1738,7 +1738,7 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 		}
 	}
 
-	return outsideWidth, outsideHeight
+	return scaledW, scaledH
 }
 
 func runGame(ctx context.Context) {
