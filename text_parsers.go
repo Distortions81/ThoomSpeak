@@ -326,7 +326,7 @@ func parsePresenceText(raw []byte, s string) bool {
 // parseBardText detects bard guild messages and updates bard status.
 // It also handles bard tune messages. Returns true if the message was fully
 // handled and should not be displayed.
-func parseBardText(_ []byte, s string) bool {
+func parseBardText(raw []byte, s string) bool {
 	s = strings.TrimSpace(s)
 	if strings.HasPrefix(s, "* ") {
 		s = strings.TrimSpace(s[2:])
@@ -335,7 +335,7 @@ func parseBardText(_ []byte, s string) bool {
 		s = strings.TrimSpace(s[2:])
 	}
 
-	if parseMusicCommand(s) {
+	if parseMusicCommand(s, raw) {
 		return true
 	}
 
@@ -374,8 +374,15 @@ func parseBardText(_ []byte, s string) bool {
 
 // parseMusicCommand handles bard /music or /play commands and plays the tune.
 // It supports both the simple "/play <inst> <notes>" form and the slash-delimited
-// backend messages like "/music/.../play/inst<inst>/notes<notes>".
-func parseMusicCommand(s string) bool {
+// backend messages like "/music/.../play/inst<inst>/notes<notes>". If the
+// stripped text is empty, it falls back to decoding the raw BEPP payload.
+func parseMusicCommand(s string, raw []byte) bool {
+	if s == "" && len(raw) > 0 {
+		s = strings.TrimSpace(decodeMacRoman(raw))
+	}
+	if s == "" {
+		return false
+	}
 	if strings.HasPrefix(s, "/music/") {
 		s = s[len("/music/"):]
 	}
@@ -437,9 +444,7 @@ func parseMusicCommand(s string) bool {
 	if musicDebug {
 		msg := "/play " + strconv.Itoa(inst) + " " + strings.TrimSpace(notes)
 		consoleMessage(msg)
-		if !gs.MessagesToConsole {
-			chatMessage(msg)
-		}
+		chatMessage(msg)
 	}
 	return true
 }
