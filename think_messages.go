@@ -41,9 +41,10 @@ func showThinkMessage(msg string) {
 	singleWidth, _ := text.Measure(msg, face, 0)
 	metrics := face.Metrics()
 	lineHeight := math.Ceil(metrics.HAscent) + math.Ceil(metrics.HDescent) + math.Ceil(metrics.HLineGap)
-	linesWanted := 1
-	for singleWidth/float64(linesWanted) > 2*lineHeight {
-		linesWanted++
+	ideal := math.Sqrt(singleWidth / (2 * lineHeight))
+	linesWanted := int(math.Round(ideal))
+	if linesWanted < 1 {
+		linesWanted = 1
 	}
 
 	maxWidth := singleWidth / float64(linesWanted)
