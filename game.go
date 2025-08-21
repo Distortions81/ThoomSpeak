@@ -1974,7 +1974,7 @@ func sendInputLoop(ctx context.Context, conn net.Conn) {
 			latencyMu.Lock()
 			lat := netLatency
 			latencyMu.Unlock()
-			target := time.Duration(gs.lateInputTargetPing) * time.Millisecond
+			target := time.Duration(gs.lateInputAdjustment) * time.Millisecond
 			if target > lat {
 				lat = target
 			}

@@ -2800,16 +2800,16 @@ func makeDebugWindow() {
 	debugFlow.AddItem(lateInputCB)
 
 	targetPingSlider, targetPingEvents := eui.NewSlider()
-	targetPingSlider.Label = "Target Ping (ms)"
-	targetPingSlider.MinValue = 0
-	targetPingSlider.MaxValue = 500
+	targetPingSlider.Label = "Rate Adjustment"
+	targetPingSlider.MinValue = 5
+	targetPingSlider.MaxValue = 175
 	targetPingSlider.IntOnly = true
-	targetPingSlider.Value = float32(gs.lateInputTargetPing)
+	targetPingSlider.Value = float32(gs.lateInputAdjustment)
 	targetPingSlider.Size = eui.Point{X: width - 10, Y: 24}
 	targetPingSlider.Disabled = !gs.lateInputUpdates
 	targetPingEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
-			gs.lateInputTargetPing = int(ev.Value)
+			gs.lateInputAdjustment = int(ev.Value)
 			settingsDirty = true
 		}
 	}

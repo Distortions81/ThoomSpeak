@@ -92,7 +92,7 @@ var gsdef settings = settings{
 	nightEffect:         true,
 	throttleSounds:      true,
 	nameTagsNative:      false,
-	lateInputTargetPing: 100,
+	lateInputAdjustment: 70,
 }
 
 type settings struct {
@@ -185,7 +185,7 @@ type settings struct {
 	precacheImages      bool
 	throttleSounds      bool
 	lateInputUpdates    bool
-	lateInputTargetPing int
+	lateInputAdjustment int
 	smoothMoving        bool
 	dontShiftNewSprites bool
 	nameTagsNative      bool
