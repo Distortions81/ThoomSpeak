@@ -900,6 +900,33 @@ func parseDrawState(data []byte, buildCache bool) error {
 		}
 	}
 
+	// Carry over pictures that were visible in the previous frame but are
+	// absent this frame. If such a picture was touching the screen edge,
+	// keep it for one more frame using its previous position shifted by the
+	// detected picture movement. This prevents edge pictures from abruptly
+	// disappearing during camera pans.
+	if (state.picShiftX != 0 || state.picShiftY != 0) && len(prevPics) > 0 {
+		for _, pp := range prevPics {
+			if pp.Again {
+				continue
+			}
+			if !pictureOnEdge(pp) {
+				continue
+			}
+
+			oldH, oldV := pp.H, pp.V
+			pp.H = int16(int(pp.H) + state.picShiftX)
+			pp.V = int16(int(pp.V) + state.picShiftY)
+			pp.PrevH = oldH
+			pp.PrevV = oldV
+			pp.Moving = false
+			pp.Background = true
+			pp.Again = true
+
+			newPics = append(newPics, pp)
+		}
+	}
+
 	state.pictures = newPics
 
 	needPrev := (gs.MotionSmoothing || gs.BlendMobiles) && ok && !seekingMov

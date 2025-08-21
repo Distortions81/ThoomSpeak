@@ -2920,6 +2920,7 @@ func makeDebugWindow() {
 		}
 	}
 	debugFlow.AddItem(shiftSpriteCB)
+
 	nameTagsCB, nameTagsEvents := eui.NewCheckbox()
 	nameTagsCB.Text = "Name Tags Native Res"
 	nameTagsCB.Size = eui.Point{X: width, Y: 24}
