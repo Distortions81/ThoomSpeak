@@ -632,6 +632,7 @@ func (c *CLImages) Get(id uint32, custom []byte, forceTransparent bool) *ebiten.
 	}
 
 	if c.Denoise {
+		fixAlphaDither(img)
 		denoiseImage(img, c.DenoiseSharpness, c.DenoiseAmount)
 	}
 
