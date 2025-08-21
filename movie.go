@@ -17,6 +17,8 @@ const (
 const movieSignature = 0xdeadbeef
 const oldestMovieVersion = 193
 
+var gameFrame int
+
 var movieRevision int32
 
 func parseMovie(path string, clientVersion int) ([][]byte, error) {
@@ -58,7 +60,6 @@ func parseMovie(path string, clientVersion int) ([][]byte, error) {
 	pos := headerLen
 	sign := []byte{0xde, 0xad, 0xbe, 0xef}
 	frames := [][]byte{}
-	frameNum := 0
 	for pos+12 <= len(data) {
 		if binary.BigEndian.Uint32(data[pos:pos+4]) != movieSignature {
 			idx := bytes.Index(data[pos:], sign)
@@ -131,7 +132,6 @@ func parseMovie(path string, clientVersion int) ([][]byte, error) {
 			}
 			pos += idx
 		}
-		frameNum++
 	}
 	stateMu.Lock()
 	initialState = cloneDrawState(state)
