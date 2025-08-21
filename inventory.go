@@ -34,6 +34,19 @@ func resetInventory() {
 	inventoryDirty = true
 }
 
+// rebuildInventoryIndices recalculates sequential display indices for all
+// inventory items and rebuilds the inventoryNames map based on the current
+// state. inventoryMu must be held by the caller.
+func rebuildInventoryIndices() {
+	inventoryNames = make(map[inventoryKey]string)
+	for i := range inventoryItems {
+		inventoryItems[i].Index = i
+		if inventoryItems[i].Name != "" {
+			inventoryNames[inventoryKey{ID: inventoryItems[i].ID, Index: uint16(i)}] = inventoryItems[i].Name
+		}
+	}
+}
+
 func addInventoryItem(id uint16, idx int, name string, equip bool) {
 	inventoryMu.Lock()
 	if idx >= 0 {
@@ -65,13 +78,7 @@ func addInventoryItem(id uint16, idx int, name string, equip bool) {
 			inventoryItems = append(inventoryItems, item)
 		}
 	}
-	inventoryNames = make(map[inventoryKey]string)
-	for i := range inventoryItems {
-		inventoryItems[i].Index = i
-		if inventoryItems[i].Name != "" {
-			inventoryNames[inventoryKey{ID: inventoryItems[i].ID, Index: uint16(i)}] = inventoryItems[i].Name
-		}
-	}
+	rebuildInventoryIndices()
 	// If this item was equipped, clear any other equipped items occupying the
 	// same slot (e.g., hands, head). Mirrors BumpItemsFromSlot in the reference client.
 	if equip && clImages != nil {
@@ -124,9 +131,7 @@ func removeInventoryItem(id uint16, idx int) {
 		}
 	}
 	if removed {
-		for i := range inventoryItems {
-			inventoryItems[i].Index = i
-		}
+		rebuildInventoryIndices()
 	}
 	inventoryMu.Unlock()
 	inventoryDirty = true
