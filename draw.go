@@ -583,6 +583,7 @@ func parseDrawState(data []byte, buildCache bool) error {
 	ackCmd := data[0]
 	ackFrame = int32(binary.BigEndian.Uint32(data[1:5]))
 	resendFrame = int32(binary.BigEndian.Uint32(data[5:9]))
+	dropped := updateFrameCounters(ackFrame)
 	p := 9
 
 	stage = "descriptor count"
@@ -924,7 +925,12 @@ func parseDrawState(data []byte, buildCache bool) error {
 		if interval <= 0 {
 			interval = time.Second / 5
 		}
-		//logDebug("interp mobiles interval=%v", interval)
+		extra := dropped
+		if extra > 2 {
+			extra = 2
+		}
+		interval *= time.Duration(extra + 1)
+		//logDebug("interp mobiles interval=%v extra=%d", interval, extra)
 		state.prevTime = time.Now()
 		state.curTime = state.prevTime.Add(interval)
 	}

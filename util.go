@@ -129,10 +129,30 @@ var doDebug bool
 var silent bool
 var ackFrame int32
 var resendFrame int32
+var lastAckFrame int32
+var numFrames int
+var lostFrames int
 var commandNum uint32 = 1
 var pendingCommand string
 var playerName string
 var playerIndex uint8 = 0xff
+
+// updateFrameCounters tracks frame statistics and detects dropped frames.
+// It returns the number of frames missing between the previous and
+// current acknowledgement numbers.
+func updateFrameCounters(newFrame int32) int {
+	numFrames++
+	dropped := 0
+	if lastAckFrame != 0 {
+		lost := int(newFrame - lastAckFrame - 1)
+		if lost > 0 {
+			lostFrames += lost
+			dropped = lost
+		}
+	}
+	lastAckFrame = newFrame
+	return dropped
+}
 
 const (
 	kBubbleNormal = iota
