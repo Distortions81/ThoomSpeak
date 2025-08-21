@@ -202,7 +202,7 @@ func Play(ctx *audio.Context, program int, notes []Note) error {
 	}
 	player := ctx.NewPlayerFromBytes(pcm)
 
-	vol := gs.MusicVolume * gs.Volume
+	vol := gs.MusicVolume
 	if gs.Mute {
 		vol = 0
 	}
