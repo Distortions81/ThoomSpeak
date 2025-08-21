@@ -37,6 +37,21 @@ func makeTextWindow(title string, hz eui.HZone, vz eui.VZone, withInput bool) (*
 	return win, list, input
 }
 
+// newTextWindow wraps makeTextWindow and assigns a resize handler that
+// invokes the provided update callback.
+func newTextWindow(name string, hz eui.HZone, vz eui.VZone, hasInput bool, update func()) (*eui.WindowData, *eui.ItemData, *eui.ItemData) {
+	win, list, input := makeTextWindow(name, hz, vz, hasInput)
+	if update != nil {
+		win.OnResize = func() {
+			update()
+			if win != nil {
+				win.Refresh()
+			}
+		}
+	}
+	return win, list, input
+}
+
 // updateTextWindow refreshes a text window's content and optional input message.
 func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []string, fontSize float64, inputMsg string) {
 	if list == nil || win == nil {
