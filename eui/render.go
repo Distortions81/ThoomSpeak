@@ -983,12 +983,20 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 			SecondaryAlign: text.AlignCenter,
 		}
 		tdop := ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
-		tdop.GeoM.Translate(
-			float64(offset.X+((maxSize.X)/2)),
-			float64(offset.Y+((maxSize.Y)/2)))
-		top := &text.DrawOptions{DrawImageOptions: tdop, LayoutOptions: loo}
-		top.ColorScale.ScaleWithColor(style.TextColor)
-		text.Draw(subImg, item.Text, face, top)
+		metrics := face.Metrics()
+		lineHeight := math.Ceil(metrics.HAscent) + math.Ceil(metrics.HDescent) + math.Ceil(metrics.HLineGap)
+		lines := strings.Split(item.Text, "\n")
+		startY := float64(offset.Y) + float64(maxSize.Y)/2 - float64(lineHeight)*(float64(len(lines)-1))/2
+		for i, line := range lines {
+			tdop.GeoM.Reset()
+			tdop.GeoM.Translate(
+				float64(offset.X+((maxSize.X)/2)),
+				startY+float64(i)*lineHeight,
+			)
+			top := &text.DrawOptions{DrawImageOptions: tdop, LayoutOptions: loo}
+			top.ColorScale.ScaleWithColor(style.TextColor)
+			text.Draw(subImg, line, face, top)
+		}
 
 		//Text
 	} else if item.ItemType == ITEM_INPUT {
