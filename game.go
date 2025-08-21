@@ -25,7 +25,7 @@ import (
 	clipboard "golang.design/x/clipboard"
 )
 
-const lateRatio = 80
+const keyRepeatRate = 32
 const gameAreaSizeX, gameAreaSizeY = 547, 540
 const fieldCenterX, fieldCenterY = gameAreaSizeX / 2, gameAreaSizeY / 2
 const defaultHandPictID = 6
@@ -519,6 +519,7 @@ func computeInterpolation(prevTime, curTime time.Time, mobileRate, pictRate floa
 type Game struct{}
 
 var once sync.Once
+var lastBackpace time.Time
 
 func (g *Game) Update() error {
 	select {
@@ -628,13 +629,15 @@ func (g *Game) Update() error {
 				}
 			}
 		}
-		if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) {
-			if len(inputText) > 0 {
+		if len(inputText) > 0 && time.Since(lastBackpace) > time.Millisecond*keyRepeatRate {
+			if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) {
+
+				lastBackpace = time.Now()
 				inputText = inputText[:len(inputText)-1]
 				changedInput = true
-			}
-		} else if d := inpututil.KeyPressDuration(ebiten.KeyBackspace); d > 30 && d%3 == 0 {
-			if len(inputText) > 0 {
+			} else if d := inpututil.KeyPressDuration(ebiten.KeyBackspace); d > 30 {
+
+				lastBackpace = time.Now()
 				inputText = inputText[:len(inputText)-1]
 				changedInput = true
 			}
@@ -1960,7 +1963,7 @@ func sendInputLoop(ctx context.Context, conn net.Conn) {
 			// Send the input early enough for the server to receive it
 			// before the next update, adding a safety margin to the
 			// measured latency.
-			adjusted := (lat * lateRatio) / 100
+			adjusted := lat - (time.Millisecond * 50)
 			delay = interval - adjusted
 			if delay < 0 {
 				delay = 0
