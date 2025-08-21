@@ -153,3 +153,33 @@ func TestParseInventoryMidstreamD(t *testing.T) {
 		t.Fatalf("inventoryDirty not set")
 	}
 }
+
+func TestInventoryRenameIndexed(t *testing.T) {
+	resetInventory()
+	inventoryDirty = false
+	data := []byte{
+		byte(kInvCmdMultiple), 4,
+		byte(kInvCmdAdd | kInvCmdIndex), 0x00, 0x64, 1, 'B', 'a', 'g', 0,
+		byte(kInvCmdAdd | kInvCmdIndex), 0x00, 0x64, 2, 'B', 'a', 'g', 0,
+		byte(kInvCmdName | kInvCmdIndex), 0x00, 0x64, 1, 'F', 'i', 'r', 's', 't', 0,
+		byte(kInvCmdName | kInvCmdIndex), 0x00, 0x64, 2, 'S', 'e', 'c', 'o', 'n', 'd', 0,
+		byte(kInvCmdNone), 0x33,
+	}
+	rest, ok := parseInventory(data)
+	if !ok {
+		t.Fatalf("parse failed")
+	}
+	if len(rest) != 1 || rest[0] != 0x33 {
+		t.Fatalf("unexpected rest %v", rest)
+	}
+	inv := getInventory()
+	if len(inv) != 2 {
+		t.Fatalf("unexpected inventory length %d", len(inv))
+	}
+	if inv[0].Name != "First" || inv[1].Name != "Second" {
+		t.Fatalf("unexpected inventory %v", inv)
+	}
+	if !inventoryDirty {
+		t.Fatalf("inventoryDirty not set")
+	}
+}
