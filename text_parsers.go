@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -334,8 +335,7 @@ func parseBardText(_ []byte, s string) bool {
 		s = strings.TrimSpace(s[2:])
 	}
 
-	if strings.HasPrefix(s, "/play ") {
-		go playClanLordTune(strings.TrimSpace(s[len("/play "):]))
+	if parseMusicCommand(s) {
 		return true
 	}
 
@@ -368,6 +368,56 @@ func parseBardText(_ []byte, s string) bool {
 			playersPersistDirty = true
 			return false
 		}
+	}
+	return false
+}
+
+// parseMusicCommand handles bard /music or /play commands and plays the tune.
+// It supports both the simple "/play <inst> <notes>" form and the slash-delimited
+// backend messages like "/music/.../play/inst<inst>/notes<notes>".
+func parseMusicCommand(s string) bool {
+	if strings.HasPrefix(s, "/music/") {
+		s = s[len("/music/"):]
+	}
+	if strings.HasPrefix(s, "/play") {
+		s = s[len("/play"):]
+		s = strings.TrimPrefix(s, "/")
+		inst := defaultInstrument
+		if idx := strings.Index(s, "/inst"); idx >= 0 {
+			v := s[idx+len("/inst"):]
+			v = strings.TrimPrefix(v, "/")
+			if j := strings.IndexByte(v, '/'); j >= 0 {
+				v = v[:j]
+			}
+			if n, err := strconv.Atoi(v); err == nil {
+				inst = n
+			}
+		} else if idx := strings.Index(s, "/I"); idx >= 0 {
+			v := s[idx+len("/I"):]
+			if len(v) > 0 && v[0] == '/' {
+				v = v[1:]
+			}
+			if j := strings.IndexByte(v, '/'); j >= 0 {
+				v = v[:j]
+			}
+			if n, err := strconv.Atoi(v); err == nil {
+				inst = n
+			}
+		}
+		notes := ""
+		if idx := strings.Index(s, "/notes"); idx >= 0 {
+			notes = s[idx+len("/notes"):]
+		} else if idx := strings.Index(s, "/N"); idx >= 0 {
+			notes = s[idx+len("/N"):]
+		} else {
+			notes = s
+		}
+		notes = strings.Trim(notes, "/")
+		if notes == "" {
+			return false
+		}
+		go playClanLordTune(strconv.Itoa(inst) + " " + strings.TrimSpace(notes))
+		return true
 	}
 	return false
 }
