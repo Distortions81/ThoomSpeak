@@ -417,7 +417,16 @@ func parseMusicCommand(s string) bool {
 			return false
 		}
 		go playClanLordTune(strconv.Itoa(inst) + " " + strings.TrimSpace(notes))
-		return !musicDebug
+
+		if musicDebug {
+			msg := "/play " + strconv.Itoa(inst) + " " + strings.TrimSpace(notes)
+			if gs.MessagesToConsole {
+				consoleMessage(msg)
+			} else {
+				chatMessage(msg)
+			}
+		}
+		return true
 	}
 	return false
 }
