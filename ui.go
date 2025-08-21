@@ -1341,12 +1341,15 @@ func makeSettingsWindow() {
 	settingsWin.AutoSize = true
 	settingsWin.Movable = true
 
-	// Split settings into two columns: simple (left) and advanced (right)
+	// Split settings into three panes: basic (left), appearance (center) and advanced (right)
 	var leftW float32 = 270
+	var centerW float32 = 270
 	var rightW float32 = 270
 	outer := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
 	left := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
 	left.Size = eui.Point{X: leftW, Y: 10}
+	center := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
+	center.Size = eui.Point{X: centerW, Y: 10}
 	right := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
 	right.Size = eui.Point{X: rightW, Y: 10}
 
@@ -1364,7 +1367,7 @@ func makeSettingsWindow() {
 			}
 		}
 	}
-	themeDD.Size = eui.Point{X: rightW, Y: 24}
+	themeDD.Size = eui.Point{X: centerW, Y: 24}
 	themeEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventDropdownSelected {
 			SettingsLock.Lock()
@@ -1379,7 +1382,7 @@ func makeSettingsWindow() {
 			}
 		}
 	}
-	right.AddItem(themeDD)
+	center.AddItem(themeDD)
 
 	label, _ := eui.NewText()
 	label.Text = "\nControls:"
@@ -1720,7 +1723,7 @@ func makeSettingsWindow() {
 
 	barColorCB, barColorEvents := eui.NewCheckbox()
 	barColorCB.Text = "Color bars by value"
-	barColorCB.Size = eui.Point{X: leftW, Y: 24}
+	barColorCB.Size = eui.Point{X: centerW, Y: 24}
 	barColorCB.Checked = gs.BarColorByValue
 	barColorEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventCheckboxChanged {
@@ -1728,14 +1731,14 @@ func makeSettingsWindow() {
 			settingsDirty = true
 		}
 	}
-	right.AddItem(barColorCB)
+	center.AddItem(barColorCB)
 
 	barOpacitySlider, barOpacityEvents := eui.NewSlider()
 	barOpacitySlider.Label = "Status bar opacity"
 	barOpacitySlider.MinValue = 0.1
 	barOpacitySlider.MaxValue = 1.0
 	barOpacitySlider.Value = float32(gs.BarOpacity)
-	barOpacitySlider.Size = eui.Point{X: leftW - 10, Y: 24}
+	barOpacitySlider.Size = eui.Point{X: centerW - 10, Y: 24}
 	barOpacityEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
 			SettingsLock.Lock()
@@ -1745,20 +1748,20 @@ func makeSettingsWindow() {
 			settingsDirty = true
 		}
 	}
-	right.AddItem(barOpacitySlider)
+	center.AddItem(barOpacitySlider)
 
 	label, _ = eui.NewText()
 	label.Text = "\nText Sizes:"
 	label.FontSize = 15
-	label.Size = eui.Point{X: leftW, Y: 50}
-	left.AddItem(label)
+	label.Size = eui.Point{X: centerW, Y: 50}
+	center.AddItem(label)
 
 	labelFontSlider, labelFontEvents := eui.NewSlider()
 	labelFontSlider.Label = "Name Font Size"
 	labelFontSlider.MinValue = 5
 	labelFontSlider.MaxValue = 48
 	labelFontSlider.Value = float32(gs.MainFontSize)
-	labelFontSlider.Size = eui.Point{X: leftW - 10, Y: 24}
+	labelFontSlider.Size = eui.Point{X: centerW - 10, Y: 24}
 	labelFontEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
 			SettingsLock.Lock()
@@ -1769,7 +1772,7 @@ func makeSettingsWindow() {
 			settingsDirty = true
 		}
 	}
-	left.AddItem(labelFontSlider)
+	center.AddItem(labelFontSlider)
 
 	// Inventory font size slider
 	invFontSlider, invFontEvents := eui.NewSlider()
@@ -1782,7 +1785,7 @@ func makeSettingsWindow() {
 		}
 		return float32(gs.ConsoleFontSize)
 	}()
-	invFontSlider.Size = eui.Point{X: leftW - 10, Y: 24}
+	invFontSlider.Size = eui.Point{X: centerW - 10, Y: 24}
 	invFontEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
 			SettingsLock.Lock()
@@ -1793,7 +1796,7 @@ func makeSettingsWindow() {
 			updateInventoryWindow()
 		}
 	}
-	left.AddItem(invFontSlider)
+	center.AddItem(invFontSlider)
 
 	// Players list font size slider
 	plFontSlider, plFontEvents := eui.NewSlider()
@@ -1806,7 +1809,7 @@ func makeSettingsWindow() {
 		}
 		return float32(gs.ConsoleFontSize)
 	}()
-	plFontSlider.Size = eui.Point{X: leftW - 10, Y: 24}
+	plFontSlider.Size = eui.Point{X: centerW - 10, Y: 24}
 	plFontEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
 			SettingsLock.Lock()
@@ -1820,14 +1823,14 @@ func makeSettingsWindow() {
 			}
 		}
 	}
-	left.AddItem(plFontSlider)
+	center.AddItem(plFontSlider)
 
 	consoleFontSlider, consoleFontEvents := eui.NewSlider()
 	consoleFontSlider.Label = "Console Font Size"
 	consoleFontSlider.MinValue = 4
 	consoleFontSlider.MaxValue = 48
 	consoleFontSlider.Value = float32(gs.ConsoleFontSize)
-	consoleFontSlider.Size = eui.Point{X: leftW - 10, Y: 24}
+	consoleFontSlider.Size = eui.Point{X: centerW - 10, Y: 24}
 	consoleFontEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
 			SettingsLock.Lock()
@@ -1841,14 +1844,14 @@ func makeSettingsWindow() {
 			settingsDirty = true
 		}
 	}
-	left.AddItem(consoleFontSlider)
+	center.AddItem(consoleFontSlider)
 
 	chatWindowFontSlider, chatWindowFontEvents := eui.NewSlider()
 	chatWindowFontSlider.Label = "Chat Window Font Size"
 	chatWindowFontSlider.MinValue = 4
 	chatWindowFontSlider.MaxValue = 48
 	chatWindowFontSlider.Value = float32(gs.ChatFontSize)
-	chatWindowFontSlider.Size = eui.Point{X: leftW - 10, Y: 24}
+	chatWindowFontSlider.Size = eui.Point{X: centerW - 10, Y: 24}
 	chatWindowFontEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
 			SettingsLock.Lock()
@@ -1862,14 +1865,14 @@ func makeSettingsWindow() {
 			settingsDirty = true
 		}
 	}
-	left.AddItem(chatWindowFontSlider)
+	center.AddItem(chatWindowFontSlider)
 
 	chatFontSlider, chatFontEvents := eui.NewSlider()
 	chatFontSlider.Label = "Chat Bubble Font Size"
 	chatFontSlider.MinValue = 4
 	chatFontSlider.MaxValue = 48
 	chatFontSlider.Value = float32(gs.BubbleFontSize)
-	chatFontSlider.Size = eui.Point{X: leftW - 10, Y: 24}
+	chatFontSlider.Size = eui.Point{X: centerW - 10, Y: 24}
 	chatFontEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
 			gs.BubbleFontSize = float64(ev.Value)
@@ -1877,20 +1880,20 @@ func makeSettingsWindow() {
 			settingsDirty = true
 		}
 	}
-	left.AddItem(chatFontSlider)
+	center.AddItem(chatFontSlider)
 
 	label, _ = eui.NewText()
 	label.Text = "\nOpacity Settings:"
 	label.FontSize = 15
-	label.Size = eui.Point{X: leftW, Y: 50}
-	left.AddItem(label)
+	label.Size = eui.Point{X: centerW, Y: 50}
+	center.AddItem(label)
 
 	nameBgSlider, nameBgEvents := eui.NewSlider()
 	nameBgSlider.Label = "Name Background Opacity"
 	nameBgSlider.MinValue = 0
 	nameBgSlider.MaxValue = 1
 	nameBgSlider.Value = float32(gs.NameBgOpacity)
-	nameBgSlider.Size = eui.Point{X: leftW - 10, Y: 24}
+	nameBgSlider.Size = eui.Point{X: centerW - 10, Y: 24}
 	nameBgEvents.Handle = func(ev eui.UIEvent) {
 
 		if ev.Type == eui.EventSliderChanged {
@@ -1902,31 +1905,31 @@ func makeSettingsWindow() {
 			settingsDirty = true
 		}
 	}
-	left.AddItem(nameBgSlider)
+	center.AddItem(nameBgSlider)
 
 	bubbleOpSlider, bubbleOpEvents := eui.NewSlider()
 	bubbleOpSlider.Label = "Bubble Opacity"
 	bubbleOpSlider.MinValue = 0
 	bubbleOpSlider.MaxValue = 1
 	bubbleOpSlider.Value = float32(gs.BubbleOpacity)
-	bubbleOpSlider.Size = eui.Point{X: leftW - 10, Y: 24}
+	bubbleOpSlider.Size = eui.Point{X: centerW - 10, Y: 24}
 	bubbleOpEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
 			gs.BubbleOpacity = float64(ev.Value)
 			settingsDirty = true
 		}
 	}
-	left.AddItem(bubbleOpSlider)
+	center.AddItem(bubbleOpSlider)
 
 	label, _ = eui.NewText()
 	label.Text = "\nQuality Options:"
 	label.FontSize = 15
-	label.Size = eui.Point{X: rightW, Y: 50}
-	left.AddItem(label)
+	label.Size = eui.Point{X: centerW, Y: 50}
+	center.AddItem(label)
 
 	qualityPresetDD, qpEvents := eui.NewDropdown()
 	qualityPresetDD.Options = []string{"Ultra-Low", "Low", "Standard", "High", "Ultimate", "Custom"}
-	qualityPresetDD.Size = eui.Point{X: rightW, Y: 24}
+	qualityPresetDD.Size = eui.Point{X: centerW, Y: 24}
 	qualityPresetDD.Selected = detectQualityPreset()
 	qualityPresetDD.FontSize = 12
 	qpEvents.Handle = func(ev eui.UIEvent) {
@@ -1946,11 +1949,11 @@ func makeSettingsWindow() {
 			qualityPresetDD.Selected = detectQualityPreset()
 		}
 	}
-	left.AddItem(qualityPresetDD)
+	center.AddItem(qualityPresetDD)
 
 	qualityBtn, qualityEvents := eui.NewButton()
 	qualityBtn.Text = "Quality Settings"
-	qualityBtn.Size = eui.Point{X: rightW, Y: 24}
+	qualityBtn.Size = eui.Point{X: centerW, Y: 24}
 	qualityEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
 			SettingsLock.Lock()
@@ -1959,7 +1962,7 @@ func makeSettingsWindow() {
 			qualityWin.ToggleNear(ev.Item)
 		}
 	}
-	left.AddItem(qualityBtn)
+	center.AddItem(qualityBtn)
 
 	label, _ = eui.NewText()
 	label.Text = "\nAdvanced:"
@@ -2010,6 +2013,7 @@ func makeSettingsWindow() {
 	right.AddItem(resetBtn)
 
 	outer.AddItem(left)
+	outer.AddItem(center)
 	outer.AddItem(right)
 	settingsWin.AddItem(outer)
 	settingsWin.AddWindow(false)
