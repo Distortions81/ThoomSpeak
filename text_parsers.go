@@ -439,7 +439,7 @@ func parseMusicCommand(s string, raw []byte) bool {
 	if notes == "" {
 		return false
 	}
-	go playClanLordTune(strconv.Itoa(inst) + " " + strings.TrimSpace(notes))
+	//go playClanLordTune(strconv.Itoa(inst) + " " + strings.TrimSpace(notes))
 
 	if musicDebug {
 		msg := "/play " + strconv.Itoa(inst) + " " + strings.TrimSpace(notes)
