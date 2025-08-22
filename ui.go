@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math"
 	"os"
@@ -472,6 +473,134 @@ func handleDownloadAssetError(flow, statusText, pb *eui.ItemData, retryFn func()
 	if downloadWin != nil {
 		downloadWin.Refresh()
 	}
+}
+
+// runAutoUpdate displays a progress window while downloading client updates.
+// It mirrors the CL_Images download UI and reports progress via
+// downloadStatus/downloadProgress callbacks.
+func runAutoUpdate(resp []byte, dataDir string) (int, error) {
+	if downloadWin != nil {
+		downloadWin.Close()
+		downloadWin = nil
+	}
+	downloadWin = eui.NewWindow()
+	downloadWin.Title = "Updating"
+	downloadWin.Closable = false
+	downloadWin.Resizable = false
+	downloadWin.AutoSize = true
+	downloadWin.Movable = true
+	downloadWin.SetZone(eui.HZoneCenter, eui.VZoneMiddleTop)
+
+	flow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
+
+	statusText, _ := eui.NewText()
+	statusText.Text = ""
+	statusText.FontSize = 13
+	statusText.Size = eui.Point{X: 700, Y: 20}
+	flow.AddItem(statusText)
+
+	pb, _ := eui.NewProgressBar()
+	pb.Size = eui.Point{X: 700, Y: 14}
+	pb.MinValue = 0
+	pb.MaxValue = 1
+	pb.Value = 0
+	pb.Indeterminate = true
+	flow.AddItem(pb)
+
+	cancelRow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
+	cancelBtn, cancelEvents := eui.NewButton()
+	cancelBtn.Text = "Cancel"
+	cancelBtn.Size = eui.Point{X: 100, Y: 24}
+	cancelEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			if downloadCancel != nil {
+				downloadCancel()
+			}
+			if downloadStatus != nil {
+				downloadStatus("Download canceled")
+			}
+		}
+	}
+	cancelRow.AddItem(cancelBtn)
+	flow.AddItem(cancelRow)
+
+	downloadWin.AddItem(flow)
+	downloadWin.MarkOpen()
+
+	var dlStart time.Time
+	var currentName string
+	downloadStatus = func(s string) {
+		statusText.Text = s
+		statusText.Dirty = true
+		if downloadWin != nil {
+			downloadWin.Refresh()
+		}
+	}
+	downloadProgress = func(name string, read, total int64) {
+		if dlStart.IsZero() || name != currentName {
+			dlStart = time.Now()
+			currentName = name
+		}
+		if total > 0 {
+			pb.Indeterminate = false
+			pb.MinValue = 0
+			pb.MaxValue = float32(total)
+			pb.Value = float32(read)
+		} else {
+			pb.Indeterminate = true
+		}
+		pb.Dirty = true
+
+		elapsed := time.Since(dlStart).Seconds()
+		rate := float64(read)
+		if elapsed > 0 {
+			rate = rate / elapsed
+		} else {
+			rate = 0
+		}
+		var etaStr string
+		if total > 0 && rate > 1 {
+			remain := float64(total-read) / rate
+			if remain < 0 {
+				remain = 0
+			}
+			eta := time.Duration(remain) * time.Second
+			m := int(eta.Minutes())
+			s := int(eta.Seconds()) % 60
+			etaStr = fmt.Sprintf(" ETA %d:%02d", m, s)
+		}
+		var pct string
+		if total > 0 {
+			pct = fmt.Sprintf(" (%.1f%%)", 100*float64(read)/float64(total))
+		}
+		statusText.Text = fmt.Sprintf("Downloading %s: %s/%s%s  %s/s%s",
+			name,
+			humanize.Bytes(uint64(read)),
+			func() string {
+				if total > 0 {
+					return humanize.Bytes(uint64(total))
+				}
+				return "?"
+			}(),
+			pct,
+			humanize.Bytes(uint64(rate)),
+			etaStr,
+		)
+		statusText.Dirty = true
+		if downloadWin != nil {
+			downloadWin.Refresh()
+		}
+	}
+
+	downloadCtx, downloadCancel = context.WithCancel(context.Background())
+	dlMutex.Lock()
+	newVer, err := autoUpdate(resp, dataDir)
+	dlMutex.Unlock()
+	downloadStatus = nil
+	downloadProgress = nil
+	downloadWin.Close()
+	downloadWin = nil
+	return newVer, err
 }
 
 func makeDownloadsWindow() {
@@ -1038,7 +1167,9 @@ func startLogin() {
 			pass = ""
 			// Bring login forward first so the popup stays on top
 			loginWin.MarkOpen()
-			makeErrorWindow("Error: Login: " + err.Error())
+			if !errors.Is(err, errAutoUpdateFailed) {
+				makeErrorWindow("Error: Login: " + err.Error())
+			}
 		}
 	}()
 }
