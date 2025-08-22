@@ -900,9 +900,11 @@ func parseDrawState(data []byte, buildCache bool) error {
 		}
 	}
 
-	state.pictures = newPics
+    // Save previous pictures for pinning/interpolation decisions
+    state.prevPictures = append([]framePicture(nil), prevPics...)
+    state.pictures = newPics
 
-	needPrev := (gs.MotionSmoothing || gs.BlendMobiles) && ok && !seekingMov
+	needPrev := (gs.MotionSmoothing || gs.BlendMobiles) && !seekingMov
 	if needPrev {
 		if state.prevMobiles == nil {
 			state.prevMobiles = make(map[uint8]frameMobile)
@@ -979,13 +981,8 @@ func parseDrawState(data []byte, buildCache bool) error {
 		}
 		state.mobiles[m.Index] = m
 	}
-	if !ok && state.prevMobiles != nil {
-		for idx := range state.prevMobiles {
-			if _, present := state.mobiles[idx]; !present {
-				delete(state.prevMobiles, idx)
-			}
-		}
-	}
+	// Keep prevMobiles regardless of pictureShift outcome so interpolation of
+	// mobiles and pinned effects remains available.
 	// Prepare render caches now that state has been updated when requested.
 	if buildCache {
 		prepareRenderCacheLocked()

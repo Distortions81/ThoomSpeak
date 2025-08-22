@@ -2349,6 +2349,20 @@ func makeQualityWindow() {
 	}
 	flow.AddItem(motionCB)
 
+	// Object pinning: make small effect sprites follow mobiles smoothly
+	pinCB, pinEvents := eui.NewCheckbox()
+	pinCB.Text = "Object pinning (effects follow mobiles)"
+	pinCB.Size = eui.Point{X: width, Y: 24}
+	pinCB.Checked = gs.ObjectPinning
+	pinCB.Tooltip = "Sprites 128x128 or smaller that keep exact offset from a nearby mobile will interpolate with that mobile"
+	pinEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			gs.ObjectPinning = ev.Checked
+			settingsDirty = true
+		}
+	}
+	flow.AddItem(pinCB)
+
 	nsCB, noSmoothEvents := eui.NewCheckbox()
 	noSmoothCB = nsCB
 	noSmoothCB.Text = "Smooth moving objects,glitchy WIP"

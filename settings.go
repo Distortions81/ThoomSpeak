@@ -58,6 +58,7 @@ var gsdef settings = settings{
 	BubbleNarration:    true,
 
 	MotionSmoothing:      true,
+	ObjectPinning:        true,
 	BlendAmount:          1.0,
 	MobileBlendAmount:    0.33,
 	MobileBlendFrames:    10,
@@ -126,6 +127,7 @@ type settings struct {
 	BubbleNarration    bool
 
 	MotionSmoothing      bool
+	ObjectPinning        bool
 	BlendMobiles         bool
 	BlendPicts           bool
 	BlendAmount          float64
