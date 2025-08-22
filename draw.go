@@ -947,6 +947,10 @@ func parseDrawState(data []byte, buildCache bool) error {
 			if pp.Moving {
 				continue
 			}
+			// Don't include these
+			if pp.Again {
+				continue
+			}
 			// Only carry if the previous position's bounding box was on-screen.
 			oldH, oldV := pp.H, pp.V
 			if !pictureOnEdge(pp) {
