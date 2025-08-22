@@ -887,6 +887,21 @@ func parseDrawState(data []byte, buildCache bool) error {
 				newPics[i].PrevV = best.V
 				best.Owned = true
 			}
+		} else if moving {
+			for j := range prevPics {
+				pp := &prevPics[j]
+				if pp.Owned || pp.PictID != newPics[i].PictID {
+					continue
+				}
+				dh := int(newPics[i].H) - int(pp.H) - state.picShiftX
+				dv := int(newPics[i].V) - int(pp.V) - state.picShiftY
+				if dh*dh+dv*dv <= maxInterpPixels*maxInterpPixels {
+					newPics[i].PrevH = pp.H
+					newPics[i].PrevV = pp.V
+					pp.Owned = true
+					break
+				}
+			}
 		} else if owner != nil {
 			owner.Owned = true
 		}
