@@ -6,6 +6,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OUTPUT_DIR="binaries"
 mkdir -p "$OUTPUT_DIR"
 
+VERSION="${1:-dev}"
+
 platforms=(
   "linux:amd64"
   #"linux:arm64"
@@ -135,7 +137,7 @@ ensure_cmd zip
 
 for platform in "${platforms[@]}"; do
   IFS=":" read -r GOOS GOARCH <<<"$platform"
-  BIN_NAME="gothoom-${GOOS}-${GOARCH}"
+  BIN_NAME="gothoom-${VERSION}-${GOOS}-${GOARCH}"
   ZIP_NAME="${BIN_NAME}.zip"
   TAGS=""
   LDFLAGS="-s -w"

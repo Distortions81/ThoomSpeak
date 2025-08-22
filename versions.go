@@ -34,7 +34,7 @@ var (
 )
 
 const versionsURL = "https://m45sci.xyz/u/dist/goThoom/versions.json"
-const binaryURLFmt = "https://m45sci.xyz/u/dist/goThoom/gothoom-%d.zip"
+const binaryURLFmt = "https://m45sci.xyz/u/dist/goThoom/gothoom-%d-%s-%s.zip"
 
 var uiReady bool
 
@@ -198,7 +198,7 @@ func versionCheckLoop() {
 }
 
 func downloadAndInstall(ver int) error {
-	url := fmt.Sprintf(binaryURLFmt, ver)
+	url := fmt.Sprintf(binaryURLFmt, ver, runtime.GOOS, runtime.GOARCH)
 	exePath, err := os.Executable()
 	if err != nil {
 		return err

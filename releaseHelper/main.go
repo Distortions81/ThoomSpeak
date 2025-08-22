@@ -124,9 +124,9 @@ func main() {
 
 func parseOSArch(name string) (string, string, error) {
 	base := strings.TrimSuffix(filepath.Base(name), ".zip")
-	parts := strings.Split(base, "_")
-	if len(parts) < 3 {
-		return "", "", fmt.Errorf("filename %s does not contain os and arch", name)
+	parts := strings.Split(base, "-")
+	if len(parts) < 4 {
+		return "", "", fmt.Errorf("filename %s does not contain version, os, and arch", name)
 	}
 	osName := parts[len(parts)-2]
 	arch := parts[len(parts)-1]
