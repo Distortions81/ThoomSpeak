@@ -219,6 +219,41 @@ func pictureOnEdge(p framePicture) bool {
 	return false
 }
 
+// pictureVisible reports whether the picture overlaps the visible field.
+func pictureVisible(p framePicture) bool {
+	if clImages == nil {
+		return false
+	}
+	w, h := clImages.Size(uint32(p.PictID))
+	halfW := w / 2
+	halfH := h / 2
+	// Check if the bounding box intersects the field rectangle.
+	if int(p.H)+halfW < -fieldCenterX ||
+		int(p.H)-halfW > fieldCenterX ||
+		int(p.V)+halfH < -fieldCenterY ||
+		int(p.V)-halfH > fieldCenterY {
+		return false
+	}
+	return true
+}
+
+// pictureVisibleAt reports visibility for a pictID at the given H,V.
+func pictureVisibleAt(pictID uint16, h, v int16) bool {
+	if clImages == nil {
+		return false
+	}
+	w, hpx := clImages.Size(uint32(pictID))
+	halfW := w / 2
+	halfH := hpx / 2
+	if int(h)+halfW < -fieldCenterX ||
+		int(h)-halfW > fieldCenterX ||
+		int(v)+halfH < -fieldCenterY ||
+		int(v)-halfH > fieldCenterY {
+		return false
+	}
+	return true
+}
+
 // buildNameTagImage creates a cached image for a mobile name tag using the
 // current font and settings. Returns the image and its width/height in pixels.
 func buildNameTagImage(name string, colorCode uint8, opacity uint8, style uint8) (*ebiten.Image, int, int) {
@@ -900,9 +935,38 @@ func parseDrawState(data []byte, buildCache bool) error {
 		}
 	}
 
-    // Save previous pictures for pinning/interpolation decisions
-    state.prevPictures = append([]framePicture(nil), prevPics...)
-    state.pictures = newPics
+	// Carry over previous-frame ground sprites that are missing this frame.
+	// Advance them by the detected picture shift and keep them while visible
+	// to prevent flashes of black at the viewport edges during camera motion.
+	if (state.picShiftX != 0 || state.picShiftY != 0) && len(prevPics) > 0 {
+		for _, pp := range prevPics {
+			if pp.Owned {
+				continue // already matched/present
+			}
+			// Only carry ground/static sprites (not marked moving)
+			if pp.Moving {
+				continue
+			}
+			// Only carry if the previous position's bounding box was on-screen.
+			oldH, oldV := pp.H, pp.V
+			if !pictureOnEdge(pp) {
+				continue
+			}
+			// Advance by detected picture shift for this frame.
+			pp.H = int16(int(pp.H) + state.picShiftX)
+			pp.V = int16(int(pp.V) + state.picShiftY)
+			pp.PrevH = oldH
+			pp.PrevV = oldV
+			pp.Moving = false
+			pp.Background = true
+			pp.Again = true
+			newPics = append(newPics, pp)
+		}
+	}
+
+	// Save previous pictures for pinning/interpolation decisions
+	state.prevPictures = append([]framePicture(nil), prevPics...)
+	state.pictures = newPics
 
 	needPrev := (gs.MotionSmoothing || gs.BlendMobiles) && !seekingMov
 	if needPrev {
