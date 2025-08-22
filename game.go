@@ -1337,26 +1337,55 @@ func drawPicture(screen *ebiten.Image, ox, oy int, p framePicture, alpha float64
 	}
 }
 
-// pictureMobileOffset returns the interpolated offset for a picture that
-// aligns with a mobile which moved between frames.
+// pictureMobileOffset returns the interpolated offset for a small picture that
+// moved in lockstep with a nearby mobile between frames. To avoid pinning
+// unrelated sprites, only mobiles within maxInterpPixels of the picture are
+// considered. The picture must also move by the same delta as the candidate
+// mobile. Pictures larger than 64×64 are ignored.
 func pictureMobileOffset(p framePicture, mobiles []frameMobile, prevMobiles map[uint8]frameMobile, alpha float64, shiftX, shiftY int) (float64, float64, bool) {
-	for _, m := range mobiles {
-		if m.H == p.H && m.V == p.V {
-			if pm, ok := prevMobiles[m.Index]; ok {
-				dh := int(m.H) - int(pm.H) - shiftX
-				dv := int(m.V) - int(pm.V) - shiftY
-				if dh != 0 || dv != 0 {
-					if dh*dh+dv*dv <= maxMobileInterpPixels*maxMobileInterpPixels {
-						h := float64(pm.H)*(1-alpha) + float64(m.H)*alpha
-						v := float64(pm.V)*(1-alpha) + float64(m.V)*alpha
-						return h - float64(m.H), v - float64(m.V), true
-					}
-				}
-			}
-			break
+	if clImages != nil {
+		w, h := clImages.Size(uint32(p.PictID))
+		if w > 64 || h > 64 {
+			return 0, 0, false
 		}
 	}
-	return 0, 0, false
+
+	pictDh := int(p.H) - int(p.PrevH) - shiftX
+	pictDv := int(p.V) - int(p.PrevV) - shiftY
+
+	nearestDist := maxInterpPixels*maxInterpPixels + 1
+	var nearest, prev frameMobile
+	found := false
+	for _, m := range mobiles {
+		pm, ok := prevMobiles[m.Index]
+		if !ok {
+			continue
+		}
+		dx := int(p.H) - int(m.H)
+		dy := int(p.V) - int(m.V)
+		dist := dx*dx + dy*dy
+		if dist > maxInterpPixels*maxInterpPixels || dist >= nearestDist {
+			continue
+		}
+		mdh := int(m.H) - int(pm.H) - shiftX
+		mdv := int(m.V) - int(pm.V) - shiftY
+		if mdh != pictDh || mdv != pictDv {
+			continue
+		}
+		if mdh*mdh+mdv*mdv > maxMobileInterpPixels*maxMobileInterpPixels {
+			continue
+		}
+		nearestDist = dist
+		nearest = m
+		prev = pm
+		found = true
+	}
+	if !found {
+		return 0, 0, false
+	}
+	h := float64(prev.H)*(1-alpha) + float64(nearest.H)*alpha
+	v := float64(prev.V)*(1-alpha) + float64(nearest.V)*alpha
+	return h - float64(nearest.H), v - float64(nearest.V), true
 }
 
 // drawMobileNameTag renders the name tag and color bar for a single mobile.
