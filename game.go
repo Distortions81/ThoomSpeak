@@ -1352,6 +1352,36 @@ func drawPicture(screen *ebiten.Image, ox, oy int, p framePicture, alpha float64
 func pictureMobileOffset(p framePicture, mobiles []frameMobile, prevMobiles map[uint8]frameMobile, prevPictures []framePicture, alpha float64) (float64, float64, bool) {
     // Use exact previous picture position for the same PictID to verify the
     // picture-to-mobile offset stayed identical across frames.
+    // Try the hero (playerIndex) first to ensure centered player effects pin.
+    for i := range mobiles {
+        if mobiles[i].Index != playerIndex {
+            continue
+        }
+        m := mobiles[i]
+        pm, ok := prevMobiles[m.Index]
+        if !ok {
+            break
+        }
+        offH := int(p.H) - int(m.H)
+        offV := int(p.V) - int(m.V)
+        if offH < -64 || offH > 64 || offV < -64 || offV > 64 {
+            break
+        }
+        expPrevH := int(pm.H) + offH
+        expPrevV := int(pm.V) + offV
+        for j := range prevPictures {
+            pp := prevPictures[j]
+            if pp.PictID != p.PictID {
+                continue
+            }
+            if int(pp.H) == expPrevH && int(pp.V) == expPrevV {
+                h := float64(pm.H)*(1-alpha) + float64(m.H)*alpha
+                v := float64(pm.V)*(1-alpha) + float64(m.V)*alpha
+                return h - float64(m.H), v - float64(m.V), true
+            }
+        }
+        break
+    }
     bestDist := 64*64 + 1
     var bestDX, bestDY float64
     found := false
