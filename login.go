@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -19,6 +20,8 @@ var (
 	loginCancel context.CancelFunc
 	loginMu     sync.Mutex
 )
+
+var errAutoUpdateFailed = errors.New("auto update failed")
 
 func handleDisconnect() {
 	loginMu.Lock()
@@ -380,11 +383,12 @@ func login(ctx context.Context, clientVersion int) error {
 
 		if result == -30972 || result == -30973 {
 			logDebug("server requested update, downloading...")
-			newVer, err := autoUpdate(resp, dataDirPath)
+			newVer, err := runAutoUpdate(resp, dataDirPath)
 			if err != nil {
+				makeErrorWindow("Error: Update: " + err.Error())
 				tcpConn.Close()
 				udpConn.Close()
-				return fmt.Errorf("auto update: %w", err)
+				return errAutoUpdateFailed
 			}
 			if s, err := checkDataFiles(newVer); err == nil {
 				status = s
