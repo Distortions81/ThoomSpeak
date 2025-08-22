@@ -1341,7 +1341,8 @@ func makeSettingsWindow() {
 	settingsWin.AutoSize = true
 	settingsWin.Movable = true
 
-	// Split settings into three panes: basic (left), appearance (center) and advanced (right)
+	// Split settings into three panes: controls/window behavior (left), appearance (center),
+	// and audio/advanced options (right)
 	var leftW float32 = 270
 	var centerW float32 = 270
 	var rightW float32 = 270
@@ -1385,7 +1386,7 @@ func makeSettingsWindow() {
 	center.AddItem(themeDD)
 
 	label, _ := eui.NewText()
-	label.Text = "\nControls:"
+	label.Text = "\nControls & Notifications:"
 	label.FontSize = 15
 	label.Size = eui.Point{X: leftW, Y: 50}
 	left.AddItem(label)
@@ -1458,10 +1459,10 @@ func makeSettingsWindow() {
 	left.AddItem(notifBtn)
 
 	label, _ = eui.NewText()
-	label.Text = "\nWindow Behavior:"
+	label.Text = "\nWindow Behavior & Chat:"
 	label.FontSize = 15
-	label.Size = eui.Point{X: rightW, Y: 50}
-	right.AddItem(label)
+	label.Size = eui.Point{X: leftW, Y: 50}
+	left.AddItem(label)
 
 	/*
 		tilingCB, tilingEvents := eui.NewCheckbox()
@@ -1531,7 +1532,7 @@ func makeSettingsWindow() {
 
 	fullscreenCB, fullscreenEvents := eui.NewCheckbox()
 	fullscreenCB.Text = "Fullscreen"
-	fullscreenCB.Size = eui.Point{X: rightW, Y: 24}
+	fullscreenCB.Size = eui.Point{X: leftW, Y: 24}
 	fullscreenCB.Checked = gs.Fullscreen
 	fullscreenEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventCheckboxChanged {
@@ -1544,11 +1545,11 @@ func makeSettingsWindow() {
 			settingsDirty = true
 		}
 	}
-	right.AddItem(fullscreenCB)
+	left.AddItem(fullscreenCB)
 
 	alwaysTopCB, alwaysTopEvents := eui.NewCheckbox()
 	alwaysTopCB.Text = "Always on top"
-	alwaysTopCB.Size = eui.Point{X: rightW, Y: 24}
+	alwaysTopCB.Size = eui.Point{X: leftW, Y: 24}
 	alwaysTopCB.Checked = gs.AlwaysOnTop
 	alwaysTopEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventCheckboxChanged {
@@ -1560,11 +1561,11 @@ func makeSettingsWindow() {
 			settingsDirty = true
 		}
 	}
-	right.AddItem(alwaysTopCB)
+	left.AddItem(alwaysTopCB)
 
 	bubbleMsgCB, bubbleMsgEvents := eui.NewCheckbox()
 	bubbleMsgCB.Text = "Combine chat + console"
-	bubbleMsgCB.Size = eui.Point{X: rightW, Y: 24}
+	bubbleMsgCB.Size = eui.Point{X: leftW, Y: 24}
 	bubbleMsgCB.Checked = gs.MessagesToConsole
 	bubbleMsgEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventCheckboxChanged {
@@ -1580,11 +1581,11 @@ func makeSettingsWindow() {
 			}
 		}
 	}
-	right.AddItem(bubbleMsgCB)
+	left.AddItem(bubbleMsgCB)
 
 	chatTSCB, chatTSEvents := eui.NewCheckbox()
 	chatTSCB.Text = "Chat timestamps"
-	chatTSCB.Size = eui.Point{X: rightW, Y: 24}
+	chatTSCB.Size = eui.Point{X: leftW, Y: 24}
 	chatTSCB.Checked = gs.ChatTimestamps
 	chatTSEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventCheckboxChanged {
@@ -1596,11 +1597,11 @@ func makeSettingsWindow() {
 			updateChatWindow()
 		}
 	}
-	right.AddItem(chatTSCB)
+	left.AddItem(chatTSCB)
 
 	consoleTSCB, consoleTSEvents := eui.NewCheckbox()
 	consoleTSCB.Text = "Console timestamps"
-	consoleTSCB.Size = eui.Point{X: rightW, Y: 24}
+	consoleTSCB.Size = eui.Point{X: leftW, Y: 24}
 	consoleTSCB.Checked = gs.ConsoleTimestamps
 	consoleTSEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventCheckboxChanged {
@@ -1612,13 +1613,13 @@ func makeSettingsWindow() {
 			updateConsoleWindow()
 		}
 	}
-	right.AddItem(consoleTSCB)
+	left.AddItem(consoleTSCB)
 
 	tsFormatInput, tsFormatEvents := eui.NewInput()
 	tsFormatInput.Label = "Timestamp format"
 	tsFormatInput.Text = gs.TimestampFormat
 	tsFormatInput.TextPtr = &gs.TimestampFormat
-	tsFormatInput.Size = eui.Point{X: rightW, Y: 24}
+	tsFormatInput.Size = eui.Point{X: leftW, Y: 24}
 	tsFormatInput.Tooltip = "mo,day,hour,min,sec,yr:01,02,03..."
 	tsFormatEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventInputChanged {
@@ -1630,7 +1631,13 @@ func makeSettingsWindow() {
 			updateConsoleWindow()
 		}
 	}
-	right.AddItem(tsFormatInput)
+	left.AddItem(tsFormatInput)
+
+	label, _ = eui.NewText()
+	label.Text = "\nAudio Settings:"
+	label.FontSize = 15
+	label.Size = eui.Point{X: rightW, Y: 50}
+	right.AddItem(label)
 
 	gameSlider, gameEvents := eui.NewSlider()
 	gameSlider.MinValue = 0
@@ -1709,8 +1716,8 @@ func makeSettingsWindow() {
 	label, _ = eui.NewText()
 	label.Text = "\nStatus Bar Options:"
 	label.FontSize = 15
-	label.Size = eui.Point{X: rightW, Y: 50}
-	right.AddItem(label)
+	label.Size = eui.Point{X: centerW, Y: 50}
+	center.AddItem(label)
 
 	placements := []struct {
 		name  string
@@ -1726,7 +1733,7 @@ func makeSettingsWindow() {
 		radio, radioEvents := eui.NewRadio()
 		radio.Text = p.name
 		radio.RadioGroup = "status-bar-placement"
-		radio.Size = eui.Point{X: rightW, Y: 24}
+		radio.Size = eui.Point{X: centerW, Y: 24}
 		radio.Checked = gs.BarPlacement == p.value
 		radioEvents.Handle = func(ev eui.UIEvent) {
 			if ev.Type == eui.EventRadioSelected {
@@ -1737,7 +1744,7 @@ func makeSettingsWindow() {
 				settingsDirty = true
 			}
 		}
-		right.AddItem(radio)
+		center.AddItem(radio)
 	}
 
 	barColorCB, barColorEvents := eui.NewCheckbox()
@@ -1956,14 +1963,14 @@ func makeSettingsWindow() {
 	center.AddItem(bubbleOpSlider)
 
 	label, _ = eui.NewText()
-	label.Text = "\nQuality Options:"
+	label.Text = "\nQuality Settings:"
 	label.FontSize = 15
-	label.Size = eui.Point{X: centerW, Y: 50}
-	center.AddItem(label)
+	label.Size = eui.Point{X: rightW, Y: 50}
+	right.AddItem(label)
 
 	qualityPresetDD, qpEvents := eui.NewDropdown()
 	qualityPresetDD.Options = []string{"Ultra-Low", "Low", "Standard", "High", "Ultimate", "Custom"}
-	qualityPresetDD.Size = eui.Point{X: centerW, Y: 24}
+	qualityPresetDD.Size = eui.Point{X: rightW, Y: 24}
 	qualityPresetDD.Selected = detectQualityPreset()
 	qualityPresetDD.FontSize = 12
 	qpEvents.Handle = func(ev eui.UIEvent) {
@@ -1983,11 +1990,11 @@ func makeSettingsWindow() {
 			qualityPresetDD.Selected = detectQualityPreset()
 		}
 	}
-	center.AddItem(qualityPresetDD)
+	right.AddItem(qualityPresetDD)
 
 	qualityBtn, qualityEvents := eui.NewButton()
 	qualityBtn.Text = "Quality Settings"
-	qualityBtn.Size = eui.Point{X: centerW, Y: 24}
+	qualityBtn.Size = eui.Point{X: rightW, Y: 24}
 	qualityEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
 			SettingsLock.Lock()
@@ -1996,7 +2003,7 @@ func makeSettingsWindow() {
 			qualityWin.ToggleNear(ev.Item)
 		}
 	}
-	center.AddItem(qualityBtn)
+	right.AddItem(qualityBtn)
 
 	label, _ = eui.NewText()
 	label.Text = "\nAdvanced:"
