@@ -1190,7 +1190,23 @@ func drawPicture(screen *ebiten.Image, ox, oy int, p framePicture, alpha float64
 	}
 	offX := float64(int(p.PrevH)-int(p.H)) * (1 - alpha)
 	offY := float64(int(p.PrevV)-int(p.V)) * (1 - alpha)
-	if p.Moving && !gs.smoothMoving {
+	w, h := 0, 0
+	if clImages != nil {
+		w, h = clImages.Size(uint32(p.PictID))
+	}
+
+	var mobileX, mobileY float64
+	hasMobileOffset := false
+	if w <= 64 && h <= 64 && gs.MotionSmoothing {
+		if dx, dy, ok := pictureMobileOffset(p, mobiles, prevMobiles, alpha, shiftX, shiftY); ok {
+			mobileX, mobileY = dx, dy
+			hasMobileOffset = true
+			offX = 0
+			offY = 0
+		}
+	}
+
+	if p.Moving && !gs.smoothMoving && !hasMobileOffset {
 		if int(p.PrevH) == int(p.H)-shiftX && int(p.PrevV) == int(p.V)-shiftY {
 			if gs.dontShiftNewSprites {
 				offX = 0
@@ -1207,20 +1223,6 @@ func drawPicture(screen *ebiten.Image, ox, oy int, p framePicture, alpha float64
 		frame = clImages.FrameIndex(uint32(p.PictID), frameCounter)
 	}
 	plane := p.Plane
-
-	w, h := 0, 0
-	if clImages != nil {
-		w, h = clImages.Size(uint32(p.PictID))
-	}
-
-	var mobileX, mobileY float64
-	if w <= 64 && h <= 64 && gs.MotionSmoothing && gs.smoothMoving {
-		if dx, dy, ok := pictureMobileOffset(p, mobiles, prevMobiles, alpha, shiftX, shiftY); ok {
-			mobileX, mobileY = dx, dy
-			offX = 0
-			offY = 0
-		}
-	}
 
 	x := roundToInt(((float64(p.H) + offX + mobileX) + float64(fieldCenterX)) * gs.GameScale)
 	y := roundToInt(((float64(p.V) + offY + mobileY) + float64(fieldCenterY)) * gs.GameScale)
