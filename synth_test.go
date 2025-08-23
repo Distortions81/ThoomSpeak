@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hajimehoshi/ebiten/v2/audio"
+	meltysynth "github.com/sinshu/go-meltysynth/meltysynth"
 )
 
 type noteAction struct {
@@ -38,12 +38,16 @@ func durToSamples(d time.Duration) int {
 }
 
 func TestPlayOverlappingNotes(t *testing.T) {
-	ctx := audio.NewContext(sampleRate)
-
 	ms := &mockSynth{}
-	synth = ms
+	orig := newSynthesizer
+	newSynthesizer = func(*meltysynth.SoundFont, *meltysynth.SynthesizerSettings) (synthesizer, error) {
+		return ms, nil
+	}
+	defer func() { newSynthesizer = orig }()
+
 	setupSynthOnce = sync.Once{}
-	setupSynthOnce.Do(func() {})
+	sfntCached = &meltysynth.SoundFont{}
+	synthSettings = meltysynth.NewSynthesizerSettings(sampleRate)
 
 	blockDur := time.Second * time.Duration(block) / sampleRate
 	noteDur := 2 * blockDur
@@ -52,8 +56,8 @@ func TestPlayOverlappingNotes(t *testing.T) {
 		{Key: 64, Velocity: 100, Start: blockDur, Duration: noteDur},
 	}
 
-	if err := Play(ctx, 0, notes); err != nil {
-		t.Fatalf("Play returned error: %v", err)
+	if _, _, err := renderSong(0, notes); err != nil {
+		t.Fatalf("renderSong returned error: %v", err)
 	}
 
 	if len(ms.events) != 4 {

@@ -1,12 +1,12 @@
 package main
 
 import (
-    "fmt"
-    "bytes"
-    "encoding/binary"
-    "errors"
-    "log"
-    "math"
+	"bytes"
+	"encoding/binary"
+	"errors"
+	"fmt"
+	"log"
+	"math"
 	"os"
 	"path"
 	"sync"
@@ -17,10 +17,10 @@ import (
 )
 
 const (
-    sampleRate = 44100
-    // Use a small fixed render block that aligns with common synth effect
-    // processing sizes to avoid internal ring-buffer edge cases.
-    block      = 64
+	sampleRate = 44100
+	// Use a small fixed render block that aligns with common synth effect
+	// processing sizes to avoid internal ring-buffer edge cases.
+	block = 64
 
 	// tailSamples extends the rendered length by 2 seconds to allow reverb to decay.
 	tailSamples = sampleRate * 2
@@ -40,20 +40,26 @@ type Note struct {
 
 // synthesizer abstracts the subset of meltysynth.Synthesizer used by Play.
 type synthesizer interface {
-    ProcessMidiMessage(channel int32, command int32, data1, data2 int32)
-    NoteOn(channel, key, vel int32)
-    NoteOff(channel, key int32)
-    Render(left, right []float32)
+	ProcessMidiMessage(channel int32, command int32, data1, data2 int32)
+	NoteOn(channel, key, vel int32)
+	NoteOff(channel, key int32)
+	Render(left, right []float32)
 }
 
 var (
-    setupSynthOnce sync.Once
-    sfntCached     *meltysynth.SoundFont
-    synthSettings  *meltysynth.SynthesizerSettings
+	setupSynthOnce sync.Once
+	sfntCached     *meltysynth.SoundFont
+	synthSettings  *meltysynth.SynthesizerSettings
 
-    musicPlayers   = make(map[*audio.Player]struct{})
-    musicPlayersMu sync.Mutex
+	musicPlayers   = make(map[*audio.Player]struct{})
+	musicPlayersMu sync.Mutex
 )
+
+// newSynthesizer constructs a meltysynth synthesizer. Tests may override this to
+// inject a mock implementation.
+var newSynthesizer = func(sf *meltysynth.SoundFont, settings *meltysynth.SynthesizerSettings) (synthesizer, error) {
+	return meltysynth.NewSynthesizer(sf, settings)
+}
 
 func stopAllMusic() {
 	musicPlayersMu.Lock()
@@ -75,35 +81,35 @@ func setupSynth() {
 		log.Printf("soundfont missing: %v", err)
 		return
 	}
-    rs := bytes.NewReader(sfData)
-    sfnt, err := meltysynth.NewSoundFont(rs)
-    if err != nil {
-        return
-    }
-    settings := meltysynth.NewSynthesizerSettings(sampleRate)
-    // Align meltysynth internal block size with our render loop to reduce
-    // chances of effect buffers overrunning on odd boundaries.
-    settings.BlockSize = block
-    sfntCached = sfnt
-    synthSettings = settings
+	rs := bytes.NewReader(sfData)
+	sfnt, err := meltysynth.NewSoundFont(rs)
+	if err != nil {
+		return
+	}
+	settings := meltysynth.NewSynthesizerSettings(sampleRate)
+	// Align meltysynth internal block size with our render loop to reduce
+	// chances of effect buffers overrunning on odd boundaries.
+	settings.BlockSize = block
+	sfntCached = sfnt
+	synthSettings = settings
 }
 
 // renderSong renders the provided notes using the current SoundFont and returns
 // the raw left and right channel samples. The caller can further process or mix
 // these samples before playback.
 func renderSong(program int, notes []Note) ([]float32, []float32, error) {
-    setupSynthOnce.Do(setupSynth)
-    if sfntCached == nil || synthSettings == nil {
-        return nil, nil, errors.New("synth not initialized")
-    }
+	setupSynthOnce.Do(setupSynth)
+	if sfntCached == nil || synthSettings == nil {
+		return nil, nil, errors.New("synth not initialized")
+	}
 
-    const ch = 0
-    // Build a fresh synth per song to avoid concurrent use of internal state.
-    syn, err := meltysynth.NewSynthesizer(sfntCached, synthSettings)
-    if err != nil {
-        return nil, nil, err
-    }
-    syn.ProcessMidiMessage(ch, 0xC0, int32(program), 0)
+	const ch = 0
+	// Build a fresh synth per song to avoid concurrent use of internal state.
+	syn, err := newSynthesizer(sfntCached, synthSettings)
+	if err != nil {
+		return nil, nil, err
+	}
+	syn.ProcessMidiMessage(ch, 0xC0, int32(program), 0)
 
 	type event struct {
 		key, vel   int
@@ -132,37 +138,37 @@ func renderSong(program int, notes []Note) ([]float32, []float32, error) {
 	trigger := func(start, count int) {
 		end := start + count
 		for _, ev := range events {
-            if ev.start >= start && ev.start < end && !active[ev.key] {
-                syn.NoteOn(ch, int32(ev.key), int32(ev.vel))
-                active[ev.key] = true
-            }
-            if ev.end >= start && ev.end < end && active[ev.key] {
-                syn.NoteOff(ch, int32(ev.key))
-                active[ev.key] = false
-            }
-        }
-    }
+			if ev.start >= start && ev.start < end && !active[ev.key] {
+				syn.NoteOn(ch, int32(ev.key), int32(ev.vel))
+				active[ev.key] = true
+			}
+			if ev.end >= start && ev.end < end && active[ev.key] {
+				syn.NoteOff(ch, int32(ev.key))
+				active[ev.key] = false
+			}
+		}
+	}
 
-    for pos := 0; pos < totalSamples; pos += block {
-        // Render in fixed-size blocks to avoid triggering edge cases in the
-        // underlying synth (e.g., effects processing relying on block size).
-        n := block
-        if pos+n > totalSamples {
-            n = totalSamples - pos
-        }
-        trigger(pos, n)
-        // Always ask the synth to render a full block, then trim to the
-        // number of remaining samples we actually need to keep timing exact.
-        left := make([]float32, block)
-        right := make([]float32, block)
-        if err := safeRender(syn, left, right); err != nil {
-            return nil, nil, fmt.Errorf("synth render: %v", err)
-        }
-        leftAll = append(leftAll, left[:n]...)
-        rightAll = append(rightAll, right[:n]...)
-    }
+	for pos := 0; pos < totalSamples; pos += block {
+		// Render in fixed-size blocks to avoid triggering edge cases in the
+		// underlying synth (e.g., effects processing relying on block size).
+		n := block
+		if pos+n > totalSamples {
+			n = totalSamples - pos
+		}
+		trigger(pos, n)
+		// Always ask the synth to render a full block, then trim to the
+		// number of remaining samples we actually need to keep timing exact.
+		left := make([]float32, block)
+		right := make([]float32, block)
+		if err := safeRender(syn, left, right); err != nil {
+			return nil, nil, fmt.Errorf("synth render: %v", err)
+		}
+		leftAll = append(leftAll, left[:n]...)
+		rightAll = append(rightAll, right[:n]...)
+	}
 
-    return leftAll, rightAll, nil
+	return leftAll, rightAll, nil
 }
 
 // safeRender calls the synthesizer Render method while protecting against
@@ -170,13 +176,13 @@ func renderSong(program int, notes []Note) ([]float32, []float32, error) {
 // returned as an error so callers can fail gracefully instead of crashing the
 // entire client.
 func safeRender(s synthesizer, left, right []float32) (err error) {
-    defer func() {
-        if r := recover(); r != nil {
-            err = fmt.Errorf("panic in synth.Render: %v", r)
-        }
-    }()
-    s.Render(left, right)
-    return nil
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic in synth.Render: %v", r)
+		}
+	}()
+	s.Render(left, right)
+	return nil
 }
 
 // mixPCM normalizes the provided samples and returns interleaved 16-bit PCM
@@ -242,17 +248,17 @@ func Play(ctx *audio.Context, program int, notes []Note) error {
 	musicPlayers[player] = struct{}{}
 	musicPlayersMu.Unlock()
 
-    player.Play()
+	player.Play()
 
-    dur := time.Duration(len(leftAll)) * time.Second / sampleRate
-    deadline := time.Now().Add(dur)
-    for time.Now().Before(deadline) {
-        // Exit early if the player has been stopped/closed (e.g., due to mute).
-        if !safeIsPlaying(player) {
-            break
-        }
-        time.Sleep(50 * time.Millisecond)
-    }
+	dur := time.Duration(len(leftAll)) * time.Second / sampleRate
+	deadline := time.Now().Add(dur)
+	for time.Now().Before(deadline) {
+		// Exit early if the player has been stopped/closed (e.g., due to mute).
+		if !safeIsPlaying(player) {
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
 
 	musicPlayersMu.Lock()
 	delete(musicPlayers, player)
@@ -263,12 +269,12 @@ func Play(ctx *audio.Context, program int, notes []Note) error {
 
 // safeIsPlaying checks IsPlaying and recovers if the player has been closed.
 func safeIsPlaying(p *audio.Player) (ok bool) {
-    defer func() {
-        if recover() != nil {
-            ok = false
-        }
-    }()
-    return p.IsPlaying()
+	defer func() {
+		if recover() != nil {
+			ok = false
+		}
+	}()
+	return p.IsPlaying()
 }
 
 // dumpPCMAsWAV writes the provided 16-bit stereo PCM data to a WAV file when
