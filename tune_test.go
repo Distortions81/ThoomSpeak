@@ -39,15 +39,52 @@ func TestEventsToNotesAddsGap(t *testing.T) {
 	if len(notes) != 2 {
 		t.Fatalf("expected 2 notes, got %d", len(notes))
 	}
-	if notes[0].Duration != 900*time.Millisecond {
-		t.Fatalf("first note duration = %v, want 900ms", notes[0].Duration)
+	if notes[0].Duration != 950*time.Millisecond {
+		t.Fatalf("first note duration = %v, want 950ms", notes[0].Duration)
 	}
 	if notes[1].Start != 1000*time.Millisecond {
 		t.Fatalf("second note start = %v, want 1000ms", notes[1].Start)
 	}
 	gap := notes[1].Start - notes[0].Start - notes[0].Duration
-	if gap != 100*time.Millisecond {
-		t.Fatalf("gap = %v, want 100ms", gap)
+	if gap != 50*time.Millisecond {
+		t.Fatalf("gap = %v, want 50ms", gap)
+	}
+}
+
+func TestEventsToNotesRestScaling(t *testing.T) {
+	pt := parsedTune{
+		events: []noteEvent{
+			{keys: []int{60}, beats: 0.5, volume: 10},
+			{keys: []int{62}, beats: 1, volume: 10},
+			{keys: []int{64}, beats: 2, volume: 10},
+			{keys: []int{65}, beats: 8, volume: 10},
+		},
+		tempo: 120,
+	}
+	inst := instrument{program: 0, octave: 0, chord: 100, melody: 100}
+	notes := eventsToNotes(pt, inst, 100)
+	if len(notes) != 4 {
+		t.Fatalf("expected 4 notes, got %d", len(notes))
+	}
+	// expected note durations in ms
+	wantDur := []time.Duration{
+		225 * time.Millisecond,
+		450 * time.Millisecond,
+		950 * time.Millisecond,
+		3950 * time.Millisecond,
+	}
+	for i, d := range wantDur {
+		if notes[i].Duration != d {
+			t.Fatalf("note %d duration = %v, want %v", i, notes[i].Duration, d)
+		}
+	}
+	// expected rest gaps in ms between notes
+	wantGap := []time.Duration{25 * time.Millisecond, 50 * time.Millisecond, 50 * time.Millisecond}
+	for i, g := range wantGap {
+		gap := notes[i+1].Start - notes[i].Start - notes[i].Duration
+		if gap != g {
+			t.Fatalf("gap after note %d = %v, want %v", i, gap, g)
+		}
 	}
 }
 
