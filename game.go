@@ -651,9 +651,19 @@ func (g *Game) Update() error {
 			if txt != "" {
 				if strings.HasPrefix(txt, "/play ") {
 					tune := strings.TrimSpace(txt[len("/play "):])
+					if musicDebug {
+						msg := "/play " + tune
+						consoleMessage(msg)
+						chatMessage(msg)
+						log.Print(msg)
+					}
 					go func() {
 						if err := playClanLordTune(tune); err != nil {
 							log.Printf("play tune: %v", err)
+							if musicDebug {
+								consoleMessage("play tune: " + err.Error())
+								chatMessage("play tune: " + err.Error())
+							}
 						}
 					}()
 				} else {

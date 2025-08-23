@@ -446,10 +446,15 @@ func parseMusicCommand(s string, raw []byte) bool {
 		msg := "/play " + tune
 		consoleMessage(msg)
 		chatMessage(msg)
+		log.Print(msg)
 	}
 	go func() {
 		if err := playClanLordTune(tune); err != nil {
 			log.Printf("play tune: %v", err)
+			if musicDebug {
+				consoleMessage("play tune: " + err.Error())
+				chatMessage("play tune: " + err.Error())
+			}
 		}
 	}()
 	return true
