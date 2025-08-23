@@ -297,8 +297,8 @@ type musicStream struct {
 	pos     int // samples rendered so far
 	total   int // total samples including tail
 	closed  bool
-	// buffered PCM to ensure smooth playback (keep ~2s queued initially
-	// and maintain at least 1s ahead during playback)
+	// buffered PCM to ensure smooth playback (keep ~4s queued initially
+	// and maintain at least 2s ahead during playback)
 	buf    []byte
 	bufPos int
 	// scratch render buffers
@@ -333,10 +333,10 @@ func newMusicStream(program int, notes []Note) (io.ReadSeekCloser, error) {
 		}
 	}
 	ms := &musicStream{syn: syn, program: program, events: events, active: map[int]bool{}, total: maxEnd + tailSamples, left: make([]float32, block), right: make([]float32, block)}
-	// Pre-render up to two seconds so playback only begins once at least
-	// one second of audio is queued beyond the initial chunk.
+	// Pre-render up to four seconds so playback only begins once at least
+	// two seconds of audio is queued beyond the initial chunk.
 	ms.mu.Lock()
-	for i := 0; i < 2 && ms.pos < ms.total; i++ {
+	for i := 0; i < 4 && ms.pos < ms.total; i++ {
 		if err := ms.renderSecondLocked(); err != nil && !errors.Is(err, io.EOF) {
 			ms.mu.Unlock()
 			return nil, err
@@ -371,8 +371,9 @@ func (m *musicStream) Read(p []byte) (int, error) {
 		return 0, io.EOF
 	}
 	bytesPerSec := sampleRate * 4
-	// Ensure at least 1 second of PCM is buffered ahead when possible.
-	for len(m.buf)-m.bufPos < bytesPerSec && m.pos < m.total {
+	target := bytesPerSec * 2
+	// Ensure at least 2 seconds of PCM is buffered ahead when possible.
+	for len(m.buf)-m.bufPos < target && m.pos < m.total {
 		if err := m.renderSecondLocked(); err != nil {
 			// Stop on render error
 			break
@@ -397,14 +398,14 @@ func (m *musicStream) Read(p []byte) (int, error) {
 	}
 	copy(p[:avail], m.buf[m.bufPos:m.bufPos+avail])
 	m.bufPos += avail
-	// Top up so at least one second remains queued when possible.
-	for len(m.buf)-m.bufPos < bytesPerSec && m.pos < m.total {
+	// Top up so at least two seconds remain queued when possible.
+	for len(m.buf)-m.bufPos < target && m.pos < m.total {
 		if err := m.renderSecondLocked(); err != nil {
 			break
 		}
 	}
-	// Drop consumed bytes to keep memory bounded once we've crossed 1s
-	if m.bufPos >= bytesPerSec {
+	// Drop consumed bytes to keep memory bounded once we've crossed 2s
+	if m.bufPos >= target {
 		m.buf = append([]byte(nil), m.buf[m.bufPos:]...)
 		m.bufPos = 0
 	}
