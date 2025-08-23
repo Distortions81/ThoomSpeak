@@ -10,6 +10,7 @@ import (
 	"math"
 	"os"
 	"path"
+	"sort"
 	"sync"
 	"time"
 
@@ -51,6 +52,7 @@ var (
 	setupSynthOnce sync.Once
 	sfntCached     *meltysynth.SoundFont
 	synthSettings  *meltysynth.SynthesizerSettings
+	synth          synthesizer
 
 	musicPlayers   = make(map[*audio.Player]struct{})
 	musicPlayersMu sync.Mutex
@@ -289,15 +291,18 @@ func safeIsPlaying(p *audio.Player) (ok bool) {
 // musicStream implements audio.ReadSeekCloser and renders PCM on demand
 // from meltysynth in small blocks while scheduling note events.
 type musicStream struct {
-	mu      sync.Mutex
-	cond    *sync.Cond
-	syn     *meltysynth.Synthesizer
-	program int
-	events  []struct{ key, vel, start, end int }
-	active  map[int]bool
-	pos     int // samples rendered so far
-	total   int // total samples including tail
-	closed  bool
+	mu        sync.Mutex
+	cond      *sync.Cond
+	syn       synthesizer
+	program   int
+	events    []struct{ key, vel, start, end int } // sorted by start
+	endEvents []struct{ key, vel, start, end int } // sorted by end
+	nextStart int
+	nextEnd   int
+	active    map[int]bool
+	pos       int // samples rendered so far
+	total     int // total samples including tail
+	closed    bool
 	// buffered PCM to ensure smooth playback
 	buf        []byte
 	head, tail int
@@ -315,12 +320,18 @@ func (m *musicStream) bufLen() int {
 
 func newMusicStream(program int, notes []Note) (io.ReadSeekCloser, error) {
 	setupSynthOnce.Do(setupSynth)
-	if sfntCached == nil || synthSettings == nil {
-		return nil, errors.New("synth not initialized")
-	}
-	syn, err := meltysynth.NewSynthesizer(sfntCached, synthSettings)
-	if err != nil {
-		return nil, err
+	var syn synthesizer
+	if synth != nil {
+		syn = synth
+	} else {
+		if sfntCached == nil || synthSettings == nil {
+			return nil, errors.New("synth not initialized")
+		}
+		var err error
+		syn, err = meltysynth.NewSynthesizer(sfntCached, synthSettings)
+		if err != nil {
+			return nil, err
+		}
 	}
 	const ch = 0
 	syn.ProcessMidiMessage(ch, 0xC0, int32(program), 0)
@@ -339,13 +350,19 @@ func newMusicStream(program int, notes []Note) (io.ReadSeekCloser, error) {
 			maxEnd = ev.end
 		}
 	}
+	sort.Slice(events, func(i, j int) bool { return events[i].start < events[j].start })
+	endEvents := make([]struct{ key, vel, start, end int }, len(events))
+	copy(endEvents, events)
+	sort.Slice(endEvents, func(i, j int) bool { return endEvents[i].end < endEvents[j].end })
+
 	bytesPerSec := sampleRate * 4
 	ms := &musicStream{
-		syn:     syn,
-		program: program,
-		events:  events,
-		active:  map[int]bool{},
-		total:   maxEnd + tailSamples,
+		syn:       syn,
+		program:   program,
+		events:    events,
+		endEvents: endEvents,
+		active:    map[int]bool{},
+		total:     maxEnd + tailSamples,
 		// Provide enough room for several seconds of audio to avoid reallocations.
 		buf:   make([]byte, bytesPerSec*6),
 		left:  make([]float32, block),
@@ -369,15 +386,27 @@ func newMusicStream(program int, notes []Note) (io.ReadSeekCloser, error) {
 func (m *musicStream) trigger(start, count int) {
 	const ch = 0
 	end := start + count
-	for _, ev := range m.events {
-		if ev.start >= start && ev.start < end && !m.active[ev.key] {
+	for m.nextStart < len(m.events) {
+		ev := m.events[m.nextStart]
+		if ev.start >= end {
+			break
+		}
+		if ev.start >= start {
 			m.syn.NoteOn(ch, int32(ev.key), int32(ev.vel))
 			m.active[ev.key] = true
 		}
-		if ev.end >= start && ev.end < end && m.active[ev.key] {
+		m.nextStart++
+	}
+	for m.nextEnd < len(m.endEvents) {
+		ev := m.endEvents[m.nextEnd]
+		if ev.end >= end {
+			break
+		}
+		if ev.end >= start && m.active[ev.key] {
 			m.syn.NoteOff(ch, int32(ev.key))
 			m.active[ev.key] = false
 		}
+		m.nextEnd++
 	}
 }
 
