@@ -32,6 +32,7 @@ const defaultHandPictID = 6
 const initialWindowW, initialWindowH = 1920, 1080
 
 var uiMouseDown bool
+var hotbarKeys = []ebiten.Key{ebiten.Key0, ebiten.Key1, ebiten.Key2, ebiten.Key3, ebiten.Key4, ebiten.Key5, ebiten.Key6, ebiten.Key7, ebiten.Key8, ebiten.Key9}
 
 // worldRT is the offscreen render target for the game world. It stays at an
 // integer multiple of the native field size and is composited into the window.
@@ -678,6 +679,13 @@ func (g *Game) Update() error {
 		updateConsoleWindow()
 		if consoleWin != nil {
 			consoleWin.Refresh()
+		}
+	}
+	if !inputActive {
+		for i, k := range hotbarKeys {
+			if inpututil.IsKeyJustPressed(k) {
+				triggerHotbarSlot(i)
+			}
 		}
 	}
 
@@ -2185,7 +2193,10 @@ loop:
 		// player isn't moving; this keeps /be-info and /be-who flowing
 		// during idle periods on live connections.
 		if pendingCommand == "" {
-			if !maybeEnqueueInfo() {
+			if len(hotbarCmdQueue) > 0 {
+				pendingCommand = hotbarCmdQueue[0]
+				hotbarCmdQueue = hotbarCmdQueue[1:]
+			} else if !maybeEnqueueInfo() {
 				_ = maybeEnqueueWho()
 			}
 		}

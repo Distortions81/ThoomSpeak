@@ -158,6 +158,7 @@ func initUI() {
 	makeInventoryWindow()
 	makePlayersWindow()
 	makeToolbar()
+	makeHotbar()
 
 	// Load any persisted players data (e.g., from prior sessions) so
 	// avatars/classes can show up immediately.
