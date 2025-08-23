@@ -15,3 +15,6 @@ Improved performance of motion smoothing.
 Wrote sprite pinning mode that allows sprites that are attached to mobiles to interpolate smoothly (chains, effects)
 Fixed key repeat speed with vsync off
 Added tooltip about timestamp format.
+Fixed re-login causing 'invalid password'
+Reduced 'warping' of mobiles at screen edge.
+Improved overall robustness of motion smoothing.
