@@ -71,8 +71,12 @@ func bubbleColors(typ int) (border, bg, text color.Color) {
 		border = color.NRGBA{0xff, 0xff, 0x00, 0xff}
 		bg = color.NRGBA{0xff, 0xff, 0xff, alpha}
 		text = color.Black
-	case kBubbleThought, kBubblePonder:
+	case kBubbleThought:
 		border = color.NRGBA{0x00, 0x00, 0x00, 0x00}
+		bg = color.NRGBA{0x80, 0x80, 0x80, alpha}
+		text = color.Black
+	case kBubblePonder:
+		border = color.NRGBA{0x80, 0x80, 0x80, 0xff}
 		bg = color.NRGBA{0x80, 0x80, 0x80, alpha}
 		text = color.Black
 	case kBubbleRealAction:
@@ -118,6 +122,7 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 	pad := int((4 + 2) * gs.GameScale)
 	tailHeight := int(10 * gs.GameScale)
 	tailHalf := int(6 * gs.GameScale)
+	bubbleType := typ & kBubbleTypeMask
 
 	maxLineWidth := sw/4 - 2*pad
 	width, lines := wrapText(txt, bubbleFont, float64(maxLineWidth))
@@ -132,6 +137,9 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 	bgR, bgG, bgB, bgA := bgCol.RGBA()
 
 	radius := float32(4 * gs.GameScale)
+	if bubbleType == kBubblePonder {
+		radius = float32(8 * gs.GameScale)
+	}
 
 	var body vector.Path
 	body.MoveTo(float32(left)+radius, float32(top))
@@ -147,10 +155,25 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 
 	var tail vector.Path
 	if !far && !noArrow {
-		tail.MoveTo(float32(baseX-tailHalf), float32(bottom))
-		tail.LineTo(float32(tailX), float32(tailY))
-		tail.LineTo(float32(baseX+tailHalf), float32(bottom))
-		tail.Close()
+		if bubbleType == kBubblePonder {
+			r1 := float32(tailHalf)
+			cx1 := float32(baseX - tailHalf)
+			cy1 := float32(bottom) + r1
+			tail.MoveTo(cx1+r1, cy1)
+			tail.Arc(cx1, cy1, r1, 0, 2*math.Pi, vector.Clockwise)
+			tail.Close()
+			r2 := float32(tailHalf) / 2
+			cx2 := float32(tailX)
+			cy2 := float32(tailY)
+			tail.MoveTo(cx2+r2, cy2)
+			tail.Arc(cx2, cy2, r2, 0, 2*math.Pi, vector.Clockwise)
+			tail.Close()
+		} else {
+			tail.MoveTo(float32(baseX-tailHalf), float32(bottom))
+			tail.LineTo(float32(tailX), float32(tailY))
+			tail.LineTo(float32(baseX+tailHalf), float32(bottom))
+			tail.Close()
+		}
 	}
 
 	vs, is := body.AppendVerticesAndIndicesForFilling(nil, nil)
@@ -185,7 +208,7 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 	outline.Arc(float32(right)-radius, float32(top)+radius, radius, -math.Pi/2, 0, vector.Clockwise)
 	outline.LineTo(float32(right), float32(bottom)-radius)
 	outline.Arc(float32(right)-radius, float32(bottom)-radius, radius, 0, math.Pi/2, vector.Clockwise)
-	if !far && !noArrow {
+	if !far && !noArrow && bubbleType != kBubblePonder {
 		outline.LineTo(float32(baseX+tailHalf), float32(bottom))
 		outline.LineTo(float32(tailX), float32(tailY))
 		outline.LineTo(float32(baseX-tailHalf), float32(bottom))
@@ -207,6 +230,38 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 	}
 	screen.DrawTriangles(vs, is, whiteImage, op)
 
+	if bubbleType == kBubblePonder && !far && !noArrow {
+		var tailOutline vector.Path
+		r1 := float32(tailHalf)
+		cx1 := float32(baseX - tailHalf)
+		cy1 := float32(bottom) + r1
+		tailOutline.MoveTo(cx1+r1, cy1)
+		tailOutline.Arc(cx1, cy1, r1, 0, 2*math.Pi, vector.Clockwise)
+		tailOutline.Close()
+		r2 := float32(tailHalf) / 2
+		cx2 := float32(tailX)
+		cy2 := float32(tailY)
+		tailOutline.MoveTo(cx2+r2, cy2)
+		tailOutline.Arc(cx2, cy2, r2, 0, 2*math.Pi, vector.Clockwise)
+		tailOutline.Close()
+		vs, is = tailOutline.AppendVerticesAndIndicesForStroke(vs[:0], is[:0], &vector.StrokeOptions{Width: float32(gs.GameScale)})
+		for i := range vs {
+			vs[i].SrcX = 0
+			vs[i].SrcY = 0
+			vs[i].ColorR = float32(bdR) / 0xffff
+			vs[i].ColorG = float32(bdG) / 0xffff
+			vs[i].ColorB = float32(bdB) / 0xffff
+			vs[i].ColorA = float32(bdA) / 0xffff
+		}
+		screen.DrawTriangles(vs, is, whiteImage, op)
+	}
+
+	if bubbleType == kBubbleYell {
+		drawSpikes(screen, float32(left), float32(top), float32(right), float32(bottom), float32(gs.GameScale*3), borderCol)
+	} else if bubbleType == kBubbleMonster {
+		drawJagged(screen, float32(left), float32(top), float32(right), float32(bottom), float32(gs.GameScale*3), borderCol)
+	}
+
 	textTop := top + pad
 	textLeft := left + pad
 	for i, line := range lines {
@@ -214,5 +269,180 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 		op.GeoM.Translate(float64(textLeft), float64(textTop+i*lineHeight))
 		op.ColorScale.ScaleWithColor(textCol)
 		text.Draw(screen, line, bubbleFont, op)
+	}
+}
+
+// drawSpikes renders spiky triangles around the bubble rectangle to emphasize
+// a shouted yell. Triangles are drawn pointing outward along each edge using
+// the given border color.
+func drawSpikes(screen *ebiten.Image, left, top, right, bottom, size float32, col color.Color) {
+	bdR, bdG, bdB, bdA := col.RGBA()
+	step := size * 2
+	op := &ebiten.DrawTrianglesOptions{ColorScaleMode: ebiten.ColorScaleModePremultipliedAlpha, AntiAlias: true}
+	// top and bottom edges
+	for x := left; x < right-step; x += step {
+		var p vector.Path
+		p.MoveTo(x, top)
+		p.LineTo(x+size, top-size)
+		p.LineTo(x+step, top)
+		p.Close()
+		vs, is := p.AppendVerticesAndIndicesForFilling(nil, nil)
+		for i := range vs {
+			vs[i].SrcX = 0
+			vs[i].SrcY = 0
+			vs[i].ColorR = float32(bdR) / 0xffff
+			vs[i].ColorG = float32(bdG) / 0xffff
+			vs[i].ColorB = float32(bdB) / 0xffff
+			vs[i].ColorA = float32(bdA) / 0xffff
+		}
+		screen.DrawTriangles(vs, is, whiteImage, op)
+
+		p.Reset()
+		p.MoveTo(x, bottom)
+		p.LineTo(x+size, bottom+size)
+		p.LineTo(x+step, bottom)
+		p.Close()
+		vs, is = p.AppendVerticesAndIndicesForFilling(nil, nil)
+		for i := range vs {
+			vs[i].SrcX = 0
+			vs[i].SrcY = 0
+			vs[i].ColorR = float32(bdR) / 0xffff
+			vs[i].ColorG = float32(bdG) / 0xffff
+			vs[i].ColorB = float32(bdB) / 0xffff
+			vs[i].ColorA = float32(bdA) / 0xffff
+		}
+		screen.DrawTriangles(vs, is, whiteImage, op)
+	}
+
+	// left and right edges
+	for y := top; y < bottom-step; y += step {
+		var p vector.Path
+		p.MoveTo(left, y)
+		p.LineTo(left-size, y+size)
+		p.LineTo(left, y+step)
+		p.Close()
+		vs, is := p.AppendVerticesAndIndicesForFilling(nil, nil)
+		for i := range vs {
+			vs[i].SrcX = 0
+			vs[i].SrcY = 0
+			vs[i].ColorR = float32(bdR) / 0xffff
+			vs[i].ColorG = float32(bdG) / 0xffff
+			vs[i].ColorB = float32(bdB) / 0xffff
+			vs[i].ColorA = float32(bdA) / 0xffff
+		}
+		screen.DrawTriangles(vs, is, whiteImage, op)
+
+		p.Reset()
+		p.MoveTo(right, y)
+		p.LineTo(right+size, y+size)
+		p.LineTo(right, y+step)
+		p.Close()
+		vs, is = p.AppendVerticesAndIndicesForFilling(nil, nil)
+		for i := range vs {
+			vs[i].SrcX = 0
+			vs[i].SrcY = 0
+			vs[i].ColorR = float32(bdR) / 0xffff
+			vs[i].ColorG = float32(bdG) / 0xffff
+			vs[i].ColorB = float32(bdB) / 0xffff
+			vs[i].ColorA = float32(bdA) / 0xffff
+		}
+		screen.DrawTriangles(vs, is, whiteImage, op)
+	}
+}
+
+// drawJagged creates alternating in/out triangles around the bubble rectangle
+// to simulate torn fabric edges for monster speech bubbles.
+func drawJagged(screen *ebiten.Image, left, top, right, bottom, size float32, col color.Color) {
+	bdR, bdG, bdB, bdA := col.RGBA()
+	step := size
+	op := &ebiten.DrawTrianglesOptions{ColorScaleMode: ebiten.ColorScaleModePremultipliedAlpha, AntiAlias: true}
+	toggle := false
+	for x := left; x < right-step; x += step {
+		var p vector.Path
+		p.MoveTo(x, top)
+		if toggle {
+			p.LineTo(x+step/2, top+size)
+		} else {
+			p.LineTo(x+step/2, top-size)
+		}
+		p.LineTo(x+step, top)
+		p.Close()
+		vs, is := p.AppendVerticesAndIndicesForFilling(nil, nil)
+		for i := range vs {
+			vs[i].SrcX = 0
+			vs[i].SrcY = 0
+			vs[i].ColorR = float32(bdR) / 0xffff
+			vs[i].ColorG = float32(bdG) / 0xffff
+			vs[i].ColorB = float32(bdB) / 0xffff
+			vs[i].ColorA = float32(bdA) / 0xffff
+		}
+		screen.DrawTriangles(vs, is, whiteImage, op)
+
+		p.Reset()
+		p.MoveTo(x, bottom)
+		if toggle {
+			p.LineTo(x+step/2, bottom-size)
+		} else {
+			p.LineTo(x+step/2, bottom+size)
+		}
+		p.LineTo(x+step, bottom)
+		p.Close()
+		vs, is = p.AppendVerticesAndIndicesForFilling(nil, nil)
+		for i := range vs {
+			vs[i].SrcX = 0
+			vs[i].SrcY = 0
+			vs[i].ColorR = float32(bdR) / 0xffff
+			vs[i].ColorG = float32(bdG) / 0xffff
+			vs[i].ColorB = float32(bdB) / 0xffff
+			vs[i].ColorA = float32(bdA) / 0xffff
+		}
+		screen.DrawTriangles(vs, is, whiteImage, op)
+
+		toggle = !toggle
+	}
+
+	toggle = false
+	for y := top; y < bottom-step; y += step {
+		var p vector.Path
+		p.MoveTo(left, y)
+		if toggle {
+			p.LineTo(left+size, y+step/2)
+		} else {
+			p.LineTo(left-size, y+step/2)
+		}
+		p.LineTo(left, y+step)
+		p.Close()
+		vs, is := p.AppendVerticesAndIndicesForFilling(nil, nil)
+		for i := range vs {
+			vs[i].SrcX = 0
+			vs[i].SrcY = 0
+			vs[i].ColorR = float32(bdR) / 0xffff
+			vs[i].ColorG = float32(bdG) / 0xffff
+			vs[i].ColorB = float32(bdB) / 0xffff
+			vs[i].ColorA = float32(bdA) / 0xffff
+		}
+		screen.DrawTriangles(vs, is, whiteImage, op)
+
+		p.Reset()
+		p.MoveTo(right, y)
+		if toggle {
+			p.LineTo(right-size, y+step/2)
+		} else {
+			p.LineTo(right+size, y+step/2)
+		}
+		p.LineTo(right, y+step)
+		p.Close()
+		vs, is = p.AppendVerticesAndIndicesForFilling(nil, nil)
+		for i := range vs {
+			vs[i].SrcX = 0
+			vs[i].SrcY = 0
+			vs[i].ColorR = float32(bdR) / 0xffff
+			vs[i].ColorG = float32(bdG) / 0xffff
+			vs[i].ColorB = float32(bdB) / 0xffff
+			vs[i].ColorA = float32(bdA) / 0xffff
+		}
+		screen.DrawTriangles(vs, is, whiteImage, op)
+
+		toggle = !toggle
 	}
 }
