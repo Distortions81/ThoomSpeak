@@ -193,6 +193,7 @@ func eventsToNotes(pt parsedTune, inst instrument, velocity int) []Note {
 		remaining int
 	}
 	var stack []loopState
+	activeLoops := make(map[int]int)
 
 	i := 0
 	for i < len(pt.events) {
@@ -204,7 +205,10 @@ func eventsToNotes(pt parsedTune, inst instrument, velocity int) []Note {
 
 		if lps, ok := loopMap[i]; ok {
 			for _, lp := range lps {
-				stack = append(stack, loopState{start: lp.start, end: lp.end, remaining: lp.repeat - 1})
+				if activeLoops[lp.start] == 0 {
+					stack = append(stack, loopState{start: lp.start, end: lp.end, remaining: lp.repeat - 1})
+					activeLoops[lp.start] = 1
+				}
 			}
 		}
 
@@ -253,6 +257,7 @@ func eventsToNotes(pt parsedTune, inst instrument, velocity int) []Note {
 					tempoIdx++
 				}
 			} else {
+				delete(activeLoops, top.start)
 				stack = stack[:len(stack)-1]
 			}
 		}
