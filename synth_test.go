@@ -87,7 +87,8 @@ func TestPlayOverlappingNotes(t *testing.T) {
 
 func TestEventsToNotesChordStart(t *testing.T) {
 	events := parseClanLordTune("[ce]d")
-	notes := eventsToNotes(events, 0)
+	inst := instrument{program: 0, octave: 0, chord: 100, melody: 100}
+	notes := eventsToNotes(events, inst, 100)
 	if len(notes) != 3 {
 		t.Fatalf("expected 3 notes, got %d", len(notes))
 	}
