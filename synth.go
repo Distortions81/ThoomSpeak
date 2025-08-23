@@ -419,7 +419,9 @@ func (m *musicStream) Read(p []byte) (int, error) {
 			m.mu.Unlock()
 			return 0, io.EOF
 		}
-		m.cond.Wait()
+		for m.bufLen() == 0 && m.pos < m.total && !m.closed {
+			m.cond.Wait()
+		}
 		m.mu.Unlock()
 	}
 }
