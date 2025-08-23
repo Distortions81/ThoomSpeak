@@ -111,3 +111,24 @@ func TestEventsToNotesLoop(t *testing.T) {
 		t.Fatalf("expected 2 notes, got %d", len(notes))
 	}
 }
+
+func TestNoteDurationsWithTempoChange(t *testing.T) {
+	tune := "c d1 @+60 E g2"
+	pt := parseClanLordTuneWithTempo(tune, 120)
+	inst := instrument{program: 0, octave: 0, chord: 100, melody: 100}
+	notes := eventsToNotes(pt, inst, 100)
+	if len(notes) != 4 {
+		t.Fatalf("expected 4 notes, got %d", len(notes))
+	}
+	want := []time.Duration{
+		900 * time.Millisecond,  // c: 2 beats at 120 BPM
+		450 * time.Millisecond,  // d1: 1 beat at 120 BPM
+		1198 * time.Millisecond, // E: 4 beats at 180 BPM
+		599 * time.Millisecond,  // g2: 2 beats at 180 BPM
+	}
+	for i, n := range notes {
+		if n.Duration != want[i] {
+			t.Errorf("note %d duration = %v, want %v", i, n.Duration, want[i])
+		}
+	}
+}
