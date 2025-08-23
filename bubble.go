@@ -278,9 +278,8 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 }
 
 // drawSpikes renders spiky triangles around the bubble rectangle to emphasize
-// a shouted yell. Triangles are drawn pointing outward along each edge using
-// the given border color. Spikes are positioned to avoid overlapping the
-// rounded bubble corners.
+// a shouted yell. Triangles are drawn pointing outward along each edge and
+// around the rounded corners using the given border color.
 func drawSpikes(screen *ebiten.Image, left, top, right, bottom, radius, size float32, col color.Color) {
 	bdR, bdG, bdB, bdA := col.RGBA()
 	step := size * 2
@@ -372,6 +371,46 @@ func drawSpikes(screen *ebiten.Image, left, top, right, bottom, radius, size flo
 			vs[i].ColorA = float32(bdA) / 0xffff
 		}
 		screen.DrawTriangles(vs, is, whiteImage, op)
+	}
+
+	if radius > 0 {
+		corner := func(cx, cy float32, start, end float64) {
+			stepAngle := float64(step) / float64(radius)
+			for a := start; a < end; a += stepAngle {
+				next := a + stepAngle
+				if next > end {
+					next = end
+				}
+				mid := a + (next-a)/2
+				x1 := cx + radius*float32(math.Cos(a))
+				y1 := cy + radius*float32(math.Sin(a))
+				x2 := cx + radius*float32(math.Cos(next))
+				y2 := cy + radius*float32(math.Sin(next))
+				mx := cx + (radius+size)*float32(math.Cos(mid))
+				my := cy + (radius+size)*float32(math.Sin(mid))
+
+				var p vector.Path
+				p.MoveTo(x1, y1)
+				p.LineTo(mx, my)
+				p.LineTo(x2, y2)
+				p.Close()
+				vs, is := p.AppendVerticesAndIndicesForFilling(nil, nil)
+				for i := range vs {
+					vs[i].SrcX = 0
+					vs[i].SrcY = 0
+					vs[i].ColorR = float32(bdR) / 0xffff
+					vs[i].ColorG = float32(bdG) / 0xffff
+					vs[i].ColorB = float32(bdB) / 0xffff
+					vs[i].ColorA = float32(bdA) / 0xffff
+				}
+				screen.DrawTriangles(vs, is, whiteImage, op)
+			}
+		}
+
+		corner(left+radius, top+radius, math.Pi, 1.5*math.Pi)
+		corner(right-radius, top+radius, 1.5*math.Pi, 2*math.Pi)
+		corner(right-radius, bottom-radius, 0, 0.5*math.Pi)
+		corner(left+radius, bottom-radius, 0.5*math.Pi, math.Pi)
 	}
 }
 
