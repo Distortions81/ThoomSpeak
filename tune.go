@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -55,8 +56,11 @@ type noteEvent struct {
 // music package. The tune may optionally begin with an instrument index.
 // For example: "3 cde" plays on instrument #3. It returns any playback error.
 func playClanLordTune(tune string) error {
-	if audioContext == nil || gs.Mute || gs.MusicVolume <= 0 {
-		return nil
+	if audioContext == nil {
+		return fmt.Errorf("audio disabled")
+	}
+	if gs.Mute || gs.MusicVolume <= 0 {
+		return fmt.Errorf("music muted")
 	}
 
 	inst := defaultInstrument
@@ -70,7 +74,7 @@ func playClanLordTune(tune string) error {
 
 	events := parseClanLordTune(tune)
 	if len(events) == 0 {
-		return nil
+		return fmt.Errorf("empty tune")
 	}
 
 	prog := instruments[inst].program
