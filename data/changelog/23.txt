@@ -1,0 +1,17 @@
+Added think messages to top of screen.
+Improved mobile name-tags.
+Removed old object culling code.
+Fixes clicking on drop-down menu also clicks what is behind it.
+Adde game-scale option back.
+Fixed hidpi / monitor scaling support (retina).
+Added option to download soundfont for testing music.
+Shows an error and allows cancel/retry of failed download.
+Speech bubbles now have anti-aliasing so they look nicer.
+Removed close button from toolbar, because there is not a way to re-open it.
+Turned on experimental lag reduction method 'smart input updates', with target ping in debug settings.
+Added extrapolation for ground images that disappear, preventing black boxes at screen edge.
+Added game volume slider, so TTS and Music can be adjusted separately.
+Improved performance of motion smoothing.
+Wrote sprite pinning mode that allows sprites that are attached to mobiles to interpolate smoothly (chains, effects)
+Fixed key repeat speed with vsync off
+Added tooltip about timestamp format.
