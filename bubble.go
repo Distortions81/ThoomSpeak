@@ -479,16 +479,64 @@ func drawPonderWaves(screen *ebiten.Image, left, top, right, bottom int, borderC
 	r := float32(4 * gs.GameScale)
 	step := r * 1.5
 	phase := float64(time.Now().UnixNano()) / float64(time.Second)
-	edge := r * 0.7
-	for x := float32(left) - r; x <= float32(right)+r; x += step {
+	corner := float32(8 * gs.GameScale)
+	angleStep := float64(step / corner)
+
+	// top edge
+	for x := float32(left) + corner; x <= float32(right)-corner; x += step {
 		offset := float32(math.Sin(phase+float64(x)*0.1)) * r * 0.3
-		drawBubbleCircle(screen, x, float32(top)-edge+offset, r, bgCol, borderCol)
-		drawBubbleCircle(screen, x, float32(bottom)+edge-offset, r, bgCol, borderCol)
+		drawBubbleCircle(screen, x, float32(top)+offset, r, bgCol, borderCol)
 	}
-	for y := float32(top) - r; y <= float32(bottom)+r; y += step {
+	// top-right corner
+	for a := -math.Pi / 2; a < 0; a += angleStep {
+		cx := float32(right) - corner + float32(math.Cos(a))*corner
+		cy := float32(top) + corner + float32(math.Sin(a))*corner
+		nx := float32(math.Cos(a))
+		ny := float32(math.Sin(a))
+		offset := float32(math.Sin(phase+a)) * r * 0.3
+		drawBubbleCircle(screen, cx+offset*nx, cy+offset*ny, r, bgCol, borderCol)
+	}
+	// right edge
+	for y := float32(top) + corner; y <= float32(bottom)-corner; y += step {
 		offset := float32(math.Sin(phase+float64(y)*0.1)) * r * 0.3
-		drawBubbleCircle(screen, float32(left)-edge+offset, y, r, bgCol, borderCol)
-		drawBubbleCircle(screen, float32(right)+edge-offset, y, r, bgCol, borderCol)
+		drawBubbleCircle(screen, float32(right)+offset, y, r, bgCol, borderCol)
+	}
+	// bottom-right corner
+	for a := 0.0; a < math.Pi/2; a += angleStep {
+		cx := float32(right) - corner + float32(math.Cos(a))*corner
+		cy := float32(bottom) - corner + float32(math.Sin(a))*corner
+		nx := float32(math.Cos(a))
+		ny := float32(math.Sin(a))
+		offset := float32(math.Sin(phase+a)) * r * 0.3
+		drawBubbleCircle(screen, cx+offset*nx, cy+offset*ny, r, bgCol, borderCol)
+	}
+	// bottom edge
+	for x := float32(right) - corner; x >= float32(left)+corner; x -= step {
+		offset := float32(math.Sin(phase+float64(x)*0.1)) * r * 0.3
+		drawBubbleCircle(screen, x, float32(bottom)+offset, r, bgCol, borderCol)
+	}
+	// bottom-left corner
+	for a := math.Pi / 2; a < math.Pi; a += angleStep {
+		cx := float32(left) + corner + float32(math.Cos(a))*corner
+		cy := float32(bottom) - corner + float32(math.Sin(a))*corner
+		nx := float32(math.Cos(a))
+		ny := float32(math.Sin(a))
+		offset := float32(math.Sin(phase+a)) * r * 0.3
+		drawBubbleCircle(screen, cx+offset*nx, cy+offset*ny, r, bgCol, borderCol)
+	}
+	// left edge
+	for y := float32(bottom) - corner; y >= float32(top)+corner; y -= step {
+		offset := float32(math.Sin(phase+float64(y)*0.1)) * r * 0.3
+		drawBubbleCircle(screen, float32(left)+offset, y, r, bgCol, borderCol)
+	}
+	// top-left corner
+	for a := math.Pi; a < 3*math.Pi/2; a += angleStep {
+		cx := float32(left) + corner + float32(math.Cos(a))*corner
+		cy := float32(top) + corner + float32(math.Sin(a))*corner
+		nx := float32(math.Cos(a))
+		ny := float32(math.Sin(a))
+		offset := float32(math.Sin(phase+a)) * r * 0.3
+		drawBubbleCircle(screen, cx+offset*nx, cy+offset*ny, r, bgCol, borderCol)
 	}
 }
 
