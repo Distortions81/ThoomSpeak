@@ -460,8 +460,10 @@ func (m *musicStream) renderSamplesLocked(samples int) error {
 		bufLen := len(m.buf)
 		tail := m.tail
 		for i := 0; i < n; i++ {
-			l := uint16(int16(m.left[i] * 32767))
-			r := uint16(int16(m.right[i] * 32767))
+			lv := math.Max(-1.0, math.Min(1.0, float64(m.left[i])))
+			rv := math.Max(-1.0, math.Min(1.0, float64(m.right[i])))
+			l := uint16(int16(lv * 32767))
+			r := uint16(int16(rv * 32767))
 			m.buf[tail] = byte(l)
 			tail = (tail + 1) % bufLen
 			m.buf[tail] = byte(l >> 8)
