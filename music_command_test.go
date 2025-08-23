@@ -5,6 +5,7 @@ import (
 	"path"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestParseMusicCommandWithWho(t *testing.T) {
@@ -78,5 +79,25 @@ func TestParseMusicCommandFromMovie(t *testing.T) {
 	}
 	if !found {
 		t.Fatalf("expected %q in console log, got %#v", expected, consoleLog.entries)
+	}
+}
+
+func TestParseMusicCommandWithMalformedWith(t *testing.T) {
+	cases := []string{
+		"/music/play/inst1/with/with/notesabc",
+		"/music/play/inst1/withabc/notesabc",
+	}
+	for _, cmd := range cases {
+		done := make(chan struct{})
+		go func(c string) {
+			parseMusicCommand(c, nil)
+			close(done)
+		}(cmd)
+		select {
+		case <-done:
+			// ok
+		case <-time.After(100 * time.Millisecond):
+			t.Fatalf("parseMusicCommand did not terminate for %q", cmd)
+		}
 	}
 }

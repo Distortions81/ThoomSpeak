@@ -487,13 +487,23 @@ func parseMusicCommand(s string, raw []byte) bool {
             idx := strings.Index(s[pos:], tag)
             if idx < 0 { break }
             idx += pos + len(tag)
+            start := idx
             v := s[idx:]
-            if len(v) > 0 && v[0] == '/' { v = v[1:] }
+            if len(v) > 0 && v[0] == '/' {
+                v = v[1:]
+                idx++
+            }
             if j := strings.IndexByte(v, '/'); j >= 0 { v = v[:j] }
             if n, err := strconv.Atoi(v); err == nil {
                 withIDs = append(withIDs, n)
             }
-            pos = idx
+            pos = idx + len(v)
+            if pos <= start {
+                pos = start + 1
+            }
+            if pos >= len(s) {
+                break
+            }
         }
     }
     scanWith("/with")
