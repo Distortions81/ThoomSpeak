@@ -97,10 +97,33 @@ func startTuneWorker() {
 }
 
 // noteEvent represents a parsed tune event. A single event may contain multiple
-// simultaneous notes (a chord).
+// simultaneous notes (a chord). Durations are stored in beats and converted to
+// milliseconds later once tempo and loop processing is applied.
 type noteEvent struct {
-	keys  []int
-	durMS int
+	keys   []int
+	beats  float64
+	volume int
+}
+
+// tempoEvent notes a tempo change occurring before the event at the given index.
+type tempoEvent struct {
+	index int
+	tempo int
+}
+
+// loopMarker describes a looped sequence of events.
+type loopMarker struct {
+	start  int // index of the first event in the loop
+	end    int // index after the last event in the loop
+	repeat int // total number of times to play the loop
+}
+
+// parsedTune aggregates events with optional loop and tempo metadata.
+type parsedTune struct {
+	events []noteEvent
+	tempos []tempoEvent
+	loops  []loopMarker
+	tempo  int // initial tempo in BPM
 }
 
 // playClanLordTune decodes a Clan Lord music string and plays it using the
@@ -123,15 +146,15 @@ func playClanLordTune(tune string) error {
 		}
 	}
 
-	events := parseClanLordTuneWithTempo(tune, 120)
-	if len(events) == 0 {
+	pt := parseClanLordTuneWithTempo(tune, 120)
+	if len(pt.events) == 0 {
 		return fmt.Errorf("empty tune")
 	}
 
 	instData := instruments[inst]
 	prog := instData.program
 
-	notes := eventsToNotes(events, instData, 100)
+	notes := eventsToNotes(pt, instData, 100)
 
 	// Enqueue for sequential playback and return immediately.
 	tuneOnce.Do(startTuneWorker)
@@ -153,17 +176,54 @@ func playClanLordTune(tune string) error {
 // times. All notes in the same event (a chord) share the same start time. The
 // provided instrument's chord or melody velocity factors are applied depending
 // on the event type.
-func eventsToNotes(events []noteEvent, inst instrument, velocity int) []Note {
+func eventsToNotes(pt parsedTune, inst instrument, velocity int) []Note {
 	var notes []Note
+	tempo := pt.tempo
+	tempoIdx := 0
 	startMS := 0
-	for _, ev := range events {
-		noteMS := ev.durMS * 9 / 10
-		restMS := ev.durMS - noteMS
+
+	// Build map of loop starts for quick lookup
+	loopMap := make(map[int][]loopMarker)
+	for _, lp := range pt.loops {
+		loopMap[lp.start] = append(loopMap[lp.start], lp)
+	}
+	type loopState struct {
+		start     int
+		end       int
+		remaining int
+	}
+	var stack []loopState
+
+	i := 0
+	for i < len(pt.events) {
+		// apply tempo changes at this position
+		for tempoIdx < len(pt.tempos) && pt.tempos[tempoIdx].index == i {
+			tempo = pt.tempos[tempoIdx].tempo
+			tempoIdx++
+		}
+
+		if lps, ok := loopMap[i]; ok {
+			for _, lp := range lps {
+				stack = append(stack, loopState{start: lp.start, end: lp.end, remaining: lp.repeat - 1})
+			}
+		}
+
+		ev := pt.events[i]
+		durMS := int(ev.beats * float64(60000/tempo))
+		noteMS := durMS * 9 / 10
+		restMS := durMS - noteMS
+
 		v := velocity
 		if len(ev.keys) > 1 {
 			v = v * inst.chord / 100
 		} else {
 			v = v * inst.melody / 100
+		}
+		v = v * ev.volume / 10
+		if v < 1 {
+			v = 1
+		} else if v > 127 {
+			v = 127
 		}
 		for _, k := range ev.keys {
 			key := k + inst.octave*12
@@ -178,26 +238,46 @@ func eventsToNotes(events []noteEvent, inst instrument, velocity int) []Note {
 			})
 		}
 		startMS += noteMS + restMS
+		i++
+
+		for len(stack) > 0 && i == stack[len(stack)-1].end {
+			top := &stack[len(stack)-1]
+			if top.remaining > 0 {
+				top.remaining--
+				i = top.start
+				// reset tempo to state at loop start
+				tempo = pt.tempo
+				tempoIdx = 0
+				for tempoIdx < len(pt.tempos) && pt.tempos[tempoIdx].index <= i {
+					tempo = pt.tempos[tempoIdx].tempo
+					tempoIdx++
+				}
+			} else {
+				stack = stack[:len(stack)-1]
+			}
+		}
 	}
 	return notes
 }
 
-// parseClanLordTune converts Clan Lord music notation into a slice of note
-// events at the default tempo of 120 BPM.
-func parseClanLordTune(s string) []noteEvent {
+// parseClanLordTune converts Clan Lord music notation into parsed events at
+// the default tempo of 120 BPM.
+func parseClanLordTune(s string) parsedTune {
 	return parseClanLordTuneWithTempo(s, 120)
 }
 
-// parseClanLordTuneWithTempo converts Clan Lord music notation into a slice of
-// note events using the provided tempo in BPM.
-func parseClanLordTuneWithTempo(s string, tempo int) []noteEvent {
+// parseClanLordTuneWithTempo converts Clan Lord music notation into parsed
+// events using the provided tempo in BPM. It also records loop markers,
+// tempo changes and volume modifiers.
+func parseClanLordTuneWithTempo(s string, tempo int) parsedTune {
 	if tempo <= 0 {
 		tempo = 120
 	}
-	quarter := 60000 / tempo // ms
+	pt := parsedTune{tempo: tempo}
 	octave := 4
+	volume := 10
 	i := 0
-	var events []noteEvent
+	var loopStarts []int
 	for i < len(s) {
 		c := s[i]
 		switch c {
@@ -210,29 +290,17 @@ func parseClanLordTuneWithTempo(s string, tempo int) []noteEvent {
 			if i < len(s) {
 				i++
 			}
-		case '+':
-			octave++
-			i++
-		case '-':
-			octave--
-			i++
-		case '=':
-			octave = 4
-			i++
-		case '/':
-			octave = 5
-			i++
-		case '\\':
-			octave = 3
+		case '+', '-', '=', '/', '\\':
+			handleOctave(&octave, c)
 			i++
 		case 'p': // rest
 			i++
-			durBeats := durationBlack
+			beats := durationBlack
 			if i < len(s) && s[i] >= '1' && s[i] <= '9' {
-				durBeats = float64(s[i] - '0')
+				beats = float64(s[i] - '0')
 				i++
 			}
-			events = append(events, noteEvent{nil, int(durBeats * float64(quarter))})
+			pt.events = append(pt.events, noteEvent{beats: beats, volume: volume})
 		case '[': // chord
 			i++
 			var keys []int
@@ -253,26 +321,106 @@ func parseClanLordTuneWithTempo(s string, tempo int) []noteEvent {
 			if i < len(s) && s[i] == ']' {
 				i++
 			}
-			durBeats := defaultChordDuration
+			beats := defaultChordDuration
 			if i < len(s) && s[i] >= '1' && s[i] <= '9' {
-				durBeats = float64(s[i] - '0')
+				beats = float64(s[i] - '0')
 				i++
 			}
 			if len(keys) > 0 {
-				events = append(events, noteEvent{keys, int(durBeats * float64(quarter))})
+				pt.events = append(pt.events, noteEvent{keys: keys, beats: beats, volume: volume})
+			}
+		case '(':
+			i++
+			loopStarts = append(loopStarts, len(pt.events))
+		case ')':
+			i++
+			count := 1
+			if i < len(s) && s[i] >= '1' && s[i] <= '9' {
+				count = int(s[i] - '0')
+				i++
+			}
+			if len(loopStarts) > 0 {
+				start := loopStarts[len(loopStarts)-1]
+				loopStarts = loopStarts[:len(loopStarts)-1]
+				pt.loops = append(pt.loops, loopMarker{start: start, end: len(pt.events), repeat: count})
+			}
+		case '@':
+			i++
+			sign := byte(0)
+			if i < len(s) && (s[i] == '+' || s[i] == '-' || s[i] == '=') {
+				sign = s[i]
+				i++
+			}
+			val := 0
+			for i < len(s) && s[i] >= '0' && s[i] <= '9' {
+				val = val*10 + int(s[i]-'0')
+				i++
+			}
+			newTempo := 120
+			switch sign {
+			case '+':
+				newTempo = tempo + val
+			case '-':
+				newTempo = tempo - val
+			default:
+				if val == 0 {
+					newTempo = 120
+				} else {
+					newTempo = val
+				}
+			}
+			if newTempo < 60 {
+				newTempo = 60
+			}
+			if newTempo > 180 {
+				newTempo = 180
+			}
+			tempo = newTempo
+			pt.tempos = append(pt.tempos, tempoEvent{index: len(pt.events), tempo: tempo})
+		case '%', '{', '}':
+			cmd := c
+			i++
+			val := 0
+			if i < len(s) && s[i] >= '1' && s[i] <= '9' {
+				val = int(s[i] - '0')
+				i++
+			}
+			switch cmd {
+			case '%':
+				if val == 0 {
+					volume = 10
+				} else {
+					volume = val
+				}
+			case '{':
+				if val == 0 {
+					val = 1
+				}
+				volume -= val
+			case '}':
+				if val == 0 {
+					val = 1
+				}
+				volume += val
+			}
+			if volume < 1 {
+				volume = 1
+			}
+			if volume > 10 {
+				volume = 10
 			}
 		default:
 			if isNoteLetter(c) {
 				k, beats := parseNoteCL(s, &i, &octave)
 				if k != 0 {
-					events = append(events, noteEvent{[]int{k}, int(beats * float64(quarter))})
+					pt.events = append(pt.events, noteEvent{keys: []int{k}, beats: beats, volume: volume})
 				}
 			} else {
 				i++
 			}
 		}
 	}
-	return events
+	return pt
 }
 
 func handleOctave(oct *int, c byte) bool {
@@ -538,7 +686,7 @@ func handleMusicParams(mp MusicParams) {
 }
 
 func makeTuneJob(who, inst, tempo, vol int, notes string) tuneJob {
-	events := parseClanLordTuneWithTempo(notes, tempo)
+	pt := parseClanLordTuneWithTempo(notes, tempo)
 	instData := instruments[inst]
 	prog := instData.program
 	// Scale 0..100 to 1..127 velocity.
@@ -555,7 +703,7 @@ func makeTuneJob(who, inst, tempo, vol int, notes string) tuneJob {
 	} else if vel > 127 {
 		vel = 127
 	}
-	notesOut := eventsToNotes(events, instData, vel)
+	notesOut := eventsToNotes(pt, instData, vel)
 	return tuneJob{program: prog, notes: notesOut, who: who}
 }
 

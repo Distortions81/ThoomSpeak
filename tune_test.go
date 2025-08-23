@@ -38,22 +38,24 @@ func TestParseClanLordTuneDurations(t *testing.T) {
 		{"[ce]3", []int{1500}}, // chord with explicit duration
 	}
 	for _, tt := range tests {
-		events := parseClanLordTuneWithTempo(tt.input, 120)
-		if len(events) != len(tt.want) {
-			t.Fatalf("%q parsed to %d events, want %d", tt.input, len(events), len(tt.want))
+		pt := parseClanLordTuneWithTempo(tt.input, 120)
+		if len(pt.events) != len(tt.want) {
+			t.Fatalf("%q parsed to %d events, want %d", tt.input, len(pt.events), len(tt.want))
 		}
-		for i, ev := range events {
-			if ev.durMS != tt.want[i] {
-				t.Errorf("%q event %d duration = %d, want %d", tt.input, i, ev.durMS, tt.want[i])
+		quarter := 60000 / 120
+		for i, ev := range pt.events {
+			got := int(ev.beats * float64(quarter))
+			if got != tt.want[i] {
+				t.Errorf("%q event %d duration = %d, want %d", tt.input, i, got, tt.want[i])
 			}
 		}
 	}
 }
 
 func TestEventsToNotesAddsGap(t *testing.T) {
-	events := parseClanLordTune("cd")
+	pt := parseClanLordTune("cd")
 	inst := instrument{program: 0, octave: 0, chord: 100, melody: 100}
-	notes := eventsToNotes(events, inst, 100)
+	notes := eventsToNotes(pt, inst, 100)
 	if len(notes) != 2 {
 		t.Fatalf("expected 2 notes, got %d", len(notes))
 	}
@@ -82,11 +84,14 @@ func TestInstrumentVelocityFactors(t *testing.T) {
 
 func TestEventsToNotesVelocityFactors(t *testing.T) {
 	inst := instrument{program: 0, octave: 0, chord: 50, melody: 100}
-	events := []noteEvent{
-		{keys: []int{60, 64}, durMS: 1000},
-		{keys: []int{67}, durMS: 1000},
+	pt := parsedTune{
+		events: []noteEvent{
+			{keys: []int{60, 64}, beats: 2, volume: 10},
+			{keys: []int{67}, beats: 2, volume: 10},
+		},
+		tempo: 120,
 	}
-	notes := eventsToNotes(events, inst, 100)
+	notes := eventsToNotes(pt, inst, 100)
 	if len(notes) != 3 {
 		t.Fatalf("expected 3 notes, got %d", len(notes))
 	}
@@ -95,5 +100,23 @@ func TestEventsToNotesVelocityFactors(t *testing.T) {
 	}
 	if notes[2].Velocity != 100 {
 		t.Fatalf("melody note velocity = %d; want 100", notes[2].Velocity)
+	}
+}
+
+func TestLoopAndTempoAndVolume(t *testing.T) {
+	// Loop: (cd)2 should produce 4 notes, then tempo change and volume change.
+	pt := parseClanLordTuneWithTempo("(cd)2@+60e%5f", 120)
+	inst := instrument{program: 0, octave: 0, chord: 100, melody: 100}
+	notes := eventsToNotes(pt, inst, 100)
+	if len(notes) != 6 {
+		t.Fatalf("expected 6 notes, got %d", len(notes))
+	}
+	// After tempo change to 180 BPM, note 'e' should have shorter duration.
+	if notes[4].Duration != 599*time.Millisecond {
+		t.Fatalf("tempo change not applied, got %v", notes[4].Duration)
+	}
+	// volume change should halve velocity for last note (volume set to 5)
+	if notes[5].Velocity != 50 {
+		t.Fatalf("volume change not applied, got %d", notes[5].Velocity)
 	}
 }
