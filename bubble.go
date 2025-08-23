@@ -257,7 +257,7 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 	}
 
 	if bubbleType == kBubbleYell {
-		drawSpikes(screen, float32(left), float32(top), float32(right), float32(bottom), float32(gs.GameScale*3), borderCol)
+		drawSpikes(screen, float32(left), float32(top), float32(right), float32(bottom), radius, float32(gs.GameScale*3), borderCol)
 	} else if bubbleType == kBubbleMonster {
 		drawJagged(screen, float32(left), float32(top), float32(right), float32(bottom), float32(gs.GameScale*3), borderCol)
 	}
@@ -274,13 +274,20 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 
 // drawSpikes renders spiky triangles around the bubble rectangle to emphasize
 // a shouted yell. Triangles are drawn pointing outward along each edge using
-// the given border color.
-func drawSpikes(screen *ebiten.Image, left, top, right, bottom, size float32, col color.Color) {
+// the given border color. Spikes are positioned to avoid overlapping the
+// rounded bubble corners.
+func drawSpikes(screen *ebiten.Image, left, top, right, bottom, radius, size float32, col color.Color) {
 	bdR, bdG, bdB, bdA := col.RGBA()
 	step := size * 2
 	op := &ebiten.DrawTrianglesOptions{ColorScaleMode: ebiten.ColorScaleModePremultipliedAlpha, AntiAlias: true}
+
+	startX := left + radius
+	endX := right - radius
+	width := endX - startX
+	count := int(width / step)
+	offsetX := (width - float32(count)*step) / 2
 	// top and bottom edges
-	for x := left; x < right-step; x += step {
+	for x := startX + offsetX; x+step <= endX; x += step {
 		var p vector.Path
 		p.MoveTo(x, top)
 		p.LineTo(x+size, top-size)
@@ -314,8 +321,13 @@ func drawSpikes(screen *ebiten.Image, left, top, right, bottom, size float32, co
 		screen.DrawTriangles(vs, is, whiteImage, op)
 	}
 
+	startY := top + radius
+	endY := bottom - radius
+	height := endY - startY
+	count = int(height / step)
+	offsetY := (height - float32(count)*step) / 2
 	// left and right edges
-	for y := top; y < bottom-step; y += step {
+	for y := startY + offsetY; y+step <= endY; y += step {
 		var p vector.Path
 		p.MoveTo(left, y)
 		p.LineTo(left-size, y+size)
