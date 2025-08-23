@@ -104,3 +104,43 @@ func TestEventsToNotesChordStart(t *testing.T) {
 		t.Fatalf("third note start = %v; want %v", notes[2].Start, quarter)
 	}
 }
+
+func TestPCMBufferDuration(t *testing.T) {
+	ms := &mockSynth{}
+	orig := newSynthesizer
+	newSynthesizer = func(*meltysynth.SoundFont, *meltysynth.SynthesizerSettings) (synthesizer, error) {
+		return ms, nil
+	}
+	defer func() { newSynthesizer = orig }()
+
+	setupSynthOnce = sync.Once{}
+	sfntCached = &meltysynth.SoundFont{}
+	synthSettings = meltysynth.NewSynthesizerSettings(sampleRate)
+
+	pt := parseClanLordTuneWithTempo("cd", 120)
+	inst := instrument{program: 0, octave: 0, chord: 100, melody: 100}
+	notes := eventsToNotes(pt, inst, 100)
+
+	left, right, err := renderSong(0, notes)
+	if err != nil {
+		t.Fatalf("renderSong returned error: %v", err)
+	}
+
+	pcm := mixPCM(left, right)
+
+	got := len(pcm)/4 - tailSamples
+	var end time.Duration
+	for _, n := range notes {
+		if e := n.Start + n.Duration; e > end {
+			end = e
+		}
+	}
+	want := durToSamples(end)
+	diff := got - want
+	if diff < 0 {
+		diff = -diff
+	}
+	if diff > sampleRate/20 {
+		t.Fatalf("pcm length = %d samples, want ~%d", got, want)
+	}
+}
