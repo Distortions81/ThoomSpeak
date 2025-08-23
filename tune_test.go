@@ -49,3 +49,21 @@ func TestParseClanLordTuneDurations(t *testing.T) {
 		}
 	}
 }
+
+func TestEventsToNotesAddsGap(t *testing.T) {
+	events := parseClanLordTune("cd")
+	notes := eventsToNotes(events, 0, 100)
+	if len(notes) != 2 {
+		t.Fatalf("expected 2 notes, got %d", len(notes))
+	}
+	if notes[0].Duration != 900*time.Millisecond {
+		t.Fatalf("first note duration = %v, want 900ms", notes[0].Duration)
+	}
+	if notes[1].Start != 1000*time.Millisecond {
+		t.Fatalf("second note start = %v, want 1000ms", notes[1].Start)
+	}
+	gap := notes[1].Start - notes[0].Start - notes[0].Duration
+	if gap != 100*time.Millisecond {
+		t.Fatalf("gap = %v, want 100ms", gap)
+	}
+}

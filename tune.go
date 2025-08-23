@@ -151,6 +151,8 @@ func eventsToNotes(events []noteEvent, oct int, velocity int) []Note {
 	var notes []Note
 	startMS := 0
 	for _, ev := range events {
+		noteMS := ev.durMS * 9 / 10
+		restMS := ev.durMS - noteMS
 		for _, k := range ev.keys {
 			key := k + oct*12
 			if key < 0 || key > 127 {
@@ -160,10 +162,10 @@ func eventsToNotes(events []noteEvent, oct int, velocity int) []Note {
 				Key:      key,
 				Velocity: velocity,
 				Start:    time.Duration(startMS) * time.Millisecond,
-				Duration: time.Duration(ev.durMS) * time.Millisecond,
+				Duration: time.Duration(noteMS) * time.Millisecond,
 			})
 		}
-		startMS += ev.durMS
+		startMS += noteMS + restMS
 	}
 	return notes
 }
