@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"path"
 	"strings"
 	"testing"
 )
@@ -23,7 +24,7 @@ func TestParseMusicCommandRawFallback(t *testing.T) {
 // sample and verifies that parseMusicCommand can decode it when debug logging
 // is enabled.
 func TestParseMusicCommandFromMovie(t *testing.T) {
-	frames, err := parseMovie("clmovFiles/lore1.clMov", baseVersion)
+	frames, err := parseMovie(path.Join("clmovFiles", "lore1.clMov"), baseVersion)
 	if err != nil {
 		t.Fatalf("parseMovie: %v", err)
 	}
