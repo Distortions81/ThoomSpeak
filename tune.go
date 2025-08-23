@@ -97,7 +97,7 @@ func startTuneWorker() {
 }
 
 // noteEvent represents a parsed tune event. A single event may contain multiple
-// simultaneous notes (a chord). Durations are stored in beats and converted to
+// simultaneous notes (a chord). Durations are stored in half-beats and converted to
 // milliseconds later once tempo and loop processing is applied.
 type noteEvent struct {
 	keys   []int
@@ -213,14 +213,9 @@ func eventsToNotes(pt parsedTune, inst instrument, velocity int) []Note {
 		}
 
 		ev := pt.events[i]
-		durMS := int(ev.beats * float64(60000/tempo))
-		quarterMS := 60000 / tempo
-		gapMS := quarterMS / 10
-		if durMS < quarterMS {
-			gapMS = durMS / 10
-		}
-		noteMS := durMS - gapMS
-		restMS := gapMS
+		durMS := int((ev.beats / 2) * float64(60000/tempo))
+		noteMS := durMS * 9 / 10
+		restMS := durMS - noteMS
 
 		v := velocity
 		if len(ev.keys) > 1 {
