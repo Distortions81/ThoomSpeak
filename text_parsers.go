@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -377,10 +378,22 @@ func parseBardText(raw []byte, s string) bool {
 // backend messages like "/music/.../play/inst<inst>/notes<notes>". If the
 // stripped text is empty, it falls back to decoding the raw BEPP payload.
 func parseMusicCommand(s string, raw []byte) bool {
+	orig := s
+	debug := func(msg string) {
+		if musicDebug {
+			consoleMessage(msg)
+			chatMessage(msg)
+			log.Print(msg)
+		}
+	}
 	if s == "" && len(raw) > 0 {
 		s = strings.TrimSpace(decodeMacRoman(raw))
+		orig = s
 	}
 	if s == "" {
+		if orig != "" {
+			debug(orig)
+		}
 		return false
 	}
 	if strings.HasPrefix(s, "/music/") {
@@ -398,6 +411,7 @@ func parseMusicCommand(s string, raw []byte) bool {
 	} else if len(s) > 0 && (s[0] == 'P' || s[0] == 'p') {
 		s = s[1:]
 	} else {
+		debug(orig)
 		return false
 	}
 
@@ -437,15 +451,23 @@ func parseMusicCommand(s string, raw []byte) bool {
 	}
 	notes = strings.Trim(notes, "/")
 	if notes == "" {
+		debug(orig)
 		return false
 	}
-	//go playClanLordTune(strconv.Itoa(inst) + " " + strings.TrimSpace(notes))
 
+	tune := strconv.Itoa(inst) + " " + strings.TrimSpace(notes)
 	if musicDebug {
-		msg := "/play " + strconv.Itoa(inst) + " " + strings.TrimSpace(notes)
-		consoleMessage(msg)
-		chatMessage(msg)
+		msg := "/play " + tune
+		debug(msg)
 	}
+	go func() {
+		if err := playClanLordTune(tune); err != nil {
+			log.Printf("play tune: %v", err)
+			if musicDebug {
+				debug("play tune: " + err.Error())
+			}
+		}
+	}()
 	return true
 }
 
