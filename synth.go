@@ -290,6 +290,7 @@ func safeIsPlaying(p *audio.Player) (ok bool) {
 // from meltysynth in small blocks while scheduling note events.
 type musicStream struct {
 	mu      sync.Mutex
+	cond    *sync.Cond
 	syn     *meltysynth.Synthesizer
 	program int
 	events  []struct{ key, vel, start, end int }
@@ -332,11 +333,12 @@ func newMusicStream(program int, notes []Note) (io.ReadSeekCloser, error) {
 		}
 	}
 	ms := &musicStream{syn: syn, program: program, events: events, active: map[int]bool{}, total: maxEnd + tailSamples, left: make([]float32, block), right: make([]float32, block)}
-	// Pre-render roughly one second in quarter-second chunks so playback
-	// can start quickly while the background goroutine continues filling.
+	ms.cond = sync.NewCond(&ms.mu)
+	// Pre-render roughly one second so playback can start quickly while
+	// the background goroutine continues filling.
 	ms.mu.Lock()
-	for i := 0; i < 4 && ms.pos < ms.total; i++ {
-		if err := ms.renderSamplesLocked(sampleRate / 4); err != nil && !errors.Is(err, io.EOF) {
+	for i := 0; i < 8 && ms.pos < ms.total; i++ {
+		if err := ms.renderSamplesLocked(sampleRate / 8); err != nil && !errors.Is(err, io.EOF) {
 			ms.mu.Unlock()
 			return nil, err
 		}
@@ -375,7 +377,6 @@ func (m *musicStream) Read(p []byte) (int, error) {
 		}
 		avail := len(m.buf) - m.bufPos
 		if avail > 0 || (m.pos >= m.total && m.bufPos >= len(m.buf)) {
-			// either we have data, or everything is rendered and consumed
 			if avail > len(p) {
 				avail = len(p)
 			}
@@ -395,9 +396,12 @@ func (m *musicStream) Read(p []byte) (int, error) {
 			}
 			return avail, nil
 		}
-		// No data available yet but more to come; wait for renderer.
+		if m.pos >= m.total && m.bufPos >= len(m.buf) {
+			m.mu.Unlock()
+			return 0, io.EOF
+		}
+		m.cond.Wait()
 		m.mu.Unlock()
-		time.Sleep(10 * time.Millisecond)
 	}
 }
 
@@ -434,6 +438,7 @@ func (m *musicStream) renderSamplesLocked(samples int) error {
 		m.pos += n
 		samples -= n
 	}
+	m.cond.Broadcast()
 	return nil
 }
 
@@ -454,12 +459,12 @@ func (m *musicStream) fillLoop() {
 			return
 		}
 		if len(m.buf)-m.bufPos < target*2 {
-			_ = m.renderSamplesLocked(sampleRate / 4)
+			_ = m.renderSamplesLocked(sampleRate / 8)
 			m.mu.Unlock()
 			continue
 		}
 		m.mu.Unlock()
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(5 * time.Millisecond)
 	}
 }
 
@@ -502,6 +507,9 @@ func (m *musicStream) Close() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.closed = true
+	if m.cond != nil {
+		m.cond.Broadcast()
+	}
 	return nil
 }
 
