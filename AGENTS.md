@@ -1,7 +1,7 @@
 # AGENTS
 
 This repo includes a minimal Go client under `gothoom/`. To build or run the Go program you need Go version 1.24 or later.
-
+Changes can not be submitted if the code isn't compiled and run and there isn't a unit test verifying the correct behavior.
 
 ## Installing dependencies
 
