@@ -10,12 +10,12 @@ func TestParseClanLordTuneDurations(t *testing.T) {
 		input string
 		want  []int
 	}{
-		{"c", []int{1000}},     // lowercase uses durationBlack=2 beats
-		{"C", []int{2000}},     // uppercase uses durationWhite=4 beats
-		{"c1", []int{500}},     // explicit duration 1 beat
-		{"p", []int{1000}},     // rest defaults to durationBlack
-		{"[ce]", []int{2000}},  // chord defaults to defaultChordDuration
-		{"[ce]3", []int{1500}}, // chord with explicit duration
+		{"c", []int{500}},     // lowercase uses durationBlack=2 half-beats
+		{"C", []int{1000}},    // uppercase uses durationWhite=4 half-beats
+		{"c1", []int{250}},    // explicit duration 1 half-beat
+		{"p", []int{500}},     // rest defaults to durationBlack
+		{"[ce]", []int{1000}}, // chord defaults to defaultChordDuration
+		{"[ce]3", []int{750}}, // chord with explicit duration
 	}
 	for _, tt := range tests {
 		pt := parseClanLordTuneWithTempo(tt.input, 120)
@@ -24,7 +24,7 @@ func TestParseClanLordTuneDurations(t *testing.T) {
 		}
 		quarter := 60000 / 120
 		for i, ev := range pt.events {
-			got := int(ev.beats * float64(quarter))
+			got := int((ev.beats / 2) * float64(quarter))
 			if got != tt.want[i] {
 				t.Errorf("%q event %d duration = %d, want %d", tt.input, i, got, tt.want[i])
 			}
@@ -39,15 +39,15 @@ func TestEventsToNotesAddsGap(t *testing.T) {
 	if len(notes) != 2 {
 		t.Fatalf("expected 2 notes, got %d", len(notes))
 	}
-	if notes[0].Duration != 900*time.Millisecond {
-		t.Fatalf("first note duration = %v, want 900ms", notes[0].Duration)
+	if notes[0].Duration != 450*time.Millisecond {
+		t.Fatalf("first note duration = %v, want 450ms", notes[0].Duration)
 	}
-	if notes[1].Start != 1000*time.Millisecond {
-		t.Fatalf("second note start = %v, want 1000ms", notes[1].Start)
+	if notes[1].Start != 500*time.Millisecond {
+		t.Fatalf("second note start = %v, want 500ms", notes[1].Start)
 	}
 	gap := notes[1].Start - notes[0].Start - notes[0].Duration
-	if gap != 100*time.Millisecond {
-		t.Fatalf("gap = %v, want 100ms", gap)
+	if gap != 50*time.Millisecond {
+		t.Fatalf("gap = %v, want 50ms", gap)
 	}
 }
 
@@ -92,7 +92,7 @@ func TestLoopAndTempoAndVolume(t *testing.T) {
 		t.Fatalf("expected 6 notes, got %d", len(notes))
 	}
 	// After tempo change to 180 BPM, note 'e' should have shorter duration.
-	if notes[4].Duration != 599*time.Millisecond {
+	if notes[4].Duration != 299*time.Millisecond {
 		t.Fatalf("tempo change not applied, got %v", notes[4].Duration)
 	}
 	// volume change should halve velocity for last note (volume set to 5)
