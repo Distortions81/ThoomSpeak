@@ -304,7 +304,7 @@ func drawSpikes(screen *ebiten.Image, left, top, right, bottom, radius, size flo
 		}
 		screen.DrawTriangles(vs, is, whiteImage, op)
 
-		p.Reset()
+		p = vector.Path{}
 		p.MoveTo(x, bottom)
 		p.LineTo(x+size, bottom+size)
 		p.LineTo(x+step, bottom)
@@ -344,7 +344,7 @@ func drawSpikes(screen *ebiten.Image, left, top, right, bottom, radius, size flo
 		}
 		screen.DrawTriangles(vs, is, whiteImage, op)
 
-		p.Reset()
+		p = vector.Path{}
 		p.MoveTo(right, y)
 		p.LineTo(right+size, y+size)
 		p.LineTo(right, y+step)
@@ -390,7 +390,7 @@ func drawJagged(screen *ebiten.Image, left, top, right, bottom, size float32, co
 		}
 		screen.DrawTriangles(vs, is, whiteImage, op)
 
-		p.Reset()
+		p = vector.Path{}
 		p.MoveTo(x, bottom)
 		if toggle {
 			p.LineTo(x+step/2, bottom-size)
@@ -435,7 +435,7 @@ func drawJagged(screen *ebiten.Image, left, top, right, bottom, size float32, co
 		}
 		screen.DrawTriangles(vs, is, whiteImage, op)
 
-		p.Reset()
+		p = vector.Path{}
 		p.MoveTo(right, y)
 		if toggle {
 			p.LineTo(right-size, y+step/2)
