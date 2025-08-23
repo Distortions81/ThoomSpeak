@@ -2340,7 +2340,7 @@ func makeQualityWindow() {
 	motionCB.Text = "Smooth Motion"
 	motionCB.Size = eui.Point{X: width, Y: 24}
 	motionCB.Checked = gs.MotionSmoothing
-	motionCB.Tooltip = "Interpolate camera and mobile movement, looks very nice"
+	motionCB.Tooltip = "Interpolate camera and mobile movement"
 	motionEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventCheckboxChanged {
 			gs.MotionSmoothing = ev.Checked
@@ -2351,10 +2351,10 @@ func makeQualityWindow() {
 
 	// Object pinning: make small effect sprites follow mobiles smoothly
 	pinCB, pinEvents := eui.NewCheckbox()
-	pinCB.Text = "Object pinning (effects follow mobiles)"
+	pinCB.Text = "Object pinning"
 	pinCB.Size = eui.Point{X: width, Y: 24}
 	pinCB.Checked = gs.ObjectPinning
-	pinCB.Tooltip = "Sprites 128x128 or smaller that keep exact offset from a nearby mobile will interpolate with that mobile"
+	pinCB.Tooltip = "Objects or effects on mobiles are motion smoothed"
 	pinEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventCheckboxChanged {
 			gs.ObjectPinning = ev.Checked
@@ -2402,7 +2402,7 @@ func makeQualityWindow() {
 	pictBlendCB.Text = "World Animation Blending"
 	pictBlendCB.Size = eui.Point{X: width, Y: 24}
 	pictBlendCB.Checked = gs.BlendPicts
-	pictBlendCB.Tooltip = "Gives appearance of more frames of animation for water, grass, etc. Looks amazing!"
+	pictBlendCB.Tooltip = "Gives appearance of more frames of animation for water, grass, etc"
 	pictBlendEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventCheckboxChanged {
 			gs.BlendPicts = ev.Checked
