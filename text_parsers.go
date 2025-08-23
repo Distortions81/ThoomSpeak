@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -327,17 +329,23 @@ func parsePresenceText(raw []byte, s string) bool {
 // It also handles bard tune messages. Returns true if the message was fully
 // handled and should not be displayed.
 func parseBardText(raw []byte, s string) bool {
-	s = strings.TrimSpace(s)
-	if strings.HasPrefix(s, "* ") {
-		s = strings.TrimSpace(s[2:])
-	}
+    s = strings.TrimSpace(s)
+    if strings.HasPrefix(s, "* ") {
+        s = strings.TrimSpace(s[2:])
+    }
 	if strings.HasPrefix(s, "¥ ") {
 		s = strings.TrimSpace(s[2:])
 	}
 
-	if parseMusicCommand(s, raw) {
-		return true
-	}
+    // Only treat this as music when BEPP explicitly marks it as such ("-mu" or
+    // "-ba") or when the text explicitly begins with "/music/". This avoids
+    // misclassifying ordinary sentences as music.
+    hasMu := bytes.Contains(raw, []byte{0xC2, 'm', 'u'}) || bytes.Contains(raw, []byte{0xC2, 'b', 'a'})
+    if hasMu || strings.HasPrefix(s, "/music/") {
+        if parseMusicCommand(s, raw) {
+            return true
+        }
+    }
 
 	phrases := []struct {
 		suffix string
@@ -377,76 +385,168 @@ func parseBardText(raw []byte, s string) bool {
 // backend messages like "/music/.../play/inst<inst>/notes<notes>". If the
 // stripped text is empty, it falls back to decoding the raw BEPP payload.
 func parseMusicCommand(s string, raw []byte) bool {
+	orig := s
+	debug := func(msg string) {
+		if musicDebug {
+			consoleMessage(msg)
+			chatMessage(msg)
+			log.Print(msg)
+		}
+	}
 	if s == "" && len(raw) > 0 {
 		s = strings.TrimSpace(decodeMacRoman(raw))
+		orig = s
 	}
 	if s == "" {
+		if orig != "" {
+			debug(orig)
+		}
 		return false
 	}
-	if strings.HasPrefix(s, "/music/") {
-		s = s[len("/music/"):]
-	}
+    if strings.HasPrefix(s, "/music/") {
+        s = s[len("/music/"):]
+    }
 
-	// Search for the play command anywhere in the string. The server may
-	// prefix it with parameters like "/who" before the actual "/play".
-	if idx := strings.Index(s, "/play"); idx >= 0 {
-		s = s[idx+len("/play"):]
-	} else if idx := strings.Index(s, "/P"); idx >= 0 {
-		s = s[idx+len("/P"):]
-	} else if strings.HasPrefix(s, "play") {
-		s = s[len("play"):]
-	} else if len(s) > 0 && (s[0] == 'P' || s[0] == 'p') {
-		s = s[1:]
-	} else {
-		return false
-	}
+    // Recognize and act on /stop (or /S) even if combined with play.
+    stop := false
+    if strings.Contains(s, "/stop") || strings.Contains(s, "/S") {
+        stop = true
+    }
 
-	s = strings.TrimSpace(s)
+    // Look for an explicit play command: "/play", "/P" or a leading
+    // "play " (plain text). Avoid misclassifying arbitrary 'P...' lines.
+    simplePlay := false
+    if idx := strings.Index(s, "/play"); idx >= 0 {
+        s = s[idx+len("/play"):]
+    } else if idx := strings.Index(s, "/P"); idx >= 0 {
+        s = s[idx+len("/P"):]
+    } else if strings.HasPrefix(s, "play ") {
+        s = s[len("play "):]
+        simplePlay = true
+    } else {
+        debug(orig)
+        return false
+    }
 
-	inst := defaultInstrument
-	if idx := strings.Index(s, "/inst"); idx >= 0 {
-		v := s[idx+len("/inst"):]
-		v = strings.TrimPrefix(v, "/")
-		if j := strings.IndexByte(v, '/'); j >= 0 {
-			v = v[:j]
-		}
-		if n, err := strconv.Atoi(v); err == nil {
-			inst = n
-		}
-	} else if idx := strings.Index(s, "/I"); idx >= 0 {
-		v := s[idx+len("/I"):]
-		if len(v) > 0 && v[0] == '/' {
-			v = v[1:]
-		}
-		if j := strings.IndexByte(v, '/'); j >= 0 {
-			v = v[:j]
-		}
-		if n, err := strconv.Atoi(v); err == nil {
-			inst = n
-		}
+    s = strings.TrimSpace(s)
 
-	}
+    // Parse parameters
+    inst := defaultInstrument
+    tempo := 120
+    vol := 100
+    who := 0
+    me := false
+    part := false
+    withIDs := []int{}
 
-	notes := ""
-	if idx := strings.Index(s, "/notes"); idx >= 0 {
-		notes = s[idx+len("/notes"):]
-	} else if idx := strings.Index(s, "/N"); idx >= 0 {
-		notes = s[idx+len("/N"):]
-	} else {
-		notes = s
-	}
-	notes = strings.Trim(notes, "/")
-	if notes == "" {
-		return false
-	}
-	//go playClanLordTune(strconv.Itoa(inst) + " " + strings.TrimSpace(notes))
+    getInt := func(after string) (int, bool) {
+        if idx := strings.Index(s, after); idx >= 0 {
+            v := s[idx+len(after):]
+            if len(v) > 0 && v[0] == '/' {
+                v = v[1:]
+            }
+            if j := strings.IndexByte(v, '/'); j >= 0 {
+                v = v[:j]
+            }
+            if n, err := strconv.Atoi(v); err == nil {
+                return n, true
+            }
+        }
+        return 0, false
+    }
 
-	if musicDebug {
-		msg := "/play " + strconv.Itoa(inst) + " " + strings.TrimSpace(notes)
-		consoleMessage(msg)
-		chatMessage(msg)
-	}
-	return true
+    if n, ok := getInt("/inst"); ok {
+        inst = n
+    } else if n, ok := getInt("/I"); ok {
+        inst = n
+    }
+    if n, ok := getInt("/tempo"); ok {
+        tempo = n
+    } else if n, ok := getInt("/T"); ok {
+        tempo = n
+    }
+    if n, ok := getInt("/vol"); ok {
+        vol = n
+    } else if n, ok := getInt("/V"); ok {
+        vol = n
+    }
+    if n, ok := getInt("/who"); ok {
+        who = n
+    } else if n, ok := getInt("/W"); ok {
+        who = n
+    }
+    if strings.Contains(s, "/me") || strings.Contains(s, "/E") {
+        me = true
+    }
+    if strings.Contains(s, "/part") || strings.Contains(s, "/M") {
+        part = true
+    }
+    // Extract all /with or /H occurrences
+    scanWith := func(tag string) {
+        pos := 0
+        for {
+            idx := strings.Index(s[pos:], tag)
+            if idx < 0 { break }
+            idx += pos + len(tag)
+            v := s[idx:]
+            if len(v) > 0 && v[0] == '/' { v = v[1:] }
+            if j := strings.IndexByte(v, '/'); j >= 0 { v = v[:j] }
+            if n, err := strconv.Atoi(v); err == nil {
+                withIDs = append(withIDs, n)
+            }
+            pos = idx
+        }
+    }
+    scanWith("/with")
+    scanWith("/H")
+
+    notes := ""
+    if idx := strings.Index(s, "/notes"); idx >= 0 {
+        notes = s[idx+len("/notes"):]
+    } else if idx := strings.Index(s, "/N"); idx >= 0 {
+        notes = s[idx+len("/N"):]
+    } else if simplePlay {
+        // Accept the simple "play <inst> <notes>" form only when starting with
+        // "play ". Require an instrument integer before notes to avoid false
+        // positives on regular sentences.
+        f := strings.Fields(s)
+        if len(f) >= 2 {
+            if n, err := strconv.Atoi(f[0]); err == nil {
+                inst = n
+                notes = strings.Join(f[1:], " ")
+            }
+        }
+    }
+    notes = strings.Trim(notes, "/")
+
+    if stop {
+        handleMusicParams(MusicParams{Stop: true})
+        // Continue to parse play if present; otherwise return.
+        if strings.TrimSpace(notes) == "" && !part {
+            return true
+        }
+    }
+
+    // If we still have no notes, do not treat this line as music.
+    if strings.TrimSpace(notes) == "" && !part {
+        debug(orig)
+        return false
+    }
+
+    if musicDebug {
+        msg := fmt.Sprintf("/music play inst=%d tempo=%d vol=%d part=%t who=%d with=%v notes=%q", inst, tempo, vol, part, who, withIDs, truncate(notes, 64))
+        debug(msg)
+    }
+    go func() {
+        handleMusicParams(MusicParams{Inst: inst, Notes: notes, Tempo: tempo, VolPct: vol, Part: part, Who: who, With: withIDs, Me: me})
+    }()
+    return true
+}
+
+// truncate helps keep debug output short
+func truncate(s string, n int) string {
+    if len(s) <= n { return s }
+    return s[:n] + "..."
 }
 
 // firstTagContent extracts the first bracketed content for a given 2-letter BEPP tag.
