@@ -2,7 +2,7 @@ Added think messages to top of screen.
 Improved mobile name-tags.
 Removed old object culling code.
 Fixes clicking on drop-down menu also clicks what is behind it.
-Adde game-scale option back.
+Added game-scale option back.
 Fixed hidpi / monitor scaling support (retina).
 Added option to download soundfont for testing music.
 Shows an error and allows cancel/retry of failed download.
