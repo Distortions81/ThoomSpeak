@@ -100,3 +100,14 @@ func TestLoopAndTempoAndVolume(t *testing.T) {
 		t.Fatalf("volume change not applied, got %d", notes[5].Velocity)
 	}
 }
+
+// TestEventsToNotesLoop verifies that repeated loops terminate properly and
+// produce the expected number of notes without getting stuck.
+func TestEventsToNotesLoop(t *testing.T) {
+	pt := parseClanLordTune("(c)2")
+	inst := instrument{chord: 100, melody: 100}
+	notes := eventsToNotes(pt, inst, 100)
+	if len(notes) != 2 {
+		t.Fatalf("expected 2 notes, got %d", len(notes))
+	}
+}
