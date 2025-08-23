@@ -9,8 +9,8 @@ An open-source (MIT) client for the classic **Clan Lord** MMORPG
 ## Why this exists
 
 - The original client is old and finicky.
-- Single binary, fast rendering (OpenGL), and fewer weird dependencies.
-- Higher framerates (linear interpolation), de-dithering of old graphics, multi-platform.
+- Higher framerates (linear interpolation), animation blending, de-dithering of old graphics, scaling for high-res monitors, etc.
+- Single binary, open-source, multi-platform, and fewer deprecated dependencies (quicktime).
 
 ---
 
