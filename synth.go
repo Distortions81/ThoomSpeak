@@ -299,11 +299,18 @@ type musicStream struct {
 	total   int // total samples including tail
 	closed  bool
 	// buffered PCM to ensure smooth playback
-	buf    []byte
-	bufPos int
+	buf        []byte
+	head, tail int
 	// scratch render buffers
 	left  []float32
 	right []float32
+}
+
+func (m *musicStream) bufLen() int {
+	if m.tail >= m.head {
+		return m.tail - m.head
+	}
+	return len(m.buf) - m.head + m.tail
 }
 
 func newMusicStream(program int, notes []Note) (io.ReadSeekCloser, error) {
@@ -332,7 +339,18 @@ func newMusicStream(program int, notes []Note) (io.ReadSeekCloser, error) {
 			maxEnd = ev.end
 		}
 	}
-	ms := &musicStream{syn: syn, program: program, events: events, active: map[int]bool{}, total: maxEnd + tailSamples, left: make([]float32, block), right: make([]float32, block)}
+	bytesPerSec := sampleRate * 4
+	ms := &musicStream{
+		syn:     syn,
+		program: program,
+		events:  events,
+		active:  map[int]bool{},
+		total:   maxEnd + tailSamples,
+		// Provide enough room for several seconds of audio to avoid reallocations.
+		buf:   make([]byte, bytesPerSec*6),
+		left:  make([]float32, block),
+		right: make([]float32, block),
+	}
 	ms.cond = sync.NewCond(&ms.mu)
 	// Pre-render roughly one second so playback can start quickly while
 	// the background goroutine continues filling.
@@ -367,26 +385,27 @@ func (m *musicStream) Read(p []byte) (int, error) {
 	if len(p) == 0 {
 		return 0, nil
 	}
-	bytesPerSec := sampleRate * 4
-	target := bytesPerSec * 2
 	for {
 		m.mu.Lock()
 		if m.closed {
 			m.mu.Unlock()
 			return 0, io.EOF
 		}
-		avail := len(m.buf) - m.bufPos
-		if avail > 0 || (m.pos >= m.total && m.bufPos >= len(m.buf)) {
+		avail := m.bufLen()
+		if avail > 0 || (m.pos >= m.total && avail == 0) {
 			if avail > len(p) {
 				avail = len(p)
 			}
-			copy(p[:avail], m.buf[m.bufPos:m.bufPos+avail])
-			m.bufPos += avail
-			if m.bufPos >= target {
-				m.buf = append([]byte(nil), m.buf[m.bufPos:]...)
-				m.bufPos = 0
+			bufLen := len(m.buf)
+			if m.head+avail <= bufLen {
+				copy(p[:avail], m.buf[m.head:m.head+avail])
+			} else {
+				first := bufLen - m.head
+				copy(p[:first], m.buf[m.head:])
+				copy(p[first:avail], m.buf[:avail-first])
 			}
-			done := m.pos >= m.total && m.bufPos >= len(m.buf)
+			m.head = (m.head + avail) % bufLen
+			done := m.pos >= m.total && m.head == m.tail
 			m.mu.Unlock()
 			if done {
 				if avail == 0 {
@@ -396,7 +415,7 @@ func (m *musicStream) Read(p []byte) (int, error) {
 			}
 			return avail, nil
 		}
-		if m.pos >= m.total && m.bufPos >= len(m.buf) {
+		if m.pos >= m.total && m.head == m.tail {
 			m.mu.Unlock()
 			return 0, io.EOF
 		}
@@ -424,17 +443,36 @@ func (m *musicStream) renderSamplesLocked(samples int) error {
 			return err
 		}
 		need := n * 4
-		off := len(m.buf)
-		m.buf = append(m.buf, make([]byte, need)...)
-		for i := 0; i < n; i++ {
-			l := int16(m.left[i] * 32767)
-			r := int16(m.right[i] * 32767)
-			binary.LittleEndian.PutUint16(m.buf[off+i*4:], uint16(l))
-			binary.LittleEndian.PutUint16(m.buf[off+i*4+2:], uint16(r))
+		if need > len(m.buf)-m.bufLen() {
+			// Expand the ring buffer if it's unexpectedly full.
+			newBuf := make([]byte, len(m.buf)*2)
+			cur := m.bufLen()
+			if m.tail >= m.head {
+				copy(newBuf, m.buf[m.head:m.tail])
+			} else {
+				off := copy(newBuf, m.buf[m.head:])
+				copy(newBuf[off:], m.buf[:m.tail])
+			}
+			m.head = 0
+			m.tail = cur
+			m.buf = newBuf
 		}
+		bufLen := len(m.buf)
+		tail := m.tail
 		for i := 0; i < n; i++ {
+			l := uint16(int16(m.left[i] * 32767))
+			r := uint16(int16(m.right[i] * 32767))
+			m.buf[tail] = byte(l)
+			tail = (tail + 1) % bufLen
+			m.buf[tail] = byte(l >> 8)
+			tail = (tail + 1) % bufLen
+			m.buf[tail] = byte(r)
+			tail = (tail + 1) % bufLen
+			m.buf[tail] = byte(r >> 8)
+			tail = (tail + 1) % bufLen
 			m.left[i], m.right[i] = 0, 0
 		}
+		m.tail = tail
 		m.pos += n
 		samples -= n
 	}
@@ -458,7 +496,7 @@ func (m *musicStream) fillLoop() {
 			m.mu.Unlock()
 			return
 		}
-		if len(m.buf)-m.bufPos < target*2 {
+		if m.bufLen() < target*2 {
 			_ = m.renderSamplesLocked(sampleRate / 8)
 			m.mu.Unlock()
 			continue
