@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -54,10 +53,10 @@ type noteEvent struct {
 
 // playClanLordTune decodes a Clan Lord music string and plays it using the
 // music package. The tune may optionally begin with an instrument index.
-// For example: "3 cde" plays on instrument #3.
-func playClanLordTune(tune string) {
+// For example: "3 cde" plays on instrument #3. It returns any playback error.
+func playClanLordTune(tune string) error {
 	if audioContext == nil || gs.Mute || gs.MusicVolume <= 0 {
-		return
+		return nil
 	}
 
 	inst := defaultInstrument
@@ -71,16 +70,14 @@ func playClanLordTune(tune string) {
 
 	events := parseClanLordTune(tune)
 	if len(events) == 0 {
-		return
+		return nil
 	}
 
 	prog := instruments[inst].program
 	oct := instruments[inst].octave
 
 	notes := eventsToNotes(events, oct)
-	if err := Play(audioContext, prog, notes); err != nil {
-		log.Printf("play note: %v", err)
-	}
+	return Play(audioContext, prog, notes)
 }
 
 // eventsToNotes converts parsed note events into synth notes with explicit start

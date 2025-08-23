@@ -224,16 +224,16 @@ var (
 
 // drawState tracks information needed by the Ebiten renderer.
 type drawState struct {
-    descriptors map[uint8]frameDescriptor
-    pictures    []framePicture
-    prevPictures []framePicture
-    picShiftX   int
-    picShiftY   int
-    mobiles     map[uint8]frameMobile
-	prevMobiles map[uint8]frameMobile
-	prevDescs   map[uint8]frameDescriptor
-	prevTime    time.Time
-	curTime     time.Time
+	descriptors  map[uint8]frameDescriptor
+	pictures     []framePicture
+	prevPictures []framePicture
+	picShiftX    int
+	picShiftY    int
+	mobiles      map[uint8]frameMobile
+	prevMobiles  map[uint8]frameMobile
+	prevDescs    map[uint8]frameDescriptor
+	prevTime     time.Time
+	curTime      time.Time
 
 	bubbles []bubble
 
@@ -323,11 +323,11 @@ type bubble struct {
 
 // drawSnapshot is a read-only copy of the current draw state.
 type drawSnapshot struct {
-    descriptors                 map[uint8]frameDescriptor
-    pictures                    []framePicture
-    prevPictures                []framePicture
-    picShiftX                   int
-    picShiftY                   int
+	descriptors                 map[uint8]frameDescriptor
+	pictures                    []framePicture
+	prevPictures                []framePicture
+	picShiftX                   int
+	picShiftY                   int
 	mobiles                     []frameMobile // sorted right-to-left, top-to-bottom
 	prevMobiles                 map[uint8]frameMobile
 	prevDescs                   map[uint8]frameDescriptor
@@ -356,13 +356,13 @@ func captureDrawSnapshot() drawSnapshot {
 	stateMu.Lock()
 	defer stateMu.Unlock()
 
-    snap := drawSnapshot{
-        descriptors:    make(map[uint8]frameDescriptor, len(state.descriptors)),
-        pictures:       append([]framePicture(nil), state.pictures...),
-        prevPictures:   append([]framePicture(nil), state.prevPictures...),
-        picShiftX:      state.picShiftX,
-        picShiftY:      state.picShiftY,
-        mobiles:        append([]frameMobile(nil), state.nameMobs...),
+	snap := drawSnapshot{
+		descriptors:    make(map[uint8]frameDescriptor, len(state.descriptors)),
+		pictures:       append([]framePicture(nil), state.pictures...),
+		prevPictures:   append([]framePicture(nil), state.prevPictures...),
+		picShiftX:      state.picShiftX,
+		picShiftY:      state.picShiftY,
+		mobiles:        append([]frameMobile(nil), state.nameMobs...),
 		prevTime:       state.prevTime,
 		curTime:        state.curTime,
 		hp:             state.hp,
@@ -650,7 +650,12 @@ func (g *Game) Update() error {
 			txt := strings.TrimSpace(string(inputText))
 			if txt != "" {
 				if strings.HasPrefix(txt, "/play ") {
-					go playClanLordTune(strings.TrimSpace(txt[len("/play "):]))
+					tune := strings.TrimSpace(txt[len("/play "):])
+					go func() {
+						if err := playClanLordTune(tune); err != nil {
+							log.Printf("play tune: %v", err)
+						}
+					}()
 				} else {
 					pendingCommand = txt
 					//consoleMessage("> " + txt)
@@ -1005,13 +1010,13 @@ func drawScene(screen *ebiten.Image, ox, oy int, snap drawSnapshot, alpha float6
 	live := snap.liveMobs
 	dead := snap.deadMobs
 
-    for _, p := range negPics {
-        drawPicture(screen, ox, oy, p, alpha, pictFade, snap.mobiles, descMap, snap.prevMobiles, snap.prevPictures, snap.picShiftX, snap.picShiftY)
-    }
+	for _, p := range negPics {
+		drawPicture(screen, ox, oy, p, alpha, pictFade, snap.mobiles, descMap, snap.prevMobiles, snap.prevPictures, snap.picShiftX, snap.picShiftY)
+	}
 
 	if gs.hideMobiles {
 		for _, p := range zeroPics {
-            drawPicture(screen, ox, oy, p, alpha, pictFade, snap.mobiles, descMap, snap.prevMobiles, snap.prevPictures, snap.picShiftX, snap.picShiftY)
+			drawPicture(screen, ox, oy, p, alpha, pictFade, snap.mobiles, descMap, snap.prevMobiles, snap.prevPictures, snap.picShiftX, snap.picShiftY)
 		}
 	} else {
 		for _, m := range dead {
@@ -1042,15 +1047,15 @@ func drawScene(screen *ebiten.Image, ox, oy int, snap drawSnapshot, alpha float6
 				}
 				i++
 			} else {
-                drawPicture(screen, ox, oy, zeroPics[j], alpha, pictFade, snap.mobiles, descMap, snap.prevMobiles, snap.prevPictures, snap.picShiftX, snap.picShiftY)
+				drawPicture(screen, ox, oy, zeroPics[j], alpha, pictFade, snap.mobiles, descMap, snap.prevMobiles, snap.prevPictures, snap.picShiftX, snap.picShiftY)
 				j++
 			}
 		}
 	}
 
-    for _, p := range posPics {
-        drawPicture(screen, ox, oy, p, alpha, pictFade, snap.mobiles, descMap, snap.prevMobiles, snap.prevPictures, snap.picShiftX, snap.picShiftY)
-    }
+	for _, p := range posPics {
+		drawPicture(screen, ox, oy, p, alpha, pictFade, snap.mobiles, descMap, snap.prevMobiles, snap.prevPictures, snap.picShiftX, snap.picShiftY)
+	}
 }
 
 // drawMobile renders a single mobile object with optional interpolation and onion skinning.
@@ -1216,14 +1221,14 @@ func drawPicture(screen *ebiten.Image, ox, oy int, p framePicture, alpha float64
 		w, h = clImages.Size(uint32(p.PictID))
 	}
 
-    var mobileX, mobileY float64
-    if gs.ObjectPinning && gs.MotionSmoothing && w <= 256 && h <= 256 {
-        if dx, dy, ok := pictureMobileOffset(p, mobiles, prevMobiles, prevPictures, alpha); ok {
-            mobileX, mobileY = dx, dy
-            offX = 0
-            offY = 0
-        }
-    }
+	var mobileX, mobileY float64
+	if gs.ObjectPinning && gs.MotionSmoothing && w <= 256 && h <= 256 {
+		if dx, dy, ok := pictureMobileOffset(p, mobiles, prevMobiles, prevPictures, alpha); ok {
+			mobileX, mobileY = dx, dy
+			offX = 0
+			offY = 0
+		}
+	}
 
 	x := roundToInt(((float64(p.H) + offX + mobileX) + float64(fieldCenterX)) * gs.GameScale)
 	y := roundToInt(((float64(p.V) + offY + mobileY) + float64(fieldCenterY)) * gs.GameScale)
@@ -1350,93 +1355,93 @@ func drawPicture(screen *ebiten.Image, ox, oy int, p framePicture, alpha float64
 // mobile across frames using raw coordinates only (no picShift). When matched,
 // it returns the mobile's interpolated delta so the picture follows smoothly.
 func pictureMobileOffset(p framePicture, mobiles []frameMobile, prevMobiles map[uint8]frameMobile, prevPictures []framePicture, alpha float64) (float64, float64, bool) {
-    // Use exact previous picture position for the same PictID to verify the
-    // picture-to-mobile offset stayed identical across frames.
-    // Try the hero (playerIndex) first to ensure centered player effects pin.
-    for i := range mobiles {
-        if mobiles[i].Index != playerIndex {
-            continue
-        }
-        m := mobiles[i]
-        pm, ok := prevMobiles[m.Index]
-        if !ok {
-            break
-        }
-        offH := int(p.H) - int(m.H)
-        offV := int(p.V) - int(m.V)
-        if offH < -64 || offH > 64 || offV < -64 || offV > 64 {
-            break
-        }
-        expPrevH := int(pm.H) + offH
-        expPrevV := int(pm.V) + offV
-        for j := range prevPictures {
-            pp := prevPictures[j]
-            if pp.PictID != p.PictID {
-                continue
-            }
-            if int(pp.H) == expPrevH && int(pp.V) == expPrevV {
-                h := float64(pm.H)*(1-alpha) + float64(m.H)*alpha
-                v := float64(pm.V)*(1-alpha) + float64(m.V)*alpha
-                return h - float64(m.H), v - float64(m.V), true
-            }
-        }
-        break
-    }
-    bestDist := 64*64 + 1
-    var bestDX, bestDY float64
-    found := false
-    for _, m := range mobiles {
-        pm, ok := prevMobiles[m.Index]
-        if !ok {
-            continue
-        }
-        offH := int(p.H) - int(m.H)
-        offV := int(p.V) - int(m.V)
-        if offH < -64 || offH > 64 || offV < -64 || offV > 64 {
-            continue
-        }
-        // Expected previous picture position if offset is identical
-        expPrevH := int(pm.H) + offH
-        expPrevV := int(pm.V) + offV
-        match := false
-        for i := range prevPictures {
-            pp := prevPictures[i]
-            if pp.PictID != p.PictID {
-                continue
-            }
-            if int(pp.H) == expPrevH && int(pp.V) == expPrevV {
-                match = true
-                break
-            }
-        }
-        if !match {
-            continue
-        }
-        // Interpolate mobile
-        h := float64(pm.H)*(1-alpha) + float64(m.H)*alpha
-        v := float64(pm.V)*(1-alpha) + float64(m.V)*alpha
-        dist := offH*offH + offV*offV
-        if dist < bestDist {
-            bestDX = h - float64(m.H)
-            bestDY = v - float64(m.V)
-            bestDist = dist
-            found = true
-        }
-    }
-    if found {
-        return bestDX, bestDY, true
-    }
-    // Exact-center case: picture exactly at a mobile; requires prev sample
-    for _, m := range mobiles {
-        if int(p.H) == int(m.H) && int(p.V) == int(m.V) {
-            if pm, ok := prevMobiles[m.Index]; ok {
-                h := float64(pm.H)*(1-alpha) + float64(m.H)*alpha
-                v := float64(pm.V)*(1-alpha) + float64(m.V)*alpha
-                return h - float64(m.H), v - float64(m.V), true
-            }
-        }
-    }
-    return 0, 0, false
+	// Use exact previous picture position for the same PictID to verify the
+	// picture-to-mobile offset stayed identical across frames.
+	// Try the hero (playerIndex) first to ensure centered player effects pin.
+	for i := range mobiles {
+		if mobiles[i].Index != playerIndex {
+			continue
+		}
+		m := mobiles[i]
+		pm, ok := prevMobiles[m.Index]
+		if !ok {
+			break
+		}
+		offH := int(p.H) - int(m.H)
+		offV := int(p.V) - int(m.V)
+		if offH < -64 || offH > 64 || offV < -64 || offV > 64 {
+			break
+		}
+		expPrevH := int(pm.H) + offH
+		expPrevV := int(pm.V) + offV
+		for j := range prevPictures {
+			pp := prevPictures[j]
+			if pp.PictID != p.PictID {
+				continue
+			}
+			if int(pp.H) == expPrevH && int(pp.V) == expPrevV {
+				h := float64(pm.H)*(1-alpha) + float64(m.H)*alpha
+				v := float64(pm.V)*(1-alpha) + float64(m.V)*alpha
+				return h - float64(m.H), v - float64(m.V), true
+			}
+		}
+		break
+	}
+	bestDist := 64*64 + 1
+	var bestDX, bestDY float64
+	found := false
+	for _, m := range mobiles {
+		pm, ok := prevMobiles[m.Index]
+		if !ok {
+			continue
+		}
+		offH := int(p.H) - int(m.H)
+		offV := int(p.V) - int(m.V)
+		if offH < -64 || offH > 64 || offV < -64 || offV > 64 {
+			continue
+		}
+		// Expected previous picture position if offset is identical
+		expPrevH := int(pm.H) + offH
+		expPrevV := int(pm.V) + offV
+		match := false
+		for i := range prevPictures {
+			pp := prevPictures[i]
+			if pp.PictID != p.PictID {
+				continue
+			}
+			if int(pp.H) == expPrevH && int(pp.V) == expPrevV {
+				match = true
+				break
+			}
+		}
+		if !match {
+			continue
+		}
+		// Interpolate mobile
+		h := float64(pm.H)*(1-alpha) + float64(m.H)*alpha
+		v := float64(pm.V)*(1-alpha) + float64(m.V)*alpha
+		dist := offH*offH + offV*offV
+		if dist < bestDist {
+			bestDX = h - float64(m.H)
+			bestDY = v - float64(m.V)
+			bestDist = dist
+			found = true
+		}
+	}
+	if found {
+		return bestDX, bestDY, true
+	}
+	// Exact-center case: picture exactly at a mobile; requires prev sample
+	for _, m := range mobiles {
+		if int(p.H) == int(m.H) && int(p.V) == int(m.V) {
+			if pm, ok := prevMobiles[m.Index]; ok {
+				h := float64(pm.H)*(1-alpha) + float64(m.H)*alpha
+				v := float64(pm.V)*(1-alpha) + float64(m.V)*alpha
+				return h - float64(m.H), v - float64(m.V), true
+			}
+		}
+	}
+	return 0, 0, false
 }
 
 // drawMobileNameTag renders the name tag and color bar for a single mobile.

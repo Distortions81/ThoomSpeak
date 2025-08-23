@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -439,13 +440,18 @@ func parseMusicCommand(s string, raw []byte) bool {
 	if notes == "" {
 		return false
 	}
-	//go playClanLordTune(strconv.Itoa(inst) + " " + strings.TrimSpace(notes))
 
+	tune := strconv.Itoa(inst) + " " + strings.TrimSpace(notes)
 	if musicDebug {
-		msg := "/play " + strconv.Itoa(inst) + " " + strings.TrimSpace(notes)
+		msg := "/play " + tune
 		consoleMessage(msg)
 		chatMessage(msg)
 	}
+	go func() {
+		if err := playClanLordTune(tune); err != nil {
+			log.Printf("play tune: %v", err)
+		}
+	}()
 	return true
 }
 
