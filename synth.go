@@ -297,8 +297,7 @@ type musicStream struct {
 	pos     int // samples rendered so far
 	total   int // total samples including tail
 	closed  bool
-	// buffered PCM to ensure smooth playback (keep ~4s queued initially
-	// and maintain at least 2s ahead during playback)
+	// buffered PCM to ensure smooth playback
 	buf    []byte
 	bufPos int
 	// scratch render buffers
@@ -333,16 +332,17 @@ func newMusicStream(program int, notes []Note) (io.ReadSeekCloser, error) {
 		}
 	}
 	ms := &musicStream{syn: syn, program: program, events: events, active: map[int]bool{}, total: maxEnd + tailSamples, left: make([]float32, block), right: make([]float32, block)}
-	// Pre-render up to four seconds so playback only begins once at least
-	// two seconds of audio is queued beyond the initial chunk.
+	// Pre-render roughly one second in quarter-second chunks so playback
+	// can start quickly while the background goroutine continues filling.
 	ms.mu.Lock()
 	for i := 0; i < 4 && ms.pos < ms.total; i++ {
-		if err := ms.renderSecondLocked(); err != nil && !errors.Is(err, io.EOF) {
+		if err := ms.renderSamplesLocked(sampleRate / 4); err != nil && !errors.Is(err, io.EOF) {
 			ms.mu.Unlock()
 			return nil, err
 		}
 	}
 	ms.mu.Unlock()
+	go ms.fillLoop()
 	return ms, nil
 }
 
@@ -362,70 +362,53 @@ func (m *musicStream) trigger(start, count int) {
 }
 
 func (m *musicStream) Read(p []byte) (int, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if m.closed {
-		return 0, io.EOF
-	}
-	if m.pos >= m.total && m.bufPos >= len(m.buf) {
-		return 0, io.EOF
-	}
-	bytesPerSec := sampleRate * 4
-	target := bytesPerSec * 2
-	// Ensure at least 2 seconds of PCM is buffered ahead when possible.
-	for len(m.buf)-m.bufPos < target && m.pos < m.total {
-		if err := m.renderSecondLocked(); err != nil {
-			// Stop on render error
-			break
-		}
-	}
-
 	if len(p) == 0 {
 		return 0, nil
 	}
-	// Copy from buffer
-	avail := len(m.buf) - m.bufPos
-	if avail == 0 {
-		// nothing buffered but not EOF yet: render a small block
-		_ = m.renderSecondLocked()
-		avail = len(m.buf) - m.bufPos
-		if avail == 0 {
+	bytesPerSec := sampleRate * 4
+	target := bytesPerSec * 2
+	for {
+		m.mu.Lock()
+		if m.closed {
+			m.mu.Unlock()
 			return 0, io.EOF
 		}
-	}
-	if avail > len(p) {
-		avail = len(p)
-	}
-	copy(p[:avail], m.buf[m.bufPos:m.bufPos+avail])
-	m.bufPos += avail
-	// Top up so at least two seconds remain queued when possible.
-	for len(m.buf)-m.bufPos < target && m.pos < m.total {
-		if err := m.renderSecondLocked(); err != nil {
-			break
+		avail := len(m.buf) - m.bufPos
+		if avail > 0 || (m.pos >= m.total && m.bufPos >= len(m.buf)) {
+			// either we have data, or everything is rendered and consumed
+			if avail > len(p) {
+				avail = len(p)
+			}
+			copy(p[:avail], m.buf[m.bufPos:m.bufPos+avail])
+			m.bufPos += avail
+			if m.bufPos >= target {
+				m.buf = append([]byte(nil), m.buf[m.bufPos:]...)
+				m.bufPos = 0
+			}
+			done := m.pos >= m.total && m.bufPos >= len(m.buf)
+			m.mu.Unlock()
+			if done {
+				if avail == 0 {
+					return 0, io.EOF
+				}
+				return avail, io.EOF
+			}
+			return avail, nil
 		}
+		// No data available yet but more to come; wait for renderer.
+		m.mu.Unlock()
+		time.Sleep(10 * time.Millisecond)
 	}
-	// Drop consumed bytes to keep memory bounded once we've crossed 2s
-	if m.bufPos >= target {
-		m.buf = append([]byte(nil), m.buf[m.bufPos:]...)
-		m.bufPos = 0
-	}
-	// Signal EOF when all samples rendered and buffer drained
-	if m.pos >= m.total && m.bufPos >= len(m.buf) {
-		return avail, io.EOF
-	}
-	return avail, nil
 }
 
-// renderSecondLocked renders up to one second worth of PCM and appends to m.buf.
-// Caller must hold m.mu.
-func (m *musicStream) renderSecondLocked() error {
+// renderSamplesLocked renders up to the requested number of samples of PCM and
+// appends them to m.buf. Caller must hold m.mu.
+func (m *musicStream) renderSamplesLocked(samples int) error {
 	if m.pos >= m.total {
 		return io.EOF
 	}
-	samples := sampleRate
-	remain := m.total - m.pos
-	if samples > remain {
-		samples = remain
+	if samples > m.total-m.pos {
+		samples = m.total - m.pos
 	}
 	for samples > 0 {
 		n := block
@@ -436,7 +419,6 @@ func (m *musicStream) renderSecondLocked() error {
 		if err := safeRender(m.syn, m.left, m.right); err != nil {
 			return err
 		}
-		// append first n frames
 		need := n * 4
 		off := len(m.buf)
 		m.buf = append(m.buf, make([]byte, need)...)
@@ -446,7 +428,6 @@ func (m *musicStream) renderSecondLocked() error {
 			binary.LittleEndian.PutUint16(m.buf[off+i*4:], uint16(l))
 			binary.LittleEndian.PutUint16(m.buf[off+i*4+2:], uint16(r))
 		}
-		// zero used portion
 		for i := 0; i < n; i++ {
 			m.left[i], m.right[i] = 0, 0
 		}
@@ -454,6 +435,32 @@ func (m *musicStream) renderSecondLocked() error {
 		samples -= n
 	}
 	return nil
+}
+
+// renderSecondLocked renders one second of PCM. Caller must hold m.mu.
+func (m *musicStream) renderSecondLocked() error {
+	return m.renderSamplesLocked(sampleRate)
+}
+
+// fillLoop continuously renders small chunks in a background goroutine to keep
+// the playback buffer topped up.
+func (m *musicStream) fillLoop() {
+	bytesPerSec := sampleRate * 4
+	target := bytesPerSec * 2
+	for {
+		m.mu.Lock()
+		if m.closed || m.pos >= m.total {
+			m.mu.Unlock()
+			return
+		}
+		if len(m.buf)-m.bufPos < target*2 {
+			_ = m.renderSamplesLocked(sampleRate / 4)
+			m.mu.Unlock()
+			continue
+		}
+		m.mu.Unlock()
+		time.Sleep(10 * time.Millisecond)
+	}
 }
 
 func (m *musicStream) Seek(offset int64, whence int) (int64, error) {
