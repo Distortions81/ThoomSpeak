@@ -279,10 +279,13 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 
 // drawSpikes renders spiky triangles around the bubble rectangle to emphasize
 // a shouted yell. Triangles are drawn pointing outward along each edge and
-// around the rounded corners using the given border color.
+// around the rounded corners using the given border color. The spike length
+// gently pulses over time to enhance the yelling effect.
 func drawSpikes(screen *ebiten.Image, left, top, right, bottom, radius, size float32, col color.Color) {
 	bdR, bdG, bdB, bdA := col.RGBA()
 	step := size * 2
+	phase := float64(time.Now().UnixNano()) / float64(time.Second)
+	spike := size + size*0.3*float32(math.Sin(phase))
 	op := &ebiten.DrawTrianglesOptions{ColorScaleMode: ebiten.ColorScaleModePremultipliedAlpha, AntiAlias: true}
 
 	startX := left + radius
@@ -298,7 +301,7 @@ func drawSpikes(screen *ebiten.Image, left, top, right, bottom, radius, size flo
 
 		var p vector.Path
 		p.MoveTo(x, top)
-		p.LineTo(mid, top-size)
+		p.LineTo(mid, top-spike)
 		p.LineTo(end, top)
 		p.Close()
 		vs, is := p.AppendVerticesAndIndicesForFilling(nil, nil)
@@ -314,7 +317,7 @@ func drawSpikes(screen *ebiten.Image, left, top, right, bottom, radius, size flo
 
 		p = vector.Path{}
 		p.MoveTo(x, bottom)
-		p.LineTo(mid, bottom+size)
+		p.LineTo(mid, bottom+spike)
 		p.LineTo(end, bottom)
 		p.Close()
 		vs, is = p.AppendVerticesAndIndicesForFilling(nil, nil)
@@ -342,7 +345,7 @@ func drawSpikes(screen *ebiten.Image, left, top, right, bottom, radius, size flo
 
 		var p vector.Path
 		p.MoveTo(left, y)
-		p.LineTo(left-size, mid)
+		p.LineTo(left-spike, mid)
 		p.LineTo(left, end)
 		p.Close()
 		vs, is := p.AppendVerticesAndIndicesForFilling(nil, nil)
@@ -358,7 +361,7 @@ func drawSpikes(screen *ebiten.Image, left, top, right, bottom, radius, size flo
 
 		p = vector.Path{}
 		p.MoveTo(right, y)
-		p.LineTo(right+size, mid)
+		p.LineTo(right+spike, mid)
 		p.LineTo(right, end)
 		p.Close()
 		vs, is = p.AppendVerticesAndIndicesForFilling(nil, nil)
@@ -386,8 +389,8 @@ func drawSpikes(screen *ebiten.Image, left, top, right, bottom, radius, size flo
 				y1 := cy + radius*float32(math.Sin(a))
 				x2 := cx + radius*float32(math.Cos(next))
 				y2 := cy + radius*float32(math.Sin(next))
-				mx := cx + (radius+size)*float32(math.Cos(mid))
-				my := cy + (radius+size)*float32(math.Sin(mid))
+				mx := cx + (radius+spike)*float32(math.Cos(mid))
+				my := cy + (radius+spike)*float32(math.Sin(mid))
 
 				var p vector.Path
 				p.MoveTo(x1, y1)
