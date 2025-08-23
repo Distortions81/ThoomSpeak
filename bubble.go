@@ -77,8 +77,8 @@ func bubbleColors(typ int) (border, bg, text color.Color) {
 		bg = color.NRGBA{0x80, 0x80, 0x80, alpha}
 		text = color.Black
 	case kBubblePonder:
-		border = color.NRGBA{0x80, 0x80, 0x80, 0xff}
-		bg = color.NRGBA{0x80, 0x80, 0x80, alpha}
+		border = color.NRGBA{0xcc, 0xcc, 0xcc, 0xff}
+		bg = color.NRGBA{0xcc, 0xcc, 0xcc, alpha}
 		text = color.Black
 	case kBubbleRealAction:
 		border = color.NRGBA{0x00, 0x00, 0x80, 0xff}
@@ -479,15 +479,16 @@ func drawPonderWaves(screen *ebiten.Image, left, top, right, bottom int, borderC
 	r := float32(4 * gs.GameScale)
 	step := r * 1.5
 	phase := float64(time.Now().UnixNano()) / float64(time.Second)
+	edge := r * 0.7
 	for x := float32(left) - r; x <= float32(right)+r; x += step {
 		offset := float32(math.Sin(phase+float64(x)*0.1)) * r * 0.3
-		drawBubbleCircle(screen, x, float32(top)-r+offset, r, bgCol, borderCol)
-		drawBubbleCircle(screen, x, float32(bottom)+r-offset, r, bgCol, borderCol)
+		drawBubbleCircle(screen, x, float32(top)-edge+offset, r, bgCol, borderCol)
+		drawBubbleCircle(screen, x, float32(bottom)+edge-offset, r, bgCol, borderCol)
 	}
 	for y := float32(top) - r; y <= float32(bottom)+r; y += step {
 		offset := float32(math.Sin(phase+float64(y)*0.1)) * r * 0.3
-		drawBubbleCircle(screen, float32(left)-r+offset, y, r, bgCol, borderCol)
-		drawBubbleCircle(screen, float32(right)+r-offset, y, r, bgCol, borderCol)
+		drawBubbleCircle(screen, float32(left)-edge+offset, y, r, bgCol, borderCol)
+		drawBubbleCircle(screen, float32(right)+edge-offset, y, r, bgCol, borderCol)
 	}
 }
 
