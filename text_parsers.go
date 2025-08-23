@@ -333,15 +333,14 @@ func parseBardText(raw []byte, s string) bool {
     if strings.HasPrefix(s, "* ") {
         s = strings.TrimSpace(s[2:])
     }
-	if strings.HasPrefix(s, "¥ ") {
-		s = strings.TrimSpace(s[2:])
-	}
+    if strings.HasPrefix(s, "¥ ") {
+        s = strings.TrimSpace(s[2:])
+    }
 
     // Only treat this as music when BEPP explicitly marks it as such ("-mu" or
-    // "-ba") or when the text explicitly begins with "/music/". This avoids
-    // misclassifying ordinary sentences as music.
+    // "-ba"). Avoid acting on plain text without tags.
     hasMu := bytes.Contains(raw, []byte{0xC2, 'm', 'u'}) || bytes.Contains(raw, []byte{0xC2, 'b', 'a'})
-    if hasMu || strings.HasPrefix(s, "/music/") {
+    if hasMu {
         if parseMusicCommand(s, raw) {
             return true
         }
@@ -364,8 +363,8 @@ func parseBardText(raw []byte, s string) bool {
 		if strings.HasSuffix(s, ph.suffix) {
 			name := strings.TrimSpace(strings.TrimSuffix(s, ph.suffix))
 			if name == "" {
-				return false
-			}
+    return false
+}
 			p := getPlayer(name)
 			playersMu.Lock()
 			p.Bard = ph.bard

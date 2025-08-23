@@ -1,8 +1,9 @@
 package main
 
 import (
-	"bytes"
-	"strings"
+    "bytes"
+    "log"
+    "strings"
 
 	"golang.org/x/text/encoding/charmap"
 )
@@ -131,18 +132,25 @@ BEPP tag reference (two-letter codes following the 0xC2 prefix):
 | yk  | you killed          |
 */
 func decodeBEPP(data []byte) string {
-	if len(data) < 3 || data[0] != 0xC2 {
-		return ""
-	}
-	prefix := string(data[1:3])
-	// Keep a raw copy (without NUL terminator) for backend parsing.
-	raw := data[3:]
-	if i := bytes.IndexByte(raw, 0); i >= 0 {
-		raw = raw[:i]
-	}
-	// For displayable text, strip BEPP tags and non-printables.
-	cleaned := stripBEPPTags(append([]byte(nil), raw...))
-	text := strings.TrimSpace(decodeMacRoman(cleaned))
+    if len(data) < 3 || data[0] != 0xC2 {
+        return ""
+    }
+    prefix := string(data[1:3])
+    // Keep a raw copy (without NUL terminator) for backend parsing.
+    raw := data[3:]
+    if i := bytes.IndexByte(raw, 0); i >= 0 {
+        raw = raw[:i]
+    }
+    // For displayable text, strip BEPP tags and non-printables.
+    cleaned := stripBEPPTags(append([]byte(nil), raw...))
+    text := strings.TrimSpace(decodeMacRoman(cleaned))
+
+    if dumpBEPPTags {
+        // Log the tag and a truncated form of the text for empirical analysis.
+        t := text
+        if len(t) > 120 { t = t[:120] + "..." }
+        log.Printf("BEPP %s: %q", prefix, t)
+    }
 	if text == "" && prefix != "be" && prefix != "mu" { // backend commands or music may have no printable text
 		return ""
 	}
@@ -388,50 +396,40 @@ func decodeMessage(m []byte) string {
 }
 
 func handleInfoText(data []byte) {
-	for _, line := range bytes.Split(data, []byte{'\r'}) {
-		if len(line) == 0 {
-			continue
-		}
-		if line[0] == 0xC2 {
-			if txt := decodeBEPP(line); txt != "" {
-				consoleMessage(txt)
-			}
-			continue
-		}
-		if _, txt, _, _, _, _ := decodeBubble(line); txt != "" {
-			if gs.MessagesToConsole {
-				consoleMessage(txt)
-			} else {
-				chatMessage(txt)
-			}
-			continue
-		}
-		s := strings.TrimSpace(decodeMacRoman(stripBEPPTags(line)))
-		if s == "" {
-			continue
-		}
-		if parseNightCommand(s) {
-			continue
-		}
-		// Plain-text parsers for who/share/fallen/presence with embedded BEPP tags
-		if parseWhoText(line, s) {
-			continue
-		}
-		if parseShareText(line, s) {
-			continue
-		}
-		if parseFallenText(line, s) {
-			continue
-		}
-		if parseBardText(line, s) {
-			continue
-		}
-		if parsePresenceText(line, s) {
-			continue
-		}
-		if strings.HasPrefix(s, "/") {
-			continue
-		}
-		consoleMessage(s)
-	}
+    for _, line := range bytes.Split(data, []byte{'\r'}) {
+        if len(line) == 0 {
+            continue
+        }
+        if line[0] == 0xC2 {
+            if txt := decodeBEPP(line); txt != "" {
+                consoleMessage(txt)
+            }
+            continue
+        }
+        if _, txt, _, _, _, _ := decodeBubble(line); txt != "" {
+            if gs.MessagesToConsole {
+                consoleMessage(txt)
+            } else {
+                chatMessage(txt)
+            }
+            continue
+        }
+        s := strings.TrimSpace(decodeMacRoman(stripBEPPTags(line)))
+        if s == "" {
+            continue
+        }
+        // Empirical: classic client handles server-sent info-text music commands
+        // like "/music/..." here. Accept only this canonical prefix from
+        // info-text (not bubbles), and otherwise avoid parsing plain text.
+        if strings.HasPrefix(s, "/music/") {
+            if parseMusicCommand(s, line) {
+                continue
+            }
+        }
+        // Ignore other command-like lines.
+        if strings.HasPrefix(s, "/") {
+            continue
+        }
+        consoleMessage(s)
+    }
 }
