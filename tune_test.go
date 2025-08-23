@@ -5,26 +5,6 @@ import (
 	"time"
 )
 
-// Stubs to satisfy references in tune.go when building this test.
-type Note struct {
-	Key      int
-	Velocity int
-	Start    time.Duration
-	Duration time.Duration
-}
-
-var audioContext interface{}
-var gs struct {
-	Mute        bool
-	MusicVolume int
-}
-var musicDebug bool
-
-func Play(interface{}, int, []Note) error { return nil }
-func consoleMessage(string)               {}
-func chatMessage(string)                  {}
-func stopAllMusic()                       {}
-
 func TestParseClanLordTuneDurations(t *testing.T) {
 	tests := []struct {
 		input string
