@@ -18,38 +18,42 @@ const (
 )
 
 // instruments holds the instrument table extracted from the classic client.
-// Only the program number and octave offset are currently used.
+// Each instrument defines the General MIDI program number, octave offset, and
+// velocity scaling factors for chord and melody notes.
 var instruments = []instrument{
-	{47, 1},   // 0 Lucky Lyra
-	{73, 1},   // 1 Bone Flute
-	{47, 0},   // 2 Starbuck Harp
-	{106, 0},  // 3 Torjo
-	{13, 0},   // 4 Xylo
-	{25, 0},   // 5 Gitor
-	{76, 1},   // 6 Reed Flute
-	{17, -1},  // 7 Temple Organ
-	{94, -1},  // 8 Conch
-	{80, 1},   // 9 Ocarina
-	{77, 1},   // 10 Centaur Organ
-	{12, 0},   // 11 Vibra
-	{59, -1},  // 12 Tuborn
-	{110, 0},  // 13 Bagpipe
-	{117, -1}, // 14 Orga Drum
-	{115, 0},  // 15 Casserole
-	{41, 1},   // 16 Violène
-	{78, 1},   // 17 Pine Flute
-	{22, -1},  // 18 Groanbox
-	{108, -1}, // 19 Gho-To
-	{44, -2},  // 20 Mammoth Violène
-	{33, -2},  // 21 Gutbucket Bass
-	{77, 0},   // 22 Glass Jug
+	{47, 1, 100, 100},   // 0 Lucky Lyra
+	{73, 1, 100, 100},   // 1 Bone Flute
+	{47, 0, 100, 100},   // 2 Starbuck Harp
+	{106, 0, 100, 100},  // 3 Torjo
+	{13, 0, 100, 100},   // 4 Xylo
+	{25, 0, 100, 100},   // 5 Gitor
+	{76, 1, 100, 100},   // 6 Reed Flute
+	{17, -1, 100, 100},  // 7 Temple Organ
+	{94, -1, 100, 100},  // 8 Conch
+	{80, 1, 100, 100},   // 9 Ocarina
+	{77, 1, 100, 100},   // 10 Centaur Organ
+	{12, 0, 100, 100},   // 11 Vibra
+	{59, -1, 100, 100},  // 12 Tuborn
+	{110, 0, 100, 100},  // 13 Bagpipe
+	{117, -1, 100, 100}, // 14 Orga Drum
+	{115, 0, 100, 100},  // 15 Casserole
+	{41, 1, 100, 100},   // 16 Violène
+	{78, 1, 100, 100},   // 17 Pine Flute
+	{22, -1, 100, 100},  // 18 Groanbox
+	{108, -1, 100, 100}, // 19 Gho-To
+	{44, -2, 100, 100},  // 20 Mammoth Violène
+	{33, -2, 100, 100},  // 21 Gutbucket Bass
+	{77, 0, 100, 100},   // 22 Glass Jug
 }
 
 // instrument describes a playable instrument mapping Clan Lord's instrument
-// index to a General MIDI program number and an octave offset.
+// index to a General MIDI program number, octave offset, and velocity scaling
+// factors for chords and melodies.
 type instrument struct {
 	program int
 	octave  int
+	chord   int // chord velocity factor (0-100)
+	melody  int // melody velocity factor (0-100)
 }
 
 // queue sequentializes tune playback so overlapping /play commands do not
@@ -124,10 +128,10 @@ func playClanLordTune(tune string) error {
 		return fmt.Errorf("empty tune")
 	}
 
-	prog := instruments[inst].program
-	oct := instruments[inst].octave
+	instData := instruments[inst]
+	prog := instData.program
 
-	notes := eventsToNotes(events, oct, 100)
+	notes := eventsToNotes(events, instData, 100)
 
 	// Enqueue for sequential playback and return immediately.
 	tuneOnce.Do(startTuneWorker)
@@ -146,21 +150,29 @@ func playClanLordTune(tune string) error {
 }
 
 // eventsToNotes converts parsed note events into synth notes with explicit start
-// times. All notes in the same event (a chord) share the same start time.
-func eventsToNotes(events []noteEvent, oct int, velocity int) []Note {
+// times. All notes in the same event (a chord) share the same start time. The
+// provided instrument's chord or melody velocity factors are applied depending
+// on the event type.
+func eventsToNotes(events []noteEvent, inst instrument, velocity int) []Note {
 	var notes []Note
 	startMS := 0
 	for _, ev := range events {
 		noteMS := ev.durMS * 9 / 10
 		restMS := ev.durMS - noteMS
+		v := velocity
+		if len(ev.keys) > 1 {
+			v = v * inst.chord / 100
+		} else {
+			v = v * inst.melody / 100
+		}
 		for _, k := range ev.keys {
-			key := k + oct*12
+			key := k + inst.octave*12
 			if key < 0 || key > 127 {
 				continue
 			}
 			notes = append(notes, Note{
 				Key:      key,
-				Velocity: velocity,
+				Velocity: v,
 				Start:    time.Duration(startMS) * time.Millisecond,
 				Duration: time.Duration(noteMS) * time.Millisecond,
 			})
@@ -527,8 +539,8 @@ func handleMusicParams(mp MusicParams) {
 
 func makeTuneJob(who, inst, tempo, vol int, notes string) tuneJob {
 	events := parseClanLordTuneWithTempo(notes, tempo)
-	prog := instruments[inst].program
-	oct := instruments[inst].octave
+	instData := instruments[inst]
+	prog := instData.program
 	// Scale 0..100 to 1..127 velocity.
 	vel := vol
 	if vel <= 0 {
@@ -543,7 +555,7 @@ func makeTuneJob(who, inst, tempo, vol int, notes string) tuneJob {
 	} else if vel > 127 {
 		vel = 127
 	}
-	notesOut := eventsToNotes(events, oct, vel)
+	notesOut := eventsToNotes(events, instData, vel)
 	return tuneJob{program: prog, notes: notesOut, who: who}
 }
 
