@@ -288,15 +288,19 @@ func drawSpikes(screen *ebiten.Image, left, top, right, bottom, radius, size flo
 
 	startX := left + radius
 	endX := right - radius
-	width := endX - startX
-	count := int(width / step)
-	offsetX := (width - float32(count)*step) / 2
 	// top and bottom edges
-	for x := startX + offsetX; x+step <= endX; x += step {
+	for x := startX; x < endX; x += step {
+		end := x + step
+		mid := x + size
+		if end > endX {
+			end = endX
+			mid = x + (end-x)/2
+		}
+
 		var p vector.Path
 		p.MoveTo(x, top)
-		p.LineTo(x+size, top-size)
-		p.LineTo(x+step, top)
+		p.LineTo(mid, top-size)
+		p.LineTo(end, top)
 		p.Close()
 		vs, is := p.AppendVerticesAndIndicesForFilling(nil, nil)
 		for i := range vs {
@@ -311,8 +315,8 @@ func drawSpikes(screen *ebiten.Image, left, top, right, bottom, radius, size flo
 
 		p = vector.Path{}
 		p.MoveTo(x, bottom)
-		p.LineTo(x+size, bottom+size)
-		p.LineTo(x+step, bottom)
+		p.LineTo(mid, bottom+size)
+		p.LineTo(end, bottom)
 		p.Close()
 		vs, is = p.AppendVerticesAndIndicesForFilling(nil, nil)
 		for i := range vs {
@@ -328,15 +332,19 @@ func drawSpikes(screen *ebiten.Image, left, top, right, bottom, radius, size flo
 
 	startY := top + radius
 	endY := bottom - radius
-	height := endY - startY
-	count = int(height / step)
-	offsetY := (height - float32(count)*step) / 2
 	// left and right edges
-	for y := startY + offsetY; y+step <= endY; y += step {
+	for y := startY; y < endY; y += step {
+		end := y + step
+		mid := y + size
+		if end > endY {
+			end = endY
+			mid = y + (end-y)/2
+		}
+
 		var p vector.Path
 		p.MoveTo(left, y)
-		p.LineTo(left-size, y+size)
-		p.LineTo(left, y+step)
+		p.LineTo(left-size, mid)
+		p.LineTo(left, end)
 		p.Close()
 		vs, is := p.AppendVerticesAndIndicesForFilling(nil, nil)
 		for i := range vs {
@@ -351,8 +359,8 @@ func drawSpikes(screen *ebiten.Image, left, top, right, bottom, radius, size flo
 
 		p = vector.Path{}
 		p.MoveTo(right, y)
-		p.LineTo(right+size, y+size)
-		p.LineTo(right, y+step)
+		p.LineTo(right+size, mid)
+		p.LineTo(right, end)
 		p.Close()
 		vs, is = p.AppendVerticesAndIndicesForFilling(nil, nil)
 		for i := range vs {
