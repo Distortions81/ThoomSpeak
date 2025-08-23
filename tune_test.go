@@ -132,3 +132,24 @@ func TestNoteDurationsWithTempoChange(t *testing.T) {
 		}
 	}
 }
+
+func TestNoteDurationsUncommonTempos(t *testing.T) {
+	inst := instrument{program: 0, octave: 0, chord: 100, melody: 100}
+	cases := []struct {
+		tempo int
+		want  time.Duration
+	}{
+		{95, 852 * time.Millisecond},
+		{177, 457 * time.Millisecond},
+	}
+	for _, c := range cases {
+		pt := parseClanLordTuneWithTempo("c3", c.tempo)
+		notes := eventsToNotes(pt, inst, 100)
+		if len(notes) != 1 {
+			t.Fatalf("tempo %d: expected 1 note, got %d", c.tempo, len(notes))
+		}
+		if notes[0].Duration != c.want {
+			t.Errorf("tempo %d: duration = %v, want %v", c.tempo, notes[0].Duration, c.want)
+		}
+	}
+}

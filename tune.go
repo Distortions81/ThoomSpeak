@@ -213,7 +213,7 @@ func eventsToNotes(pt parsedTune, inst instrument, velocity int) []Note {
 		}
 
 		ev := pt.events[i]
-		durMS := int((ev.beats / 2) * float64(60000/tempo))
+		durMS := int((ev.beats / 2) * (60000.0 / float64(tempo)))
 		noteMS := durMS * 9 / 10
 		restMS := durMS - noteMS
 
