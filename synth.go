@@ -5,6 +5,7 @@ import (
     "bytes"
     "encoding/binary"
     "errors"
+    "io"
     "log"
     "math"
 	"os"
@@ -216,21 +217,20 @@ func mixPCM(leftAll, rightAll []float32) []byte {
 // song, and then plays it through the provided audio context. The function
 // blocks until playback has finished.
 func Play(ctx *audio.Context, program int, notes []Note) error {
+    if ctx == nil {
+        return errors.New("nil audio context")
+    }
 
-	if ctx == nil {
-		return errors.New("nil audio context")
-	}
-
-	leftAll, rightAll, err := renderSong(program, notes)
-	if err != nil {
-		return err
-	}
-
-	pcm := mixPCM(leftAll, rightAll)
-	if dumpMusic {
-		dumpPCMAsWAV(pcm)
-	}
-	player := ctx.NewPlayerFromBytes(pcm)
+    // Stream-render music in small chunks to avoid long upfront rendering.
+    stream, err := newMusicStream(program, notes)
+    if err != nil {
+        return err
+    }
+    defer stream.Close()
+    player, err := ctx.NewPlayer(stream)
+    if err != nil {
+        return err
+    }
 
 	vol := gs.MusicVolume
 	if gs.Mute {
@@ -244,7 +244,18 @@ func Play(ctx *audio.Context, program int, notes []Note) error {
 
     player.Play()
 
-    dur := time.Duration(len(leftAll)) * time.Second / sampleRate
+    // Estimate duration from notes for timeout, but exit early when playback completes.
+    // Compute max end as in renderSong.
+    maxEnd := 0
+    for _, n := range notes {
+        durSamples := int(n.Duration.Nanoseconds() * sampleRate / int64(time.Second))
+        if durSamples <= 0 { continue }
+        startSamples := int(n.Start.Nanoseconds() * sampleRate / int64(time.Second))
+        end := startSamples + durSamples
+        if end > maxEnd { maxEnd = end }
+    }
+    total := maxEnd + tailSamples
+    dur := time.Duration(total) * time.Second / sampleRate
     deadline := time.Now().Add(dur)
     for time.Now().Before(deadline) {
         // Exit early if the player has been stopped/closed (e.g., due to mute).
@@ -269,6 +280,175 @@ func safeIsPlaying(p *audio.Player) (ok bool) {
         }
     }()
     return p.IsPlaying()
+}
+
+// musicStream implements audio.ReadSeekCloser and renders PCM on demand
+// from meltysynth in small blocks while scheduling note events.
+type musicStream struct {
+    mu       sync.Mutex
+    syn      *meltysynth.Synthesizer
+    program  int
+    events   []struct{ key, vel, start, end int }
+    active   map[int]bool
+    pos      int // samples rendered so far
+    total    int // total samples including tail
+    closed   bool
+    // buffered PCM to ensure smooth playback (keep ~1s queued)
+    buf      []byte
+    bufPos   int
+    // scratch render buffers
+    left     []float32
+    right    []float32
+}
+
+func newMusicStream(program int, notes []Note) (io.ReadSeekCloser, error) {
+    setupSynthOnce.Do(setupSynth)
+    if sfntCached == nil || synthSettings == nil {
+        return nil, errors.New("synth not initialized")
+    }
+    syn, err := meltysynth.NewSynthesizer(sfntCached, synthSettings)
+    if err != nil { return nil, err }
+    const ch = 0
+    syn.ProcessMidiMessage(ch, 0xC0, int32(program), 0)
+    // Convert notes to events
+    var events []struct{ key, vel, start, end int }
+    maxEnd := 0
+    for _, n := range notes {
+        durSamples := int(n.Duration.Nanoseconds() * sampleRate / int64(time.Second))
+        if durSamples <= 0 { continue }
+        startSamples := int(n.Start.Nanoseconds() * sampleRate / int64(time.Second))
+        ev := struct{ key, vel, start, end int }{ key: n.Key, vel: n.Velocity, start: startSamples, end: startSamples + durSamples }
+        events = append(events, ev)
+        if ev.end > maxEnd { maxEnd = ev.end }
+    }
+    return &musicStream{ syn: syn, program: program, events: events, active: map[int]bool{}, total: maxEnd + tailSamples, left: make([]float32, block), right: make([]float32, block) }, nil
+}
+
+func (m *musicStream) trigger(start, count int) {
+    const ch = 0
+    end := start + count
+    for _, ev := range m.events {
+        if ev.start >= start && ev.start < end && !m.active[ev.key] {
+            m.syn.NoteOn(ch, int32(ev.key), int32(ev.vel))
+            m.active[ev.key] = true
+        }
+        if ev.end >= start && ev.end < end && m.active[ev.key] {
+            m.syn.NoteOff(ch, int32(ev.key))
+            m.active[ev.key] = false
+        }
+    }
+}
+
+func (m *musicStream) Read(p []byte) (int, error) {
+    m.mu.Lock()
+    defer m.mu.Unlock()
+    if m.closed { return 0, io.EOF }
+    if m.pos >= m.total { return 0, io.EOF }
+    // Ensure at least 1 second of PCM is buffered ahead when possible.
+    bytesPerSec := sampleRate * 4
+    for len(m.buf)-m.bufPos < bytesPerSec && m.pos < m.total {
+        if err := m.renderSecondLocked(); err != nil {
+            // Stop on render error
+            break
+        }
+    }
+
+    if len(p) == 0 { return 0, nil }
+    // Copy from buffer
+    avail := len(m.buf) - m.bufPos
+    if avail == 0 {
+        // nothing buffered but not EOF yet: render a small block
+        _ = m.renderSecondLocked()
+        avail = len(m.buf) - m.bufPos
+        if avail == 0 {
+            return 0, io.EOF
+        }
+    }
+    if avail > len(p) { avail = len(p) }
+    copy(p[:avail], m.buf[m.bufPos:m.bufPos+avail])
+    m.bufPos += avail
+    // Drop consumed bytes to keep memory bounded once we've crossed 1s
+    if m.bufPos >= bytesPerSec {
+        m.buf = append([]byte(nil), m.buf[m.bufPos:]...)
+        m.bufPos = 0
+    }
+    // Signal EOF when all samples rendered and buffer drained
+    if m.pos >= m.total && m.bufPos >= len(m.buf) {
+        return avail, io.EOF
+    }
+    return avail, nil
+}
+
+// renderSecondLocked renders up to one second worth of PCM and appends to m.buf.
+// Caller must hold m.mu.
+func (m *musicStream) renderSecondLocked() error {
+    if m.pos >= m.total { return io.EOF }
+    samples := sampleRate
+    remain := m.total - m.pos
+    if samples > remain { samples = remain }
+    for samples > 0 {
+        n := block
+        if n > samples { n = samples }
+        m.trigger(m.pos, n)
+        if err := safeRender(m.syn, m.left, m.right); err != nil {
+            return err
+        }
+        // append first n frames
+        need := n * 4
+        off := len(m.buf)
+        m.buf = append(m.buf, make([]byte, need)...)
+        for i := 0; i < n; i++ {
+            l := int16(m.left[i] * 32767)
+            r := int16(m.right[i] * 32767)
+            binary.LittleEndian.PutUint16(m.buf[off+i*4:], uint16(l))
+            binary.LittleEndian.PutUint16(m.buf[off+i*4+2:], uint16(r))
+        }
+        // zero used portion
+        for i := 0; i < n; i++ { m.left[i], m.right[i] = 0, 0 }
+        m.pos += n
+        samples -= n
+    }
+    return nil
+}
+
+func (m *musicStream) Seek(offset int64, whence int) (int64, error) {
+    m.mu.Lock()
+    defer m.mu.Unlock()
+    // Support only restart to beginning for safety.
+    switch whence {
+    case io.SeekStart:
+        if offset == 0 {
+            syn, err := meltysynth.NewSynthesizer(sfntCached, synthSettings)
+            if err != nil { return 0, err }
+            const ch = 0
+            syn.ProcessMidiMessage(ch, 0xC0, int32(m.program), 0)
+            m.syn = syn
+            m.active = map[int]bool{}
+            m.pos = 0
+            return 0, nil
+        }
+        // Only support resetting to start.
+        return int64(m.pos * 4), errors.New("unsupported seek")
+    case io.SeekCurrent:
+        if offset == 0 {
+            return int64(m.pos * 4), nil
+        }
+        return int64(m.pos * 4), errors.New("unsupported seek")
+    case io.SeekEnd:
+        if offset == 0 {
+            return int64(m.total * 4), nil
+        }
+        return int64(m.pos * 4), errors.New("unsupported seek")
+    default:
+        return int64(m.pos * 4), errors.New("unsupported seek")
+    }
+}
+
+func (m *musicStream) Close() error {
+    m.mu.Lock()
+    defer m.mu.Unlock()
+    m.closed = true
+    return nil
 }
 
 // dumpPCMAsWAV writes the provided 16-bit stereo PCM data to a WAV file when
