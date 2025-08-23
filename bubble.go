@@ -4,6 +4,7 @@ import (
 	"gothoom/eui"
 	"image/color"
 	"math"
+	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	text "github.com/hajimehoshi/ebiten/v2/text/v2"
@@ -202,33 +203,37 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 	}
 
 	bdR, bdG, bdB, bdA := borderCol.RGBA()
-	var outline vector.Path
-	outline.MoveTo(float32(left)+radius, float32(top))
-	outline.LineTo(float32(right)-radius, float32(top))
-	outline.Arc(float32(right)-radius, float32(top)+radius, radius, -math.Pi/2, 0, vector.Clockwise)
-	outline.LineTo(float32(right), float32(bottom)-radius)
-	outline.Arc(float32(right)-radius, float32(bottom)-radius, radius, 0, math.Pi/2, vector.Clockwise)
-	if !far && !noArrow && bubbleType != kBubblePonder {
-		outline.LineTo(float32(baseX+tailHalf), float32(bottom))
-		outline.LineTo(float32(tailX), float32(tailY))
-		outline.LineTo(float32(baseX-tailHalf), float32(bottom))
-	}
-	outline.LineTo(float32(left)+radius, float32(bottom))
-	outline.Arc(float32(left)+radius, float32(bottom)-radius, radius, math.Pi/2, math.Pi, vector.Clockwise)
-	outline.LineTo(float32(left), float32(top)+radius)
-	outline.Arc(float32(left)+radius, float32(top)+radius, radius, math.Pi, 3*math.Pi/2, vector.Clockwise)
-	outline.Close()
+	if bubbleType != kBubblePonder {
+		var outline vector.Path
+		outline.MoveTo(float32(left)+radius, float32(top))
+		outline.LineTo(float32(right)-radius, float32(top))
+		outline.Arc(float32(right)-radius, float32(top)+radius, radius, -math.Pi/2, 0, vector.Clockwise)
+		outline.LineTo(float32(right), float32(bottom)-radius)
+		outline.Arc(float32(right)-radius, float32(bottom)-radius, radius, 0, math.Pi/2, vector.Clockwise)
+		if !far && !noArrow {
+			outline.LineTo(float32(baseX+tailHalf), float32(bottom))
+			outline.LineTo(float32(tailX), float32(tailY))
+			outline.LineTo(float32(baseX-tailHalf), float32(bottom))
+		}
+		outline.LineTo(float32(left)+radius, float32(bottom))
+		outline.Arc(float32(left)+radius, float32(bottom)-radius, radius, math.Pi/2, math.Pi, vector.Clockwise)
+		outline.LineTo(float32(left), float32(top)+radius)
+		outline.Arc(float32(left)+radius, float32(top)+radius, radius, math.Pi, 3*math.Pi/2, vector.Clockwise)
+		outline.Close()
 
-	vs, is = outline.AppendVerticesAndIndicesForStroke(nil, nil, &vector.StrokeOptions{Width: float32(gs.GameScale)})
-	for i := range vs {
-		vs[i].SrcX = 0
-		vs[i].SrcY = 0
-		vs[i].ColorR = float32(bdR) / 0xffff
-		vs[i].ColorG = float32(bdG) / 0xffff
-		vs[i].ColorB = float32(bdB) / 0xffff
-		vs[i].ColorA = float32(bdA) / 0xffff
+		vs, is = outline.AppendVerticesAndIndicesForStroke(nil, nil, &vector.StrokeOptions{Width: float32(gs.GameScale)})
+		for i := range vs {
+			vs[i].SrcX = 0
+			vs[i].SrcY = 0
+			vs[i].ColorR = float32(bdR) / 0xffff
+			vs[i].ColorG = float32(bdG) / 0xffff
+			vs[i].ColorB = float32(bdB) / 0xffff
+			vs[i].ColorA = float32(bdA) / 0xffff
+		}
+		screen.DrawTriangles(vs, is, whiteImage, op)
+	} else {
+		drawPonderWaves(screen, left, top, right, bottom, borderCol, bgCol)
 	}
-	screen.DrawTriangles(vs, is, whiteImage, op)
 
 	if bubbleType == kBubblePonder && !far && !noArrow {
 		var tailOutline vector.Path
@@ -457,4 +462,56 @@ func drawJagged(screen *ebiten.Image, left, top, right, bottom, size float32, co
 
 		toggle = !toggle
 	}
+}
+
+// drawPonderWaves embellishes ponder bubbles with a subtle wavy border made of
+// small circles. The circles animate slowly to give the bubble a gentle
+// shimmering effect.
+func drawPonderWaves(screen *ebiten.Image, left, top, right, bottom int, borderCol, bgCol color.Color) {
+	r := float32(4 * gs.GameScale)
+	step := r * 1.5
+	phase := float64(time.Now().UnixNano()) / float64(time.Second)
+	for x := float32(left) - r; x <= float32(right)+r; x += step {
+		offset := float32(math.Sin(phase+float64(x)*0.1)) * r * 0.3
+		drawBubbleCircle(screen, x, float32(top)-r+offset, r, bgCol, borderCol)
+		drawBubbleCircle(screen, x, float32(bottom)+r-offset, r, bgCol, borderCol)
+	}
+	for y := float32(top) - r; y <= float32(bottom)+r; y += step {
+		offset := float32(math.Sin(phase+float64(y)*0.1)) * r * 0.3
+		drawBubbleCircle(screen, float32(left)-r+offset, y, r, bgCol, borderCol)
+		drawBubbleCircle(screen, float32(right)+r-offset, y, r, bgCol, borderCol)
+	}
+}
+
+// drawBubbleCircle draws a filled and stroked circle used by the wavy ponder
+// bubble edges.
+func drawBubbleCircle(screen *ebiten.Image, cx, cy, radius float32, fillCol, strokeCol color.Color) {
+	fr, fg, fb, fa := fillCol.RGBA()
+	sr, sg, sb, sa := strokeCol.RGBA()
+	var p vector.Path
+	p.MoveTo(cx+radius, cy)
+	p.Arc(cx, cy, radius, 0, 2*math.Pi, vector.Clockwise)
+	p.Close()
+	vs, is := p.AppendVerticesAndIndicesForFilling(nil, nil)
+	for i := range vs {
+		vs[i].SrcX = 0
+		vs[i].SrcY = 0
+		vs[i].ColorR = float32(fr) / 0xffff
+		vs[i].ColorG = float32(fg) / 0xffff
+		vs[i].ColorB = float32(fb) / 0xffff
+		vs[i].ColorA = float32(fa) / 0xffff
+	}
+	op := &ebiten.DrawTrianglesOptions{ColorScaleMode: ebiten.ColorScaleModePremultipliedAlpha, AntiAlias: true}
+	screen.DrawTriangles(vs, is, whiteImage, op)
+
+	vs, is = p.AppendVerticesAndIndicesForStroke(vs[:0], is[:0], &vector.StrokeOptions{Width: float32(gs.GameScale)})
+	for i := range vs {
+		vs[i].SrcX = 0
+		vs[i].SrcY = 0
+		vs[i].ColorR = float32(sr) / 0xffff
+		vs[i].ColorG = float32(sg) / 0xffff
+		vs[i].ColorB = float32(sb) / 0xffff
+		vs[i].ColorA = float32(sa) / 0xffff
+	}
+	screen.DrawTriangles(vs, is, whiteImage, op)
 }
