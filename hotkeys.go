@@ -123,6 +123,7 @@ func openHotkeyEditor(idx int) {
 	}
 	editingHotkey = idx
 	hotkeyEditWin = eui.NewWindow()
+	hotkeyEditWin.OnClose = func() { hotkeyEditWin = nil }
 	hotkeyEditWin.Title = "Hotkey"
 	hotkeyEditWin.Size = eui.Point{X: 260, Y: 160}
 	hotkeyEditWin.Closable = true
