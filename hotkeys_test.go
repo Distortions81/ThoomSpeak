@@ -63,13 +63,14 @@ func TestHotkeyCommandInput(t *testing.T) {
 	}
 
 	hotkeyComboText.Text = "Ctrl-A"
-	hotkeyCmdInput.Text = "say hi"
+	hotkeyCmdInput.Text = "say"
+	hotkeyTextInput.Text = "hi"
 	finishHotkeyEdit(true)
 
 	if len(hotkeys) != 1 {
 		t.Fatalf("hotkey not saved")
 	}
-	if hotkeys[0].Combo != "Ctrl-A" || hotkeys[0].Command != "say hi" {
+	if hotkeys[0].Combo != "Ctrl-A" || hotkeys[0].Command != "say" || hotkeys[0].Text != "hi" {
 		t.Fatalf("unexpected hotkey data: %+v", hotkeys[0])
 	}
 }
