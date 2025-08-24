@@ -262,6 +262,16 @@ func eventsToNotes(pt parsedTune, inst instrument, velocity int) []Note {
 			top := &stack[len(stack)-1]
 			if top.remaining > 0 {
 				top.remaining--
+				// If the loop starts with a note and the previous event
+				// was also a note, remove the trailing rest inserted after
+				// the last note of the previous iteration. This prevents an
+				// unintended pause between loop repetitions when no explicit
+				// rest exists at the loop boundary.
+				if prevWasNote && len(pt.events[top.start].keys) > 0 {
+					startMS -= prevRestMS
+					prevWasNote = false
+					prevRestMS = 0
+				}
 				i = top.start
 				// reset tempo to state at loop start
 				tempo = pt.tempo
