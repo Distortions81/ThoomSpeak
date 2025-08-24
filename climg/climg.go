@@ -12,6 +12,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	hq2x "github.com/pokemium/hq2xgo"
+	xdraw "golang.org/x/image/draw"
 )
 
 type dataLocation struct {
@@ -633,15 +634,24 @@ func (c *CLImages) Get(id uint32, custom []byte, forceTransparent bool) *ebiten.
 		pix[off+3] = a
 	}
 
-	if c.Denoise {
-		denoiseImage(img, c.DenoiseSharpness, c.DenoiseAmount)
-	}
 	if c.HQ2x {
 		if scaled, err := hq2x.HQ2x(img); err == nil {
-			img = scaled
+			copyAlpha2x(scaled, img)
+			if c.Denoise {
+				denoiseImage(scaled, c.DenoiseSharpness, c.DenoiseAmount)
+			}
+			down := image.NewRGBA(img.Bounds())
+			xdraw.ApproxBiLinear.Scale(down, down.Bounds(), scaled, scaled.Bounds(), xdraw.Src, nil)
+			copyAlpha(down, img)
+			img = down
 		} else {
 			log.Printf("hq2x: %v", err)
+			if c.Denoise {
+				denoiseImage(img, c.DenoiseSharpness, c.DenoiseAmount)
+			}
 		}
+	} else if c.Denoise {
+		denoiseImage(img, c.DenoiseSharpness, c.DenoiseAmount)
 	}
 
 	eimg := newImageFromImage(img)
@@ -829,6 +839,34 @@ func (c *CLImages) NonTransparentPixels(id uint32) int {
 		}
 	}
 	return count
+}
+
+func copyAlpha2x(dst, src *image.RGBA) {
+	w, h := src.Bounds().Dx(), src.Bounds().Dy()
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			a := src.RGBAAt(x, y).A
+			for dy := 0; dy < 2; dy++ {
+				for dx := 0; dx < 2; dx++ {
+					off := dst.PixOffset(x*2+dx, y*2+dy)
+					dst.Pix[off+3] = a
+				}
+			}
+		}
+	}
+}
+
+func copyAlpha(dst, src *image.RGBA) {
+	w, h := src.Bounds().Dx(), src.Bounds().Dy()
+	for y := 0; y < h; y++ {
+		srcOff := src.PixOffset(0, y)
+		dstOff := dst.PixOffset(0, y)
+		for x := 0; x < w; x++ {
+			dst.Pix[dstOff+3] = src.Pix[srcOff+3]
+			srcOff += 4
+			dstOff += 4
+		}
+	}
 }
 
 // applyCustomPalette replaces entries in col according to mapping and custom.
