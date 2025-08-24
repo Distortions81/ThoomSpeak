@@ -201,10 +201,11 @@ func nonTransparentPixels(id uint16) int {
 	return count
 }
 
-// pictureOnEdge reports whether the given picture's bounding box touches the
-// edge of the visible game field.
+// pictureOnEdge reports whether the picture overlaps the visible game field and
+// whether its bounding box touches or extends past the field boundaries.
+// Pictures entirely outside the field are not considered to be on the edge.
 func pictureOnEdge(p framePicture) bool {
-	if clImages == nil {
+	if !pictureVisible(p) {
 		return false
 	}
 	w, h := clImages.Size(uint32(p.PictID))
