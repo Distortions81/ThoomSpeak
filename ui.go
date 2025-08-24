@@ -1484,6 +1484,156 @@ func makeSettingsWindow() {
 	left.AddItem(notifBtn)
 
 	label, _ = eui.NewText()
+	label.Text = "\nChat & Audio:"
+	label.FontSize = 15
+	label.Size = eui.Point{X: leftW, Y: 50}
+	left.AddItem(label)
+
+	bubbleMsgCB, bubbleMsgEvents := eui.NewCheckbox()
+	bubbleMsgCB.Text = "Combine chat + console"
+	bubbleMsgCB.Size = eui.Point{X: leftW, Y: 24}
+	bubbleMsgCB.Checked = gs.MessagesToConsole
+	bubbleMsgEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
+			gs.MessagesToConsole = ev.Checked
+			settingsDirty = true
+			if ev.Checked {
+				if chatWin != nil {
+					chatWin.Close()
+				}
+			}
+		}
+	}
+	left.AddItem(bubbleMsgCB)
+
+	chatTSCB, chatTSEvents := eui.NewCheckbox()
+	chatTSCB.Text = "Chat timestamps"
+	chatTSCB.Size = eui.Point{X: leftW, Y: 24}
+	chatTSCB.Checked = gs.ChatTimestamps
+	chatTSEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
+			gs.ChatTimestamps = ev.Checked
+			settingsDirty = true
+			updateChatWindow()
+		}
+	}
+	left.AddItem(chatTSCB)
+
+	consoleTSCB, consoleTSEvents := eui.NewCheckbox()
+	consoleTSCB.Text = "Console timestamps"
+	consoleTSCB.Size = eui.Point{X: leftW, Y: 24}
+	consoleTSCB.Checked = gs.ConsoleTimestamps
+	consoleTSEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
+			gs.ConsoleTimestamps = ev.Checked
+			settingsDirty = true
+			updateConsoleWindow()
+		}
+	}
+	left.AddItem(consoleTSCB)
+
+	tsFormatInput, tsFormatEvents := eui.NewInput()
+	tsFormatInput.Label = "Timestamp format"
+	tsFormatInput.Text = gs.TimestampFormat
+	tsFormatInput.TextPtr = &gs.TimestampFormat
+	tsFormatInput.Size = eui.Point{X: leftW, Y: 24}
+	tsFormatInput.Tooltip = "mo,day,hour,min,sec,yr:01,02,03..."
+	tsFormatEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventInputChanged {
+			SettingsLock.Lock()
+			gs.TimestampFormat = ev.Text
+			SettingsLock.Unlock()
+			settingsDirty = true
+			updateChatWindow()
+			updateConsoleWindow()
+		}
+	}
+	left.AddItem(tsFormatInput)
+
+	gameSlider, gameEvents := eui.NewSlider()
+	gameSlider.MinValue = 0
+	gameSlider.MaxValue = 1
+	gameSlider.Value = float32(gs.Volume)
+	gameSlider.Size = eui.Point{X: leftW, Y: 24}
+	gameSlider.FontSize = 9
+	gameSlider.Label = "Game Volume"
+	gameEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
+			gs.Volume = float64(ev.Value)
+			settingsDirty = true
+			updateSoundVolume()
+		}
+	}
+	left.AddItem(gameSlider)
+
+	musicSlider, musicEvents := eui.NewSlider()
+	musicSlider.MinValue = 0
+	musicSlider.MaxValue = 1
+	musicSlider.Value = float32(gs.MusicVolume)
+	musicSlider.Size = eui.Point{X: leftW, Y: 24}
+	musicSlider.FontSize = 9
+	musicSlider.Label = "Music Volume"
+	musicEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
+			gs.MusicVolume = float64(ev.Value)
+			settingsDirty = true
+			updateSoundVolume()
+		}
+	}
+	left.AddItem(musicSlider)
+
+	chatTTSCB, chatTTSEvents := eui.NewCheckbox()
+	chatTTSCB.Text = "Chat TTS"
+	chatTTSCB.Size = eui.Point{X: leftW - 110, Y: 24}
+	chatTTSCB.Checked = gs.ChatTTS
+	chatTTSEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
+			gs.ChatTTS = ev.Checked
+			settingsDirty = true
+			if !ev.Checked {
+				stopAllTTS()
+			}
+		}
+	}
+	left.AddItem(chatTTSCB)
+
+	chatTTSSlider, chatTTSSliderEvents := eui.NewSlider()
+	chatTTSSlider.MinValue = 0
+	chatTTSSlider.MaxValue = 1
+	chatTTSSlider.Value = float32(gs.ChatTTSVolume)
+	chatTTSSlider.Size = eui.Point{X: leftW, Y: 24}
+	chatTTSSlider.FontSize = 9
+	chatTTSSlider.Label = "TTS Volume"
+	chatTTSSliderEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
+			gs.ChatTTSVolume = float64(ev.Value)
+			settingsDirty = true
+		}
+	}
+	left.AddItem(chatTTSSlider)
+
+	label, _ = eui.NewText()
 	label.Text = "\nWindow Behavior:"
 	label.FontSize = 15
 	label.Size = eui.Point{X: rightW, Y: 50}
@@ -1588,150 +1738,6 @@ func makeSettingsWindow() {
 	}
 	right.AddItem(alwaysTopCB)
 
-	bubbleMsgCB, bubbleMsgEvents := eui.NewCheckbox()
-	bubbleMsgCB.Text = "Combine chat + console"
-	bubbleMsgCB.Size = eui.Point{X: rightW, Y: 24}
-	bubbleMsgCB.Checked = gs.MessagesToConsole
-	bubbleMsgEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventCheckboxChanged {
-			SettingsLock.Lock()
-			defer SettingsLock.Unlock()
-
-			gs.MessagesToConsole = ev.Checked
-			settingsDirty = true
-			if ev.Checked {
-				if chatWin != nil {
-					chatWin.Close()
-				}
-			}
-		}
-	}
-	right.AddItem(bubbleMsgCB)
-
-	chatTSCB, chatTSEvents := eui.NewCheckbox()
-	chatTSCB.Text = "Chat timestamps"
-	chatTSCB.Size = eui.Point{X: rightW, Y: 24}
-	chatTSCB.Checked = gs.ChatTimestamps
-	chatTSEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventCheckboxChanged {
-			SettingsLock.Lock()
-			defer SettingsLock.Unlock()
-
-			gs.ChatTimestamps = ev.Checked
-			settingsDirty = true
-			updateChatWindow()
-		}
-	}
-	right.AddItem(chatTSCB)
-
-	consoleTSCB, consoleTSEvents := eui.NewCheckbox()
-	consoleTSCB.Text = "Console timestamps"
-	consoleTSCB.Size = eui.Point{X: rightW, Y: 24}
-	consoleTSCB.Checked = gs.ConsoleTimestamps
-	consoleTSEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventCheckboxChanged {
-			SettingsLock.Lock()
-			defer SettingsLock.Unlock()
-
-			gs.ConsoleTimestamps = ev.Checked
-			settingsDirty = true
-			updateConsoleWindow()
-		}
-	}
-	right.AddItem(consoleTSCB)
-
-	tsFormatInput, tsFormatEvents := eui.NewInput()
-	tsFormatInput.Label = "Timestamp format"
-	tsFormatInput.Text = gs.TimestampFormat
-	tsFormatInput.TextPtr = &gs.TimestampFormat
-	tsFormatInput.Size = eui.Point{X: rightW, Y: 24}
-	tsFormatInput.Tooltip = "mo,day,hour,min,sec,yr:01,02,03..."
-	tsFormatEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventInputChanged {
-			SettingsLock.Lock()
-			gs.TimestampFormat = ev.Text
-			SettingsLock.Unlock()
-			settingsDirty = true
-			updateChatWindow()
-			updateConsoleWindow()
-		}
-	}
-	right.AddItem(tsFormatInput)
-
-	gameSlider, gameEvents := eui.NewSlider()
-	gameSlider.MinValue = 0
-	gameSlider.MaxValue = 1
-	gameSlider.Value = float32(gs.Volume)
-	gameSlider.Size = eui.Point{X: rightW, Y: 24}
-	gameSlider.FontSize = 9
-	gameSlider.Label = "Game Volume"
-	gameEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventSliderChanged {
-			SettingsLock.Lock()
-			defer SettingsLock.Unlock()
-
-			gs.Volume = float64(ev.Value)
-			settingsDirty = true
-			updateSoundVolume()
-		}
-	}
-	right.AddItem(gameSlider)
-
-	musicSlider, musicEvents := eui.NewSlider()
-	musicSlider.MinValue = 0
-	musicSlider.MaxValue = 1
-	musicSlider.Value = float32(gs.MusicVolume)
-	musicSlider.Size = eui.Point{X: rightW, Y: 24}
-	musicSlider.FontSize = 9
-	musicSlider.Label = "Music Volume"
-	musicEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventSliderChanged {
-			SettingsLock.Lock()
-			defer SettingsLock.Unlock()
-
-			gs.MusicVolume = float64(ev.Value)
-			settingsDirty = true
-			updateSoundVolume()
-		}
-	}
-	right.AddItem(musicSlider)
-
-	chatTTSCB, chatTTSEvents := eui.NewCheckbox()
-	chatTTSCB.Text = "Chat TTS"
-	chatTTSCB.Size = eui.Point{X: rightW - 110, Y: 24}
-	chatTTSCB.Checked = gs.ChatTTS
-	chatTTSEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventCheckboxChanged {
-			SettingsLock.Lock()
-			defer SettingsLock.Unlock()
-
-			gs.ChatTTS = ev.Checked
-			settingsDirty = true
-			if !ev.Checked {
-				stopAllTTS()
-			}
-		}
-	}
-	right.AddItem(chatTTSCB)
-
-	chatTTSSlider, chatTTSSliderEvents := eui.NewSlider()
-	chatTTSSlider.MinValue = 0
-	chatTTSSlider.MaxValue = 1
-	chatTTSSlider.Value = float32(gs.ChatTTSVolume)
-	chatTTSSlider.Size = eui.Point{X: rightW, Y: 24}
-	chatTTSSlider.FontSize = 9
-	chatTTSSlider.Label = "TTS Volume"
-	chatTTSSliderEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventSliderChanged {
-			SettingsLock.Lock()
-			defer SettingsLock.Unlock()
-
-			gs.ChatTTSVolume = float64(ev.Value)
-			settingsDirty = true
-		}
-	}
-	right.AddItem(chatTTSSlider)
-
 	label, _ = eui.NewText()
 	label.Text = "\nStatus Bar Options:"
 	label.FontSize = 15
@@ -1768,7 +1774,7 @@ func makeSettingsWindow() {
 
 	barColorCB, barColorEvents := eui.NewCheckbox()
 	barColorCB.Text = "Color bars by value"
-	barColorCB.Size = eui.Point{X: centerW, Y: 24}
+	barColorCB.Size = eui.Point{X: rightW, Y: 24}
 	barColorCB.Checked = gs.BarColorByValue
 	barColorEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventCheckboxChanged {
@@ -1776,14 +1782,14 @@ func makeSettingsWindow() {
 			settingsDirty = true
 		}
 	}
-	center.AddItem(barColorCB)
+	right.AddItem(barColorCB)
 
 	barOpacitySlider, barOpacityEvents := eui.NewSlider()
 	barOpacitySlider.Label = "Status bar opacity"
 	barOpacitySlider.MinValue = 0.1
 	barOpacitySlider.MaxValue = 1.0
 	barOpacitySlider.Value = float32(gs.BarOpacity)
-	barOpacitySlider.Size = eui.Point{X: centerW - 10, Y: 24}
+	barOpacitySlider.Size = eui.Point{X: rightW - 10, Y: 24}
 	barOpacityEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
 			SettingsLock.Lock()
@@ -1793,7 +1799,7 @@ func makeSettingsWindow() {
 			settingsDirty = true
 		}
 	}
-	center.AddItem(barOpacitySlider)
+	right.AddItem(barOpacitySlider)
 
 	maxNightSlider, maxNightEvents := eui.NewSlider()
 	maxNightSlider.Label = "Max Night Level"
