@@ -26,6 +26,15 @@ func stopAllTTS() {
 
 func speakChatMessage(msg string) {
 	if audioContext == nil || blockTTS || gs.Mute {
+		if audioContext == nil {
+			logError("chat tts: audio context is nil")
+		}
+		if blockTTS {
+			logDebug("chat tts: tts blocked")
+		}
+		if gs.Mute {
+			logDebug("chat tts: client muted")
+		}
 		return
 	}
 	go func(text string) {
