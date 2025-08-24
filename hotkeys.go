@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	text "github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
 const hotkeysFile = "global-hotkeys.json"
@@ -133,6 +135,7 @@ func openHotkeyEditor(idx int) {
 	hotkeyEditWin.OnClose = func() { hotkeyEditWin = nil }
 	hotkeyEditWin.Title = "Hotkey"
 	hotkeyEditWin.Size = eui.Point{X: 260, Y: 160}
+	hotkeyEditWin.AutoSize = true
 	hotkeyEditWin.Closable = true
 	hotkeyEditWin.Movable = true
 	hotkeyEditWin.Resizable = false
@@ -178,9 +181,7 @@ func openHotkeyEditor(idx int) {
 	hotkeyCmdInput.Scrollable = true
 	cmdEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventInputChanged {
-			if hotkeyEditWin != nil {
-				hotkeyEditWin.Refresh()
-			}
+			wrapHotkeyInputs()
 		}
 	}
 	flow.AddItem(hotkeyCmdInput)
@@ -198,9 +199,7 @@ func openHotkeyEditor(idx int) {
 	hotkeyTextInput.Scrollable = true
 	textEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventInputChanged {
-			if hotkeyEditWin != nil {
-				hotkeyEditWin.Refresh()
-			}
+			wrapHotkeyInputs()
 		}
 	}
 	flow.AddItem(hotkeyTextInput)
@@ -238,15 +237,54 @@ func openHotkeyEditor(idx int) {
 
 	hotkeyEditWin.AddWindow(true)
 	hotkeyEditWin.MarkOpen()
+	wrapHotkeyInputs()
+}
+
+func wrapHotkeyInputs() {
+	if hotkeyEditWin == nil {
+		return
+	}
+	ui := eui.UIScale()
+	facePx := float64(hotkeyCmdInput.FontSize * ui)
+	var goFace *text.GoTextFace
+	if src := eui.FontSource(); src != nil {
+		goFace = &text.GoTextFace{Source: src, Size: facePx}
+	} else {
+		goFace = &text.GoTextFace{Size: facePx}
+	}
+	metrics := goFace.Metrics()
+	linePx := math.Ceil(metrics.HAscent + metrics.HDescent + 2)
+	rowUnits := float32(linePx) / ui
+	padPx := float64(6 * ui)
+
+	resize := func(it *eui.ItemData) {
+		if it == nil {
+			return
+		}
+		raw := strings.ReplaceAll(it.Text, "\n", " ")
+		_, lines := wrapText(raw, goFace, float64(it.Size.X*ui)-padPx)
+		if len(lines) == 0 {
+			lines = []string{""}
+		}
+		it.Text = strings.Join(lines, "\n")
+		if it.TextPtr != nil {
+			*it.TextPtr = it.Text
+		}
+		it.Size.Y = rowUnits * float32(len(lines))
+	}
+
+	resize(hotkeyCmdInput)
+	resize(hotkeyTextInput)
+	hotkeyEditWin.Refresh()
 }
 
 func finishHotkeyEdit(save bool) {
 	if save {
-		combo := hotkeyComboText.Text
-		cmd := hotkeyCmdInput.Text
+		combo := strings.ReplaceAll(hotkeyComboText.Text, "\n", " ")
+		cmd := strings.ReplaceAll(hotkeyCmdInput.Text, "\n", " ")
 		txt := ""
 		if hotkeyTextInput != nil {
-			txt = hotkeyTextInput.Text
+			txt = strings.ReplaceAll(hotkeyTextInput.Text, "\n", " ")
 		}
 		if combo != "" && cmd != "" {
 			hk := Hotkey{Combo: combo, Command: cmd, Text: txt}
