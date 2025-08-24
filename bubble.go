@@ -455,7 +455,7 @@ func drawMonsterSpikes(screen *ebiten.Image, left, top, right, bottom, radius, s
 	endX := right - radius
 	// top edge
 	for x := startX; x < endX; x += step {
-		spike := size * (0.7 + 0.3*float32(math.Sin(phase+float64(x))))
+		spike := size * (0.7 + 0.3*float32(math.Sin(phase+float64(x-startX))))
 		end := x + step
 		mid := x + step/2
 		if end > endX {
@@ -489,7 +489,7 @@ func drawMonsterSpikes(screen *ebiten.Image, left, top, right, bottom, radius, s
 	}
 	drawBottom := func(segStart, segEnd float32) {
 		for x := segStart; x < segEnd; x += step {
-			spike := size * (0.7 + 0.3*float32(math.Sin(phase+float64(x))))
+			spike := size * (0.7 + 0.3*float32(math.Sin(phase+float64(x-startX))))
 			end := x + step
 			mid := x + step/2
 			if end > segEnd {
@@ -521,7 +521,7 @@ func drawMonsterSpikes(screen *ebiten.Image, left, top, right, bottom, radius, s
 	endY := bottom - radius
 	// left and right edges
 	for y := startY; y < endY; y += step {
-		spike := size * (0.7 + 0.3*float32(math.Sin(phase+float64(y))))
+		spike := size * (0.7 + 0.3*float32(math.Sin(phase+float64(y-startY))))
 		end := y + step
 		mid := y + step/2
 		if end > endY {
