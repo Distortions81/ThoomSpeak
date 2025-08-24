@@ -52,14 +52,19 @@ func runFakeMode(ctx context.Context) {
 
 		// Helper to append a bubble and show corresponding chat message.
 		emitBubble := func(idx uint8, typ int, name, verb, txt string) {
+			b := bubble{Index: idx, Text: txt, Type: typ, CreatedFrame: frameCounter}
+			switch typ & kBubbleTypeMask {
+			case kBubbleRealAction, kBubblePlayerAction, kBubbleNarrate:
+				b.NoArrow = true
+			}
 			stateMu.Lock()
-			state.bubbles = append(state.bubbles, bubble{Index: idx, Text: txt, Type: typ, CreatedFrame: frameCounter})
+			state.bubbles = append(state.bubbles, b)
 			stateMu.Unlock()
 			switch verb {
 			case "", bubbleVerbVerbatim:
 				chatMessage(txt)
 			case bubbleVerbParentheses:
-				chatMessage(name + " " + txt)
+				chatMessage("(" + name + " " + txt + ")")
 			default:
 				chatMessage(name + " " + verb + ", " + txt)
 			}
@@ -94,21 +99,35 @@ func runFakeMode(ctx context.Context) {
 				emitBubble(1, kBubbleThought, p2, "thinks to you", "Hello Hero")
 			case 7: // Bob acts
 				emitBubble(1, kBubblePlayerAction, p2, bubbleVerbParentheses, "waves excitedly")
-			case 8: // Bob falls
+			case 8: // Hero real action
+				emitBubble(0, kBubbleRealAction, "", bubbleVerbVerbatim, p1+" strikes!")
+			case 9: // Bob ponders
+				emitBubble(1, kBubblePonder, p2, "ponders", "Hmm...")
+			case 10: // Narration
+				emitBubble(0, kBubbleNarrate, "", "", "A narrator speaks")
+			case 11: // Monster growls
+				emitBubble(1, kBubbleMonster, p2, "growls", "Grrr!")
+			case 12: // Off-screen bubble
+				b := bubble{Index: 1, H: int16(fieldCenterX + 10), V: 0, Far: true, Text: "Over here!", Type: kBubbleNormal, CreatedFrame: frameCounter}
+				stateMu.Lock()
+				state.bubbles = append(state.bubbles, b)
+				stateMu.Unlock()
+				chatMessage(p2 + " says, Over here!")
+			case 13: // Bob falls
 				msg := append(pnTag(p2), []byte(" has fallen")...)
 				handleInfoText(append(bepp("hf", msg), '\r'))
-			case 9: // Bob recovers
+			case 14: // Bob recovers
 				msg := append(pnTag(p2), []byte(" is no longer fallen")...)
 				handleInfoText(append(bepp("nf", msg), '\r'))
-			case 10: // You unshare Bob
+			case 15: // You unshare Bob
 				msg := append([]byte("You are no longer sharing experiences with "), pnTag(p2)...)
 				msg = append(msg, '.')
 				handleInfoText(append(bepp("su", msg), '\r'))
-			case 11: // Bob unshares you
+			case 16: // Bob unshares you
 				msg := append(pnTag(p2), []byte(" is no longer sharing experiences with you.")...)
 				handleInfoText(append(bepp("su", msg), '\r'))
 			}
-			step = (step + 1) % 12
+			step = (step + 1) % 17
 		}
 	}()
 }
