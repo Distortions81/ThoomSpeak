@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math"
 	"testing"
 	"time"
 )
@@ -32,22 +33,24 @@ func TestParseClanLordTuneDurations(t *testing.T) {
 	}
 }
 
-func TestEventsToNotesNoGap(t *testing.T) {
+func TestEventsToNotesDefaultGap(t *testing.T) {
 	pt := parseClanLordTune("cd")
 	inst := instrument{program: 0, octave: 0, chord: 100, melody: 100}
 	notes := eventsToNotes(pt, inst, 100)
 	if len(notes) != 2 {
 		t.Fatalf("expected 2 notes, got %d", len(notes))
 	}
-	if notes[0].Duration != 250*time.Millisecond {
-		t.Fatalf("first note duration = %v, want 250ms", notes[0].Duration)
+	gap := time.Duration(int(math.Round(1500.0/120.0))) * time.Millisecond
+	wantDur := 250*time.Millisecond - gap
+	if notes[0].Duration != wantDur {
+		t.Fatalf("first note duration = %v, want %v", notes[0].Duration, wantDur)
 	}
 	if notes[1].Start != 250*time.Millisecond {
 		t.Fatalf("second note start = %v, want 250ms", notes[1].Start)
 	}
-	gap := notes[1].Start - notes[0].Start - notes[0].Duration
-	if gap != 0 {
-		t.Fatalf("gap = %v, want 0", gap)
+	gotGap := notes[1].Start - notes[0].Start - notes[0].Duration
+	if gotGap != gap {
+		t.Fatalf("gap = %v, want %v", gotGap, gap)
 	}
 }
 
@@ -61,9 +64,11 @@ func TestRestDuration(t *testing.T) {
 	if notes[1].Start != 500*time.Millisecond {
 		t.Fatalf("second note start = %v, want 500ms", notes[1].Start)
 	}
-	gap := notes[1].Start - notes[0].Start - notes[0].Duration
-	if gap != 250*time.Millisecond {
-		t.Fatalf("gap = %v, want 250ms", gap)
+	gapUnit := time.Duration(int(math.Round(1500.0/120.0))) * time.Millisecond
+	gotGap := notes[1].Start - notes[0].Start - notes[0].Duration
+	wantGap := gapUnit + 250*time.Millisecond
+	if gotGap != wantGap {
+		t.Fatalf("gap = %v, want %v", gotGap, wantGap)
 	}
 }
 
@@ -107,12 +112,14 @@ func TestLoopAndTempoAndVolume(t *testing.T) {
 	if len(notes) != 6 {
 		t.Fatalf("expected 6 notes, got %d", len(notes))
 	}
-	// After tempo change to 180 BPM, note 'e' should have shorter duration.
-	if notes[4].Duration != 166*time.Millisecond {
-		t.Fatalf("tempo change not applied, got %v", notes[4].Duration)
+	// After tempo change to 180 BPM, note 'e' should have shorter duration with gap applied.
+	gap := time.Duration(int(math.Round(1500.0/180.0))) * time.Millisecond
+	wantDur := 166*time.Millisecond - gap
+	if notes[4].Duration != wantDur {
+		t.Fatalf("tempo change not applied, got %v want %v", notes[4].Duration, wantDur)
 	}
-	// volume change should halve velocity for last note (volume set to 5)
-	if notes[5].Velocity != 50 {
+	// volume change should reduce velocity per square-root scaling (volume set to 5)
+	if notes[5].Velocity != 71 {
 		t.Fatalf("volume change not applied, got %d", notes[5].Velocity)
 	}
 }
@@ -139,8 +146,9 @@ func TestLoopSeamlessRepeat(t *testing.T) {
 		t.Fatalf("expected 2 notes, got %d", len(notes))
 	}
 	gap := notes[1].Start - notes[0].Start - notes[0].Duration
-	if gap != 0 {
-		t.Fatalf("gap between loop iterations = %v, want 0", gap)
+	wantGap := time.Duration(int(math.Round(1500.0/120.0))) * time.Millisecond
+	if gap != wantGap {
+		t.Fatalf("gap between loop iterations = %v, want %v", gap, wantGap)
 	}
 }
 
@@ -152,11 +160,13 @@ func TestNoteDurationsWithTempoChange(t *testing.T) {
 	if len(notes) != 4 {
 		t.Fatalf("expected 4 notes, got %d", len(notes))
 	}
+	gap120 := time.Duration(int(math.Round(1500.0/120.0))) * time.Millisecond
+	gap180 := time.Duration(int(math.Round(1500.0/180.0))) * time.Millisecond
 	want := []time.Duration{
-		250 * time.Millisecond, // c: 1 beat at 120 BPM
-		125 * time.Millisecond, // d1: half beat at 120 BPM
-		333 * time.Millisecond, // E: 2 beats at 180 BPM
-		166 * time.Millisecond, // g2: 1 beat at 180 BPM
+		250*time.Millisecond - gap120, // c: 1 beat at 120 BPM
+		125*time.Millisecond - gap120, // d1: half beat at 120 BPM
+		333*time.Millisecond - gap180, // E: 2 beats at 180 BPM
+		166*time.Millisecond - gap180, // g2: 1 beat at 180 BPM
 	}
 	for i, n := range notes {
 		if n.Duration != want[i] {
@@ -171,8 +181,8 @@ func TestNoteDurationsUncommonTempos(t *testing.T) {
 		tempo int
 		want  time.Duration
 	}{
-		{95, 473 * time.Millisecond},
-		{177, 254 * time.Millisecond},
+		{95, 457 * time.Millisecond},
+		{177, 246 * time.Millisecond},
 	}
 	for _, c := range cases {
 		pt := parseClanLordTuneWithTempo("c3", c.tempo)
@@ -183,5 +193,15 @@ func TestNoteDurationsUncommonTempos(t *testing.T) {
 		if notes[0].Duration != c.want {
 			t.Errorf("tempo %d: duration = %v, want %v", c.tempo, notes[0].Duration, c.want)
 		}
+	}
+}
+
+func TestParseNoteLowestCPreserved(t *testing.T) {
+	pt := parseClanLordTune("\\----c")
+	if len(pt.events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(pt.events))
+	}
+	if len(pt.events[0].keys) != 1 || pt.events[0].keys[0] != 0 {
+		t.Fatalf("expected low C (0), got %+v", pt.events[0].keys)
 	}
 }
