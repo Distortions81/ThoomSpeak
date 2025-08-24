@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -111,4 +112,25 @@ func TestLoadHotkeysShowsEntriesInWindow(t *testing.T) {
 	if len(hotkeysList.Contents) != 1 {
 		t.Fatalf("hotkeys list not refreshed: %d", len(hotkeysList.Contents))
 	}
+}
+
+// Test that long input lines wrap and cause the window to grow.
+func TestHotkeyEditorWrapsAndResizes(t *testing.T) {
+	hotkeyEditWin = nil
+	openHotkeyEditor(-1)
+	if hotkeyEditWin == nil {
+		t.Fatalf("editor not opened")
+	}
+	base := hotkeyEditWin.Size.Y
+	long := "this is a very long command line that should wrap across multiple lines for testing"
+	hotkeyCmdInput.Text = long
+	hotkeyTextInput.Text = long
+	wrapHotkeyInputs()
+	if !strings.Contains(hotkeyCmdInput.Text, "\n") || hotkeyCmdInput.Size.Y <= 20 {
+		t.Fatalf("command input did not wrap or grow: %q size %v", hotkeyCmdInput.Text, hotkeyCmdInput.Size.Y)
+	}
+	if hotkeyEditWin.Size.Y <= base {
+		t.Fatalf("window did not resize: %v <= %v", hotkeyEditWin.Size.Y, base)
+	}
+	hotkeyEditWin.Close()
 }
