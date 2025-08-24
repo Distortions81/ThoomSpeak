@@ -35,6 +35,7 @@ const checkpointInterval = 300
 type moviePlayer struct {
 	frames  [][]byte
 	fps     int
+	baseFPS int
 	cur     int // number of frames processed
 	playing bool
 	ticker  *time.Ticker
@@ -58,6 +59,7 @@ func newMoviePlayer(frames [][]byte, fps int, cancel context.CancelFunc) *movieP
 	return &moviePlayer{
 		frames:      frames,
 		fps:         fps,
+		baseFPS:     fps,
 		playing:     true,
 		ticker:      time.NewTicker(time.Second / time.Duration(fps)),
 		cancel:      cancel,
@@ -216,7 +218,7 @@ func (p *moviePlayer) makePlaybackWindow() {
 	reset.Size = eui.Point{X: 140, Y: 24}
 	resetEv.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
-			p.setFPS(clMovFPS)
+			p.setFPS(p.baseFPS)
 		}
 	}
 	bFlow.AddItem(reset)
@@ -417,7 +419,8 @@ func (p *moviePlayer) skipBackMilli(milli int) {
 	}
 	seekLock.Lock()
 	go func() {
-		p.seek(p.cur - int(float64(milli)*(float64(p.fps)/1000.0)))
+		skip := int(float64(milli) * (float64(p.baseFPS) / 1000.0))
+		p.seek(p.cur - skip)
 		seekLock.Unlock()
 	}()
 
@@ -429,7 +432,8 @@ func (p *moviePlayer) skipForwardMilli(milli int) {
 	}
 	seekLock.Lock()
 	go func() {
-		p.seek(p.cur + int(float64(milli)*(float64(p.fps)/1000.0)))
+		skip := int(float64(milli) * (float64(p.baseFPS) / 1000.0))
+		p.seek(p.cur + skip)
 		seekLock.Unlock()
 	}()
 
