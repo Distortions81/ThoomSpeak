@@ -129,8 +129,12 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 	bubbleType := typ & kBubbleTypeMask
 
 	maxLineWidth := sw/4 - 2*pad
-	width, lines := wrapText(txt, bubbleFont, float64(maxLineWidth))
-	metrics := bubbleFont.Metrics()
+	font := bubbleFont
+	if bubbleType == kBubbleWhisper {
+		font = mainFont
+	}
+	width, lines := wrapText(txt, font, float64(maxLineWidth))
+	metrics := font.Metrics()
 	lineHeight := int(math.Ceil(metrics.HAscent) + math.Ceil(metrics.HDescent) + math.Ceil(metrics.HLineGap))
 	width += 2 * pad
 	height := lineHeight*len(lines) + 2*pad
@@ -273,7 +277,7 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 		op := &text.DrawOptions{}
 		op.GeoM.Translate(float64(textLeft), float64(textTop+i*lineHeight))
 		op.ColorScale.ScaleWithColor(textCol)
-		text.Draw(screen, line, bubbleFont, op)
+		text.Draw(screen, line, font, op)
 	}
 }
 
