@@ -634,6 +634,7 @@ func parseDrawState(data []byte, buildCache bool) error {
 	ackFrame = int32(binary.BigEndian.Uint32(data[1:5]))
 	resendFrame = int32(binary.BigEndian.Uint32(data[5:9]))
 	dropped := updateFrameCounters(ackFrame)
+	frameCounter += dropped
 	p := 9
 
 	stage = "descriptor count"
