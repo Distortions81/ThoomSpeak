@@ -194,9 +194,42 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 			tail.Close()
 		}
 	}
+	op := &ebiten.DrawTrianglesOptions{ColorScaleMode: ebiten.ColorScaleModePremultipliedAlpha, AntiAlias: true}
+
+	if bubbleType == kBubbleWhisper {
+		maxWidth := float32(12 * gs.GameScale)
+		fadeSteps := 4
+		for i := fadeSteps; i >= 1; i-- {
+			width := maxWidth * float32(i) / float32(fadeSteps)
+			alpha := float32(bgA) / 0xffff * float32(fadeSteps-i+1) / float32(fadeSteps+1)
+
+			vs, is := body.AppendVerticesAndIndicesForStroke(nil, nil, &vector.StrokeOptions{Width: width, LineJoin: vector.LineJoinRound})
+			for j := range vs {
+				vs[j].SrcX = 0
+				vs[j].SrcY = 0
+				vs[j].ColorR = float32(bgR) / 0xffff
+				vs[j].ColorG = float32(bgG) / 0xffff
+				vs[j].ColorB = float32(bgB) / 0xffff
+				vs[j].ColorA = alpha
+			}
+			screen.DrawTriangles(vs, is, whiteImage, op)
+
+			if !far && !noArrow {
+				vs, is = tail.AppendVerticesAndIndicesForStroke(vs[:0], is[:0], &vector.StrokeOptions{Width: width, LineJoin: vector.LineJoinRound})
+				for j := range vs {
+					vs[j].SrcX = 0
+					vs[j].SrcY = 0
+					vs[j].ColorR = float32(bgR) / 0xffff
+					vs[j].ColorG = float32(bgG) / 0xffff
+					vs[j].ColorB = float32(bgB) / 0xffff
+					vs[j].ColorA = alpha
+				}
+				screen.DrawTriangles(vs, is, whiteImage, op)
+			}
+		}
+	}
 
 	vs, is := tail.AppendVerticesAndIndicesForFilling(nil, nil)
-	op := &ebiten.DrawTrianglesOptions{ColorScaleMode: ebiten.ColorScaleModePremultipliedAlpha, AntiAlias: true}
 	if !far && !noArrow {
 		for i := range vs {
 			vs[i].SrcX = 0
