@@ -22,48 +22,55 @@ const (
 // Each instrument defines the General MIDI program number, octave offset, and
 // velocity scaling factors for chord and melody notes.
 var instruments = []instrument{
-	{47, 1, 100, 100},   // 0 Lucky Lyra
-	{73, 1, 100, 100},   // 1 Bone Flute
-	{47, 0, 100, 100},   // 2 Starbuck Harp
-	{106, 0, 100, 100},  // 3 Torjo
-	{13, 0, 100, 100},   // 4 Xylo
-	{25, 0, 100, 100},   // 5 Gitor
-	{76, 1, 100, 100},   // 6 Reed Flute
-	{17, -1, 100, 100},  // 7 Temple Organ
-	{94, -1, 100, 100},  // 8 Conch
-	{80, 1, 100, 100},   // 9 Ocarina
-	{77, 1, 100, 100},   // 10 Centaur Organ
-	{12, 0, 100, 100},   // 11 Vibra
-	{59, -1, 100, 100},  // 12 Tuborn
-	{110, 0, 100, 100},  // 13 Bagpipe
-	{117, -1, 100, 100}, // 14 Orga Drum
-	{115, 0, 100, 100},  // 15 Casserole
-	{41, 1, 100, 100},   // 16 Violène
-	{78, 1, 100, 100},   // 17 Pine Flute
-	{22, -1, 100, 100},  // 18 Groanbox
-	{108, -1, 100, 100}, // 19 Gho-To
-	{44, -2, 100, 100},  // 20 Mammoth Violène
-	{33, -2, 100, 100},  // 21 Gutbucket Bass
-	{77, 0, 100, 100},   // 22 Glass Jug
+    {47, 1, 100, 100, false},   // 0 Lucky Lyra
+    {73, 1, 100, 100, false},   // 1 Bone Flute (melody only)
+    {47, 0, 100, 100, false},   // 2 Starbuck Harp
+    {106, 0, 100, 100, false},  // 3 Torjo
+    {13, 0, 100, 100, false},   // 4 Xylo
+    {25, 0, 100, 100, false},   // 5 Gitor
+    {76, 1, 100, 100, false},   // 6 Reed Flute (melody only)
+    {17, -1, 100, 100, true},   // 7 Temple Organ (longChord)
+    {94, -1, 100, 100, true},   // 8 Conch (longChord)
+    {80, 1, 100, 100, false},   // 9 Ocarina (melody only)
+    {77, 1, 100, 100, true},    // 10 Centaur Organ (longChord)
+    {12, 0, 100, 100, false},   // 11 Vibra
+    {59, -1, 100, 100, false},  // 12 Tuborn (melody only)
+    {110, 0, 100, 100, true},   // 13 Bagpipe (longChord)
+    {117, -1, 100, 100, false}, // 14 Orga Drum (melody only)
+    {115, 0, 100, 100, false},  // 15 Casserole
+    {41, 1, 100, 100, false},   // 16 Violène
+    {78, 1, 100, 100, false},   // 17 Pine Flute (melody only)
+    {22, -1, 100, 100, true},   // 18 Groanbox (longChord)
+    {108, -1, 100, 100, false}, // 19 Gho-To
+    {44, -2, 100, 100, false},  // 20 Mammoth Violène
+    {33, -2, 100, 100, false},  // 21 Gutbucket Bass (melody only)
+    {77, 0, 100, 100, false},   // 22 Glass Jug (melody only)
+    {17, -1, 100, 100, true},   // 23 Vibra Sustained (Temple Organ substitute) (longChord)
+    {20, -1, 100, 100, true},   // 24 Church Organ (strong sustain) (longChord)
+    {49, 0, 100, 100, false},   // 25 String Ensemble 1 (soft sustain)
+    {50, 0, 100, 100, false},   // 26 String Ensemble 2 (brighter sustain)
+    {52, 0, 100, 100, false},   // 27 Choir Aahs (vocal sustain)
+    {89, 0, 100, 100, true},    // 28 Warm Pad (synth pad sustain) (allow long)
 }
 
 // instrument describes a playable instrument mapping Clan Lord's instrument
 // index to a General MIDI program number, octave offset, and velocity scaling
 // factors for chords and melodies.
 type instrument struct {
-	program int
-	octave  int
-	chord   int // chord velocity factor (0-100)
-	melody  int // melody velocity factor (0-100)
+    program int
+    octave  int
+    chord   int // chord velocity factor (0-100)
+    melody  int // melody velocity factor (0-100)
+    longChord bool // supports long-chord sustain ('$')
 }
 
 // queue sequentializes tune playback so overlapping /play commands do not
 // render concurrently. Each tune section is played to completion before the
 // next begins.
 type tuneJob struct {
-	program int
-	notes   []Note
-	who     int
+    program int
+    notes   []Note
+    who     int
 }
 
 var (
@@ -83,12 +90,12 @@ func startTuneWorker() {
 			currentMu.Lock()
 			currentWho = job.who
 			currentMu.Unlock()
-			if err := Play(audioContext, job.program, job.notes); err != nil {
-				log.Printf("play tune worker: %v", err)
-				if musicDebug {
-					consoleMessage("play tune: " + err.Error())
-					chatMessage("play tune: " + err.Error())
-				}
+            if err := Play(audioContext, job.program, job.notes); err != nil {
+                log.Printf("play tune worker: %v", err)
+                if musicDebug {
+                    consoleMessage("play tune: " + err.Error())
+                    chatMessage("play tune: " + err.Error())
+                }
 			}
 			currentMu.Lock()
 			currentWho = 0
@@ -101,9 +108,15 @@ func startTuneWorker() {
 // simultaneous notes (a chord). Durations are stored in half-beats and converted to
 // milliseconds later once tempo and loop processing is applied.
 type noteEvent struct {
-	keys   []int
-	beats  float64
-	volume int
+    keys   []int
+    beats  float64
+    volume int
+    // nogap indicates this note should not shorten its duration to leave
+    // a separation gap before the next event (used for simple tie handling).
+    nogap  bool
+    // longChord marks a chord that should sustain (no time consumed at the
+    // event) until the next chord or end-of-song.
+    longChord bool
 }
 
 // tempoEvent notes a tempo change occurring before the event at the given index.
@@ -114,9 +127,14 @@ type tempoEvent struct {
 
 // loopMarker describes a looped sequence of events.
 type loopMarker struct {
-	start  int // index of the first event in the loop
-	end    int // index after the last event in the loop
-	repeat int // total number of times to play the loop
+    start  int // index of the first event in the loop
+    end    int // index after the last event in the loop
+    repeat int // total number of times to play the loop
+    // endings map from iteration index (1-based) to event index to jump to
+    // when the loop end is reached on that iteration. If not present, def
+    // is used when >= 0.
+    endings map[int]int
+    def     int // default ending start event index, or -1 if none
 }
 
 // parsedTune aggregates events with optional loop and tempo metadata.
@@ -178,21 +196,33 @@ func playClanLordTune(tune string) error {
 // provided instrument's chord or melody velocity factors are applied depending
 // on the event type.
 func eventsToNotes(pt parsedTune, inst instrument, velocity int) []Note {
-	var notes []Note
-	tempo := pt.tempo
-	tempoIdx := 0
-	startMS := 0
+    var notes []Note
+    tempo := pt.tempo
+    tempoIdx := 0
+    startMS := 0
+    // Track an active long-chord: indices of notes to be extended until the
+    // next chord (or end-of-song).
+    var activeLong []int
+    // Tie-merge state for single-note melodies
+    lastMelIdx := -1
+    lastMelKey := -1
+    lastMelEndMS := 0
+    prevNogap := false
 
 	// Build map of loop starts for quick lookup
 	loopMap := make(map[int][]loopMarker)
 	for _, lp := range pt.loops {
 		loopMap[lp.start] = append(loopMap[lp.start], lp)
 	}
-	type loopState struct {
-		start     int
-		end       int
-		remaining int
-	}
+    type loopState struct {
+        start     int
+        end       int
+        remaining int
+        index     int // 1-based iteration index
+        phase     int // 0: main body, 1: in ending segment
+        endings   map[int]int
+        def       int
+    }
 	var stack []loopState
 	activeLoops := make(map[int]int)
 
@@ -204,26 +234,46 @@ func eventsToNotes(pt parsedTune, inst instrument, velocity int) []Note {
 			tempoIdx++
 		}
 
-		if lps, ok := loopMap[i]; ok {
-			for _, lp := range lps {
-				if activeLoops[lp.start] == 0 {
-					stack = append(stack, loopState{start: lp.start, end: lp.end, remaining: lp.repeat - 1})
-					activeLoops[lp.start] = 1
-				}
-			}
-		}
+        if lps, ok := loopMap[i]; ok {
+            for _, lp := range lps {
+                if activeLoops[lp.start] == 0 {
+                    stack = append(stack, loopState{start: lp.start, end: lp.end, remaining: lp.repeat - 1, index: 1, phase: 0, endings: lp.endings, def: lp.def})
+                    activeLoops[lp.start] = 1
+                }
+            }
+        }
 
-		ev := pt.events[i]
+        ev := pt.events[i]
+
+        // If we are about to start a new chord, finalize any active long chord
+        // using the current startMS as the end time.
+        if len(ev.keys) > 1 && len(activeLong) > 0 {
+            for _, idx := range activeLong {
+                // Extend to current start time (no gap)
+                end := time.Duration(startMS) * time.Millisecond
+                if end > notes[idx].Start {
+                    notes[idx].Duration = end - notes[idx].Start
+                } else {
+                    notes[idx].Duration = 0
+                }
+            }
+            activeLong = activeLong[:0]
+        }
 		durMS := int((ev.beats / 4) * (60000.0 / float64(tempo)))
 
-		if len(ev.keys) == 0 {
-			startMS += durMS
-		} else {
-			gapMS := int(math.Round(1500.0 / float64(tempo)))
-			noteMS := durMS - gapMS
-			if noteMS < 0 {
-				noteMS = 0
-			}
+        if len(ev.keys) == 0 {
+            // rest: advance timeline, reset tie context
+            prevNogap = false
+            startMS += durMS
+        } else {
+            gapMS := int(math.Round(1500.0 / float64(tempo)))
+            if ev.nogap || (ev.longChord && inst.longChord) {
+                gapMS = 0
+            }
+            noteMS := durMS - gapMS
+            if noteMS < 0 {
+                noteMS = 0
+            }
 
 			v := velocity
 			if len(ev.keys) > 1 {
@@ -237,41 +287,98 @@ func eventsToNotes(pt parsedTune, inst instrument, velocity int) []Note {
 			} else if v > 127 {
 				v = 127
 			}
-			for _, k := range ev.keys {
-				key := k + inst.octave*12
-				if key < 0 || key > 127 {
-					continue
-				}
-				notes = append(notes, Note{
-					Key:      key,
-					Velocity: v,
-					Start:    time.Duration(startMS) * time.Millisecond,
-					Duration: time.Duration(noteMS) * time.Millisecond,
-				})
-			}
-			startMS += durMS
-		}
-		i++
+            if len(ev.keys) == 1 && !(ev.longChord && inst.longChord) {
+                // Single-note: allow tie merge with immediately previous melody note
+                k := ev.keys[0]
+                key := k + inst.octave*12
+                if prevNogap && lastMelIdx >= 0 && lastMelKey == key && lastMelEndMS == startMS {
+                    // Extend previous note by the full event duration (no gap)
+                    notes[lastMelIdx].Duration += time.Duration(durMS) * time.Millisecond
+                    lastMelEndMS += durMS
+                } else {
+                    notes = append(notes, Note{
+                        Key:      key,
+                        Velocity: v,
+                        Start:    time.Duration(startMS) * time.Millisecond,
+                        Duration: time.Duration(noteMS) * time.Millisecond,
+                    })
+                    lastMelIdx = len(notes) - 1
+                    lastMelKey = key
+                    lastMelEndMS = startMS + durMS
+                }
+            } else {
+                // Chords or long-chords or multi-note events
+                for _, k := range ev.keys {
+                    key := k + inst.octave*12
+                    notes = append(notes, Note{
+                        Key:      key,
+                        Velocity: v,
+                        Start:    time.Duration(startMS) * time.Millisecond,
+                        Duration: time.Duration(noteMS) * time.Millisecond,
+                    })
+                    if ev.longChord && inst.longChord {
+                        activeLong = append(activeLong, len(notes)-1)
+                    }
+                }
+                // Reset tie-merge context when not a single-note melody
+                lastMelIdx = -1
+                lastMelKey = -1
+                lastMelEndMS = 0
+            }
+            // Long-chord consumes no time here; otherwise, advance.
+            if !(ev.longChord && inst.longChord) {
+                startMS += durMS
+            }
+            prevNogap = ev.nogap
+        }
+        i++
 
-		for len(stack) > 0 && i == stack[len(stack)-1].end {
-			top := &stack[len(stack)-1]
-			if top.remaining > 0 {
-				top.remaining--
-				i = top.start
-				// reset tempo to state at loop start
-				tempo = pt.tempo
-				tempoIdx = 0
-				for tempoIdx < len(pt.tempos) && pt.tempos[tempoIdx].index <= i {
-					tempo = pt.tempos[tempoIdx].tempo
-					tempoIdx++
-				}
-			} else {
-				delete(activeLoops, top.start)
-				stack = stack[:len(stack)-1]
-			}
-		}
-	}
-	return notes
+        for len(stack) > 0 && i == stack[len(stack)-1].end {
+            top := &stack[len(stack)-1]
+            if top.phase == 0 {
+                // First reach of end: try to jump to ending segment for this iteration.
+                if pos, ok := top.endings[top.index]; ok {
+                    i = pos
+                    top.phase = 1
+                    break
+                } else if top.def >= 0 {
+                    i = top.def
+                    top.phase = 1
+                    break
+                }
+                // No ending: finalize iteration immediately
+            }
+            // Finalize iteration after finishing ending segment or no ending
+            top.phase = 0
+            if top.remaining > 0 {
+                top.remaining--
+                top.index++
+                i = top.start
+                // reset tempo to state at loop start
+                tempo = pt.tempo
+                tempoIdx = 0
+                for tempoIdx < len(pt.tempos) && pt.tempos[tempoIdx].index <= i {
+                    tempo = pt.tempos[tempoIdx].tempo
+                    tempoIdx++
+                }
+            } else {
+                delete(activeLoops, top.start)
+                stack = stack[:len(stack)-1]
+            }
+        }
+    }
+    // Finalize any remaining long-chord notes at song end.
+    if len(activeLong) > 0 {
+        for _, idx := range activeLong {
+            end := time.Duration(startMS) * time.Millisecond
+            if end > notes[idx].Start {
+                notes[idx].Duration = end - notes[idx].Start
+            } else {
+                notes[idx].Duration = 0
+            }
+        }
+    }
+    return notes
 }
 
 // parseClanLordTune converts Clan Lord music notation into parsed events at
@@ -291,7 +398,12 @@ func parseClanLordTuneWithTempo(s string, tempo int) parsedTune {
 	octave := 4
 	volume := 10
 	i := 0
-	var loopStarts []int
+    type loopBuild struct {
+        start   int
+        endings map[int]int
+        def     int
+    }
+    var loopStarts []loopBuild
 	for i < len(s) {
 		c := s[i]
 		switch c {
@@ -307,15 +419,21 @@ func parseClanLordTuneWithTempo(s string, tempo int) parsedTune {
 		case '+', '-', '=', '/', '\\':
 			handleOctave(&octave, c)
 			i++
-		case 'p': // rest
-			i++
-			beats := durationBlack
+    case 'p': // rest
+        i++
+
+        // By default, rests use the same base length as a lowercase note
+        // (durationBlack). This matches classic timing and avoids overly short
+        // default rests.
+        beats := durationBlack
+
 			if i < len(s) && s[i] >= '1' && s[i] <= '9' {
 				beats = float64(s[i] - '0')
 				i++
 			}
 			pt.events = append(pt.events, noteEvent{beats: beats, volume: volume})
-		case '[': // chord
+
+    case '[': // chord
 			i++
 			var keys []int
 			for i < len(s) && s[i] != ']' {
@@ -323,13 +441,13 @@ func parseClanLordTuneWithTempo(s string, tempo int) parsedTune {
 					i++
 					continue
 				}
-				if isNoteLetter(s[i]) {
-					k, _ := parseNoteCL(s, &i, &octave)
-					if k >= 0 {
-						keys = append(keys, k)
-					}
-					continue
-				}
+            if isNoteLetter(s[i]) {
+                k, _, _ := parseNoteCL(s, &i, &octave)
+                if k >= 0 {
+                    keys = append(keys, k)
+                }
+                continue
+            }
 				i++
 			}
 			if i < len(s) && s[i] == ']' {
@@ -340,24 +458,56 @@ func parseClanLordTuneWithTempo(s string, tempo int) parsedTune {
 				beats = float64(s[i] - '0')
 				i++
 			}
+            // Optional long-chord marker '$' after duration
+            sustain := false
+            if i < len(s) && s[i] == '$' {
+                sustain = true
+                i++
+            }
 			if len(keys) > 0 {
-				pt.events = append(pt.events, noteEvent{keys: keys, beats: beats, volume: volume})
+                // Always keep the parsed beats; longChord handling is gated per
+                // instrument later. If unsupported, it plays as a normal chord.
+                pt.events = append(pt.events, noteEvent{keys: keys, beats: beats, volume: volume, longChord: sustain})
 			}
-		case '(':
-			i++
-			loopStarts = append(loopStarts, len(pt.events))
-		case ')':
-			i++
-			count := 1
-			if i < len(s) && s[i] >= '1' && s[i] <= '9' {
-				count = int(s[i] - '0')
-				i++
-			}
-			if len(loopStarts) > 0 {
-				start := loopStarts[len(loopStarts)-1]
-				loopStarts = loopStarts[:len(loopStarts)-1]
-				pt.loops = append(pt.loops, loopMarker{start: start, end: len(pt.events), repeat: count})
-			}
+    case '(':
+        i++
+        loopStarts = append(loopStarts, loopBuild{start: len(pt.events), endings: make(map[int]int), def: -1})
+    case ')':
+        i++
+        count := 1
+        if i < len(s) && s[i] >= '1' && s[i] <= '9' {
+            count = int(s[i] - '0')
+            i++
+        }
+        if len(loopStarts) > 0 {
+            lb := loopStarts[len(loopStarts)-1]
+            loopStarts = loopStarts[:len(loopStarts)-1]
+            pt.loops = append(pt.loops, loopMarker{start: lb.start, end: len(pt.events), repeat: count, endings: lb.endings, def: lb.def})
+        }
+    case '|', '!':
+        // Alternate ending markers are only meaningful within a loop.
+        if len(loopStarts) == 0 {
+            i++
+            // If '|' has a digit, skip it to avoid reprocessing.
+            if s[i-1] == '|' && i < len(s) && s[i] >= '1' && s[i] <= '9' {
+                i++
+            }
+            break
+        }
+        if s[i] == '!' {
+            // default ending: current event index
+            i++
+            lb := &loopStarts[len(loopStarts)-1]
+            lb.def = len(pt.events)
+        } else { // '|'
+            i++
+            if i < len(s) && s[i] >= '1' && s[i] <= '9' {
+                idx := int(s[i] - '0')
+                i++
+                lb := &loopStarts[len(loopStarts)-1]
+                lb.endings[idx] = len(pt.events)
+            }
+        }
 		case '@':
 			i++
 			sign := byte(0)
@@ -383,11 +533,8 @@ func parseClanLordTuneWithTempo(s string, tempo int) parsedTune {
 					newTempo = val
 				}
 			}
-			if newTempo < 60 {
-				newTempo = 60
-			}
-			if newTempo > 180 {
-				newTempo = 180
+			if newTempo < 1 {
+				newTempo = 1
 			}
 			tempo = newTempo
 			pt.tempos = append(pt.tempos, tempoEvent{index: len(pt.events), tempo: tempo})
@@ -424,15 +571,15 @@ func parseClanLordTuneWithTempo(s string, tempo int) parsedTune {
 				volume = 10
 			}
 		default:
-			if isNoteLetter(c) {
-				k, beats := parseNoteCL(s, &i, &octave)
-				if k >= 0 {
-					pt.events = append(pt.events, noteEvent{keys: []int{k}, beats: beats, volume: volume})
-				}
-			} else {
-				i++
-			}
-		}
+            if isNoteLetter(c) {
+                k, beats, tie := parseNoteCL(s, &i, &octave)
+                if k >= 0 {
+                    pt.events = append(pt.events, noteEvent{keys: []int{k}, beats: beats, volume: volume, nogap: tie})
+                }
+            } else {
+                i++
+            }
+        }
 	}
 	return pt
 }
@@ -459,39 +606,44 @@ func handleOctave(oct *int, c byte) bool {
 }
 
 // parseNoteCL parses a single note and returns its MIDI key and beat length.
-func parseNoteCL(s string, i *int, octave *int) (int, float64) {
-	c := s[*i]
-	isUpper := unicode.IsUpper(rune(c))
-	base := noteOffset(unicode.ToLower(rune(c)))
-	if base < 0 {
-		(*i)++
-		return -1, 0
-	}
-	(*i)++
-	pitch := base + ((*octave)+1)*12
-	beats := durationBlack
-	if isUpper {
-		beats = durationWhite
-	}
-	for *i < len(s) {
-		ch := s[*i]
-		switch {
-		case ch == '#':
-			pitch++
-			(*i)++
-		case ch == '.':
-			pitch--
-			(*i)++
-		case ch >= '1' && ch <= '9':
-			beats = float64(ch - '0')
-			(*i)++
-		case ch == '_':
-			(*i)++ // ignore ties
-		default:
-			return pitch, beats
-		}
-	}
-	return pitch, beats
+func parseNoteCL(s string, i *int, octave *int) (int, float64, bool) {
+    c := s[*i]
+    isUpper := unicode.IsUpper(rune(c))
+    base := noteOffset(unicode.ToLower(rune(c)))
+    if base < 0 {
+        (*i)++
+        return -1, 0, false
+    }
+    (*i)++
+    pitch := base + ((*octave)+1)*12
+    beats := durationBlack
+    if isUpper {
+        beats = durationWhite
+    }
+    tied := false
+    for *i < len(s) {
+        ch := s[*i]
+        switch {
+        case ch == '#':
+            pitch++
+            (*i)++
+        case ch == '.':
+            pitch--
+            (*i)++
+        case ch >= '1' && ch <= '9':
+            beats = float64(ch - '0')
+            (*i)++
+        case ch == '_':
+            // Mark this note as tied to the following one. We don't merge
+            // durations (full legato) here, but we do suppress the inter-note
+            // gap so there is no audible rest between them.
+            tied = true
+            (*i)++
+        default:
+            return pitch, beats, tied
+        }
+    }
+    return pitch, beats, tied
 }
 
 func noteOffset(r rune) int {
@@ -548,27 +700,29 @@ var (
 // handleMusicParams translates parsed music params into queued playback. It
 // supports /stop, /part accumulation and tempo/volume/instrument parameters.
 func handleMusicParams(mp MusicParams) {
-	if mp.Stop {
-		// Scoped stop: if who provided, clear that pending and stop if playing.
-		if mp.Who != 0 {
-			pendingMu.Lock()
-			delete(pendingByID, mp.Who)
-			pendingMu.Unlock()
-			currentMu.Lock()
-			cw := currentWho
-			currentMu.Unlock()
-			if cw == mp.Who {
-				stopAllMusic()
-			}
-		} else {
-			// Global stop
-			pendingMu.Lock()
-			pendingByID = make(map[int]*pendingSong)
-			pendingMu.Unlock()
-			stopAllMusic()
-		}
-		return
-	}
+    if mp.Stop {
+        // Scoped stop: if who provided, clear that pending and stop if playing.
+        if mp.Who != 0 {
+            pendingMu.Lock()
+            delete(pendingByID, mp.Who)
+            pendingMu.Unlock()
+            currentMu.Lock()
+            cw := currentWho
+            currentMu.Unlock()
+            if cw == mp.Who {
+                stopAllMusic()
+                clearTuneQueue()
+            }
+        } else {
+            // Global stop
+            pendingMu.Lock()
+            pendingByID = make(map[int]*pendingSong)
+            pendingMu.Unlock()
+            stopAllMusic()
+            clearTuneQueue()
+        }
+        return
+    }
 	// Ignore play requests while muted, matching classic behavior when sound
 	// is off. Still handled /stop above regardless of mute state.
 	if gs.Mute || gs.MusicVolume <= 0 {
@@ -619,12 +773,12 @@ func handleMusicParams(mp MusicParams) {
 	tempo := mp.Tempo
 	vol := mp.VolPct
 	notes := strings.TrimSpace(mp.Notes)
-	pendingMu.Lock()
-	if ps := pendingByID[id]; ps != nil {
-		if notes != "" {
-			ps.notes = append(ps.notes, notes)
-		}
-		notes = strings.Join(ps.notes, " ")
+    pendingMu.Lock()
+    if ps := pendingByID[id]; ps != nil {
+        if notes != "" {
+            ps.notes = append(ps.notes, notes)
+        }
+        notes = strings.Join(ps.notes, " ")
 		if ps.inst != 0 {
 			inst = ps.inst
 		}
@@ -637,11 +791,11 @@ func handleMusicParams(mp MusicParams) {
 		if len(mp.With) == 0 && len(ps.withIDs) > 0 {
 			mp.With = append([]int(nil), ps.withIDs...)
 		}
-		delete(pendingByID, id)
-	}
-	// If sync requested via /with, require that all referenced IDs also have
-	// pending content; otherwise, store this song and return until ready.
-	if len(mp.With) > 0 {
+        delete(pendingByID, id)
+    }
+    // If sync requested via /with, require that all referenced IDs also have
+    // pending content; otherwise, store this song and return until ready.
+    if len(mp.With) > 0 {
 		// Save current as pending with its group
 		p := &pendingSong{inst: inst, tempo: tempo, volPct: vol, notes: []string{notes}, withIDs: append([]int(nil), mp.With...)}
 		pendingByID[id] = p
@@ -683,26 +837,31 @@ func handleMusicParams(mp MusicParams) {
 			jobs = append(jobs, makeTuneJob(w, ps.inst, ps.tempo, ps.volPct, nstr))
 			delete(pendingByID, w)
 		}
-		pendingMu.Unlock()
-		// Enqueue jobs sequentially
-		for _, job := range jobs {
-			enqueueTune(job)
-		}
-		return
-	}
-	pendingMu.Unlock()
-	if notes == "" {
-		return
-	}
+        pendingMu.Unlock()
+        // Enqueue jobs sequentially
+        // Clear any queued previous jobs so the synchronized set starts cleanly.
+        clearTuneQueue()
+        for _, job := range jobs {
+            enqueueTune(job)
+        }
+        return
+    }
+    pendingMu.Unlock()
+    if notes == "" {
+        return
+    }
 
-	job := makeTuneJob(id, inst, tempo, vol, notes)
-	enqueueTune(job)
+    // Clear any queued previous jobs if we just finalized pending parts
+    // for this id (ensures we don't trail playback from an older queue).
+    clearTuneQueue()
+    job := makeTuneJob(id, inst, tempo, vol, notes)
+    enqueueTune(job)
 }
 
 func makeTuneJob(who, inst, tempo, vol int, notes string) tuneJob {
-	pt := parseClanLordTuneWithTempo(notes, tempo)
-	instData := instruments[inst]
-	prog := instData.program
+    pt := parseClanLordTuneWithTempo(notes, tempo)
+    instData := instruments[inst]
+    prog := instData.program
 	// Scale 0..100 to 1..127 velocity.
 	vel := vol
 	if vel <= 0 {
@@ -717,8 +876,8 @@ func makeTuneJob(who, inst, tempo, vol int, notes string) tuneJob {
 	} else if vel > 127 {
 		vel = 127
 	}
-	notesOut := eventsToNotes(pt, instData, vel)
-	return tuneJob{program: prog, notes: notesOut, who: who}
+    notesOut := eventsToNotes(pt, instData, vel)
+    return tuneJob{program: prog, notes: notesOut, who: who}
 }
 
 func enqueueTune(job tuneJob) {
