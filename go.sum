@@ -34,12 +34,12 @@ github.com/hugolgst/rich-go v0.0.0-20240715122152-74618cc1ace2 h1:9qOViOQGFIP5ar
 github.com/hugolgst/rich-go v0.0.0-20240715122152-74618cc1ace2/go.mod h1:nGaW7CGfNZnhtiFxMpc4OZdqIexGXjUlBnlmpZmjEKA=
 github.com/jezek/xgb v1.1.1 h1:bE/r8ZZtSv7l9gk6nU0mYx51aXrvnyb44892TwSaqS4=
 github.com/jezek/xgb v1.1.1/go.mod h1:nrhwO0FX/enq75I7Y7G8iN1ubpSGZEiA3v9e9GyRFlk=
+github.com/meoow/hqx v0.0.0-20180713064718-1ed854ca9480 h1:X9GM15WMabhYs/19XJsETXmK8esFOzVCDY9YLgvYJfU=
+github.com/meoow/hqx v0.0.0-20180713064718-1ed854ca9480/go.mod h1:R2w+w3ke4N1KKUcNfQhKARgebCqUgu08CF+l2ctENuM=
 github.com/pierrec/lz4/v4 v4.1.21 h1:yOVMLb6qSIDP67pl/5F7RepeKYu/VmTyEXvuMI5d9mQ=
 github.com/pierrec/lz4/v4 v4.1.21/go.mod h1:gZWDp/Ze/IJXGXf23ltt2EXimqmTUXEy0GFuRQyBid4=
 github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c h1:+mdjkGKdHQG3305AYmdv1U2eRNDiU2ErMBj1gwrq8eQ=
 github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c/go.mod h1:7rwL4CYBLnjLxUqIJNnCWiEdr3bn6IUYi15bNlnbCCU=
-github.com/pokemium/hq2xgo v1.0.0 h1:Kn+EpDfZ6cbvHYHu6t/8MXyS//145tDQW8pcuMCh/OM=
-github.com/pokemium/hq2xgo v1.0.0/go.mod h1:iqMzFYrG6nm96Zy+K8Ma9auNzw0SiBYaXYgVvMllkP0=
 github.com/remeh/sizedwaitgroup v1.0.0 h1:VNGGFwNo/R5+MJBf6yrsr110p0m4/OX4S3DCy7Kyl5E=
 github.com/remeh/sizedwaitgroup v1.0.0/go.mod h1:3j2R4OIe/SeS6YDhICBy22RWjJC5eNCJ1V+9+NVNYlo=
 github.com/sinshu/go-meltysynth v0.0.0-20230205031334-05d311382fc4 h1:VgeknFh4pciKVtwtjn9tZtItvV20x/+10NnUXKfyW6s=

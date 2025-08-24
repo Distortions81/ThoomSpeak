@@ -69,7 +69,7 @@ var gsdef settings = settings{
 	UIScale:              1.0,
 	Volume:               0.25,
 	MusicVolume:          1.0,
-	GameScale:            2,
+	GameScale:            3,
 	BarPlacement:         BarPlacementBottom,
 	MaxNightLevel:        100,
 	ChatTTSVolume:        1.0,
@@ -267,7 +267,7 @@ func applySettings() {
 		clImages.Denoise = gs.DenoiseImages
 		clImages.DenoiseSharpness = gs.DenoiseSharpness
 		clImages.DenoiseAmount = gs.DenoiseAmount
-		clImages.HQ2x = hq2xSprites
+		clImages.HQ3x = hq3xSprites
 	}
 	ebiten.SetVsyncEnabled(gs.vsync)
 	ebiten.SetFullscreen(gs.Fullscreen)

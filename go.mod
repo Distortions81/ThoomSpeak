@@ -10,15 +10,14 @@ require (
 	github.com/google/gopacket v1.1.19
 	github.com/hako/durafmt v0.0.0-20210608085754-5c1018a4e16b
 	github.com/hugolgst/rich-go v0.0.0-20240715122152-74618cc1ace2
+	github.com/meoow/hqx v0.0.0-20180713064718-1ed854ca9480
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
-	github.com/pokemium/hq2xgo v1.0.0
 	github.com/remeh/sizedwaitgroup v1.0.0
 	github.com/sinshu/go-meltysynth v0.0.0-20230205031334-05d311382fc4
 	github.com/sqweek/dialog v0.0.0-20240226140203-065105509627
 	github.com/thiagokokada/dark-mode-go v0.0.1
 	golang.design/x/clipboard v0.7.1
 	golang.org/x/crypto v0.41.0
-	golang.org/x/image v0.30.0
 	golang.org/x/text v0.28.0
 	golang.org/x/time v0.12.0
 )
@@ -34,6 +33,7 @@ require (
 	github.com/hajimehoshi/go-mp3 v0.3.4 // indirect
 	github.com/jezek/xgb v1.1.1 // indirect
 	golang.org/x/exp/shiny v0.0.0-20250606033433-dcc06ee1d476 // indirect
+	golang.org/x/image v0.30.0 // indirect
 	golang.org/x/mobile v0.0.0-20250606033058-a2a15c67f36f // indirect
 	golang.org/x/net v0.43.0 // indirect
 	golang.org/x/sync v0.16.0 // indirect

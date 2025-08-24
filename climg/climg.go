@@ -11,8 +11,7 @@ import (
 	"sync"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	hq2x "github.com/pokemium/hq2xgo"
-	xdraw "golang.org/x/image/draw"
+	hqx "github.com/meoow/hqx"
 )
 
 type dataLocation struct {
@@ -48,7 +47,7 @@ type CLImages struct {
 	Denoise          bool
 	DenoiseSharpness float64
 	DenoiseAmount    float64
-	HQ2x             bool
+	HQ3x             bool
 }
 
 const (
@@ -634,22 +633,13 @@ func (c *CLImages) Get(id uint32, custom []byte, forceTransparent bool) *ebiten.
 		pix[off+3] = a
 	}
 
-	if c.HQ2x {
-		if scaled, err := hq2x.HQ2x(img); err == nil {
-			copyAlpha2x(scaled, img)
-			if c.Denoise {
-				denoiseImage(scaled, c.DenoiseSharpness, c.DenoiseAmount)
-			}
-			down := image.NewRGBA(img.Bounds())
-			xdraw.ApproxBiLinear.Scale(down, down.Bounds(), scaled, scaled.Bounds(), xdraw.Src, nil)
-			copyAlpha(down, img)
-			img = down
-		} else {
-			log.Printf("hq2x: %v", err)
-			if c.Denoise {
-				denoiseImage(img, c.DenoiseSharpness, c.DenoiseAmount)
-			}
+	if c.HQ3x {
+		scaled := hqx.Hq3x(img).(*image.RGBA)
+		copyAlpha3x(scaled, img)
+		if c.Denoise {
+			denoiseImage(scaled, c.DenoiseSharpness, c.DenoiseAmount)
 		}
+		img = scaled
 	} else if c.Denoise {
 		denoiseImage(img, c.DenoiseSharpness, c.DenoiseAmount)
 	}
@@ -841,30 +831,17 @@ func (c *CLImages) NonTransparentPixels(id uint32) int {
 	return count
 }
 
-func copyAlpha2x(dst, src *image.RGBA) {
+func copyAlpha3x(dst, src *image.RGBA) {
 	w, h := src.Bounds().Dx(), src.Bounds().Dy()
 	for y := 0; y < h; y++ {
 		for x := 0; x < w; x++ {
 			a := src.RGBAAt(x, y).A
-			for dy := 0; dy < 2; dy++ {
-				for dx := 0; dx < 2; dx++ {
-					off := dst.PixOffset(x*2+dx, y*2+dy)
+			for dy := 0; dy < 3; dy++ {
+				for dx := 0; dx < 3; dx++ {
+					off := dst.PixOffset(x*3+dx, y*3+dy)
 					dst.Pix[off+3] = a
 				}
 			}
-		}
-	}
-}
-
-func copyAlpha(dst, src *image.RGBA) {
-	w, h := src.Bounds().Dx(), src.Bounds().Dy()
-	for y := 0; y < h; y++ {
-		srcOff := src.PixOffset(0, y)
-		dstOff := dst.PixOffset(0, y)
-		for x := 0; x < w; x++ {
-			dst.Pix[dstOff+3] = src.Pix[srcOff+3]
-			srcOff += 4
-			dstOff += 4
 		}
 	}
 }
