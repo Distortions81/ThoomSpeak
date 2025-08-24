@@ -42,8 +42,10 @@ You can run the client with flags:
 - `-clmov` - play a recorded `.clMov` movie file
 - `-pcap`  - replay network frames from a `.pcap/.pcapng` (good for testing UI/parse)  
 - `-pgo`   - create `default.pgo` by playing `test.clMov` at 30fps for 30s  
-- `-debug` - verbose logging  
-- `-dumpMusic` - save played music as WAV  
+- `-debug` - verbose logging
+- `-dumpMusic` - save played music as WAV
+- `-imgDump` - dump loaded images as PNG to `dump/img`
+- `-sndDump` - dump loaded sounds as WAV to `dump/snd`
 
 Examples:
 ```bash

@@ -1,8 +1,14 @@
 package main
 
 import (
+	"encoding/csv"
+	"fmt"
 	"image"
+	"image/png"
 	"log"
+	"os"
+	"path/filepath"
+	"strconv"
 	"sync"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -66,6 +72,11 @@ var (
 
 	imageMu  sync.Mutex
 	clImages *climg.CLImages
+
+	dumpImgOnce   sync.Once
+	dumpImgMu     sync.Mutex
+	dumpedImgIDs  = make(map[uint16]struct{})
+	imgMetaWriter *csv.Writer
 )
 
 func makeSheetKey(id uint16, colors []byte, forceTransparent bool) sheetKey {
@@ -123,6 +134,9 @@ func loadSheet(id uint16, colors []byte, forceTransparent bool) *ebiten.Image {
 	if clImages != nil {
 		if img := clImages.Get(uint32(id), colors, forceTransparent); img != nil {
 			statImageLoaded(id)
+			if imgDump && colors == nil && !forceTransparent {
+				dumpImageSheet(id, img)
+			}
 			if gs.NoCaching {
 				return img
 			}
@@ -137,6 +151,65 @@ func loadSheet(id uint16, colors []byte, forceTransparent bool) *ebiten.Image {
 	}
 
 	return nil
+}
+
+func dumpImageSheet(id uint16, sheet *ebiten.Image) {
+	dumpImgOnce.Do(func() {
+		os.MkdirAll(filepath.Join("dump", "img"), 0755)
+		if f, err := os.Create(filepath.Join("dump", "img", "metadata.csv")); err == nil {
+			imgMetaWriter = csv.NewWriter(f)
+			imgMetaWriter.Write([]string{"id", "width", "height", "frames", "flags", "name"})
+		}
+	})
+	dumpImgMu.Lock()
+	if _, ok := dumpedImgIDs[id]; ok {
+		dumpImgMu.Unlock()
+		return
+	}
+	dumpedImgIDs[id] = struct{}{}
+	dumpImgMu.Unlock()
+
+	frames := 1
+	if clImages != nil {
+		frames = clImages.NumFrames(uint32(id))
+	}
+	if frames <= 0 {
+		frames = 1
+	}
+	innerHeight := sheet.Bounds().Dy() - 2
+	innerWidth := sheet.Bounds().Dx() - 2
+	h := innerHeight / frames
+
+	for f := 0; f < frames; f++ {
+		y := 1 + f*h
+		frameImg := sheet.SubImage(image.Rect(1, y, 1+innerWidth, y+h)).(*ebiten.Image)
+		fn := filepath.Join("dump", "img", fmt.Sprintf("%d_%d.png", id, f))
+		if file, err := os.Create(fn); err == nil {
+			png.Encode(file, frameImg)
+			file.Close()
+		}
+	}
+
+	width, height := innerWidth, h
+	var flags uint32
+	var name string
+	if clImages != nil {
+		if it, ok := clImages.Item(uint32(id)); ok {
+			flags = it.Flags
+			name = it.Name
+		}
+	}
+	if imgMetaWriter != nil {
+		imgMetaWriter.Write([]string{
+			strconv.Itoa(int(id)),
+			strconv.Itoa(width),
+			strconv.Itoa(height),
+			strconv.Itoa(frames),
+			strconv.FormatUint(uint64(flags), 10),
+			name,
+		})
+		imgMetaWriter.Flush()
+	}
 }
 
 // loadImage retrieves the first frame for the specified picture ID. Images are

@@ -2,9 +2,14 @@ package main
 
 import (
 	"encoding/binary"
+	"encoding/csv"
+	"fmt"
 	"log"
 	"math"
+	"os"
+	"path/filepath"
 	"runtime"
+	"strconv"
 	"sync"
 
 	"github.com/hajimehoshi/ebiten/v2/audio"
@@ -24,6 +29,11 @@ var (
 
 	audioContext *audio.Context
 	soundPlayers = make(map[*audio.Player]struct{})
+
+	sndDumpOnce   sync.Once
+	sndDumpMu     sync.Mutex
+	dumpedSndIDs  = make(map[uint16]struct{})
+	sndMetaWriter *csv.Writer
 )
 
 // stopAllSounds halts and disposes all currently playing audio players.
@@ -461,6 +471,10 @@ func loadSound(id uint16) []byte {
 		pcm[2*i+1] = byte(v >> 8)
 	}
 
+	if sndDump {
+		dumpSound(id, s, pcm, dstRate)
+	}
+
 	if gs.NoCaching {
 		clSounds.ClearCache()
 	} else {
@@ -470,6 +484,67 @@ func loadSound(id uint16) []byte {
 		//logDebug("loadSound(%d) cached %d bytes", id, len(pcm))
 	}
 	return pcm
+}
+
+func dumpSound(id uint16, s *clsnd.Sound, pcm []byte, rate int) {
+	sndDumpOnce.Do(func() {
+		os.MkdirAll(filepath.Join("dump", "snd"), 0755)
+		if f, err := os.Create(filepath.Join("dump", "snd", "metadata.csv")); err == nil {
+			sndMetaWriter = csv.NewWriter(f)
+			sndMetaWriter.Write([]string{"id", "origRate", "origChannels", "origBits", "bytes"})
+		}
+	})
+	sndDumpMu.Lock()
+	if _, ok := dumpedSndIDs[id]; ok {
+		sndDumpMu.Unlock()
+		return
+	}
+	dumpedSndIDs[id] = struct{}{}
+	sndDumpMu.Unlock()
+
+	fn := filepath.Join("dump", "snd", fmt.Sprintf("%d.wav", id))
+	f, err := os.Create(fn)
+	if err != nil {
+		log.Printf("dump sound %d: %v", id, err)
+		return
+	}
+	defer f.Close()
+
+	dataLen := uint32(len(pcm))
+	var header [44]byte
+	copy(header[0:], []byte("RIFF"))
+	binary.LittleEndian.PutUint32(header[4:], 36+dataLen)
+	copy(header[8:], []byte("WAVE"))
+	copy(header[12:], []byte("fmt "))
+	binary.LittleEndian.PutUint32(header[16:], 16)
+	binary.LittleEndian.PutUint16(header[20:], 1)
+	binary.LittleEndian.PutUint16(header[22:], 1)
+	binary.LittleEndian.PutUint32(header[24:], uint32(rate))
+	binary.LittleEndian.PutUint32(header[28:], uint32(rate*2))
+	binary.LittleEndian.PutUint16(header[32:], 2)
+	binary.LittleEndian.PutUint16(header[34:], 16)
+	copy(header[36:], []byte("data"))
+	binary.LittleEndian.PutUint32(header[40:], dataLen)
+
+	if _, err := f.Write(header[:]); err != nil {
+		log.Printf("dump sound %d header: %v", id, err)
+		return
+	}
+	if _, err := f.Write(pcm); err != nil {
+		log.Printf("dump sound %d data: %v", id, err)
+		return
+	}
+
+	if sndMetaWriter != nil {
+		sndMetaWriter.Write([]string{
+			strconv.Itoa(int(id)),
+			strconv.FormatUint(uint64(s.SampleRate), 10),
+			strconv.FormatUint(uint64(s.Channels), 10),
+			strconv.FormatUint(uint64(s.Bits), 10),
+			strconv.Itoa(len(pcm)),
+		})
+		sndMetaWriter.Flush()
+	}
 }
 
 // soundCacheStats returns the number of cached sounds and total bytes used.
