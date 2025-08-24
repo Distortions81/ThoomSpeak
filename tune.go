@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
 	"strconv"
 	"strings"
 	"sync"
@@ -226,7 +227,7 @@ func eventsToNotes(pt parsedTune, inst instrument, velocity int) []Note {
 			} else {
 				v = v * inst.melody / 100
 			}
-			v = v * ev.volume / 10
+			v = int(float64(v)*math.Sqrt(float64(ev.volume)/10.0) + 0.5)
 			if v < 1 {
 				v = 1
 			} else if v > 127 {
@@ -320,7 +321,7 @@ func parseClanLordTuneWithTempo(s string, tempo int) parsedTune {
 				}
 				if isNoteLetter(s[i]) {
 					k, _ := parseNoteCL(s, &i, &octave)
-					if k != 0 {
+					if k >= 0 {
 						keys = append(keys, k)
 					}
 					continue
@@ -421,7 +422,7 @@ func parseClanLordTuneWithTempo(s string, tempo int) parsedTune {
 		default:
 			if isNoteLetter(c) {
 				k, beats := parseNoteCL(s, &i, &octave)
-				if k != 0 {
+				if k >= 0 {
 					pt.events = append(pt.events, noteEvent{keys: []int{k}, beats: beats, volume: volume})
 				}
 			} else {
@@ -459,8 +460,8 @@ func parseNoteCL(s string, i *int, octave *int) (int, float64) {
 	isUpper := unicode.IsUpper(rune(c))
 	base := noteOffset(unicode.ToLower(rune(c)))
 	if base < 0 {
-		*i++
-		return 0, 0
+		(*i)++
+		return -1, 0
 	}
 	(*i)++
 	pitch := base + ((*octave)+1)*12
