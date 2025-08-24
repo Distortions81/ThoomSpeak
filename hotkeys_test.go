@@ -43,3 +43,28 @@ func TestOpenHotkeyEditorReopenAfterClose(t *testing.T) {
 	}
 	hotkeyEditWin.Close()
 }
+
+// Test that entering a command in the hotkey editor saves correctly.
+func TestHotkeyCommandInput(t *testing.T) {
+	hotkeys = nil
+	dir := t.TempDir()
+	origDir := dataDirPath
+	dataDirPath = dir
+	defer func() { dataDirPath = origDir }()
+
+	openHotkeyEditor(-1)
+	if hotkeyCmdInput == nil {
+		t.Fatalf("command input not initialized")
+	}
+
+	hotkeyComboText.Text = "Ctrl-A"
+	hotkeyCmdInput.Text = "say hi"
+	finishHotkeyEdit(true)
+
+	if len(hotkeys) != 1 {
+		t.Fatalf("hotkey not saved")
+	}
+	if hotkeys[0].Combo != "Ctrl-A" || hotkeys[0].Command != "say hi" {
+		t.Fatalf("unexpected hotkey data: %+v", hotkeys[0])
+	}
+}

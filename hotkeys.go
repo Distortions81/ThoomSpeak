@@ -163,7 +163,8 @@ func openHotkeyEditor(idx int) {
 	cmdLabel.FontSize = 12
 	flow.AddItem(cmdLabel)
 
-	hotkeyCmdInput, cmdEvents := eui.NewInput()
+	var cmdEvents *eui.EventHandler
+	hotkeyCmdInput, cmdEvents = eui.NewInput()
 	hotkeyCmdInput.Size = eui.Point{X: 220, Y: 20}
 	hotkeyCmdInput.FontSize = 12
 	hotkeyCmdInput.Scrollable = true
