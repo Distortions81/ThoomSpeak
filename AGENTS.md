@@ -1,7 +1,7 @@
 # AGENTS
 
 This repo includes a minimal Go client under `gothoom/`. To build or run the Go program you need Go version 1.24 or later.
-
+Do not increment JSON versions in GT_Players.json or settings.json or characters.json. They will be done manually if needed.
 
 ## Installing dependencies
 
