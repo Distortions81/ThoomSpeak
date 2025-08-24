@@ -111,8 +111,8 @@ func TestLoopAndTempoAndVolume(t *testing.T) {
 	if notes[4].Duration != 166*time.Millisecond {
 		t.Fatalf("tempo change not applied, got %v", notes[4].Duration)
 	}
-	// volume change should halve velocity for last note (volume set to 5)
-	if notes[5].Velocity != 50 {
+	// volume change should reduce velocity per square-root scaling (volume set to 5)
+	if notes[5].Velocity != 71 {
 		t.Fatalf("volume change not applied, got %d", notes[5].Velocity)
 	}
 }
@@ -183,5 +183,15 @@ func TestNoteDurationsUncommonTempos(t *testing.T) {
 		if notes[0].Duration != c.want {
 			t.Errorf("tempo %d: duration = %v, want %v", c.tempo, notes[0].Duration, c.want)
 		}
+	}
+}
+
+func TestParseNoteLowestCPreserved(t *testing.T) {
+	pt := parseClanLordTune("\\----c")
+	if len(pt.events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(pt.events))
+	}
+	if len(pt.events[0].keys) != 1 || pt.events[0].keys[0] != 0 {
+		t.Fatalf("expected low C (0), got %+v", pt.events[0].keys)
 	}
 }
