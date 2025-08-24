@@ -67,6 +67,7 @@ const (
 const poseDead = 32
 const maxInterpPixels = 64
 const maxMobileInterpPixels = 64
+const maxPersistImageSize = 256
 
 // sanity limits for parsed counts to avoid excessive allocations or
 // obviously corrupt packets.
@@ -209,6 +210,9 @@ func pictureOnEdge(p framePicture) bool {
 		return false
 	}
 	w, h := clImages.Size(uint32(p.PictID))
+	if w > maxPersistImageSize || h > maxPersistImageSize {
+		return false
+	}
 	halfW := w / 2
 	halfH := h / 2
 	left := int(p.H) - halfW
@@ -219,8 +223,12 @@ func pictureOnEdge(p framePicture) bool {
 		bottom < -fieldCenterY || top > fieldCenterY {
 		return false
 	}
-	if left <= -fieldCenterX || right >= fieldCenterX ||
-		top <= -fieldCenterY || bottom >= fieldCenterY {
+	edgeLeft := left <= -fieldCenterX
+	edgeRight := right >= fieldCenterX
+	edgeTop := top <= -fieldCenterY
+	edgeBottom := bottom >= fieldCenterY
+	if (edgeLeft || edgeRight || edgeTop || edgeBottom) &&
+		!(edgeLeft && edgeRight) && !(edgeTop && edgeBottom) {
 		return true
 	}
 	return false
