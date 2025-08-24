@@ -770,13 +770,8 @@ func drawPonderWaves(screen *ebiten.Image, left, top, right, bottom int, col col
 	corner := float32(10 * gs.GameScale)
 	angleStep := float64(step / corner)
 
-	pad := float32(2 * r)
-	w := right - left
-	h := bottom - top
-	temp := ebiten.NewImage(w+int(pad)*2, h+int(pad)*2)
-
 	draw := func(cx, cy float32) {
-		drawBubbleCircle(temp, cx-float32(left)+pad, cy-float32(top)+pad, r, col)
+		drawBubbleCircle(screen, cx, cy, r, col)
 	}
 
 	// top edge
@@ -835,10 +830,6 @@ func drawPonderWaves(screen *ebiten.Image, left, top, right, bottom int, col col
 		offset := float32(math.Sin(phase+a)) * r * 0.3
 		draw(cx+offset*nx, cy+offset*ny)
 	}
-
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(float64(left)-float64(pad), float64(top)-float64(pad))
-	screen.DrawImage(temp, op)
 }
 
 // drawBubbleCircle draws a filled circle used by the wavy ponder bubble edges.
