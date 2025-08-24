@@ -816,12 +816,25 @@ func updateCharacterButtons() {
 			avItem.Margin = 4
 			avItem.Border = 0
 			avItem.Filled = false
+			var img *ebiten.Image
 			if c.PictID != 0 {
 				if m := loadMobileFrame(c.PictID, 0, c.Colors); m != nil {
-					avItem.Image = m
+					img = m
 				} else if im := loadImage(c.PictID); im != nil {
-					avItem.Image = im
+					img = im
 				}
+			}
+			if img == nil {
+				if gid := defaultMobilePictID(genderUnknown); gid != 0 {
+					if m := loadMobileFrame(gid, 0, nil); m != nil {
+						img = m
+					} else if im := loadImage(gid); im != nil {
+						img = im
+					}
+				}
+			}
+			if img != nil {
+				avItem.Image = img
 			}
 			row.AddItem(avItem)
 
