@@ -32,3 +32,29 @@ func TestScrambleHashRoundTrip(t *testing.T) {
 		t.Fatalf("unscrambleHash returned %q, want %q", dec, hash)
 	}
 }
+
+func TestSaveLoadCharactersAppearanceProfession(t *testing.T) {
+	dir := t.TempDir()
+	orig := dataDirPath
+	dataDirPath = dir
+	defer func() { dataDirPath = orig }()
+
+	characters = []Character{{Name: "Hero", PictID: 123, Colors: []byte{1, 2, 3}, Profession: "fighter"}}
+	saveCharacters()
+
+	characters = nil
+	loadCharacters()
+	if len(characters) != 1 {
+		t.Fatalf("expected 1 character, got %d", len(characters))
+	}
+	c := characters[0]
+	if c.PictID != 123 {
+		t.Fatalf("expected pict 123, got %d", c.PictID)
+	}
+	if c.Profession != "fighter" {
+		t.Fatalf("expected profession fighter, got %q", c.Profession)
+	}
+	if len(c.Colors) != 3 || c.Colors[0] != 1 || c.Colors[1] != 2 || c.Colors[2] != 3 {
+		t.Fatalf("unexpected colors: %v", c.Colors)
+	}
+}

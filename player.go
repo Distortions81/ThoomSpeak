@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"strings"
 	"sync"
 	"time"
 )
@@ -71,6 +73,26 @@ func updatePlayerAppearance(name string, pictID uint16, colors []byte, isNPC boo
 	p.Offline = false
 	playersMu.Unlock()
 	playersDirty = true
+
+	if playerName != "" && strings.EqualFold(name, playerName) {
+		changed := false
+		for i := range characters {
+			if strings.EqualFold(characters[i].Name, name) {
+				if characters[i].PictID != pictID {
+					characters[i].PictID = pictID
+					changed = true
+				}
+				if len(colors) > 0 && !bytes.Equal(characters[i].Colors, colors) {
+					characters[i].Colors = append(characters[i].Colors[:0], colors...)
+					changed = true
+				}
+				if changed {
+					saveCharacters()
+				}
+				break
+			}
+		}
+	}
 }
 
 func getPlayers() []Player {
