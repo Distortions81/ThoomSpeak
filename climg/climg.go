@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	hq2x "github.com/pokemium/hq2xgo"
 )
 
 type dataLocation struct {
@@ -46,6 +47,7 @@ type CLImages struct {
 	Denoise          bool
 	DenoiseSharpness float64
 	DenoiseAmount    float64
+	HQ2x             bool
 }
 
 const (
@@ -633,6 +635,13 @@ func (c *CLImages) Get(id uint32, custom []byte, forceTransparent bool) *ebiten.
 
 	if c.Denoise {
 		denoiseImage(img, c.DenoiseSharpness, c.DenoiseAmount)
+	}
+	if c.HQ2x {
+		if scaled, err := hq2x.HQ2x(img); err == nil {
+			img = scaled
+		} else {
+			log.Printf("hq2x: %v", err)
+		}
 	}
 
 	eimg := newImageFromImage(img)

@@ -40,6 +40,7 @@ var (
 	musicDebug    bool
 	clientVersion int
 	experimental  bool
+	hq2xSprites   bool
 )
 
 func main() {
@@ -53,6 +54,7 @@ func main() {
 	flag.BoolVar(&dumpBEPPTags, "dumpBEPPTags", false, "log BEPP tags seen (for empirical analysis)")
 	flag.BoolVar(&musicDebug, "musicDebug", false, "show bard music messages in chat")
 	flag.BoolVar(&experimental, "experimental", false, "enable experimental features like CL_Images/CL_Sounds patching")
+	flag.BoolVar(&hq2xSprites, "hq2x", false, "try HQX 2x upscaling on sprites")
 	genPGO := flag.Bool("pgo", false, "create default.pgo using test.clMov at 30 fps for 30s")
 	flag.Parse()
 
@@ -125,6 +127,7 @@ func main() {
 		clImages.Denoise = gs.DenoiseImages
 		clImages.DenoiseSharpness = gs.DenoiseSharpness
 		clImages.DenoiseAmount = gs.DenoiseAmount
+		clImages.HQ2x = hq2xSprites
 	}
 
 	clSounds, err = clsnd.Load(filepath.Join("data/CL_Sounds"))

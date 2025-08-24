@@ -267,6 +267,7 @@ func applySettings() {
 		clImages.Denoise = gs.DenoiseImages
 		clImages.DenoiseSharpness = gs.DenoiseSharpness
 		clImages.DenoiseAmount = gs.DenoiseAmount
+		clImages.HQ2x = hq2xSprites
 	}
 	ebiten.SetVsyncEnabled(gs.vsync)
 	ebiten.SetFullscreen(gs.Fullscreen)
