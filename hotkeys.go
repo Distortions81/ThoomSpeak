@@ -43,6 +43,7 @@ func loadHotkeys() {
 		return
 	}
 	_ = json.Unmarshal(data, &hotkeys)
+	refreshHotkeysList()
 }
 
 func saveHotkeys() {
