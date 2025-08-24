@@ -2,14 +2,16 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"gothoom/eui"
+
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
-	"gothoom/eui"
 )
 
 const hotkeysFile = "global-hotkeys.json"
@@ -291,7 +293,7 @@ func mouseButtonName(b ebiten.MouseButton) string {
 	case ebiten.MouseButtonMiddle:
 		return "MiddleClick"
 	default:
-		return "Mouse" + b.String()
+		return fmt.Sprintf("Mouse %d", b)
 	}
 }
 
