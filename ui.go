@@ -143,6 +143,8 @@ func initUI() {
 		logError("check data files: %v", err)
 	}
 
+	loadHotkeys()
+
 	makeGameWindow()
 	makeDownloadsWindow()
 	makeLoginWindow()
@@ -158,6 +160,7 @@ func initUI() {
 	makeWindowsWindow()
 	makeInventoryWindow()
 	makePlayersWindow()
+	makeHotkeysWindow()
 	makeToolbar()
 
 	// Load any persisted players data (e.g., from prior sessions) so
@@ -214,6 +217,17 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 		}
 	}
 	row1.AddItem(helpBtn)
+
+	hotBtn, hotEvents := eui.NewButton()
+	hotBtn.Text = "Hotkeys"
+	hotBtn.Size = eui.Point{X: buttonWidth, Y: buttonHeight}
+	hotBtn.FontSize = toolFontSize
+	hotEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			hotkeysWin.ToggleNear(ev.Item)
+		}
+	}
+	row1.AddItem(hotBtn)
 
 	shotBtn, shotEvents := eui.NewButton()
 	shotBtn.Text = "Snapshot"
