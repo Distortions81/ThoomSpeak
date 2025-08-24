@@ -210,10 +210,16 @@ func pictureOnEdge(p framePicture) bool {
 	w, h := clImages.Size(uint32(p.PictID))
 	halfW := w / 2
 	halfH := h / 2
-	if int(p.H)-halfW <= -fieldCenterX ||
-		int(p.H)+halfW >= fieldCenterX ||
-		int(p.V)-halfH <= -fieldCenterY ||
-		int(p.V)+halfH >= fieldCenterY {
+	left := int(p.H) - halfW
+	right := int(p.H) + halfW
+	top := int(p.V) - halfH
+	bottom := int(p.V) + halfH
+	if right < -fieldCenterX || left > fieldCenterX ||
+		bottom < -fieldCenterY || top > fieldCenterY {
+		return false
+	}
+	if left <= -fieldCenterX || right >= fieldCenterX ||
+		top <= -fieldCenterY || bottom >= fieldCenterY {
 		return true
 	}
 	return false
