@@ -26,7 +26,8 @@ func showNotification(msg string) {
 	btn.FontSize = float32(gs.ChatFontSize)
 	btn.Filled = true
 	btn.Outlined = false
-	btn.Color = eui.NewColor(0, 0, 0, 160)
+	alpha := uint8(gs.BubbleOpacity * 255)
+	btn.Color = eui.NewColor(0, 0, 0, alpha)
 	btn.TextColor = eui.NewColor(255, 255, 255, 255)
 	btn.HoverColor = btn.Color
 	btn.ClickColor = btn.Color
