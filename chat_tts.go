@@ -43,20 +43,20 @@ func speakChatMessage(msg string) {
 
 		rc, err := ttsspeech.FromText(text, "en")
 		if err != nil {
-			logDebug("chat tts: %v", err)
+			logError("chat tts: %v", err)
 			return
 		}
 		defer rc.Close()
 
 		stream, err := mp3.DecodeWithSampleRate(44100, rc)
 		if err != nil {
-			logDebug("chat tts decode: %v", err)
+			logError("chat tts decode: %v", err)
 			return
 		}
 
 		p, err := audioContext.NewPlayer(stream)
 		if err != nil {
-			logDebug("chat tts player: %v", err)
+			logError("chat tts player: %v", err)
 			return
 		}
 
