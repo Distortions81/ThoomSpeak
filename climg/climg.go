@@ -612,12 +612,13 @@ func (c *CLImages) Get(id uint32, custom []byte, forceTransparent bool) *ebiten.
 	pix := img.Pix
 	stride := img.Stride
 	for i := 0; i < pixelCount; i++ {
-		idx := col[data[i]]
+		src := data[i]
+		idx := col[src]
 		r := uint8(pal[idx*3])
 		g := uint8(pal[idx*3+1])
 		b := uint8(pal[idx*3+2])
 		a := alpha
-		if idx == 0 && transparent {
+		if src == 0 && transparent {
 			a = 0
 		}
 		// Ebiten expects premultiplied alpha values.
@@ -812,10 +813,9 @@ func (c *CLImages) NonTransparentPixels(id uint32) int {
 		return len(data)
 	}
 
-	col := colLoc.colorBytes
 	count := 0
 	for _, idx := range data {
-		if col[idx] != 0 {
+		if idx != 0 {
 			count++
 		}
 	}
