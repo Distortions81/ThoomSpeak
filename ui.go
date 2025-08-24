@@ -158,6 +158,7 @@ func initUI() {
 	makeWindowsWindow()
 	makeInventoryWindow()
 	makePlayersWindow()
+	makeHotkeysWindow()
 	makeToolbar()
 
 	// Load any persisted players data (e.g., from prior sessions) so
@@ -203,6 +204,17 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 		}
 	}
 	row1.AddItem(btn)
+
+	hotkeysBtn, hotkeysEvents := eui.NewButton()
+	hotkeysBtn.Text = "Hotkeys"
+	hotkeysBtn.Size = eui.Point{X: buttonWidth, Y: buttonHeight}
+	hotkeysBtn.FontSize = toolFontSize
+	hotkeysEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			hotkeysWin.ToggleNear(ev.Item)
+		}
+	}
+	row1.AddItem(hotkeysBtn)
 
 	helpBtn, helpEvents := eui.NewButton()
 	helpBtn.Text = "Help"
