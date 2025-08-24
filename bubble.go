@@ -166,6 +166,13 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 			tail.MoveTo(cx1+r1, cy1)
 			tail.Arc(cx1, cy1, r1, 0, 2*math.Pi, vector.Clockwise)
 			tail.Close()
+			rMid := r1 * 0.6
+			offsetMid := rMid * 0.5 * float32(math.Sin(phase+math.Pi/4))
+			cxMid := float32(baseX+tailX) / 2
+			cyMid := float32(bottom+tailY)/2 - offsetMid
+			tail.MoveTo(cxMid+rMid, cyMid)
+			tail.Arc(cxMid, cyMid, rMid, 0, 2*math.Pi, vector.Clockwise)
+			tail.Close()
 			r2 := float32(tailHalf) / 2
 			offset2 := r2 * 0.6 * float32(math.Sin(phase+math.Pi/2))
 			cx2 := float32(tailX)
@@ -245,12 +252,14 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 		}
 		drawSpikes(screen, float32(left), float32(top), float32(right), float32(bottom), radius, float32(gs.GameScale*3), borderCol, gapStart, gapEnd)
 	} else if bubbleType == kBubbleMonster {
-		tailStart := float32(baseX - tailHalf)
-		tailEnd := float32(baseX + tailHalf)
-		if far || noArrow {
-			tailStart, tailEnd = -1, -1
+		gapStart, gapEnd := float32(0), float32(0)
+		if !far && !noArrow {
+			gapStart = float32(baseX - tailHalf)
+			gapEnd = float32(baseX + tailHalf)
+		} else {
+			gapStart, gapEnd = -1, -1
 		}
-		drawJagged(screen, float32(left), float32(top), float32(right), float32(bottom), radius, float32(gs.GameScale*2), tailStart, tailEnd, borderCol)
+		drawMonsterSpikes(screen, float32(left), float32(top), float32(right), float32(bottom), radius, float32(gs.GameScale*4), borderCol, gapStart, gapEnd)
 	}
 
 	textTop := top + pad
@@ -393,6 +402,167 @@ func drawSpikes(screen *ebiten.Image, left, top, right, bottom, radius, size flo
 					next = end
 				}
 				mid := a + (next-a)/2
+				x1 := cx + radius*float32(math.Cos(a))
+				y1 := cy + radius*float32(math.Sin(a))
+				x2 := cx + radius*float32(math.Cos(next))
+				y2 := cy + radius*float32(math.Sin(next))
+				mx := cx + (radius+spike)*float32(math.Cos(mid))
+				my := cy + (radius+spike)*float32(math.Sin(mid))
+
+				var p vector.Path
+				p.MoveTo(x1, y1)
+				p.LineTo(mx, my)
+				p.LineTo(x2, y2)
+				p.Close()
+				vs, is := p.AppendVerticesAndIndicesForFilling(nil, nil)
+				for i := range vs {
+					vs[i].SrcX = 0
+					vs[i].SrcY = 0
+					vs[i].ColorR = float32(bdR) / 0xffff
+					vs[i].ColorG = float32(bdG) / 0xffff
+					vs[i].ColorB = float32(bdB) / 0xffff
+					vs[i].ColorA = float32(bdA) / 0xffff
+				}
+				screen.DrawTriangles(vs, is, whiteImage, op)
+			}
+		}
+
+		corner(left+radius, top+radius, math.Pi, 1.5*math.Pi)
+		corner(right-radius, top+radius, 1.5*math.Pi, 2*math.Pi)
+		corner(right-radius, bottom-radius, 0, 0.5*math.Pi)
+		corner(left+radius, bottom-radius, 0.5*math.Pi, math.Pi)
+	}
+}
+
+// drawMonsterSpikes renders uneven spikes around a bubble for monster speech.
+// Each spike varies in length to create a more chaotic cartoon effect.
+func drawMonsterSpikes(screen *ebiten.Image, left, top, right, bottom, radius, size float32, col color.Color, bottomGapStart, bottomGapEnd float32) {
+	bdR, bdG, bdB, bdA := col.RGBA()
+	step := size
+	phase := float64(time.Now().UnixNano()) / float64(time.Second)
+	op := &ebiten.DrawTrianglesOptions{ColorScaleMode: ebiten.ColorScaleModePremultipliedAlpha, AntiAlias: true}
+
+	startX := left + radius
+	endX := right - radius
+	// top edge
+	for x := startX; x < endX; x += step {
+		spike := size * (0.7 + 0.3*float32(math.Sin(phase+float64(x))))
+		end := x + step
+		mid := x + step/2
+		if end > endX {
+			end = endX
+			mid = x + (end-x)/2
+		}
+
+		var p vector.Path
+		p.MoveTo(x, top)
+		p.LineTo(mid, top-spike)
+		p.LineTo(end, top)
+		p.Close()
+		vs, is := p.AppendVerticesAndIndicesForFilling(nil, nil)
+		for i := range vs {
+			vs[i].SrcX = 0
+			vs[i].SrcY = 0
+			vs[i].ColorR = float32(bdR) / 0xffff
+			vs[i].ColorG = float32(bdG) / 0xffff
+			vs[i].ColorB = float32(bdB) / 0xffff
+			vs[i].ColorA = float32(bdA) / 0xffff
+		}
+		screen.DrawTriangles(vs, is, whiteImage, op)
+	}
+
+	// bottom edge (split around gap)
+	if bottomGapStart < startX {
+		bottomGapStart = startX
+	}
+	if bottomGapEnd > endX {
+		bottomGapEnd = endX
+	}
+	drawBottom := func(segStart, segEnd float32) {
+		for x := segStart; x < segEnd; x += step {
+			spike := size * (0.7 + 0.3*float32(math.Sin(phase+float64(x))))
+			end := x + step
+			mid := x + step/2
+			if end > segEnd {
+				end = segEnd
+				mid = x + (end-x)/2
+			}
+
+			var p vector.Path
+			p.MoveTo(x, bottom)
+			p.LineTo(mid, bottom+spike)
+			p.LineTo(end, bottom)
+			p.Close()
+			vs, is := p.AppendVerticesAndIndicesForFilling(nil, nil)
+			for i := range vs {
+				vs[i].SrcX = 0
+				vs[i].SrcY = 0
+				vs[i].ColorR = float32(bdR) / 0xffff
+				vs[i].ColorG = float32(bdG) / 0xffff
+				vs[i].ColorB = float32(bdB) / 0xffff
+				vs[i].ColorA = float32(bdA) / 0xffff
+			}
+			screen.DrawTriangles(vs, is, whiteImage, op)
+		}
+	}
+	drawBottom(startX, bottomGapStart)
+	drawBottom(bottomGapEnd, endX)
+
+	startY := top + radius
+	endY := bottom - radius
+	// left and right edges
+	for y := startY; y < endY; y += step {
+		spike := size * (0.7 + 0.3*float32(math.Sin(phase+float64(y))))
+		end := y + step
+		mid := y + step/2
+		if end > endY {
+			end = endY
+			mid = y + (end-y)/2
+		}
+
+		var p vector.Path
+		p.MoveTo(left, y)
+		p.LineTo(left-spike, mid)
+		p.LineTo(left, end)
+		p.Close()
+		vs, is := p.AppendVerticesAndIndicesForFilling(nil, nil)
+		for i := range vs {
+			vs[i].SrcX = 0
+			vs[i].SrcY = 0
+			vs[i].ColorR = float32(bdR) / 0xffff
+			vs[i].ColorG = float32(bdG) / 0xffff
+			vs[i].ColorB = float32(bdB) / 0xffff
+			vs[i].ColorA = float32(bdA) / 0xffff
+		}
+		screen.DrawTriangles(vs, is, whiteImage, op)
+
+		p = vector.Path{}
+		p.MoveTo(right, y)
+		p.LineTo(right+spike, mid)
+		p.LineTo(right, end)
+		p.Close()
+		vs, is = p.AppendVerticesAndIndicesForFilling(nil, nil)
+		for i := range vs {
+			vs[i].SrcX = 0
+			vs[i].SrcY = 0
+			vs[i].ColorR = float32(bdR) / 0xffff
+			vs[i].ColorG = float32(bdG) / 0xffff
+			vs[i].ColorB = float32(bdB) / 0xffff
+			vs[i].ColorA = float32(bdA) / 0xffff
+		}
+		screen.DrawTriangles(vs, is, whiteImage, op)
+	}
+
+	if radius > 0 {
+		corner := func(cx, cy float32, start, end float64) {
+			stepAngle := float64(step) / float64(radius)
+			for a := start; a < end; a += stepAngle {
+				next := a + stepAngle
+				if next > end {
+					next = end
+				}
+				mid := a + (next-a)/2
+				spike := size * (0.7 + 0.3*float32(math.Sin(phase+mid)))
 				x1 := cx + radius*float32(math.Cos(a))
 				y1 := cy + radius*float32(math.Sin(a))
 				x2 := cx + radius*float32(math.Cos(next))
@@ -594,10 +764,10 @@ func drawJagged(screen *ebiten.Image, left, top, right, bottom, radius, size, ta
 // small circles. The circles animate slowly to give the bubble a gentle
 // shimmering effect.
 func drawPonderWaves(screen *ebiten.Image, left, top, right, bottom int, col color.Color) {
-	r := float32(4 * gs.GameScale)
-	step := r * 1.5
+	r := float32(6 * gs.GameScale)
+	step := r * 1.2
 	phase := float64(time.Now().UnixNano()) / float64(time.Second)
-	corner := float32(8 * gs.GameScale)
+	corner := float32(10 * gs.GameScale)
 	angleStep := float64(step / corner)
 
 	// top edge
