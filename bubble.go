@@ -120,6 +120,9 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 
 	sw := int(float64(gameAreaSizeX) * gs.GameScale)
 	sh := int(float64(gameAreaSizeY) * gs.GameScale)
+	if tailX < 0 || tailX >= sw || tailY < 0 || tailY >= sh {
+		noArrow = true
+	}
 	pad := int((4 + 2) * gs.GameScale)
 	tailHeight := int(10 * gs.GameScale)
 	tailHalf := int(6 * gs.GameScale)
