@@ -128,6 +128,22 @@ func TestEventsToNotesLoop(t *testing.T) {
 	}
 }
 
+// TestLoopSeamlessRepeat ensures that looping a sequence starting with a note
+// does not introduce an extra rest between iterations when no explicit rest is
+// present at the loop boundary.
+func TestLoopSeamlessRepeat(t *testing.T) {
+	pt := parseClanLordTune("(c)2")
+	inst := instrument{program: 0, octave: 0, chord: 100, melody: 100}
+	notes := eventsToNotes(pt, inst, 100)
+	if len(notes) != 2 {
+		t.Fatalf("expected 2 notes, got %d", len(notes))
+	}
+	gap := notes[1].Start - notes[0].Start - notes[0].Duration
+	if gap != 0 {
+		t.Fatalf("gap between loop iterations = %v, want 0", gap)
+	}
+}
+
 func TestNoteDurationsWithTempoChange(t *testing.T) {
 	tune := "c d1 @+60 E g2"
 	pt := parseClanLordTuneWithTempo(tune, 120)
