@@ -1224,6 +1224,11 @@ func makeLoginWindow() {
 	}
 	loginFlow.AddItem(openBtn)
 
+	spacer, _ := eui.NewText()
+	spacer.Text = ""
+	spacer.Size = eui.Point{X: 1, Y: 8}
+	loginFlow.AddItem(spacer)
+
 	demoBtn, demoEvents := eui.NewButton()
 	demoBtn.Text = "Try the demo"
 	demoBtn.Size = eui.Point{X: charWinWidth, Y: 24}
@@ -1245,6 +1250,11 @@ func makeLoginWindow() {
 		}
 	}
 	loginFlow.AddItem(demoBtn)
+
+	spacer, _ = eui.NewText()
+	spacer.Text = ""
+	spacer.Size = eui.Point{X: 1, Y: 8}
+	loginFlow.AddItem(spacer)
 
 	quitBttn, quitEvn := eui.NewButton()
 	quitBttn.Text = "Quit"
