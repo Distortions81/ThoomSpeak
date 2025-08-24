@@ -313,8 +313,8 @@ func buildNameTagImage(name string, colorCode uint8, opacity uint8, style uint8)
 // included) and weighted by their non-transparent pixel counts. The returned
 // slice contains the indexes within the current frame that contributed to the
 // winning movement. The boolean result is false when no majority offset is
-// found.
-func pictureShift(prev, cur []framePicture) (int, int, []int, bool) {
+// found. max sets the maximum allowed pixel delta for the returned shift.
+func pictureShift(prev, cur []framePicture, max int) (int, int, []int, bool) {
 	if len(prev) == 0 || len(cur) == 0 {
 		//logDebug("pictureShift: no data prev=%d cur=%d", len(prev), len(cur))
 		return 0, 0, nil, false
@@ -393,7 +393,7 @@ func pictureShift(prev, cur []framePicture) (int, int, []int, bool) {
 		logDebug("pictureShift: no majority best=%d total=%d", bestCount, total)
 		return 0, 0, nil, false
 	}
-	if best[0]*best[0]+best[1]*best[1] > maxInterpPixels*maxInterpPixels {
+	if best[0]*best[0]+best[1]*best[1] > max*max {
 		logDebug("pictureShift: motion too large (%d,%d)", best[0], best[1])
 		return 0, 0, nil, false
 	}
@@ -634,6 +634,10 @@ func parseDrawState(data []byte, buildCache bool) error {
 	ackFrame = int32(binary.BigEndian.Uint32(data[1:5]))
 	resendFrame = int32(binary.BigEndian.Uint32(data[5:9]))
 	dropped := updateFrameCounters(ackFrame)
+	extra := dropped
+	if extra > 2 {
+		extra = 2
+	}
 	p := 9
 
 	stage = "descriptor count"
@@ -794,6 +798,7 @@ func parseDrawState(data []byte, buildCache bool) error {
 
 	stateMu.Lock()
 	state.ackCmd = ackCmd
+	state.dropped = extra
 	state.lightingFlags = lighting
 	state.prevHP = state.hp
 	state.prevHPMax = state.hpMax
@@ -847,7 +852,8 @@ func parseDrawState(data []byte, buildCache bool) error {
 	for i := again; i < len(newPics); i++ {
 		newPics[i].Again = false
 	}
-	dx, dy, bgIdxs, ok := pictureShift(prevPics, newPics)
+	maxInterp := maxInterpPixels * (extra + 1)
+	dx, dy, bgIdxs, ok := pictureShift(prevPics, newPics, maxInterp)
 	if gs.MotionSmoothing && !seekingMov {
 		if gs.smoothMoving {
 			logDebug("interp pictures again=%d prev=%d cur=%d shift=(%d,%d) ok=%t", again, len(prevPics), len(newPics), dx, dy, ok)
@@ -917,7 +923,7 @@ func parseDrawState(data []byte, buildCache bool) error {
 			moving = false
 		}
 		if moving && gs.smoothMoving {
-			bestDist := maxInterpPixels*maxInterpPixels + 1
+			bestDist := maxInterp*maxInterp + 1
 			var best *framePicture
 			for j := range prevPics {
 				pp := &prevPics[j]
@@ -932,7 +938,7 @@ func parseDrawState(data []byte, buildCache bool) error {
 					best = pp
 				}
 			}
-			if best != nil && bestDist <= maxInterpPixels*maxInterpPixels {
+			if best != nil && bestDist <= maxInterp*maxInterp {
 				newPics[i].PrevH = best.H
 				newPics[i].PrevV = best.V
 				best.Owned = true
@@ -1009,10 +1015,6 @@ func parseDrawState(data []byte, buildCache bool) error {
 		}
 		if interval <= 0 {
 			interval = time.Second / 5
-		}
-		extra := dropped
-		if extra > 2 {
-			extra = 2
 		}
 		interval *= time.Duration(extra + 1)
 		//logDebug("interp mobiles interval=%v extra=%d", interval, extra)
