@@ -30,8 +30,32 @@ func init() {
 
 // adjustBubbleRect calculates the on-screen rectangle for a bubble and clamps
 // it to the visible area. The tail tip coordinates remain unchanged and must
-// be handled by the caller if needed.
-func adjustBubbleRect(x, y, width, height, tailHeight, sw, sh int, far bool) (left, top, right, bottom int) {
+// be handled by the caller if needed. When arrowUp is true the tail points
+// upward from the top edge of the bubble instead of downward from the bottom.
+func adjustBubbleRect(x, y, width, height, tailHeight, sw, sh int, far bool, arrowUp bool) (left, top, right, bottom int) {
+	if arrowUp {
+		top = y
+		if !far {
+			top = y + tailHeight
+		}
+		left = x - width/2
+		if left < 0 {
+			left = 0
+		}
+		if left+width > sw {
+			left = sw - width
+		}
+		if top < 0 {
+			top = 0
+		}
+		if top+height > sh {
+			top = sh - height
+		}
+		right = left + width
+		bottom = top + height
+		return
+	}
+
 	bottom = y
 	if !far {
 		bottom = y - tailHeight
@@ -139,14 +163,15 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 	width += 2 * pad
 	height := lineHeight*len(lines) + 2*pad
 
-	left, top, right, bottom := adjustBubbleRect(x, y, width, height, tailHeight, sw, sh, far)
+	arrowUp := bubbleType == kBubbleThought
+	left, top, right, bottom := adjustBubbleRect(x, y, width, height, tailHeight, sw, sh, far, arrowUp)
 	baseX := left + width/2
 
 	bgR, bgG, bgB, bgA := bgCol.RGBA()
 	bdR, bdG, bdB, bdA := borderCol.RGBA()
 
 	radius := float32(4 * gs.GameScale)
-	if bubbleType == kBubblePonder {
+	if bubbleType == kBubblePonder || bubbleType == kBubbleThought {
 		radius = float32(8 * gs.GameScale)
 	}
 
@@ -164,33 +189,39 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 
 	var tail vector.Path
 	if !far && !noArrow {
-		if bubbleType == kBubblePonder {
+		arrowDir := float32(1)
+		baseY := float32(bottom)
+		if arrowUp {
+			arrowDir = -1
+			baseY = float32(top)
+		}
+		if bubbleType == kBubblePonder || bubbleType == kBubbleThought {
 			r1 := float32(tailHalf)
 			phase := float64(time.Now().UnixNano()) / float64(time.Second)
 			offset1 := r1 * 0.3 * float32(math.Sin(phase))
 			cx1 := float32(baseX)
-			cy1 := float32(bottom) + r1 - offset1
+			cy1 := baseY + arrowDir*(r1-offset1)
 			tail.MoveTo(cx1+r1, cy1)
 			tail.Arc(cx1, cy1, r1, 0, 2*math.Pi, vector.Clockwise)
 			tail.Close()
 			rMid := r1 * 0.6
 			offsetMid := rMid * 0.5 * float32(math.Sin(phase+math.Pi/4))
 			cxMid := float32(baseX+tailX) / 2
-			cyMid := float32(bottom+tailY)/2 - offsetMid
+			cyMid := (baseY+float32(tailY))/2 - arrowDir*offsetMid
 			tail.MoveTo(cxMid+rMid, cyMid)
 			tail.Arc(cxMid, cyMid, rMid, 0, 2*math.Pi, vector.Clockwise)
 			tail.Close()
 			r2 := float32(tailHalf) / 2
 			offset2 := r2 * 0.6 * float32(math.Sin(phase+math.Pi/2))
 			cx2 := float32(tailX)
-			cy2 := float32(tailY) - offset2
+			cy2 := float32(tailY) - arrowDir*offset2
 			tail.MoveTo(cx2+r2, cy2)
 			tail.Arc(cx2, cy2, r2, 0, 2*math.Pi, vector.Clockwise)
 			tail.Close()
 		} else {
-			tail.MoveTo(float32(baseX-tailHalf), float32(bottom))
+			tail.MoveTo(float32(baseX-tailHalf), baseY)
 			tail.LineTo(float32(tailX), float32(tailY))
-			tail.LineTo(float32(baseX+tailHalf), float32(bottom))
+			tail.LineTo(float32(baseX+tailHalf), baseY)
 			tail.Close()
 		}
 	}
@@ -219,7 +250,7 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 		vs[i].ColorA = float32(bgA) / 0xffff
 	}
 	screen.DrawTriangles(vs, is, whiteImage, op)
-	if bubbleType != kBubblePonder {
+	if bubbleType != kBubblePonder && bubbleType != kBubbleThought {
 		var outline vector.Path
 		outline.MoveTo(float32(left)+radius, float32(top))
 		outline.LineTo(float32(right)-radius, float32(top))
@@ -227,9 +258,13 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 		outline.LineTo(float32(right), float32(bottom)-radius)
 		outline.Arc(float32(right)-radius, float32(bottom)-radius, radius, 0, math.Pi/2, vector.Clockwise)
 		if !far && !noArrow {
-			outline.LineTo(float32(baseX+tailHalf), float32(bottom))
+			baseY := float32(bottom)
+			if arrowUp {
+				baseY = float32(top)
+			}
+			outline.LineTo(float32(baseX+tailHalf), baseY)
 			outline.LineTo(float32(tailX), float32(tailY))
-			outline.LineTo(float32(baseX-tailHalf), float32(bottom))
+			outline.LineTo(float32(baseX-tailHalf), baseY)
 		}
 		outline.LineTo(float32(left)+radius, float32(bottom))
 		outline.Arc(float32(left)+radius, float32(bottom)-radius, radius, math.Pi/2, math.Pi, vector.Clockwise)
