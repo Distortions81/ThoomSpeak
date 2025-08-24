@@ -72,25 +72,36 @@ func SetScreenSize(w, h int) {
 func ScreenSize() (int, int) { return screenWidth, screenHeight }
 
 // SetFontSource sets the text face source used when rendering text.
-func SetFontSource(src *text.GoTextFaceSource) {
-	mplusFaceSource = src
-	faceCache = map[float64]*text.GoTextFace{}
+func SetFontSource(src *text.GoTextFaceSource) { SetFontSources(src) }
+
+// SetFontSources sets the text face sources used when rendering text.
+func SetFontSources(srcs ...*text.GoTextFaceSource) {
+	mplusFaceSources = srcs
+	faceCache = map[float64]text.Face{}
 }
 
-// FontSource returns the current text face source.
-func FontSource() *text.GoTextFaceSource { return mplusFaceSource }
+// FontSource returns the primary text face source.
+func FontSource() *text.GoTextFaceSource {
+	if len(mplusFaceSources) > 0 {
+		return mplusFaceSources[0]
+	}
+	return nil
+}
+
+// FontSources returns the current text face sources.
+func FontSources() []*text.GoTextFaceSource { return mplusFaceSources }
 
 // EnsureFontSource initializes the font source from ttf data if needed.
 func EnsureFontSource(ttf []byte) error {
-	if mplusFaceSource != nil {
+	if len(mplusFaceSources) > 0 {
 		return nil
 	}
 	s, err := text.NewGoTextFaceSource(bytes.NewReader(ttf))
 	if err != nil {
 		return err
 	}
-	mplusFaceSource = s
-	faceCache = map[float64]*text.GoTextFace{}
+	mplusFaceSources = []*text.GoTextFaceSource{s}
+	faceCache = map[float64]text.Face{}
 	return nil
 }
 
