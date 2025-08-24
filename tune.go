@@ -14,7 +14,7 @@ const (
 	defaultInstrument    = 10
 	durationBlack        = 2.0
 	durationWhite        = 4.0
-	defaultChordDuration = 4.0
+	defaultChordDuration = 2.0
 )
 
 // instruments holds the instrument table extracted from the classic client.

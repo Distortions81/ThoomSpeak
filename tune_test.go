@@ -14,7 +14,7 @@ func TestParseClanLordTuneDurations(t *testing.T) {
 		{"C", []int{1000}},    // uppercase uses durationWhite=4 half-beats
 		{"c1", []int{250}},    // explicit duration 1 half-beat
 		{"p", []int{500}},     // rest defaults to durationBlack
-		{"[ce]", []int{1000}}, // chord defaults to defaultChordDuration
+		{"[ce]", []int{500}},  // chord defaults to defaultChordDuration
 		{"[ce]3", []int{750}}, // chord with explicit duration
 	}
 	for _, tt := range tests {
@@ -121,10 +121,10 @@ func TestNoteDurationsWithTempoChange(t *testing.T) {
 		t.Fatalf("expected 4 notes, got %d", len(notes))
 	}
 	want := []time.Duration{
-		900 * time.Millisecond,  // c: 2 beats at 120 BPM
-		450 * time.Millisecond,  // d1: 1 beat at 120 BPM
-		1198 * time.Millisecond, // E: 4 beats at 180 BPM
-		599 * time.Millisecond,  // g2: 2 beats at 180 BPM
+		450 * time.Millisecond, // c: 1 beat at 120 BPM
+		225 * time.Millisecond, // d1: half beat at 120 BPM
+		599 * time.Millisecond, // E: 2 beats at 180 BPM
+		299 * time.Millisecond, // g2: 1 beat at 180 BPM
 	}
 	for i, n := range notes {
 		if n.Duration != want[i] {

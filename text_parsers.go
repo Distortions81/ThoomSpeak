@@ -128,50 +128,62 @@ func parseShareText(raw []byte, s string) bool {
 		for _, n := range changed {
 			killNameTagCacheFor(n)
 		}
-		off := bytes.Index(raw, []byte{0xC2, 'p', 'n'})
-		if off >= 0 {
-			names := parseNames(raw[off:])
-			playersMu.Lock()
-			changed = changed[:0]
-			for _, name := range names {
-				if name == playerName {
-					continue
-				}
-				p := getPlayer(name)
-				if !p.Sharee {
-					p.Sharee = true
-					changed = append(changed, name)
-				}
-			}
-			playersMu.Unlock()
-			for _, n := range changed {
-				killNameTagCacheFor(n)
-			}
-			playersDirty = true
+		phrase := playerName + " is sharing experiences with "
+		rest := strings.TrimPrefix(s, phrase)
+		if rest == s {
+			phrase = playerName + " begins sharing experiences with "
+			rest = strings.TrimPrefix(s, phrase)
 		}
+		rest = strings.TrimSuffix(rest, ".")
+		rest = strings.ReplaceAll(rest, " and ", ",")
+		parts := strings.Split(rest, ",")
+		playersMu.Lock()
+		changed = changed[:0]
+		for _, name := range parts {
+			name = strings.TrimSpace(name)
+			if name == "" || strings.EqualFold(name, playerName) {
+				continue
+			}
+			p, ok := players[name]
+			if !ok {
+				p = &Player{Name: name}
+				players[name] = p
+			}
+			if !p.Sharee {
+				p.Sharee = true
+				changed = append(changed, name)
+			}
+		}
+		playersMu.Unlock()
+		for _, n := range changed {
+			killNameTagCacheFor(n)
+		}
+		playersDirty = true
 		return true
 	case playerName != "" && strings.HasPrefix(s, playerName+" is no longer sharing experiences with "):
 		// Hero (you) unsharing others in third-person form
-		off := bytes.Index(raw, []byte{0xC2, 'p', 'n'})
-		if off >= 0 {
-			names := parseNames(raw[off:])
-			playersMu.Lock()
-			changed := make([]string, 0, len(names))
-			for _, name := range names {
-				if name == playerName {
-					continue
-				}
-				if p, ok := players[name]; ok && p.Sharee {
-					p.Sharee = false
-					changed = append(changed, name)
-				}
+		phrase := playerName + " is no longer sharing experiences with "
+		rest := strings.TrimPrefix(s, phrase)
+		rest = strings.TrimSuffix(rest, ".")
+		rest = strings.ReplaceAll(rest, " and ", ",")
+		parts := strings.Split(rest, ",")
+		playersMu.Lock()
+		changed := make([]string, 0, len(parts))
+		for _, name := range parts {
+			name = strings.TrimSpace(name)
+			if name == "" || strings.EqualFold(name, playerName) {
+				continue
 			}
-			playersMu.Unlock()
-			for _, n := range changed {
-				killNameTagCacheFor(n)
+			if p, ok := players[name]; ok && p.Sharee {
+				p.Sharee = false
+				changed = append(changed, name)
 			}
-			playersDirty = true
 		}
+		playersMu.Unlock()
+		for _, n := range changed {
+			killNameTagCacheFor(n)
+		}
+		playersDirty = true
 		return true
 	case strings.HasSuffix(s, " is sharing experiences with you."):
 		name := utfFold(firstTagContent(raw, 'p', 'n'))
@@ -329,22 +341,22 @@ func parsePresenceText(raw []byte, s string) bool {
 // It also handles bard tune messages. Returns true if the message was fully
 // handled and should not be displayed.
 func parseBardText(raw []byte, s string) bool {
-    s = strings.TrimSpace(s)
-    if strings.HasPrefix(s, "* ") {
-        s = strings.TrimSpace(s[2:])
-    }
-    if strings.HasPrefix(s, "¥ ") {
-        s = strings.TrimSpace(s[2:])
-    }
+	s = strings.TrimSpace(s)
+	if strings.HasPrefix(s, "* ") {
+		s = strings.TrimSpace(s[2:])
+	}
+	if strings.HasPrefix(s, "¥ ") {
+		s = strings.TrimSpace(s[2:])
+	}
 
-    // Only treat this as music when BEPP explicitly marks it as such ("-mu" or
-    // "-ba"). Avoid acting on plain text without tags.
-    hasMu := bytes.Contains(raw, []byte{0xC2, 'm', 'u'}) || bytes.Contains(raw, []byte{0xC2, 'b', 'a'})
-    if hasMu {
-        if parseMusicCommand(s, raw) {
-            return true
-        }
-    }
+	// Only treat this as music when BEPP explicitly marks it as such ("-mu" or
+	// "-ba"). Avoid acting on plain text without tags.
+	hasMu := bytes.Contains(raw, []byte{0xC2, 'm', 'u'}) || bytes.Contains(raw, []byte{0xC2, 'b', 'a'})
+	if hasMu {
+		if parseMusicCommand(s, raw) {
+			return true
+		}
+	}
 
 	phrases := []struct {
 		suffix string
@@ -363,8 +375,8 @@ func parseBardText(raw []byte, s string) bool {
 		if strings.HasSuffix(s, ph.suffix) {
 			name := strings.TrimSpace(strings.TrimSuffix(s, ph.suffix))
 			if name == "" {
-    return false
-}
+				return false
+			}
 			p := getPlayer(name)
 			playersMu.Lock()
 			p.Bard = ph.bard
@@ -402,160 +414,169 @@ func parseMusicCommand(s string, raw []byte) bool {
 		}
 		return false
 	}
-    if strings.HasPrefix(s, "/music/") {
-        s = s[len("/music/"):]
-    }
+	if strings.HasPrefix(s, "/music/") {
+		s = s[len("/music/"):]
+	}
 
-    // Recognize and act on /stop (or /S) even if combined with play.
-    stop := false
-    if strings.Contains(s, "/stop") || strings.Contains(s, "/S") {
-        stop = true
-    }
+	// Recognize and act on /stop (or /S) even if combined with play.
+	stop := false
+	if strings.Contains(s, "/stop") || strings.Contains(s, "/S") {
+		stop = true
+	}
 
-    // Look for an explicit play command: "/play", "/P" or a leading
-    // "play " (plain text). Avoid misclassifying arbitrary 'P...' lines.
-    simplePlay := false
-    if idx := strings.Index(s, "/play"); idx >= 0 {
-        s = s[idx+len("/play"):]
-    } else if idx := strings.Index(s, "/P"); idx >= 0 {
-        s = s[idx+len("/P"):]
-    } else if strings.HasPrefix(s, "play ") {
-        s = s[len("play "):]
-        simplePlay = true
-    } else {
-        debug(orig)
-        return false
-    }
+	// Look for an explicit play command: "/play", "/P" or a leading
+	// "play " (plain text). Avoid misclassifying arbitrary 'P...' lines.
+	simplePlay := false
+	if idx := strings.Index(s, "/play"); idx >= 0 {
+		s = s[idx+len("/play"):]
+	} else if idx := strings.Index(s, "/P"); idx >= 0 {
+		s = s[idx+len("/P"):]
+	} else if strings.HasPrefix(s, "play/") {
+		s = s[len("play"):]
+		simplePlay = true
+	} else if strings.HasPrefix(s, "play ") {
+		s = s[len("play "):]
+		simplePlay = true
+	} else {
+		debug(orig)
+		return false
+	}
 
-    s = strings.TrimSpace(s)
+	s = strings.TrimSpace(s)
 
-    // Parse parameters
-    inst := defaultInstrument
-    tempo := 120
-    vol := 100
-    who := 0
-    me := false
-    part := false
-    withIDs := []int{}
+	// Parse parameters
+	inst := defaultInstrument
+	tempo := 120
+	vol := 100
+	who := 0
+	me := false
+	part := false
+	withIDs := []int{}
 
-    getInt := func(after string) (int, bool) {
-        if idx := strings.Index(s, after); idx >= 0 {
-            v := s[idx+len(after):]
-            if len(v) > 0 && v[0] == '/' {
-                v = v[1:]
-            }
-            if j := strings.IndexByte(v, '/'); j >= 0 {
-                v = v[:j]
-            }
-            if n, err := strconv.Atoi(v); err == nil {
-                return n, true
-            }
-        }
-        return 0, false
-    }
+	getInt := func(after string) (int, bool) {
+		if idx := strings.Index(s, after); idx >= 0 {
+			v := s[idx+len(after):]
+			if len(v) > 0 && v[0] == '/' {
+				v = v[1:]
+			}
+			if j := strings.IndexByte(v, '/'); j >= 0 {
+				v = v[:j]
+			}
+			if n, err := strconv.Atoi(v); err == nil {
+				return n, true
+			}
+		}
+		return 0, false
+	}
 
-    if n, ok := getInt("/inst"); ok {
-        inst = n
-    } else if n, ok := getInt("/I"); ok {
-        inst = n
-    }
-    if n, ok := getInt("/tempo"); ok {
-        tempo = n
-    } else if n, ok := getInt("/T"); ok {
-        tempo = n
-    }
-    if n, ok := getInt("/vol"); ok {
-        vol = n
-    } else if n, ok := getInt("/V"); ok {
-        vol = n
-    }
-    if n, ok := getInt("/who"); ok {
-        who = n
-    } else if n, ok := getInt("/W"); ok {
-        who = n
-    }
-    if strings.Contains(s, "/me") || strings.Contains(s, "/E") {
-        me = true
-    }
-    if strings.Contains(s, "/part") || strings.Contains(s, "/M") {
-        part = true
-    }
-    // Extract all /with or /H occurrences
-    scanWith := func(tag string) {
-        pos := 0
-        for {
-            idx := strings.Index(s[pos:], tag)
-            if idx < 0 { break }
-            idx += pos + len(tag)
-            start := idx
-            v := s[idx:]
-            if len(v) > 0 && v[0] == '/' {
-                v = v[1:]
-                idx++
-            }
-            if j := strings.IndexByte(v, '/'); j >= 0 { v = v[:j] }
-            if n, err := strconv.Atoi(v); err == nil {
-                withIDs = append(withIDs, n)
-            }
-            pos = idx + len(v)
-            if pos <= start {
-                pos = start + 1
-            }
-            if pos >= len(s) {
-                break
-            }
-        }
-    }
-    scanWith("/with")
-    scanWith("/H")
+	if n, ok := getInt("/inst"); ok {
+		inst = n
+	} else if n, ok := getInt("/I"); ok {
+		inst = n
+	}
+	if n, ok := getInt("/tempo"); ok {
+		tempo = n
+	} else if n, ok := getInt("/T"); ok {
+		tempo = n
+	}
+	if n, ok := getInt("/vol"); ok {
+		vol = n
+	} else if n, ok := getInt("/V"); ok {
+		vol = n
+	}
+	if n, ok := getInt("/who"); ok {
+		who = n
+	} else if n, ok := getInt("/W"); ok {
+		who = n
+	}
+	if strings.Contains(s, "/me") || strings.Contains(s, "/E") {
+		me = true
+	}
+	if strings.Contains(s, "/part") || strings.Contains(s, "/M") {
+		part = true
+	}
+	// Extract all /with or /H occurrences
+	scanWith := func(tag string) {
+		pos := 0
+		for {
+			idx := strings.Index(s[pos:], tag)
+			if idx < 0 {
+				break
+			}
+			idx += pos + len(tag)
+			start := idx
+			v := s[idx:]
+			if len(v) > 0 && v[0] == '/' {
+				v = v[1:]
+				idx++
+			}
+			if j := strings.IndexByte(v, '/'); j >= 0 {
+				v = v[:j]
+			}
+			if n, err := strconv.Atoi(v); err == nil {
+				withIDs = append(withIDs, n)
+			}
+			pos = idx + len(v)
+			if pos <= start {
+				pos = start + 1
+			}
+			if pos >= len(s) {
+				break
+			}
+		}
+	}
+	scanWith("/with")
+	scanWith("/H")
 
-    notes := ""
-    if idx := strings.Index(s, "/notes"); idx >= 0 {
-        notes = s[idx+len("/notes"):]
-    } else if idx := strings.Index(s, "/N"); idx >= 0 {
-        notes = s[idx+len("/N"):]
-    } else if simplePlay {
-        // Accept the simple "play <inst> <notes>" form only when starting with
-        // "play ". Require an instrument integer before notes to avoid false
-        // positives on regular sentences.
-        f := strings.Fields(s)
-        if len(f) >= 2 {
-            if n, err := strconv.Atoi(f[0]); err == nil {
-                inst = n
-                notes = strings.Join(f[1:], " ")
-            }
-        }
-    }
-    notes = strings.Trim(notes, "/")
+	notes := ""
+	if idx := strings.Index(s, "/notes"); idx >= 0 {
+		notes = s[idx+len("/notes"):]
+	} else if idx := strings.Index(s, "/N"); idx >= 0 {
+		notes = s[idx+len("/N"):]
+	} else if simplePlay {
+		// Accept the simple "play <inst> <notes>" form only when starting with
+		// "play ". Require an instrument integer before notes to avoid false
+		// positives on regular sentences.
+		f := strings.Fields(s)
+		if len(f) >= 2 {
+			if n, err := strconv.Atoi(f[0]); err == nil {
+				inst = n
+				notes = strings.Join(f[1:], " ")
+			}
+		}
+	}
+	notes = strings.Trim(notes, "/")
 
-    if stop {
-        handleMusicParams(MusicParams{Stop: true})
-        // Continue to parse play if present; otherwise return.
-        if strings.TrimSpace(notes) == "" && !part {
-            return true
-        }
-    }
+	if stop {
+		handleMusicParams(MusicParams{Stop: true})
+		// Continue to parse play if present; otherwise return.
+		if strings.TrimSpace(notes) == "" && !part {
+			return true
+		}
+	}
 
-    // If we still have no notes, do not treat this line as music.
-    if strings.TrimSpace(notes) == "" && !part {
-        debug(orig)
-        return false
-    }
+	// If we still have no notes, do not treat this line as music.
+	if strings.TrimSpace(notes) == "" && !part {
+		debug(orig)
+		return false
+	}
 
-    if musicDebug {
-        msg := fmt.Sprintf("/music play inst=%d tempo=%d vol=%d part=%t who=%d with=%v notes=%q", inst, tempo, vol, part, who, withIDs, truncate(notes, 64))
-        debug(msg)
-    }
-    go func() {
-        handleMusicParams(MusicParams{Inst: inst, Notes: notes, Tempo: tempo, VolPct: vol, Part: part, Who: who, With: withIDs, Me: me})
-    }()
-    return true
+	if musicDebug {
+		msg := fmt.Sprintf("/play %d %s", inst, notes)
+		debug(msg)
+	}
+	go func() {
+		handleMusicParams(MusicParams{Inst: inst, Notes: notes, Tempo: tempo, VolPct: vol, Part: part, Who: who, With: withIDs, Me: me})
+	}()
+	return true
 }
 
 // truncate helps keep debug output short
 func truncate(s string, n int) string {
-    if len(s) <= n { return s }
-    return s[:n] + "..."
+	if len(s) <= n {
+		return s
+	}
+	return s[:n] + "..."
 }
 
 // firstTagContent extracts the first bracketed content for a given 2-letter BEPP tag.
