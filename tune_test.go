@@ -51,6 +51,22 @@ func TestEventsToNotesAddsGap(t *testing.T) {
 	}
 }
 
+func TestRestDuration(t *testing.T) {
+	pt := parseClanLordTune("cpd")
+	inst := instrument{program: 0, octave: 0, chord: 100, melody: 100}
+	notes := eventsToNotes(pt, inst, 100)
+	if len(notes) != 2 {
+		t.Fatalf("expected 2 notes, got %d", len(notes))
+	}
+	if notes[1].Start != 475*time.Millisecond {
+		t.Fatalf("second note start = %v, want 475ms", notes[1].Start)
+	}
+	gap := notes[1].Start - notes[0].Start - notes[0].Duration
+	if gap != 250*time.Millisecond {
+		t.Fatalf("gap = %v, want 250ms", gap)
+	}
+}
+
 func TestInstrumentVelocityFactors(t *testing.T) {
 	inst0 := instruments[0]
 	if inst0.chord != 100 || inst0.melody != 100 {
