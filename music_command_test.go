@@ -46,7 +46,7 @@ func TestParseMusicCommandFromMovie(t *testing.T) {
 	}
 
 	s := string(msg)
-	inst := "10"
+	inst := "0"
 	if idx := strings.Index(s, "/inst"); idx >= 0 {
 		v := s[idx+len("/inst"):]
 		v = strings.TrimPrefix(v, "/")

@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	defaultInstrument    = 10
+	defaultInstrument    = 0
 	durationBlack        = 2.0
 	durationWhite        = 4.0
 	defaultChordDuration = 2.0
