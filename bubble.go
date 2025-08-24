@@ -136,6 +136,7 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 	baseX := left + width/2
 
 	bgR, bgG, bgB, bgA := bgCol.RGBA()
+	bdR, bdG, bdB, bdA := borderCol.RGBA()
 
 	radius := float32(4 * gs.GameScale)
 	if bubbleType == kBubblePonder {
@@ -158,7 +159,7 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 	if !far && !noArrow {
 		if bubbleType == kBubblePonder {
 			r1 := float32(tailHalf)
-			cx1 := float32(baseX - tailHalf)
+			cx1 := float32(baseX)
 			cy1 := float32(bottom) + r1
 			tail.MoveTo(cx1+r1, cy1)
 			tail.Arc(cx1, cy1, r1, 0, 2*math.Pi, vector.Clockwise)
@@ -177,20 +178,9 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 		}
 	}
 
-	vs, is := body.AppendVerticesAndIndicesForFilling(nil, nil)
-	for i := range vs {
-		vs[i].SrcX = 0
-		vs[i].SrcY = 0
-		vs[i].ColorR = float32(bgR) / 0xffff
-		vs[i].ColorG = float32(bgG) / 0xffff
-		vs[i].ColorB = float32(bgB) / 0xffff
-		vs[i].ColorA = float32(bgA) / 0xffff
-	}
+	vs, is := tail.AppendVerticesAndIndicesForFilling(nil, nil)
 	op := &ebiten.DrawTrianglesOptions{ColorScaleMode: ebiten.ColorScaleModePremultipliedAlpha, AntiAlias: true}
-	screen.DrawTriangles(vs, is, whiteImage, op)
-
 	if !far && !noArrow {
-		vs, is = tail.AppendVerticesAndIndicesForFilling(vs[:0], is[:0])
 		for i := range vs {
 			vs[i].SrcX = 0
 			vs[i].SrcY = 0
@@ -200,9 +190,44 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 			vs[i].ColorA = float32(bgA) / 0xffff
 		}
 		screen.DrawTriangles(vs, is, whiteImage, op)
+
+		if bubbleType == kBubblePonder {
+			var tailOutline vector.Path
+			r1 := float32(tailHalf)
+			cx1 := float32(baseX)
+			cy1 := float32(bottom) + r1
+			tailOutline.MoveTo(cx1+r1, cy1)
+			tailOutline.Arc(cx1, cy1, r1, 0, 2*math.Pi, vector.Clockwise)
+			tailOutline.Close()
+			r2 := float32(tailHalf) / 2
+			cx2 := float32(tailX)
+			cy2 := float32(tailY)
+			tailOutline.MoveTo(cx2+r2, cy2)
+			tailOutline.Arc(cx2, cy2, r2, 0, 2*math.Pi, vector.Clockwise)
+			tailOutline.Close()
+			vs, is = tailOutline.AppendVerticesAndIndicesForStroke(vs[:0], is[:0], &vector.StrokeOptions{Width: float32(gs.GameScale)})
+			for i := range vs {
+				vs[i].SrcX = 0
+				vs[i].SrcY = 0
+				vs[i].ColorR = float32(bdR) / 0xffff
+				vs[i].ColorG = float32(bdG) / 0xffff
+				vs[i].ColorB = float32(bdB) / 0xffff
+				vs[i].ColorA = float32(bdA) / 0xffff
+			}
+			screen.DrawTriangles(vs, is, whiteImage, op)
+		}
 	}
 
-	bdR, bdG, bdB, bdA := borderCol.RGBA()
+	vs, is = body.AppendVerticesAndIndicesForFilling(vs[:0], is[:0])
+	for i := range vs {
+		vs[i].SrcX = 0
+		vs[i].SrcY = 0
+		vs[i].ColorR = float32(bgR) / 0xffff
+		vs[i].ColorG = float32(bgG) / 0xffff
+		vs[i].ColorB = float32(bgB) / 0xffff
+		vs[i].ColorA = float32(bgA) / 0xffff
+	}
+	screen.DrawTriangles(vs, is, whiteImage, op)
 	if bubbleType != kBubblePonder {
 		var outline vector.Path
 		outline.MoveTo(float32(left)+radius, float32(top))
@@ -233,32 +258,6 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 		screen.DrawTriangles(vs, is, whiteImage, op)
 	} else {
 		drawPonderWaves(screen, left, top, right, bottom, borderCol, bgCol)
-	}
-
-	if bubbleType == kBubblePonder && !far && !noArrow {
-		var tailOutline vector.Path
-		r1 := float32(tailHalf)
-		cx1 := float32(baseX - tailHalf)
-		cy1 := float32(bottom) + r1
-		tailOutline.MoveTo(cx1+r1, cy1)
-		tailOutline.Arc(cx1, cy1, r1, 0, 2*math.Pi, vector.Clockwise)
-		tailOutline.Close()
-		r2 := float32(tailHalf) / 2
-		cx2 := float32(tailX)
-		cy2 := float32(tailY)
-		tailOutline.MoveTo(cx2+r2, cy2)
-		tailOutline.Arc(cx2, cy2, r2, 0, 2*math.Pi, vector.Clockwise)
-		tailOutline.Close()
-		vs, is = tailOutline.AppendVerticesAndIndicesForStroke(vs[:0], is[:0], &vector.StrokeOptions{Width: float32(gs.GameScale)})
-		for i := range vs {
-			vs[i].SrcX = 0
-			vs[i].SrcY = 0
-			vs[i].ColorR = float32(bdR) / 0xffff
-			vs[i].ColorG = float32(bdG) / 0xffff
-			vs[i].ColorB = float32(bdB) / 0xffff
-			vs[i].ColorA = float32(bdA) / 0xffff
-		}
-		screen.DrawTriangles(vs, is, whiteImage, op)
 	}
 
 	if bubbleType == kBubbleYell {
