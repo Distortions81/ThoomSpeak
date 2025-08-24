@@ -245,6 +245,7 @@ type drawState struct {
 	prevBalance, prevBalanceMax int
 	ackCmd                      uint8
 	lightingFlags               uint8
+	dropped                     int
 
 	// Prepared render caches populated only when a new game state arrives.
 	// These avoid per-frame sorting and partitioning work in Draw.
@@ -342,6 +343,7 @@ type drawSnapshot struct {
 	prevBalance, prevBalanceMax int
 	ackCmd                      uint8
 	lightingFlags               uint8
+	dropped                     int
 
 	// Precomputed, sorted/partitioned data for rendering
 	picsNeg  []framePicture
@@ -379,6 +381,7 @@ func captureDrawSnapshot() drawSnapshot {
 		prevBalanceMax: state.prevBalanceMax,
 		ackCmd:         state.ackCmd,
 		lightingFlags:  state.lightingFlags,
+		dropped:        state.dropped,
 		// prepared caches
 		picsNeg:  append([]framePicture(nil), state.picsNeg...),
 		picsZero: append([]framePicture(nil), state.picsZero...),
@@ -458,6 +461,7 @@ func cloneDrawState(src drawState) drawState {
 		prevBalanceMax: src.prevBalanceMax,
 		ackCmd:         src.ackCmd,
 		lightingFlags:  src.lightingFlags,
+		dropped:        src.dropped,
 	}
 	for idx, d := range src.descriptors {
 		dst.descriptors[idx] = d
@@ -1012,6 +1016,7 @@ func drawScene(screen *ebiten.Image, ox, oy int, snap drawSnapshot, alpha float6
 
 	// Use cached descriptor map directly; no need to rebuild/sort it per frame.
 	descMap := snap.descriptors
+	mobileLimit := maxMobileInterpPixels * (snap.dropped + 1)
 
 	// Use precomputed, sorted partitions
 	negPics := snap.picsNeg
@@ -1033,7 +1038,7 @@ func drawScene(screen *ebiten.Image, ox, oy int, snap drawSnapshot, alpha float6
 			if !gs.nameTagsNative {
 				drawMobileNameTag(screen, snap, m, alpha)
 			}
-			drawMobile(screen, ox, oy, m, descMap, snap.prevMobiles, snap.prevDescs, snap.picShiftX, snap.picShiftY, alpha, mobileFade)
+			drawMobile(screen, ox, oy, m, descMap, snap.prevMobiles, snap.prevDescs, snap.picShiftX, snap.picShiftY, alpha, mobileFade, mobileLimit)
 		}
 		i, j := 0, 0
 		maxInt := int(^uint(0) >> 1)
@@ -1053,7 +1058,7 @@ func drawScene(screen *ebiten.Image, ox, oy int, snap drawSnapshot, alpha float6
 					if !gs.nameTagsNative {
 						drawMobileNameTag(screen, snap, live[i], alpha)
 					}
-					drawMobile(screen, ox, oy, live[i], descMap, snap.prevMobiles, snap.prevDescs, snap.picShiftX, snap.picShiftY, alpha, mobileFade)
+					drawMobile(screen, ox, oy, live[i], descMap, snap.prevMobiles, snap.prevDescs, snap.picShiftX, snap.picShiftY, alpha, mobileFade, mobileLimit)
 				}
 				i++
 			} else {
@@ -1070,8 +1075,9 @@ func drawScene(screen *ebiten.Image, ox, oy int, snap drawSnapshot, alpha float6
 
 // drawMobile renders a single mobile object with optional interpolation and onion skinning.
 // When a mobile lacks history but the world shifts, a pseudo-previous position
-// derived from picShift provides a one-frame interpolation.
-func drawMobile(screen *ebiten.Image, ox, oy int, m frameMobile, descMap map[uint8]frameDescriptor, prevMobiles map[uint8]frameMobile, prevDescs map[uint8]frameDescriptor, shiftX, shiftY int, alpha float64, fade float32) {
+// derived from picShift provides a one-frame interpolation. maxDist sets the
+// maximum allowed pixel delta for interpolation.
+func drawMobile(screen *ebiten.Image, ox, oy int, m frameMobile, descMap map[uint8]frameDescriptor, prevMobiles map[uint8]frameMobile, prevDescs map[uint8]frameDescriptor, shiftX, shiftY int, alpha float64, fade float32, maxDist int) {
 	h := float64(m.H)
 	v := float64(m.V)
 	if gs.MotionSmoothing {
@@ -1079,14 +1085,14 @@ func drawMobile(screen *ebiten.Image, ox, oy int, m frameMobile, descMap map[uin
 			dh := int(m.H) - int(pm.H) - shiftX
 			dv := int(m.V) - int(pm.V) - shiftY
 			dist := dh*dh + dv*dv
-			if dist <= maxMobileInterpPixels*maxMobileInterpPixels {
+			if dist <= maxDist*maxDist {
 				h = float64(pm.H)*(1-alpha) + float64(m.H)*alpha
 				v = float64(pm.V)*(1-alpha) + float64(m.V)*alpha
 			}
 		} else if shiftX != 0 || shiftY != 0 {
 			dh := shiftX
 			dv := shiftY
-			if dh*dh+dv*dv <= maxMobileInterpPixels*maxMobileInterpPixels {
+			if dh*dh+dv*dv <= maxDist*maxDist {
 				prevH := float64(int(m.H) - shiftX)
 				prevV := float64(int(m.V) - shiftY)
 				h = prevH*(1-alpha) + float64(m.H)*alpha
@@ -1464,7 +1470,8 @@ func drawMobileNameTag(screen *ebiten.Image, snap drawSnapshot, m frameMobile, a
 		if pm, ok := snap.prevMobiles[m.Index]; ok {
 			dh := int(m.H) - int(pm.H) - snap.picShiftX
 			dv := int(m.V) - int(pm.V) - snap.picShiftY
-			if dh*dh+dv*dv <= maxMobileInterpPixels*maxMobileInterpPixels {
+			maxDist := maxMobileInterpPixels * (snap.dropped + 1)
+			if dh*dh+dv*dv <= maxDist*maxDist {
 				h = float64(pm.H)*(1-alpha) + float64(m.H)*alpha
 				v = float64(pm.V)*(1-alpha) + float64(m.V)*alpha
 			}
@@ -1560,6 +1567,7 @@ func drawSpeechBubbles(screen *ebiten.Image, snap drawSnapshot, alpha float64) {
 		return
 	}
 	descMap := snap.descriptors
+	maxDist := maxMobileInterpPixels * (snap.dropped + 1)
 	for _, b := range snap.bubbles {
 		bubbleType := b.Type & kBubbleTypeMask
 		typeOK := true
@@ -1614,7 +1622,7 @@ func drawSpeechBubbles(screen *ebiten.Image, snap drawSnapshot, alpha float64) {
 					if pm, ok := snap.prevMobiles[b.Index]; ok {
 						dh := int(m.H) - int(pm.H) - snap.picShiftX
 						dv := int(m.V) - int(pm.V) - snap.picShiftY
-						if dh*dh+dv*dv <= maxMobileInterpPixels*maxMobileInterpPixels {
+						if dh*dh+dv*dv <= maxDist*maxDist {
 							hpos = float64(pm.H)*(1-alpha) + float64(m.H)*alpha
 							vpos = float64(pm.V)*(1-alpha) + float64(m.V)*alpha
 						}
