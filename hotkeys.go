@@ -82,9 +82,11 @@ func makeHotkeysWindow() {
 		}
 	}
 	btnRow.AddItem(addBtn)
+	btnRow.Size = eui.Point{X: hotkeysWin.Size.X, Y: addBtn.Size.Y}
 	flow.AddItem(btnRow)
 
 	hotkeysList = &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL, Scrollable: true, Fixed: true}
+	hotkeysList.Size = eui.Point{X: hotkeysWin.Size.X, Y: hotkeysWin.Size.Y - btnRow.Size.Y}
 	flow.AddItem(hotkeysList)
 
 	hotkeysWin.AddWindow(false)
