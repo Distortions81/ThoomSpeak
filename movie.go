@@ -114,8 +114,8 @@ func parseMovie(path string, clientVersion int) ([][]byte, error) {
 			if pos+4 <= len(data) {
 				pos += 4
 			}
-			sortPictures(pics)
 			stateMu.Lock()
+			// Preserve on-disk ordering for pictAgain semantics.
 			state.pictures = pics
 			stateMu.Unlock()
 		}
@@ -175,8 +175,8 @@ func parseGameState(gs []byte, version, revision uint16) {
 			if pos+4 <= len(gs) {
 				pos += 4
 			}
-			sortPictures(pics)
 			stateMu.Lock()
+			// Preserve on-disk ordering for pictAgain semantics.
 			state.pictures = pics
 			stateMu.Unlock()
 			gs = gs[pos:]
