@@ -36,6 +36,8 @@ var (
 	blockBubbles  bool
 	blockTTS      bool
 	dumpMusic     bool
+	imgDump       bool
+	sndDump       bool
 	dumpBEPPTags  bool
 	musicDebug    bool
 	clientVersion int
@@ -50,6 +52,8 @@ func main() {
 	flag.BoolVar(&doDebug, "debug", false, "verbose/debug logging")
 	flag.BoolVar(&eui.CacheCheck, "cacheCheck", false, "display window and item render counts")
 	flag.BoolVar(&dumpMusic, "dumpMusic", false, "write played music as a .wav file")
+	flag.BoolVar(&imgDump, "imgDump", false, "dump images to dump/img as PNG")
+	flag.BoolVar(&sndDump, "sndDump", false, "dump sounds to dump/snd as WAV")
 	flag.BoolVar(&dumpBEPPTags, "dumpBEPPTags", false, "log BEPP tags seen (for empirical analysis)")
 	flag.BoolVar(&musicDebug, "musicDebug", false, "show bard music messages in chat")
 	flag.BoolVar(&experimental, "experimental", false, "enable experimental features like CL_Images/CL_Sounds patching")
