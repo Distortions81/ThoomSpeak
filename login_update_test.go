@@ -100,9 +100,11 @@ func (s *fakeServer) handle(conn net.Conn, attempt int) {
 	if attempt > 1 {
 		res = 0
 	}
-	resp := make([]byte, 4)
+	base := []byte("https://example.com\x00")
+	resp := make([]byte, 16+len(base))
 	binary.BigEndian.PutUint16(resp[0:2], 13)
 	binary.BigEndian.PutUint16(resp[2:4], uint16(res))
+	copy(resp[16:], base)
 	binary.BigEndian.PutUint16(szBuf[:], uint16(len(resp)))
 	conn.Write(szBuf[:])
 	conn.Write(resp)
@@ -115,9 +117,14 @@ func TestLoginTriggersAutoUpdate(t *testing.T) {
 	name = "test"
 	pass = "pw"
 	dir := t.TempDir()
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
 	if err := os.Chdir(dir); err != nil {
 		t.Fatalf("chdir: %v", err)
 	}
+	t.Cleanup(func() { os.Chdir(cwd) })
 	calls := 0
 	orig := downloadGZ
 	downloadGZ = func(url, dest string) error {

@@ -118,11 +118,11 @@ func renderSong(program int, notes []Note) ([]float32, []float32, error) {
 	var events []event
 	var maxEnd int
 	for _, n := range notes {
-		durSamples := int(n.Duration.Nanoseconds() * sampleRate / int64(time.Second))
+		durSamples := int((n.Duration.Nanoseconds()*int64(sampleRate) + int64(time.Second/2)) / int64(time.Second))
 		if durSamples <= 0 {
 			continue
 		}
-		startSamples := int(n.Start.Nanoseconds() * sampleRate / int64(time.Second))
+		startSamples := int((n.Start.Nanoseconds()*int64(sampleRate) + int64(time.Second/2)) / int64(time.Second))
 		ev := event{key: n.Key, vel: n.Velocity, start: startSamples, end: startSamples + durSamples}
 		events = append(events, ev)
 		if ev.end > maxEnd {

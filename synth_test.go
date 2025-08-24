@@ -34,7 +34,7 @@ func (m *mockSynth) Render(left, right []float32) {
 }
 
 func durToSamples(d time.Duration) int {
-	return int(d.Nanoseconds() * sampleRate / int64(time.Second))
+	return int((d.Nanoseconds()*int64(sampleRate) + int64(time.Second/2)) / int64(time.Second))
 }
 
 func TestPlayOverlappingNotes(t *testing.T) {
