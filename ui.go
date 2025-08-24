@@ -795,6 +795,32 @@ func updateCharacterButtons() {
 	} else {
 		for _, c := range characters {
 			row := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
+
+			avItem, _ := eui.NewImageItem(24, 24)
+			avItem.Margin = 4
+			avItem.Border = 0
+			avItem.Filled = false
+			if c.PictID != 0 {
+				if m := loadMobileFrame(c.PictID, 0, c.Colors); m != nil {
+					avItem.Image = m
+				} else if im := loadImage(c.PictID); im != nil {
+					avItem.Image = im
+				}
+			}
+			row.AddItem(avItem)
+
+			profItem, _ := eui.NewImageItem(24, 24)
+			profItem.Margin = 4
+			profItem.Border = 0
+			profItem.Filled = false
+			if pid := professionPictID(c.Profession); pid != 0 {
+				if img := loadImage(pid); img != nil {
+					profItem.Image = img
+					profItem.ImageName = "prof:cl:" + fmt.Sprint(pid)
+				}
+			}
+			row.AddItem(profItem)
+
 			radio, radioEvents := eui.NewRadio()
 			radio.Text = c.Name
 			radio.RadioGroup = "characters"

@@ -15,6 +15,10 @@ type Character struct {
 	passHash     string `json:"-"`
 	Key          string `json:"key"`
 	DontRemember bool   `json:"-"`
+	PictID       uint16 `json:"pict,omitempty"`
+	ColorsHex    string `json:"colors,omitempty"`
+	Colors       []byte `json:"-"`
+	Profession   string `json:"prof,omitempty"`
 }
 
 var characters []Character
@@ -39,10 +43,20 @@ func loadCharacters() {
 	if err := json.Unmarshal(data, &charList); err != nil {
 		return
 	}
-	if charList.Version == 1 {
+	if charList.Version >= 1 {
 		characters = charList.Characters
 		for i := range characters {
 			characters[i].passHash = unscrambleHash(characters[i].Name, characters[i].Key)
+			if charList.Version >= 2 && characters[i].ColorsHex != "" {
+				if b, ok := decodeHex(characters[i].ColorsHex); ok && len(b) > 0 {
+					cnt := int(b[0])
+					if cnt > 0 && 1+cnt <= len(b) {
+						characters[i].Colors = append(characters[i].Colors[:0], b[1:1+cnt]...)
+					} else {
+						characters[i].Colors = append(characters[i].Colors[:0], b...)
+					}
+				}
+			}
 		}
 	}
 }
@@ -54,11 +68,24 @@ func saveCharacters() {
 			continue
 		}
 		characters[i].Key = scrambleHash(characters[i].Name, characters[i].passHash)
+		if len(characters[i].Colors) > 0 {
+			buf := make([]byte, 1+len(characters[i].Colors))
+			if len(characters[i].Colors) > 255 {
+				buf[0] = 255
+				copy(buf[1:], characters[i].Colors[:255])
+			} else {
+				buf[0] = byte(len(characters[i].Colors))
+				copy(buf[1:], characters[i].Colors)
+			}
+			characters[i].ColorsHex = encodeHex(buf)
+		} else {
+			characters[i].ColorsHex = ""
+		}
 		persisted = append(persisted, characters[i])
 	}
 
 	var charList charactersFile
-	charList.Version = 1
+	charList.Version = 2
 	charList.Characters = persisted
 	data, err := json.MarshalIndent(charList, "", "  ")
 
