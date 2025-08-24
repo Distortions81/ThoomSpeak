@@ -163,10 +163,17 @@ func openHotkeyEditor(idx int) {
 	cmdLabel.FontSize = 12
 	flow.AddItem(cmdLabel)
 
-	hotkeyCmdInput, _ = eui.NewInput()
+	hotkeyCmdInput, cmdEvents := eui.NewInput()
 	hotkeyCmdInput.Size = eui.Point{X: 220, Y: 20}
 	hotkeyCmdInput.FontSize = 12
 	hotkeyCmdInput.Scrollable = true
+	cmdEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventInputChanged {
+			if hotkeyEditWin != nil {
+				hotkeyEditWin.Refresh()
+			}
+		}
+	}
 	flow.AddItem(hotkeyCmdInput)
 
 	btnRow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL, Fixed: true}
@@ -232,6 +239,9 @@ func startRecording(target *eui.ItemData) {
 	if recordTarget != nil {
 		recordTarget.Text = "Recording..."
 		recordTarget.Dirty = true
+		if hotkeyEditWin != nil {
+			hotkeyEditWin.Refresh()
+		}
 	}
 }
 
@@ -244,10 +254,18 @@ func finishRecording() {
 			recordTarget.Text = recordedCombo
 		}
 		recordTarget.Dirty = true
+		if hotkeyEditWin != nil {
+			hotkeyEditWin.Refresh()
+		}
 	}
 }
 
 func detectCombo() string {
+	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+		if combo := comboFromMouseWithKey(ebiten.MouseButtonLeft); combo != "" {
+			return combo
+		}
+	}
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) {
 		return comboFromMouse(ebiten.MouseButtonRight)
 	}
@@ -276,6 +294,28 @@ func comboFromMouse(b ebiten.MouseButton) string {
 	return strings.Join(mods, "-")
 }
 
+func comboFromMouseWithKey(b ebiten.MouseButton) string {
+	mods := currentMods()
+	keys := inpututil.AppendPressedKeys(nil)
+	keyPart := ""
+	for _, k := range keys {
+		if isModifier(k) {
+			continue
+		}
+		keyPart = k.String()
+		break
+	}
+	if keyPart == "" && len(mods) == 0 {
+		return ""
+	}
+	if keyPart != "" {
+		mods = append(mods, keyPart)
+	}
+	name := mouseButtonName(b)
+	mods = append(mods, name)
+	return strings.Join(mods, "-")
+}
+
 func currentMods() []string {
 	mods := []string{}
 	if ebiten.IsKeyPressed(ebiten.KeyControl) || ebiten.IsKeyPressed(ebiten.KeyControlLeft) || ebiten.IsKeyPressed(ebiten.KeyControlRight) {
@@ -292,6 +332,8 @@ func currentMods() []string {
 
 func mouseButtonName(b ebiten.MouseButton) string {
 	switch b {
+	case ebiten.MouseButtonLeft:
+		return "LeftClick"
 	case ebiten.MouseButtonRight:
 		return "RightClick"
 	case ebiten.MouseButtonMiddle:
