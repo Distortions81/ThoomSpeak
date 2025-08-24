@@ -181,8 +181,6 @@ func eventsToNotes(pt parsedTune, inst instrument, velocity int) []Note {
 	tempo := pt.tempo
 	tempoIdx := 0
 	startMS := 0
-	var prevWasNote bool
-	var prevRestMS int
 
 	// Build map of loop starts for quick lookup
 	loopMap := make(map[int][]loopMarker)
@@ -218,15 +216,9 @@ func eventsToNotes(pt parsedTune, inst instrument, velocity int) []Note {
 		durMS := int((ev.beats / 4) * (60000.0 / float64(tempo)))
 
 		if len(ev.keys) == 0 {
-			if prevWasNote {
-				startMS -= prevRestMS
-			}
 			startMS += durMS
-			prevWasNote = false
-			prevRestMS = 0
 		} else {
-			noteMS := durMS * 9 / 10
-			restMS := durMS - noteMS
+			noteMS := durMS
 
 			v := velocity
 			if len(ev.keys) > 1 {
@@ -252,9 +244,7 @@ func eventsToNotes(pt parsedTune, inst instrument, velocity int) []Note {
 					Duration: time.Duration(noteMS) * time.Millisecond,
 				})
 			}
-			startMS += noteMS + restMS
-			prevWasNote = true
-			prevRestMS = restMS
+			startMS += noteMS
 		}
 		i++
 
@@ -262,16 +252,6 @@ func eventsToNotes(pt parsedTune, inst instrument, velocity int) []Note {
 			top := &stack[len(stack)-1]
 			if top.remaining > 0 {
 				top.remaining--
-				// If the loop starts with a note and the previous event
-				// was also a note, remove the trailing rest inserted after
-				// the last note of the previous iteration. This prevents an
-				// unintended pause between loop repetitions when no explicit
-				// rest exists at the loop boundary.
-				if prevWasNote && len(pt.events[top.start].keys) > 0 {
-					startMS -= prevRestMS
-					prevWasNote = false
-					prevRestMS = 0
-				}
 				i = top.start
 				// reset tempo to state at loop start
 				tempo = pt.tempo

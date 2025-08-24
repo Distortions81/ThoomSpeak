@@ -32,22 +32,22 @@ func TestParseClanLordTuneDurations(t *testing.T) {
 	}
 }
 
-func TestEventsToNotesAddsGap(t *testing.T) {
+func TestEventsToNotesNoGap(t *testing.T) {
 	pt := parseClanLordTune("cd")
 	inst := instrument{program: 0, octave: 0, chord: 100, melody: 100}
 	notes := eventsToNotes(pt, inst, 100)
 	if len(notes) != 2 {
 		t.Fatalf("expected 2 notes, got %d", len(notes))
 	}
-	if notes[0].Duration != 225*time.Millisecond {
-		t.Fatalf("first note duration = %v, want 225ms", notes[0].Duration)
+	if notes[0].Duration != 250*time.Millisecond {
+		t.Fatalf("first note duration = %v, want 250ms", notes[0].Duration)
 	}
 	if notes[1].Start != 250*time.Millisecond {
 		t.Fatalf("second note start = %v, want 250ms", notes[1].Start)
 	}
 	gap := notes[1].Start - notes[0].Start - notes[0].Duration
-	if gap != 25*time.Millisecond {
-		t.Fatalf("gap = %v, want 25ms", gap)
+	if gap != 0 {
+		t.Fatalf("gap = %v, want 0", gap)
 	}
 }
 
@@ -58,8 +58,8 @@ func TestRestDuration(t *testing.T) {
 	if len(notes) != 2 {
 		t.Fatalf("expected 2 notes, got %d", len(notes))
 	}
-	if notes[1].Start != 475*time.Millisecond {
-		t.Fatalf("second note start = %v, want 475ms", notes[1].Start)
+	if notes[1].Start != 500*time.Millisecond {
+		t.Fatalf("second note start = %v, want 500ms", notes[1].Start)
 	}
 	gap := notes[1].Start - notes[0].Start - notes[0].Duration
 	if gap != 250*time.Millisecond {
@@ -108,7 +108,7 @@ func TestLoopAndTempoAndVolume(t *testing.T) {
 		t.Fatalf("expected 6 notes, got %d", len(notes))
 	}
 	// After tempo change to 180 BPM, note 'e' should have shorter duration.
-	if notes[4].Duration != 149*time.Millisecond {
+	if notes[4].Duration != 166*time.Millisecond {
 		t.Fatalf("tempo change not applied, got %v", notes[4].Duration)
 	}
 	// volume change should halve velocity for last note (volume set to 5)
@@ -153,10 +153,10 @@ func TestNoteDurationsWithTempoChange(t *testing.T) {
 		t.Fatalf("expected 4 notes, got %d", len(notes))
 	}
 	want := []time.Duration{
-		225 * time.Millisecond, // c: 1 beat at 120 BPM
-		112 * time.Millisecond, // d1: half beat at 120 BPM
-		299 * time.Millisecond, // E: 2 beats at 180 BPM
-		149 * time.Millisecond, // g2: 1 beat at 180 BPM
+		250 * time.Millisecond, // c: 1 beat at 120 BPM
+		125 * time.Millisecond, // d1: half beat at 120 BPM
+		333 * time.Millisecond, // E: 2 beats at 180 BPM
+		166 * time.Millisecond, // g2: 1 beat at 180 BPM
 	}
 	for i, n := range notes {
 		if n.Duration != want[i] {
@@ -171,8 +171,8 @@ func TestNoteDurationsUncommonTempos(t *testing.T) {
 		tempo int
 		want  time.Duration
 	}{
-		{95, 425 * time.Millisecond},
-		{177, 228 * time.Millisecond},
+		{95, 473 * time.Millisecond},
+		{177, 254 * time.Millisecond},
 	}
 	for _, c := range cases {
 		pt := parseClanLordTuneWithTempo("c3", c.tempo)
