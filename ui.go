@@ -858,18 +858,10 @@ func updateCharacterButtons() {
 			trash.Size = eui.Point{X: 24, Y: 24}
 			trash.Color = eui.ColorDarkRed
 			trash.HoverColor = eui.ColorRed
-			delName := c.Name
+			cCopy := c
 			trashEvents.Handle = func(ev eui.UIEvent) {
 				if ev.Type == eui.EventClick {
-					removeCharacter(delName)
-					if name == delName {
-						name = ""
-						passHash = ""
-						pass = ""
-					}
-					updateCharacterButtons()
-					// Preserve window position while contents change size
-					loginWin.Refresh()
+					confirmRemoveCharacter(cCopy)
 				}
 			}
 			row.AddItem(trash)
@@ -2208,8 +2200,8 @@ type popupButton struct {
 	Action     func()
 }
 
-// showPopup creates a simple modal-like popup with a message and buttons.
-func showPopup(title, message string, buttons []popupButton) *eui.WindowData {
+// showPopup creates a simple modal-like popup with optional extra items, a message and buttons.
+func showPopup(title, message string, buttons []popupButton, extras ...*eui.ItemData) *eui.WindowData {
 	win := eui.NewWindow()
 	win.Title = title
 	win.Closable = false
@@ -2222,6 +2214,12 @@ func showPopup(title, message string, buttons []popupButton) *eui.WindowData {
 	win.BorderPad = 4
 
 	flow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
+	// Optional extra items (e.g., images) shown above the message
+	for _, ex := range extras {
+		if ex != nil {
+			flow.AddItem(ex)
+		}
+	}
 	// Message (wrapped to a reasonable width)
 	uiScale := eui.UIScale()
 	targetWidthPx := float64(520)
@@ -2317,6 +2315,57 @@ func confirmQuit() {
 				os.Exit(0)
 			}},
 		},
+	)
+}
+
+// confirmRemoveCharacter prompts before deleting a saved character.
+func confirmRemoveCharacter(c Character) {
+	row := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
+
+	profItem, _ := eui.NewImageItem(32, 32)
+	profItem.Margin = 4
+	profItem.Border = 0
+	profItem.Filled = false
+	if pid := professionPictID(c.Profession); pid != 0 {
+		if img := loadImage(pid); img != nil {
+			profItem.Image = img
+			profItem.ImageName = "prof:cl:" + fmt.Sprint(pid)
+		}
+	}
+	row.AddItem(profItem)
+
+	avItem, _ := eui.NewImageItem(32, 32)
+	avItem.Margin = 4
+	avItem.Border = 0
+	avItem.Filled = false
+	if c.PictID != 0 {
+		if m := loadMobileFrame(c.PictID, 0, c.Colors); m != nil {
+			avItem.Image = m
+		} else if im := loadImage(c.PictID); im != nil {
+			avItem.Image = im
+		}
+	}
+	row.AddItem(avItem)
+
+	showPopup(
+		"Remove Password",
+		fmt.Sprintf("Are you sure you want to remove saved password for %s?", c.Name),
+		[]popupButton{
+			{Text: "Cancel"},
+			{Text: "Yes, remove it", Color: &eui.ColorDarkRed, HoverColor: &eui.ColorRed, Action: func() {
+				removeCharacter(c.Name)
+				if name == c.Name {
+					name = ""
+					passHash = ""
+					pass = ""
+				}
+				updateCharacterButtons()
+				if loginWin != nil {
+					loginWin.Refresh()
+				}
+			}},
+		},
+		row,
 	)
 }
 
