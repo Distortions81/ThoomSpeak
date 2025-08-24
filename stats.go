@@ -17,16 +17,25 @@ type assetStats struct {
 
 const statsFile = "stats.json"
 
-var dataDirPath = "data"
-
-func init() {
+// dataDirPath holds the absolute path to the "data" directory containing game
+// assets. Tests run from subpackages, so relying on the process working
+// directory is fragile. By resolving the path relative to this source file, the
+// assets can be found regardless of the current working directory.
+var dataDirPath = func() string {
 	if runtime.GOOS == "darwin" {
 		if home, err := os.UserHomeDir(); err == nil {
-			dataDirPath = filepath.Join(home, "Library", "Application Support", "goThoom")
-			_ = os.MkdirAll(dataDirPath, 0o755)
+			p := filepath.Join(home, "Library", "Application Support", "goThoom")
+			_ = os.MkdirAll(p, 0o755)
+			return p
 		}
 	}
-}
+	// Determine the module root from this source file and append "data".
+	if _, file, _, ok := runtime.Caller(0); ok {
+		return filepath.Join(filepath.Dir(file), "data")
+	}
+	// Fallback to relative path.
+	return "data"
+}()
 
 var (
 	stats      assetStats
