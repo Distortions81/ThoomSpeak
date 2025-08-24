@@ -756,6 +756,8 @@ func makeDownloadsWindow() {
 	downloadWin.AddWindow(false)
 }
 
+const charWinWidth = 248
+
 func updateCharacterButtons() {
 	if loginWin == nil || !loginWin.IsOpen() {
 		return
@@ -784,11 +786,12 @@ func updateCharacterButtons() {
 		charactersList.Contents[i] = nil
 	}
 	charactersList.Contents = charactersList.Contents[:0]
+
 	if len(characters) == 0 {
 		empty, _ := eui.NewText()
 		empty.Text = "No characters, click add!"
 		empty.FontSize = 14
-		empty.Size = eui.Point{X: 200, Y: 64}
+		empty.Size = eui.Point{X: charWinWidth, Y: 64}
 		charactersList.AddItem(empty)
 		name = ""
 		passHash = ""
@@ -797,7 +800,19 @@ func updateCharacterButtons() {
 		for _, c := range characters {
 			row := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
 
-			avItem, _ := eui.NewImageItem(24, 24)
+			profItem, _ := eui.NewImageItem(32, 32)
+			profItem.Margin = 4
+			profItem.Border = 0
+			profItem.Filled = false
+			if pid := professionPictID(c.Profession); pid != 0 {
+				if img := loadImage(pid); img != nil {
+					profItem.Image = img
+					profItem.ImageName = "prof:cl:" + fmt.Sprint(pid)
+				}
+			}
+			row.AddItem(profItem)
+
+			avItem, _ := eui.NewImageItem(32, 32)
 			avItem.Margin = 4
 			avItem.Border = 0
 			avItem.Filled = false
@@ -810,22 +825,10 @@ func updateCharacterButtons() {
 			}
 			row.AddItem(avItem)
 
-			profItem, _ := eui.NewImageItem(24, 24)
-			profItem.Margin = 4
-			profItem.Border = 0
-			profItem.Filled = false
-			if pid := professionPictID(c.Profession); pid != 0 {
-				if img := loadImage(pid); img != nil {
-					profItem.Image = img
-					profItem.ImageName = "prof:cl:" + fmt.Sprint(pid)
-				}
-			}
-			row.AddItem(profItem)
-
 			radio, radioEvents := eui.NewRadio()
 			radio.Text = c.Name
 			radio.RadioGroup = "characters"
-			radio.Size = eui.Point{X: 160, Y: 24}
+			radio.Size = eui.Point{X: 150, Y: 24}
 			radio.Checked = name == c.Name
 			nameCopy := c.Name
 			hashCopy := c.passHash
@@ -1123,7 +1126,7 @@ func makeLoginWindow() {
 
 	addBtn, addEvents := eui.NewButton()
 	addBtn.Text = "Add Character"
-	addBtn.Size = eui.Point{X: 200, Y: 24}
+	addBtn.Size = eui.Point{X: charWinWidth, Y: 24}
 	addEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
 			addCharName = ""
@@ -1135,31 +1138,15 @@ func makeLoginWindow() {
 	}
 	loginFlow.AddItem(addBtn)
 
-	demoBtn, demoEvents := eui.NewButton()
-	demoBtn.Text = "Try the demo"
-	demoBtn.Size = eui.Point{X: 200, Y: 24}
-	demoEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventClick {
-			go func() {
-				n, err := fetchRandomDemoCharacter(clientVersion)
-				if err != nil {
-					logError("demo: %v", err)
-					loginWin.MarkOpen()
-					makeErrorWindow("Error: Demo: " + err.Error())
-					return
-				}
-				name = n
-				passHash = ""
-				pass = "demo"
-				startLogin()
-			}()
-		}
-	}
-	loginFlow.AddItem(demoBtn)
+	label, _ := eui.NewText()
+	label.Text = ""
+	label.FontSize = 15
+	label.Size = eui.Point{X: 1, Y: 25}
+	loginFlow.AddItem(label)
 
 	loginFlow.AddItem(charactersList)
 
-	label, _ := eui.NewText()
+	label, _ = eui.NewText()
 	label.Text = ""
 	label.FontSize = 15
 	label.Size = eui.Point{X: 1, Y: 25}
@@ -1167,7 +1154,7 @@ func makeLoginWindow() {
 
 	connBtn, connEvents := eui.NewButton()
 	connBtn.Text = "Connect"
-	connBtn.Size = eui.Point{X: 200, Y: 48}
+	connBtn.Size = eui.Point{X: charWinWidth, Y: 48}
 	connBtn.Padding = 10
 	connEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
@@ -1203,7 +1190,7 @@ func makeLoginWindow() {
 
 	openBtn, openEvents := eui.NewButton()
 	openBtn.Text = "Play movie file"
-	openBtn.Size = eui.Point{X: 200, Y: 24}
+	openBtn.Size = eui.Point{X: charWinWidth, Y: 24}
 	openEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
 			filename, err := dialog.File().Filter("clMov files", "clMov", "clmov").Load()
@@ -1244,9 +1231,32 @@ func makeLoginWindow() {
 		}
 	}
 	loginFlow.AddItem(openBtn)
+
+	demoBtn, demoEvents := eui.NewButton()
+	demoBtn.Text = "Try the demo"
+	demoBtn.Size = eui.Point{X: charWinWidth, Y: 24}
+	demoEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			go func() {
+				n, err := fetchRandomDemoCharacter(clientVersion)
+				if err != nil {
+					logError("demo: %v", err)
+					loginWin.MarkOpen()
+					makeErrorWindow("Error: Demo: " + err.Error())
+					return
+				}
+				name = n
+				passHash = ""
+				pass = "demo"
+				startLogin()
+			}()
+		}
+	}
+	loginFlow.AddItem(demoBtn)
+
 	quitBttn, quitEvn := eui.NewButton()
 	quitBttn.Text = "Quit"
-	quitBttn.Size = eui.Point{X: 200, Y: 24}
+	quitBttn.Size = eui.Point{X: charWinWidth, Y: 24}
 	quitEvn.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
 			confirmQuit()
@@ -1256,9 +1266,9 @@ func makeLoginWindow() {
 
 	verFlow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL, Size: eui.Point{X: 200, Y: 24}}
 	verLabel, _ := eui.NewText()
-	verLabel.Text = fmt.Sprintf("goThoom test %d", appVersion)
-	verLabel.FontSize = 8
-	verLabel.Size = eui.Point{X: 130, Y: 24}
+	verLabel.Text = fmt.Sprintf("goThoom test %4d", appVersion)
+	verLabel.FontSize = 13
+	verLabel.Size = eui.Point{X: 170, Y: 24}
 	verFlow.AddItem(verLabel)
 
 	changeBtn, changeEvents := eui.NewButton()
