@@ -72,6 +72,18 @@ func parseBackendInfo(data []byte) {
 	playersMu.Unlock()
 	playersDirty = true
 	playersPersistDirty = true
+
+	if playerName != "" && strings.EqualFold(name, playerName) {
+		for i := range characters {
+			if strings.EqualFold(characters[i].Name, name) {
+				if characters[i].Profession != class {
+					characters[i].Profession = class
+					saveCharacters()
+				}
+				break
+			}
+		}
+	}
 }
 
 // parseBackendShare parses "be-sh" messages describing sharing relationships.
