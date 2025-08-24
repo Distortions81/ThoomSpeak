@@ -30,10 +30,11 @@ func init() {
 
 // adjustBubbleRect calculates the on-screen rectangle for a bubble and clamps
 // it to the visible area. The tail tip coordinates remain unchanged and must
-// be handled by the caller if needed.
-func adjustBubbleRect(x, y, width, height, tailHeight, sw, sh int, far bool) (left, top, right, bottom int) {
+// be handled by the caller if needed. Set noTail when the bubble has no arrow
+// pointing to a character so the rectangle is based directly on (x, y).
+func adjustBubbleRect(x, y, width, height, tailHeight, sw, sh int, noTail bool) (left, top, right, bottom int) {
 	bottom = y
-	if !far {
+	if !noTail {
 		bottom = y - tailHeight
 	}
 	left = x - width/2
@@ -139,7 +140,7 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 	width += 2 * pad
 	height := lineHeight*len(lines) + 2*pad
 
-	left, top, right, bottom := adjustBubbleRect(x, y, width, height, tailHeight, sw, sh, far)
+	left, top, right, bottom := adjustBubbleRect(x, y, width, height, tailHeight, sw, sh, far || noArrow)
 	baseX := left + width/2
 
 	bgR, bgG, bgB, bgA := bgCol.RGBA()
