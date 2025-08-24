@@ -246,14 +246,14 @@ func (p *moviePlayer) makePlaybackWindow() {
 	bFlow.AddItem(dbl)
 
 	exitBtn, exitEv := eui.NewButton()
-	exitBtn.Text = "Exit"
+	exitBtn.Text = "🚪 Exit"
 	exitBtn.Size = eui.Point{X: 80, Y: 24}
 	exitEv.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
 			showPopup(
 				"Exit Movie",
 				"Stop playback and return to login?",
-				[]popupButton{{Text: "Cancel"}, {Text: "Exit", Color: &eui.ColorDarkRed, HoverColor: &eui.ColorRed, Action: func() {
+				[]popupButton{{Text: "❌ Cancel"}, {Text: "🚪 Exit", Color: &eui.ColorDarkRed, HoverColor: &eui.ColorRed, Action: func() {
 					if movieWin != nil {
 						movieWin.Close()
 					}
