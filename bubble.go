@@ -326,6 +326,9 @@ func drawSpikes(screen *ebiten.Image, left, top, right, bottom, radius, size flo
 	if bottomGapStart < startX {
 		bottomGapStart = startX
 	}
+	if bottomGapEnd < bottomGapStart {
+		bottomGapEnd = bottomGapStart
+	}
 	if bottomGapEnd > endX {
 		bottomGapEnd = endX
 	}
