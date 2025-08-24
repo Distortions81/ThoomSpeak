@@ -252,6 +252,8 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 		if !far && !noArrow {
 			gapStart = float32(baseX - tailHalf)
 			gapEnd = float32(baseX + tailHalf)
+		} else {
+			gapStart, gapEnd = -1, -1
 		}
 		drawSpikes(screen, float32(left), float32(top), float32(right), float32(bottom), radius, float32(gs.GameScale*3), borderCol, gapStart, gapEnd)
 	} else if bubbleType == kBubbleMonster {
