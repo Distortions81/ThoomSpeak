@@ -261,7 +261,12 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 	}
 
 	if bubbleType == kBubbleYell {
-		drawSpikes(screen, float32(left), float32(top), float32(right), float32(bottom), radius, float32(gs.GameScale*3), borderCol)
+		gapStart, gapEnd := float32(0), float32(0)
+		if !far && !noArrow {
+			gapStart = float32(baseX - tailHalf)
+			gapEnd = float32(baseX + tailHalf)
+		}
+		drawSpikes(screen, float32(left), float32(top), float32(right), float32(bottom), radius, float32(gs.GameScale*3), borderCol, gapStart, gapEnd)
 	} else if bubbleType == kBubbleMonster {
 		drawJagged(screen, float32(left), float32(top), float32(right), float32(bottom), float32(gs.GameScale*3), borderCol)
 	}
@@ -279,17 +284,19 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 // drawSpikes renders spiky triangles around the bubble rectangle to emphasize
 // a shouted yell. Triangles are drawn pointing outward along each edge and
 // around the rounded corners using the given border color. The spike length
-// gently pulses over time to enhance the yelling effect.
-func drawSpikes(screen *ebiten.Image, left, top, right, bottom, radius, size float32, col color.Color) {
+// gently pulses over time to enhance the yelling effect. bottomGapStart and
+// bottomGapEnd define a segment along the bottom edge where spikes should be
+// omitted (e.g. where the tail arrow attaches).
+func drawSpikes(screen *ebiten.Image, left, top, right, bottom, radius, size float32, col color.Color, bottomGapStart, bottomGapEnd float32) {
 	bdR, bdG, bdB, bdA := col.RGBA()
 	step := size * 2
-	phase := float64(time.Now().UnixNano()) / float64(time.Second)
+	phase := float64(time.Now().UnixNano()) / float64(time.Second) * 4
 	spike := size + size*0.3*float32(math.Sin(phase))
 	op := &ebiten.DrawTrianglesOptions{ColorScaleMode: ebiten.ColorScaleModePremultipliedAlpha, AntiAlias: true}
 
 	startX := left + radius
 	endX := right - radius
-	// top and bottom edges
+	// top edge
 	for x := startX; x < endX; x += step {
 		end := x + step
 		mid := x + size
@@ -313,23 +320,43 @@ func drawSpikes(screen *ebiten.Image, left, top, right, bottom, radius, size flo
 			vs[i].ColorA = float32(bdA) / 0xffff
 		}
 		screen.DrawTriangles(vs, is, whiteImage, op)
-
-		p = vector.Path{}
-		p.MoveTo(x, bottom)
-		p.LineTo(mid, bottom+spike)
-		p.LineTo(end, bottom)
-		p.Close()
-		vs, is = p.AppendVerticesAndIndicesForFilling(nil, nil)
-		for i := range vs {
-			vs[i].SrcX = 0
-			vs[i].SrcY = 0
-			vs[i].ColorR = float32(bdR) / 0xffff
-			vs[i].ColorG = float32(bdG) / 0xffff
-			vs[i].ColorB = float32(bdB) / 0xffff
-			vs[i].ColorA = float32(bdA) / 0xffff
-		}
-		screen.DrawTriangles(vs, is, whiteImage, op)
 	}
+
+	// bottom edge (split around gap)
+	if bottomGapStart < startX {
+		bottomGapStart = startX
+	}
+	if bottomGapEnd > endX {
+		bottomGapEnd = endX
+	}
+	drawBottom := func(segStart, segEnd float32) {
+		for x := segStart; x < segEnd; x += step {
+			end := x + step
+			mid := x + size
+			if end > segEnd {
+				end = segEnd
+				mid = x + (end-x)/2
+			}
+
+			var p vector.Path
+			p.MoveTo(x, bottom)
+			p.LineTo(mid, bottom+spike)
+			p.LineTo(end, bottom)
+			p.Close()
+			vs, is := p.AppendVerticesAndIndicesForFilling(nil, nil)
+			for i := range vs {
+				vs[i].SrcX = 0
+				vs[i].SrcY = 0
+				vs[i].ColorR = float32(bdR) / 0xffff
+				vs[i].ColorG = float32(bdG) / 0xffff
+				vs[i].ColorB = float32(bdB) / 0xffff
+				vs[i].ColorA = float32(bdA) / 0xffff
+			}
+			screen.DrawTriangles(vs, is, whiteImage, op)
+		}
+	}
+	drawBottom(startX, bottomGapStart)
+	drawBottom(bottomGapEnd, endX)
 
 	startY := top + radius
 	endY := bottom - radius
