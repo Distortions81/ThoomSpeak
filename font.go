@@ -71,14 +71,14 @@ func initFont() {
 		log.Fatalf("failed to parse font: %v", err)
 	}
 
-	eui.SetFontSources(regular, symbols, symbols2, emoji)
+	eui.SetFontSources(emoji, symbols, symbols2, regular)
 
 	makeFace := func(src *text.GoTextFaceSource, size float64) text.Face {
 		faces := []text.Face{
-			&text.GoTextFace{Source: src, Size: size},
+			&text.GoTextFace{Source: emoji, Size: size},
 			&text.GoTextFace{Source: symbols, Size: size},
 			&text.GoTextFace{Source: symbols2, Size: size},
-			&text.GoTextFace{Source: emoji, Size: size},
+			&text.GoTextFace{Source: src, Size: size},
 		}
 		mf, err := text.NewMultiFace(faces...)
 		if err != nil {
