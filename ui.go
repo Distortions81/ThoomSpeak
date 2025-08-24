@@ -38,6 +38,7 @@ var (
 
 var loginWin *eui.WindowData
 var downloadWin *eui.WindowData
+var precacheWin *eui.WindowData
 var charactersList *eui.ItemData
 var addCharWin *eui.WindowData
 var addCharName string
@@ -1012,6 +1013,30 @@ func makePasswordWindow() {
 }
 
 func startLogin() {
+	if (gs.precacheSounds || gs.precacheImages) && !assetsPrecached {
+		if precacheWin != nil {
+			return
+		}
+		var msg string
+		switch {
+		case gs.precacheImages && gs.precacheSounds:
+			msg = "Preloading images and sounds..."
+		case gs.precacheImages:
+			msg = "Preloading images..."
+		case gs.precacheSounds:
+			msg = "Preloading sounds..."
+		}
+		precacheWin = showPopup("Preloading", msg, nil)
+		go func(win *eui.WindowData) {
+			for !assetsPrecached {
+				time.Sleep(100 * time.Millisecond)
+			}
+			win.Close()
+			precacheWin = nil
+			startLogin()
+		}(precacheWin)
+		return
+	}
 	if status.Version > 0 && clientVersion < status.Version {
 		msg := fmt.Sprintf("goThoom is not tested with client version %d. It may still work with version %d.", clientVersion, status.Version)
 		showPopup(
