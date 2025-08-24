@@ -219,7 +219,11 @@ func eventsToNotes(pt parsedTune, inst instrument, velocity int) []Note {
 		if len(ev.keys) == 0 {
 			startMS += durMS
 		} else {
-			noteMS := durMS
+			gapMS := int(math.Round(1500.0 / float64(tempo)))
+			noteMS := durMS - gapMS
+			if noteMS < 0 {
+				noteMS = 0
+			}
 
 			v := velocity
 			if len(ev.keys) > 1 {
@@ -245,7 +249,7 @@ func eventsToNotes(pt parsedTune, inst instrument, velocity int) []Note {
 					Duration: time.Duration(noteMS) * time.Millisecond,
 				})
 			}
-			startMS += noteMS
+			startMS += durMS
 		}
 		i++
 
