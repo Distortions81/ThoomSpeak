@@ -167,6 +167,7 @@ func openHotkeyEditor(idx int) {
 
 	cmdLabel, _ := eui.NewText()
 	cmdLabel.Text = "Command:"
+	cmdLabel.Size = eui.Point{X: 220, Y: 20}
 	cmdLabel.FontSize = 12
 	flow.AddItem(cmdLabel)
 
@@ -186,6 +187,7 @@ func openHotkeyEditor(idx int) {
 
 	textLabel, _ := eui.NewText()
 	textLabel.Text = "Text:"
+	textLabel.Size = eui.Point{X: 220, Y: 20}
 	textLabel.FontSize = 12
 	flow.AddItem(textLabel)
 
