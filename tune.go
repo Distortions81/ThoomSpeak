@@ -181,6 +181,8 @@ func eventsToNotes(pt parsedTune, inst instrument, velocity int) []Note {
 	tempo := pt.tempo
 	tempoIdx := 0
 	startMS := 0
+	var prevWasNote bool
+	var prevRestMS int
 
 	// Build map of loop starts for quick lookup
 	loopMap := make(map[int][]loopMarker)
@@ -214,34 +216,46 @@ func eventsToNotes(pt parsedTune, inst instrument, velocity int) []Note {
 
 		ev := pt.events[i]
 		durMS := int((ev.beats / 4) * (60000.0 / float64(tempo)))
-		noteMS := durMS * 9 / 10
-		restMS := durMS - noteMS
 
-		v := velocity
-		if len(ev.keys) > 1 {
-			v = v * inst.chord / 100
-		} else {
-			v = v * inst.melody / 100
-		}
-		v = v * ev.volume / 10
-		if v < 1 {
-			v = 1
-		} else if v > 127 {
-			v = 127
-		}
-		for _, k := range ev.keys {
-			key := k + inst.octave*12
-			if key < 0 || key > 127 {
-				continue
+		if len(ev.keys) == 0 {
+			if prevWasNote {
+				startMS -= prevRestMS
 			}
-			notes = append(notes, Note{
-				Key:      key,
-				Velocity: v,
-				Start:    time.Duration(startMS) * time.Millisecond,
-				Duration: time.Duration(noteMS) * time.Millisecond,
-			})
+			startMS += durMS
+			prevWasNote = false
+			prevRestMS = 0
+		} else {
+			noteMS := durMS * 9 / 10
+			restMS := durMS - noteMS
+
+			v := velocity
+			if len(ev.keys) > 1 {
+				v = v * inst.chord / 100
+			} else {
+				v = v * inst.melody / 100
+			}
+			v = v * ev.volume / 10
+			if v < 1 {
+				v = 1
+			} else if v > 127 {
+				v = 127
+			}
+			for _, k := range ev.keys {
+				key := k + inst.octave*12
+				if key < 0 || key > 127 {
+					continue
+				}
+				notes = append(notes, Note{
+					Key:      key,
+					Velocity: v,
+					Start:    time.Duration(startMS) * time.Millisecond,
+					Duration: time.Duration(noteMS) * time.Millisecond,
+				})
+			}
+			startMS += noteMS + restMS
+			prevWasNote = true
+			prevRestMS = restMS
 		}
-		startMS += noteMS + restMS
 		i++
 
 		for len(stack) > 0 && i == stack[len(stack)-1].end {
