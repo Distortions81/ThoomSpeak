@@ -98,6 +98,36 @@ func saveCharacters() {
 	}
 }
 
+// backfillCharactersFromPlayers populates missing appearance and profession
+// information for saved characters using data loaded from GT_Players.json.
+// If any character is updated, the characters file is saved.
+func backfillCharactersFromPlayers() {
+	playersMu.RLock()
+	changed := false
+	for i := range characters {
+		p, ok := players[characters[i].Name]
+		if !ok || p == nil {
+			continue
+		}
+		if characters[i].PictID == 0 && p.PictID != 0 {
+			characters[i].PictID = p.PictID
+			changed = true
+		}
+		if len(characters[i].Colors) == 0 && len(p.Colors) > 0 {
+			characters[i].Colors = append(characters[i].Colors[:0], p.Colors...)
+			changed = true
+		}
+		if characters[i].Profession == "" && p.Class != "" {
+			characters[i].Profession = p.Class
+			changed = true
+		}
+	}
+	playersMu.RUnlock()
+	if changed {
+		saveCharacters()
+	}
+}
+
 // scrambleHash obscures a hex-encoded hash by XORing with a key derived from a
 // hardcoded value and the character name.
 func scrambleHash(name, h string) string {

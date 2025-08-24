@@ -58,3 +58,41 @@ func TestSaveLoadCharactersAppearanceProfession(t *testing.T) {
 		t.Fatalf("unexpected colors: %v", c.Colors)
 	}
 }
+
+func TestBackfillCharactersFromPlayers(t *testing.T) {
+	dir := t.TempDir()
+	origDir := dataDirPath
+	dataDirPath = dir
+	defer func() { dataDirPath = origDir }()
+
+	playersMu.Lock()
+	origPlayers := players
+	players = map[string]*Player{
+		"Hero": {Name: "Hero", PictID: 77, Colors: []byte{4, 5}, Class: "mystic"},
+	}
+	playersMu.Unlock()
+	defer func() {
+		playersMu.Lock()
+		players = origPlayers
+		playersMu.Unlock()
+	}()
+
+	origChars := characters
+	characters = []Character{{Name: "Hero"}}
+	backfillCharactersFromPlayers()
+	if len(characters) != 1 {
+		t.Fatalf("expected 1 character, got %d", len(characters))
+	}
+	c := characters[0]
+	if c.PictID != 77 {
+		t.Fatalf("expected pict 77, got %d", c.PictID)
+	}
+	if c.Profession != "mystic" {
+		t.Fatalf("expected profession mystic, got %q", c.Profession)
+	}
+	if len(c.Colors) != 2 || c.Colors[0] != 4 || c.Colors[1] != 5 {
+		t.Fatalf("unexpected colors: %v", c.Colors)
+	}
+
+	characters = origChars
+}
