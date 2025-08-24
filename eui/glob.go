@@ -13,7 +13,7 @@ var (
 	screenWidth  = 1024
 	screenHeight = 1024
 
-	mplusFaceSource  *text.GoTextFaceSource
+	mplusFaceSources []*text.GoTextFaceSource
 	windows          []*windowData
 	activeWindow     *windowData
 	focusedItem      *itemData
