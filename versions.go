@@ -167,8 +167,8 @@ func checkForNewVersion() {
 				"Update Available",
 				fmt.Sprintf("goThoom version %d is available!", ver),
 				[]popupButton{
-					{Text: "❌ Cancel"},
-					{Text: "📥 Download", Action: func() {
+					{Text: "Cancel"},
+					{Text: "Download", Action: func() {
 						browser.OpenURL("https://github.com/Distortions81/goThoom/releases")
 						os.Exit(0)
 					}},

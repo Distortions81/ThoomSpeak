@@ -227,7 +227,7 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 	row1.AddItem(shotBtn)
 
 	exitSessBtn, exitSessEv := eui.NewButton()
-	exitSessBtn.Text = "🚪 Exit"
+	exitSessBtn.Text = "Exit"
 	exitSessBtn.Size = eui.Point{X: buttonWidth, Y: buttonHeight}
 	exitSessBtn.FontSize = toolFontSize
 	exitSessEv.Handle = func(ev eui.UIEvent) {
@@ -410,8 +410,8 @@ func updateHandsWindow() {
 func confirmExitSession() {
 	if playingMovie {
 		showPopup("Exit Movie", "Stop playback and return to login?", []popupButton{
-			{Text: "❌ Cancel"},
-			{Text: "🚪 Exit", Color: &eui.ColorDarkRed, HoverColor: &eui.ColorRed, Action: func() {
+			{Text: "Cancel"},
+			{Text: "Exit", Color: &eui.ColorDarkRed, HoverColor: &eui.ColorRed, Action: func() {
 				if movieWin != nil {
 					movieWin.Close()
 				} else {
@@ -424,8 +424,8 @@ func confirmExitSession() {
 	}
 	if tcpConn != nil { // Connected to server
 		showPopup("Exit Session", "Disconnect and return to login?", []popupButton{
-			{Text: "❌ Cancel"},
-			{Text: "🔌 Disconnect", Color: &eui.ColorDarkRed, HoverColor: &eui.ColorRed, Action: func() {
+			{Text: "Cancel"},
+			{Text: "Disconnect", Color: &eui.ColorDarkRed, HoverColor: &eui.ColorRed, Action: func() {
 				handleDisconnect()
 			}},
 		})
@@ -448,7 +448,7 @@ func handleDownloadAssetError(flow, statusText, pb *eui.ItemData, retryFn func()
 	flow.Contents = []*eui.ItemData{statusText, pb}
 	retryRow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
 	retryBtn, retryEvents := eui.NewButton()
-	retryBtn.Text = "🔄 Retry"
+	retryBtn.Text = "Retry"
 	retryBtn.Size = eui.Point{X: 100, Y: 24}
 	retryEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
@@ -459,7 +459,7 @@ func handleDownloadAssetError(flow, statusText, pb *eui.ItemData, retryFn func()
 	retryRow.AddItem(retryBtn)
 
 	quitBtn, quitEvents := eui.NewButton()
-	quitBtn.Text = "🚪 Quit"
+	quitBtn.Text = "Quit"
 	quitBtn.Size = eui.Point{X: 100, Y: 24}
 	quitEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
@@ -668,7 +668,7 @@ func makeDownloadsWindow() {
 				flow.Contents = []*eui.ItemData{statusText, pb}
 				retryRow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
 				retryBtn, retryEvents := eui.NewButton()
-				retryBtn.Text = "🔄 Retry"
+				retryBtn.Text = "Retry"
 				retryBtn.Size = eui.Point{X: 100, Y: 24}
 				retryEvents.Handle = func(ev eui.UIEvent) {
 					if ev.Type == eui.EventClick {
@@ -679,7 +679,7 @@ func makeDownloadsWindow() {
 				retryRow.AddItem(retryBtn)
 
 				quitBtn, quitEvents := eui.NewButton()
-				quitBtn.Text = "🚪 Quit"
+				quitBtn.Text = "Quit"
 				quitBtn.Size = eui.Point{X: 100, Y: 24}
 				quitEvents.Handle = func(ev eui.UIEvent) {
 					if ev.Type == eui.EventClick {
@@ -732,7 +732,7 @@ func makeDownloadsWindow() {
 
 	btnFlow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
 	dlBtn, dlEvents := eui.NewButton()
-	dlBtn.Text = "📥 Download"
+	dlBtn.Text = "Download"
 	dlBtn.Size = eui.Point{X: 100, Y: 24}
 	dlEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
@@ -742,7 +742,7 @@ func makeDownloadsWindow() {
 	btnFlow.AddItem(dlBtn)
 
 	closeBtn, closeEvents := eui.NewButton()
-	closeBtn.Text = "🚪 Quit"
+	closeBtn.Text = "Quit"
 	closeBtn.Size = eui.Point{X: 100, Y: 24}
 	closeEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
@@ -1065,8 +1065,8 @@ func startLogin() {
 			"Untested Version",
 			msg,
 			[]popupButton{
-				{Text: "❌ Cancel"},
-				{Text: "✅ Proceed", Action: func() {
+				{Text: "Cancel"},
+				{Text: "Proceed", Action: func() {
 					clientVersion = status.Version
 					startLogin()
 				}},
@@ -1247,7 +1247,7 @@ func makeLoginWindow() {
 	loginFlow.AddItem(demoBtn)
 
 	quitBttn, quitEvn := eui.NewButton()
-	quitBttn.Text = "🚪 Quit"
+	quitBttn.Text = "Quit"
 	quitBttn.Size = eui.Point{X: charWinWidth, Y: 24}
 	quitEvn.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
@@ -1380,7 +1380,7 @@ func explainError(msg string) string {
 
 func makeErrorWindow(msg string) {
 	body := msg + "\n" + explainError(msg)
-	showPopup("Error", body, []popupButton{{Text: "✅ OK"}})
+	showPopup("Error", body, []popupButton{{Text: "OK"}})
 }
 
 var SettingsLock sync.Mutex
@@ -2297,8 +2297,8 @@ func confirmResetSettings() {
 		"Confirm Reset",
 		"Reset all settings to defaults? This cannot be undone.",
 		[]popupButton{
-			{Text: "❌ Cancel"},
-			{Text: "♻️ Reset", Color: &eui.ColorDarkRed, HoverColor: &eui.ColorRed, Action: func() { resetAllSettings() }},
+			{Text: "Cancel"},
+			{Text: "Reset", Color: &eui.ColorDarkRed, HoverColor: &eui.ColorRed, Action: func() { resetAllSettings() }},
 		},
 	)
 }
@@ -2308,8 +2308,8 @@ func confirmQuit() {
 		"Confirm Quit",
 		"Are you sure you would like to quit?",
 		[]popupButton{
-			{Text: "❌ Cancel"},
-			{Text: "🚪 Quit", Color: &eui.ColorDarkRed, HoverColor: &eui.ColorRed, Action: func() {
+			{Text: "Cancel"},
+			{Text: "Quit", Color: &eui.ColorDarkRed, HoverColor: &eui.ColorRed, Action: func() {
 				saveCharacters()
 				saveSettings()
 				os.Exit(0)
@@ -2351,8 +2351,8 @@ func confirmRemoveCharacter(c Character) {
 		"Remove Password",
 		fmt.Sprintf("Are you sure you want to remove saved password for %s?", c.Name),
 		[]popupButton{
-			{Text: "❌ Cancel"},
-			{Text: "🗑️ Yes, remove it", Color: &eui.ColorDarkRed, HoverColor: &eui.ColorRed, Action: func() {
+			{Text: "Cancel"},
+			{Text: "Yes, remove it", Color: &eui.ColorDarkRed, HoverColor: &eui.ColorRed, Action: func() {
 				removeCharacter(c.Name)
 				if name == c.Name {
 					name = ""
