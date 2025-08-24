@@ -228,14 +228,15 @@ func loadSettings() bool {
 	path := filepath.Join(dataDirPath, settingsFile)
 	data, err := os.ReadFile(path)
 	if err != nil {
+		gs = gsdef
 		applyQualityPreset("High")
 		settingsLoaded = false
 		return false
 	}
 
-	tmp := settings{}
-	tmp = gsdef
+	tmp := gsdef
 	if err := json.Unmarshal(data, &tmp); err != nil {
+		gs = gsdef
 		settingsLoaded = false
 		return false
 	}
@@ -244,9 +245,17 @@ func loadSettings() bool {
 		gs = tmp
 		settingsLoaded = true
 	} else {
+		gs = gsdef
 		applyQualityPreset("High")
 		settingsLoaded = false
 		return false
+	}
+
+	if gs.DenoiseAmount < 0 || gs.DenoiseAmount > 1 {
+		gs.DenoiseAmount = gsdef.DenoiseAmount
+	}
+	if gs.DenoiseSharpness < 0 || gs.DenoiseSharpness > 20 {
+		gs.DenoiseSharpness = gsdef.DenoiseSharpness
 	}
 
 	if gs.WindowWidth > 0 && gs.WindowHeight > 0 {
