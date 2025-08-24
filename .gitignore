@@ -21,3 +21,4 @@ GT_Players.json
 music_*.wav
 *.pem
 data/*.gz
+data/global-hotkeys.json
