@@ -2,15 +2,16 @@ package main
 
 import (
 	"math"
-	"strings"
 	"time"
 
-	text "github.com/hajimehoshi/ebiten/v2/text/v2"
+	"github.com/hajimehoshi/ebiten/v2"
 	"gothoom/eui"
 )
 
 type thinkMessage struct {
 	item   *eui.ItemData
+	img    *ebiten.Image
+	text   string
 	expiry time.Time
 }
 
@@ -23,33 +24,27 @@ func showThinkMessage(msg string) {
 		return
 	}
 	btn, events := eui.NewButton()
-	btn.Text = msg
-	btn.FontSize = float32(gs.ChatFontSize)
-	btn.Filled = true
+	btn.Filled = false
 	btn.Outlined = false
-	btn.Color = eui.NewColor(0, 0, 0, 160)
-	btn.TextColor = eui.NewColor(255, 255, 255, 255)
-	btn.HoverColor = btn.Color
-	btn.ClickColor = btn.Color
-	btn.Fillet = 6
-	btn.Padding = 4
+	btn.Padding = 0
+	btn.BorderPad = 0
 	btn.Margin = 0
+	btn.Text = ""
 
-	textSize := (btn.FontSize * eui.UIScale()) + 2
-	face := &text.GoTextFace{Source: eui.FontSource(), Size: float64(textSize)}
+	sw := int(float64(gameAreaSizeX) * gs.GameScale)
+	pad := int((4 + 2) * gs.GameScale)
+	tailHeight := int(10 * gs.GameScale)
+	maxLineWidth := sw/4 - 2*pad
+	font := bubbleFont
+	width, lines := wrapText(msg, font, float64(maxLineWidth))
+	metrics := font.Metrics()
+	lineHeight := int(math.Ceil(metrics.HAscent) + math.Ceil(metrics.HDescent) + math.Ceil(metrics.HLineGap))
+	width += 2 * pad
+	height := lineHeight*len(lines) + 2*pad
 
-	metrics := face.Metrics()
-	lineHeight := math.Ceil(metrics.HAscent) + math.Ceil(metrics.HDescent) + math.Ceil(metrics.HLineGap)
-
-	winSize := gameWin.GetSize()
-	pad := float64((btn.Padding + btn.BorderPad) * eui.UIScale())
-	maxWidth := float64(winSize.X)/4 - 2*pad
-	usedWidth, lines := wrapText(msg, face, maxWidth)
-	btn.Text = strings.Join(lines, "\n")
-	btn.Size = eui.Point{
-		X: float32(usedWidth)/eui.UIScale() + btn.Padding*2 + btn.BorderPad*2,
-		Y: float32(lineHeight*float64(len(lines)))/eui.UIScale() + btn.Padding*2 + btn.BorderPad*2,
-	}
+	img := ebiten.NewImage(width, height+tailHeight)
+	btn.Image = img
+	btn.Size = eui.Point{X: float32(width) / eui.UIScale(), Y: float32(height+tailHeight) / eui.UIScale()}
 
 	events.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
@@ -61,9 +56,21 @@ func showThinkMessage(msg string) {
 	if dur <= 0 {
 		dur = 6 * time.Second
 	}
-	thinkMessages = append(thinkMessages, &thinkMessage{item: btn, expiry: time.Now().Add(dur)})
+	m := &thinkMessage{item: btn, img: img, text: msg, expiry: time.Now().Add(dur)}
+	thinkMessages = append(thinkMessages, m)
+	renderThinkMessage(m)
 	gameWin.AddItem(btn)
 	layoutThinkMessages()
+}
+
+func renderThinkMessage(m *thinkMessage) {
+	if m == nil || m.img == nil {
+		return
+	}
+	m.img.Clear()
+	borderCol, bgCol, textCol := bubbleColors(kBubbleThought)
+	w := m.img.Bounds().Dx()
+	drawBubble(m.img, m.text, w/2, 0, kBubbleThought, false, false, borderCol, bgCol, textCol)
 }
 
 func removeThinkMessage(item *eui.ItemData) {
@@ -123,8 +130,16 @@ func updateThinkMessages() {
 	now := time.Now()
 	changed := false
 	for i := 0; i < len(thinkMessages); {
-		if now.After(thinkMessages[i].expiry) {
-			removeThinkMessage(thinkMessages[i].item)
+		m := thinkMessages[i]
+		renderThinkMessage(m)
+		if m.item != nil {
+			m.item.Dirty = true
+		}
+		if gameWin != nil {
+			gameWin.Dirty = true
+		}
+		if now.After(m.expiry) {
+			removeThinkMessage(m.item)
 			changed = true
 		} else {
 			i++
