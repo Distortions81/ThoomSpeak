@@ -1,6 +1,10 @@
 package macro
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
 
 func TestParserExpression(t *testing.T) {
 	p := New()
@@ -67,5 +71,28 @@ func TestSetVariableProducesNoMacro(t *testing.T) {
 	}
 	if len(p.Macros) != 0 {
 		t.Fatalf("expected no macros, got %d", len(p.Macros))
+	}
+}
+
+func TestParserInclude(t *testing.T) {
+	dir := t.TempDir()
+	inc := filepath.Join(dir, "inc.txt")
+	if err := os.WriteFile(inc, []byte("'bar' hello"), 0o644); err != nil {
+		t.Fatalf("write include: %v", err)
+	}
+	main := filepath.Join(dir, "main.txt")
+	content := "include \"inc.txt\""
+	if err := os.WriteFile(main, []byte(content), 0o644); err != nil {
+		t.Fatalf("write main: %v", err)
+	}
+	p := New()
+	if err := p.ParseFile(main); err != nil {
+		t.Fatalf("parse failed: %v", err)
+	}
+	if len(p.Macros) != 1 {
+		t.Fatalf("expected 1 macro from include, got %d", len(p.Macros))
+	}
+	if p.Macros[0].Name != "bar" {
+		t.Fatalf("unexpected macro name: %s", p.Macros[0].Name)
 	}
 }

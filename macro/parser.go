@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -71,10 +72,11 @@ type Parser struct {
 	lastMacro   *Macro
 	lastCommand *Command
 	Macros      []*Macro
+	included    map[string]struct{}
 }
 
 // New creates a new parser.
-func New() *Parser { return &Parser{} }
+func New() *Parser { return &Parser{included: make(map[string]struct{})} }
 
 // ParseFile parses a macro file at the given path.
 func (p *Parser) ParseFile(fname string) error {
@@ -330,7 +332,26 @@ func (p *Parser) newMacro(word string, line string) (string, string, error) {
 		p.lastMacro = nil
 		return "", rest2, nil
 	case strings.EqualFold(word, "include"):
-		_, rest := p.newWord(line)
+		fname, rest := p.newWord(line)
+		if fname == "" {
+			p.lastMacro = nil
+			return "", rest, nil
+		}
+		name := strings.Trim(fname, "\"'")
+		if !filepath.IsAbs(name) && p.FileName != "" {
+			name = filepath.Join(filepath.Dir(p.FileName), name)
+		}
+		if _, ok := p.included[name]; ok {
+			p.lastMacro = nil
+			return "", rest, nil
+		}
+		p.included[name] = struct{}{}
+		child := New()
+		child.included = p.included
+		if err := child.ParseFile(name); err != nil {
+			return "", rest, err
+		}
+		p.Macros = append(p.Macros, child.Macros...)
 		p.lastMacro = nil
 		return "", rest, nil
 	default:
