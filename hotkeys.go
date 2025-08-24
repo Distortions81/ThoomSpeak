@@ -200,6 +200,7 @@ func openHotkeyEditor(idx int) {
 	}
 
 	hotkeyEditWin.AddWindow(true)
+	hotkeyEditWin.MarkOpen()
 }
 
 func finishHotkeyEdit(save bool) {
