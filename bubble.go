@@ -770,10 +770,19 @@ func drawPonderWaves(screen *ebiten.Image, left, top, right, bottom int, col col
 	corner := float32(10 * gs.GameScale)
 	angleStep := float64(step / corner)
 
+	pad := float32(2 * r)
+	w := right - left
+	h := bottom - top
+	temp := ebiten.NewImage(w+int(pad)*2, h+int(pad)*2)
+
+	draw := func(cx, cy float32) {
+		drawBubbleCircle(temp, cx-float32(left)+pad, cy-float32(top)+pad, r, col)
+	}
+
 	// top edge
 	for x := float32(left) + corner; x <= float32(right)-corner; x += step {
 		offset := float32(math.Sin(phase+float64(x)*0.1)) * r * 0.3
-		drawBubbleCircle(screen, x, float32(top)+offset, r, col)
+		draw(x, float32(top)+offset)
 	}
 	// top-right corner
 	for a := -math.Pi / 2; a < 0; a += angleStep {
@@ -782,12 +791,12 @@ func drawPonderWaves(screen *ebiten.Image, left, top, right, bottom int, col col
 		nx := float32(math.Cos(a))
 		ny := float32(math.Sin(a))
 		offset := float32(math.Sin(phase+a)) * r * 0.3
-		drawBubbleCircle(screen, cx+offset*nx, cy+offset*ny, r, col)
+		draw(cx+offset*nx, cy+offset*ny)
 	}
 	// right edge
 	for y := float32(top) + corner; y <= float32(bottom)-corner; y += step {
 		offset := float32(math.Sin(phase+float64(y)*0.1)) * r * 0.3
-		drawBubbleCircle(screen, float32(right)+offset, y, r, col)
+		draw(float32(right)+offset, y)
 	}
 	// bottom-right corner
 	for a := 0.0; a < math.Pi/2; a += angleStep {
@@ -796,12 +805,12 @@ func drawPonderWaves(screen *ebiten.Image, left, top, right, bottom int, col col
 		nx := float32(math.Cos(a))
 		ny := float32(math.Sin(a))
 		offset := float32(math.Sin(phase+a)) * r * 0.3
-		drawBubbleCircle(screen, cx+offset*nx, cy+offset*ny, r, col)
+		draw(cx+offset*nx, cy+offset*ny)
 	}
 	// bottom edge
 	for x := float32(right) - corner; x >= float32(left)+corner; x -= step {
 		offset := float32(math.Sin(phase+float64(x)*0.1)) * r * 0.3
-		drawBubbleCircle(screen, x, float32(bottom)+offset, r, col)
+		draw(x, float32(bottom)+offset)
 	}
 	// bottom-left corner
 	for a := math.Pi / 2; a < math.Pi; a += angleStep {
@@ -810,12 +819,12 @@ func drawPonderWaves(screen *ebiten.Image, left, top, right, bottom int, col col
 		nx := float32(math.Cos(a))
 		ny := float32(math.Sin(a))
 		offset := float32(math.Sin(phase+a)) * r * 0.3
-		drawBubbleCircle(screen, cx+offset*nx, cy+offset*ny, r, col)
+		draw(cx+offset*nx, cy+offset*ny)
 	}
 	// left edge
 	for y := float32(bottom) - corner; y >= float32(top)+corner; y -= step {
 		offset := float32(math.Sin(phase+float64(y)*0.1)) * r * 0.3
-		drawBubbleCircle(screen, float32(left)+offset, y, r, col)
+		draw(float32(left)+offset, y)
 	}
 	// top-left corner
 	for a := math.Pi; a < 3*math.Pi/2; a += angleStep {
@@ -824,8 +833,12 @@ func drawPonderWaves(screen *ebiten.Image, left, top, right, bottom int, col col
 		nx := float32(math.Cos(a))
 		ny := float32(math.Sin(a))
 		offset := float32(math.Sin(phase+a)) * r * 0.3
-		drawBubbleCircle(screen, cx+offset*nx, cy+offset*ny, r, col)
+		draw(cx+offset*nx, cy+offset*ny)
 	}
+
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Translate(float64(left)-float64(pad), float64(top)-float64(pad))
+	screen.DrawImage(temp, op)
 }
 
 // drawBubbleCircle draws a filled circle used by the wavy ponder bubble edges.
@@ -844,6 +857,6 @@ func drawBubbleCircle(screen *ebiten.Image, cx, cy, radius float32, col color.Co
 		vs[i].ColorB = float32(b) / 0xffff
 		vs[i].ColorA = float32(a) / 0xffff
 	}
-	op := &ebiten.DrawTrianglesOptions{ColorScaleMode: ebiten.ColorScaleModePremultipliedAlpha, AntiAlias: true}
+	op := &ebiten.DrawTrianglesOptions{ColorScaleMode: ebiten.ColorScaleModePremultipliedAlpha, AntiAlias: true, CompositeMode: ebiten.CompositeModeCopy}
 	screen.DrawTriangles(vs, is, whiteImage, op)
 }
