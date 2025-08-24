@@ -290,7 +290,7 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 // omitted (e.g. where the tail arrow attaches).
 func drawSpikes(screen *ebiten.Image, left, top, right, bottom, radius, size float32, col color.Color, bottomGapStart, bottomGapEnd float32) {
 	bdR, bdG, bdB, bdA := col.RGBA()
-	step := size * 2
+	step := size
 	phase := float64(time.Now().UnixNano()) / float64(time.Second) * 4
 	spike := size + size*0.3*float32(math.Sin(phase))
 	op := &ebiten.DrawTrianglesOptions{ColorScaleMode: ebiten.ColorScaleModePremultipliedAlpha, AntiAlias: true}
@@ -300,7 +300,7 @@ func drawSpikes(screen *ebiten.Image, left, top, right, bottom, radius, size flo
 	// top edge
 	for x := startX; x < endX; x += step {
 		end := x + step
-		mid := x + size
+		mid := x + step/2
 		if end > endX {
 			end = endX
 			mid = x + (end-x)/2
@@ -336,7 +336,7 @@ func drawSpikes(screen *ebiten.Image, left, top, right, bottom, radius, size flo
 	drawBottom := func(segStart, segEnd float32) {
 		for x := segStart; x < segEnd; x += step {
 			end := x + step
-			mid := x + size
+			mid := x + step/2
 			if end > segEnd {
 				end = segEnd
 				mid = x + (end-x)/2
@@ -367,7 +367,7 @@ func drawSpikes(screen *ebiten.Image, left, top, right, bottom, radius, size flo
 	// left and right edges
 	for y := startY; y < endY; y += step {
 		end := y + step
-		mid := y + size
+		mid := y + step/2
 		if end > endY {
 			end = endY
 			mid = y + (end-y)/2
@@ -451,7 +451,7 @@ func drawSpikes(screen *ebiten.Image, left, top, right, bottom, radius, size flo
 // Each spike varies in length to create a more chaotic cartoon effect.
 func drawMonsterSpikes(screen *ebiten.Image, left, top, right, bottom, radius, size float32, col color.Color, bottomGapStart, bottomGapEnd float32) {
 	bdR, bdG, bdB, bdA := col.RGBA()
-	step := size
+	step := size / 2
 	phase := float64(time.Now().UnixNano()) / float64(time.Second)
 	op := &ebiten.DrawTrianglesOptions{ColorScaleMode: ebiten.ColorScaleModePremultipliedAlpha, AntiAlias: true}
 
