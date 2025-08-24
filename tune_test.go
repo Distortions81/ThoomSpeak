@@ -19,7 +19,10 @@ func TestParseClanLordTuneDurations(t *testing.T) {
 		{"[ce]3", []int{375}}, // chord with explicit duration
 	}
 	for _, tt := range tests {
-		pt := parseClanLordTuneWithTempo(tt.input, 120)
+		pt, err := parseClanLordTuneWithTempo(tt.input, 120)
+		if err != nil {
+			t.Fatalf("parse error for %q: %v", tt.input, err)
+		}
 		if len(pt.events) != len(tt.want) {
 			t.Fatalf("%q parsed to %d events, want %d", tt.input, len(pt.events), len(tt.want))
 		}
@@ -106,7 +109,10 @@ func TestEventsToNotesVelocityFactors(t *testing.T) {
 
 func TestLoopAndTempoAndVolume(t *testing.T) {
 	// Loop: (cd)2 should produce 4 notes, then tempo change and volume change.
-	pt := parseClanLordTuneWithTempo("(cd)2@+60e%5f", 120)
+	pt, err := parseClanLordTuneWithTempo("(cd)2@+60e%5f", 120)
+	if err != nil {
+		t.Fatalf("parse error: %v", err)
+	}
 	inst := instrument{program: 0, octave: 0, chord: 100, melody: 100}
 	notes := eventsToNotes(pt, inst, 100)
 	if len(notes) != 6 {
@@ -154,7 +160,10 @@ func TestLoopSeamlessRepeat(t *testing.T) {
 
 func TestNoteDurationsWithTempoChange(t *testing.T) {
 	tune := "c d1 @+60 E g2"
-	pt := parseClanLordTuneWithTempo(tune, 120)
+	pt, err := parseClanLordTuneWithTempo(tune, 120)
+	if err != nil {
+		t.Fatalf("parse error: %v", err)
+	}
 	inst := instrument{program: 0, octave: 0, chord: 100, melody: 100}
 	notes := eventsToNotes(pt, inst, 100)
 	if len(notes) != 4 {
@@ -185,7 +194,10 @@ func TestNoteDurationsUncommonTempos(t *testing.T) {
 		{177, 246 * time.Millisecond},
 	}
 	for _, c := range cases {
-		pt := parseClanLordTuneWithTempo("c3", c.tempo)
+		pt, err := parseClanLordTuneWithTempo("c3", c.tempo)
+		if err != nil {
+			t.Fatalf("parse error: %v", err)
+		}
 		notes := eventsToNotes(pt, inst, 100)
 		if len(notes) != 1 {
 			t.Fatalf("tempo %d: expected 1 note, got %d", c.tempo, len(notes))
@@ -203,5 +215,37 @@ func TestParseNoteLowestCPreserved(t *testing.T) {
 	}
 	if len(pt.events[0].keys) != 1 || pt.events[0].keys[0] != 0 {
 		t.Fatalf("expected low C (0), got %+v", pt.events[0].keys)
+	}
+}
+
+func TestParseNoteCLInvalid(t *testing.T) {
+	i := 0
+	octave := 4
+	if _, _, err := parseNoteCL("h", &i, &octave); err == nil {
+		t.Fatalf("expected error for invalid note letter")
+	}
+	i = 0
+	octave = 4
+	if _, _, err := parseNoteCL("c$", &i, &octave); err == nil {
+		t.Fatalf("expected error for invalid modifier")
+	}
+}
+
+func TestParseClanLordTuneWithTempoErrors(t *testing.T) {
+	tests := []string{
+		"z",           // invalid note
+		"c$",          // invalid modifier
+		"(c",          // unmatched loop start
+		"c)",          // unmatched loop end
+		"++++++++++c", // octave out of range
+		"@+200c",      // tempo change out of range
+	}
+	for _, s := range tests {
+		if _, err := parseClanLordTuneWithTempo(s, 120); err == nil {
+			t.Errorf("%q: expected error", s)
+		}
+	}
+	if _, err := parseClanLordTuneWithTempo("c", 50); err == nil {
+		t.Errorf("initial tempo out of range should error")
 	}
 }

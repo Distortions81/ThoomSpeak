@@ -147,7 +147,13 @@ func playClanLordTune(tune string) error {
 		}
 	}
 
-	pt := parseClanLordTuneWithTempo(tune, 120)
+	pt, err := parseClanLordTuneWithTempo(tune, 120)
+	if err != nil {
+		msg := "play tune: " + err.Error()
+		consoleMessage(msg)
+		chatMessage(msg)
+		return err
+	}
 	if len(pt.events) == 0 {
 		return fmt.Errorf("empty tune")
 	}
@@ -277,15 +283,16 @@ func eventsToNotes(pt parsedTune, inst instrument, velocity int) []Note {
 // parseClanLordTune converts Clan Lord music notation into parsed events at
 // the default tempo of 120 BPM.
 func parseClanLordTune(s string) parsedTune {
-	return parseClanLordTuneWithTempo(s, 120)
+	pt, _ := parseClanLordTuneWithTempo(s, 120)
+	return pt
 }
 
 // parseClanLordTuneWithTempo converts Clan Lord music notation into parsed
 // events using the provided tempo in BPM. It also records loop markers,
 // tempo changes and volume modifiers.
-func parseClanLordTuneWithTempo(s string, tempo int) parsedTune {
-	if tempo <= 0 {
-		tempo = 120
+func parseClanLordTuneWithTempo(s string, tempo int) (parsedTune, error) {
+	if tempo < 60 || tempo > 180 {
+		return parsedTune{}, fmt.Errorf("tempo %d out of range", tempo)
 	}
 	pt := parsedTune{tempo: tempo}
 	octave := 4
@@ -301,11 +308,15 @@ func parseClanLordTuneWithTempo(s string, tempo int) parsedTune {
 			for i < len(s) && s[i] != '>' {
 				i++
 			}
-			if i < len(s) {
-				i++
+			if i >= len(s) {
+				return pt, fmt.Errorf("unterminated comment")
 			}
+			i++
 		case '+', '-', '=', '/', '\\':
 			handleOctave(&octave, c)
+			if octave < -1 || octave > 9 {
+				return pt, fmt.Errorf("octave %d out of range", octave)
+			}
 			i++
 		case 'p': // rest
 			i++
@@ -320,29 +331,37 @@ func parseClanLordTuneWithTempo(s string, tempo int) parsedTune {
 			var keys []int
 			for i < len(s) && s[i] != ']' {
 				if handleOctave(&octave, s[i]) {
+					if octave < -1 || octave > 9 {
+						return pt, fmt.Errorf("octave %d out of range", octave)
+					}
 					i++
 					continue
 				}
 				if isNoteLetter(s[i]) {
-					k, _ := parseNoteCL(s, &i, &octave)
+					k, _, err := parseNoteCL(s, &i, &octave)
+					if err != nil {
+						return pt, err
+					}
 					if k >= 0 {
 						keys = append(keys, k)
 					}
 					continue
 				}
-				i++
+				return pt, fmt.Errorf("invalid character %q in chord", s[i])
 			}
-			if i < len(s) && s[i] == ']' {
-				i++
+			if i >= len(s) || s[i] != ']' {
+				return pt, fmt.Errorf("unterminated chord")
 			}
+			i++
 			beats := defaultChordDuration
 			if i < len(s) && s[i] >= '1' && s[i] <= '9' {
 				beats = float64(s[i] - '0')
 				i++
 			}
-			if len(keys) > 0 {
-				pt.events = append(pt.events, noteEvent{keys: keys, beats: beats, volume: volume})
+			if len(keys) == 0 {
+				return pt, fmt.Errorf("empty chord")
 			}
+			pt.events = append(pt.events, noteEvent{keys: keys, beats: beats, volume: volume})
 		case '(':
 			i++
 			loopStarts = append(loopStarts, len(pt.events))
@@ -353,11 +372,12 @@ func parseClanLordTuneWithTempo(s string, tempo int) parsedTune {
 				count = int(s[i] - '0')
 				i++
 			}
-			if len(loopStarts) > 0 {
-				start := loopStarts[len(loopStarts)-1]
-				loopStarts = loopStarts[:len(loopStarts)-1]
-				pt.loops = append(pt.loops, loopMarker{start: start, end: len(pt.events), repeat: count})
+			if len(loopStarts) == 0 {
+				return pt, fmt.Errorf("unmatched loop end")
 			}
+			start := loopStarts[len(loopStarts)-1]
+			loopStarts = loopStarts[:len(loopStarts)-1]
+			pt.loops = append(pt.loops, loopMarker{start: start, end: len(pt.events), repeat: count})
 		case '@':
 			i++
 			sign := byte(0)
@@ -365,29 +385,27 @@ func parseClanLordTuneWithTempo(s string, tempo int) parsedTune {
 				sign = s[i]
 				i++
 			}
+			if i >= len(s) || s[i] < '0' || s[i] > '9' {
+				return pt, fmt.Errorf("missing tempo value")
+			}
 			val := 0
 			for i < len(s) && s[i] >= '0' && s[i] <= '9' {
 				val = val*10 + int(s[i]-'0')
 				i++
 			}
-			newTempo := 120
+			newTempo := tempo
 			switch sign {
 			case '+':
 				newTempo = tempo + val
 			case '-':
 				newTempo = tempo - val
+			case '=':
+				newTempo = val
 			default:
-				if val == 0 {
-					newTempo = 120
-				} else {
-					newTempo = val
-				}
+				newTempo = val
 			}
-			if newTempo < 60 {
-				newTempo = 60
-			}
-			if newTempo > 180 {
-				newTempo = 180
+			if newTempo < 60 || newTempo > 180 {
+				return pt, fmt.Errorf("tempo %d out of range", newTempo)
 			}
 			tempo = newTempo
 			pt.tempos = append(pt.tempos, tempoEvent{index: len(pt.events), tempo: tempo})
@@ -425,16 +443,22 @@ func parseClanLordTuneWithTempo(s string, tempo int) parsedTune {
 			}
 		default:
 			if isNoteLetter(c) {
-				k, beats := parseNoteCL(s, &i, &octave)
+				k, beats, err := parseNoteCL(s, &i, &octave)
+				if err != nil {
+					return pt, err
+				}
 				if k >= 0 {
 					pt.events = append(pt.events, noteEvent{keys: []int{k}, beats: beats, volume: volume})
 				}
 			} else {
-				i++
+				return pt, fmt.Errorf("invalid character %q", c)
 			}
 		}
 	}
-	return pt
+	if len(loopStarts) > 0 {
+		return pt, fmt.Errorf("unmatched loop start")
+	}
+	return pt, nil
 }
 
 func handleOctave(oct *int, c byte) bool {
@@ -459,13 +483,13 @@ func handleOctave(oct *int, c byte) bool {
 }
 
 // parseNoteCL parses a single note and returns its MIDI key and beat length.
-func parseNoteCL(s string, i *int, octave *int) (int, float64) {
+func parseNoteCL(s string, i *int, octave *int) (int, float64, error) {
 	c := s[*i]
 	isUpper := unicode.IsUpper(rune(c))
 	base := noteOffset(unicode.ToLower(rune(c)))
 	if base < 0 {
 		(*i)++
-		return -1, 0
+		return -1, 0, fmt.Errorf("invalid note %q", c)
 	}
 	(*i)++
 	pitch := base + ((*octave)+1)*12
@@ -488,10 +512,24 @@ func parseNoteCL(s string, i *int, octave *int) (int, float64) {
 		case ch == '_':
 			(*i)++ // ignore ties
 		default:
-			return pitch, beats
+			if isNoteTerminator(ch) {
+				return pitch, beats, nil
+			}
+			return 0, 0, fmt.Errorf("invalid modifier %q", ch)
 		}
 	}
-	return pitch, beats
+	return pitch, beats, nil
+}
+
+func isNoteTerminator(ch byte) bool {
+	if isNoteLetter(ch) {
+		return true
+	}
+	switch ch {
+	case ' ', '\n', '\r', '\t', '[', ']', '(', ')', '@', '%', '{', '}', '+', '-', '=', '/', '\\', 'p', '<':
+		return true
+	}
+	return false
 }
 
 func noteOffset(r rune) int {
@@ -680,7 +718,14 @@ func handleMusicParams(mp MusicParams) {
 		for _, w := range ids {
 			ps := pendingByID[w]
 			nstr := strings.Join(ps.notes, " ")
-			jobs = append(jobs, makeTuneJob(w, ps.inst, ps.tempo, ps.volPct, nstr))
+			job, err := makeTuneJob(w, ps.inst, ps.tempo, ps.volPct, nstr)
+			if err != nil {
+				msg := "play tune: " + err.Error()
+				consoleMessage(msg)
+				chatMessage(msg)
+			} else {
+				jobs = append(jobs, job)
+			}
 			delete(pendingByID, w)
 		}
 		pendingMu.Unlock()
@@ -695,12 +740,21 @@ func handleMusicParams(mp MusicParams) {
 		return
 	}
 
-	job := makeTuneJob(id, inst, tempo, vol, notes)
+	job, err := makeTuneJob(id, inst, tempo, vol, notes)
+	if err != nil {
+		msg := "play tune: " + err.Error()
+		consoleMessage(msg)
+		chatMessage(msg)
+		return
+	}
 	enqueueTune(job)
 }
 
-func makeTuneJob(who, inst, tempo, vol int, notes string) tuneJob {
-	pt := parseClanLordTuneWithTempo(notes, tempo)
+func makeTuneJob(who, inst, tempo, vol int, notes string) (tuneJob, error) {
+	pt, err := parseClanLordTuneWithTempo(notes, tempo)
+	if err != nil {
+		return tuneJob{}, err
+	}
 	instData := instruments[inst]
 	prog := instData.program
 	// Scale 0..100 to 1..127 velocity.
@@ -718,7 +772,7 @@ func makeTuneJob(who, inst, tempo, vol int, notes string) tuneJob {
 		vel = 127
 	}
 	notesOut := eventsToNotes(pt, instData, vel)
-	return tuneJob{program: prog, notes: notesOut, who: who}
+	return tuneJob{program: prog, notes: notesOut, who: who}, nil
 }
 
 func enqueueTune(job tuneJob) {

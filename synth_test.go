@@ -117,7 +117,10 @@ func TestPCMBufferDuration(t *testing.T) {
 	sfntCached = &meltysynth.SoundFont{}
 	synthSettings = meltysynth.NewSynthesizerSettings(sampleRate)
 
-	pt := parseClanLordTuneWithTempo("cd", 120)
+	pt, err := parseClanLordTuneWithTempo("cd", 120)
+	if err != nil {
+		t.Fatalf("parse error: %v", err)
+	}
 	inst := instrument{program: 0, octave: 0, chord: 100, melody: 100}
 	notes := eventsToNotes(pt, inst, 100)
 
