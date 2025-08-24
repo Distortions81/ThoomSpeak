@@ -263,7 +263,12 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 	if bubbleType == kBubbleYell {
 		drawSpikes(screen, float32(left), float32(top), float32(right), float32(bottom), radius, float32(gs.GameScale*3), borderCol)
 	} else if bubbleType == kBubbleMonster {
-		drawJagged(screen, float32(left), float32(top), float32(right), float32(bottom), float32(gs.GameScale*3), borderCol)
+		tailStart := float32(baseX - tailHalf)
+		tailEnd := float32(baseX + tailHalf)
+		if far || noArrow {
+			tailStart, tailEnd = -1, -1
+		}
+		drawJagged(screen, float32(left), float32(top), float32(right), float32(bottom), radius, float32(gs.GameScale*2), tailStart, tailEnd, borderCol)
 	}
 
 	textTop := top + pad
@@ -417,19 +422,25 @@ func drawSpikes(screen *ebiten.Image, left, top, right, bottom, radius, size flo
 }
 
 // drawJagged creates alternating in/out triangles around the bubble rectangle
-// to simulate torn fabric edges for monster speech bubbles.
-func drawJagged(screen *ebiten.Image, left, top, right, bottom, size float32, col color.Color) {
+// to simulate torn fabric edges for monster speech bubbles. The spikes follow
+// the rounded corners and skip the tail region.
+func drawJagged(screen *ebiten.Image, left, top, right, bottom, radius, size, tailStart, tailEnd float32, col color.Color) {
 	bdR, bdG, bdB, bdA := col.RGBA()
-	step := size
+	step := size / 2
+	amp := size / 2
 	op := &ebiten.DrawTrianglesOptions{ColorScaleMode: ebiten.ColorScaleModePremultipliedAlpha, AntiAlias: true}
+
+	// top edge
 	toggle := false
-	for x := left; x < right-step; x += step {
+	startX := left + radius
+	endX := right - radius
+	for x := startX; x < endX-step; x += step {
 		var p vector.Path
 		p.MoveTo(x, top)
 		if toggle {
-			p.LineTo(x+step/2, top+size)
+			p.LineTo(x+step/2, top+amp)
 		} else {
-			p.LineTo(x+step/2, top-size)
+			p.LineTo(x+step/2, top-amp)
 		}
 		p.LineTo(x+step, top)
 		p.Close()
@@ -443,17 +454,27 @@ func drawJagged(screen *ebiten.Image, left, top, right, bottom, size float32, co
 			vs[i].ColorA = float32(bdA) / 0xffff
 		}
 		screen.DrawTriangles(vs, is, whiteImage, op)
+		toggle = !toggle
+	}
 
-		p = vector.Path{}
+	// bottom edge skipping tail
+	toggle = false
+	for x := startX; x < endX-step; {
+		if tailStart < tailEnd && x+step > tailStart && x < tailEnd {
+			x = tailEnd
+			continue
+		}
+
+		var p vector.Path
 		p.MoveTo(x, bottom)
 		if toggle {
-			p.LineTo(x+step/2, bottom-size)
+			p.LineTo(x+step/2, bottom-amp)
 		} else {
-			p.LineTo(x+step/2, bottom+size)
+			p.LineTo(x+step/2, bottom+amp)
 		}
 		p.LineTo(x+step, bottom)
 		p.Close()
-		vs, is = p.AppendVerticesAndIndicesForFilling(nil, nil)
+		vs, is := p.AppendVerticesAndIndicesForFilling(nil, nil)
 		for i := range vs {
 			vs[i].SrcX = 0
 			vs[i].SrcY = 0
@@ -465,16 +486,20 @@ func drawJagged(screen *ebiten.Image, left, top, right, bottom, size float32, co
 		screen.DrawTriangles(vs, is, whiteImage, op)
 
 		toggle = !toggle
+		x += step
 	}
 
+	// left and right edges
 	toggle = false
-	for y := top; y < bottom-step; y += step {
+	startY := top + radius
+	endY := bottom - radius
+	for y := startY; y < endY-step; y += step {
 		var p vector.Path
 		p.MoveTo(left, y)
 		if toggle {
-			p.LineTo(left+size, y+step/2)
+			p.LineTo(left+amp, y+step/2)
 		} else {
-			p.LineTo(left-size, y+step/2)
+			p.LineTo(left-amp, y+step/2)
 		}
 		p.LineTo(left, y+step)
 		p.Close()
@@ -492,9 +517,9 @@ func drawJagged(screen *ebiten.Image, left, top, right, bottom, size float32, co
 		p = vector.Path{}
 		p.MoveTo(right, y)
 		if toggle {
-			p.LineTo(right-size, y+step/2)
+			p.LineTo(right-amp, y+step/2)
 		} else {
-			p.LineTo(right+size, y+step/2)
+			p.LineTo(right+amp, y+step/2)
 		}
 		p.LineTo(right, y+step)
 		p.Close()
@@ -510,6 +535,54 @@ func drawJagged(screen *ebiten.Image, left, top, right, bottom, size float32, co
 		screen.DrawTriangles(vs, is, whiteImage, op)
 
 		toggle = !toggle
+	}
+
+	if radius > 0 {
+		corner := func(cx, cy float32, start, end float64) {
+			stepAngle := float64(step) / float64(radius)
+			localToggle := false
+			for a := start; a < end; a += stepAngle {
+				next := a + stepAngle
+				if next > end {
+					next = end
+				}
+				mid := a + (next-a)/2
+				x1 := cx + radius*float32(math.Cos(a))
+				y1 := cy + radius*float32(math.Sin(a))
+				x2 := cx + radius*float32(math.Cos(next))
+				y2 := cy + radius*float32(math.Sin(next))
+				var mx, my float32
+				if localToggle {
+					mx = cx + (radius-amp)*float32(math.Cos(mid))
+					my = cy + (radius-amp)*float32(math.Sin(mid))
+				} else {
+					mx = cx + (radius+amp)*float32(math.Cos(mid))
+					my = cy + (radius+amp)*float32(math.Sin(mid))
+				}
+
+				var p vector.Path
+				p.MoveTo(x1, y1)
+				p.LineTo(mx, my)
+				p.LineTo(x2, y2)
+				p.Close()
+				vs, is := p.AppendVerticesAndIndicesForFilling(nil, nil)
+				for i := range vs {
+					vs[i].SrcX = 0
+					vs[i].SrcY = 0
+					vs[i].ColorR = float32(bdR) / 0xffff
+					vs[i].ColorG = float32(bdG) / 0xffff
+					vs[i].ColorB = float32(bdB) / 0xffff
+					vs[i].ColorA = float32(bdA) / 0xffff
+				}
+				screen.DrawTriangles(vs, is, whiteImage, op)
+				localToggle = !localToggle
+			}
+		}
+
+		corner(left+radius, top+radius, math.Pi, 1.5*math.Pi)
+		corner(right-radius, top+radius, 1.5*math.Pi, 2*math.Pi)
+		corner(right-radius, bottom-radius, 0, 0.5*math.Pi)
+		corner(left+radius, bottom-radius, 0.5*math.Pi, math.Pi)
 	}
 }
 
