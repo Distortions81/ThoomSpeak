@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -843,6 +844,30 @@ func updateHotkeyRecording() {
 	}
 }
 
+func hotkeyEquipAlreadyEquipped(cmd string) bool {
+	fields := strings.Fields(cmd)
+	if len(fields) < 2 {
+		return false
+	}
+	id64, err := strconv.ParseUint(fields[1], 10, 16)
+	if err != nil {
+		return false
+	}
+	id := uint16(id64)
+	items := getInventory()
+	for _, it := range items {
+		if it.ID == id && it.Equipped {
+			name := it.Name
+			if name == "" {
+				name = fields[1]
+			}
+			consoleMessage(name + " already equipped, skipping")
+			return true
+		}
+	}
+	return false
+}
+
 func checkHotkeys() {
 	if recording || inputActive {
 		return
@@ -899,6 +924,11 @@ func checkHotkeys() {
 					cmd, ok = applyHotkeyVars(cmd)
 					if !ok {
 						return
+					}
+					if strings.HasPrefix(strings.ToLower(cmd), "/equip") {
+						if hotkeyEquipAlreadyEquipped(cmd) {
+							continue
+						}
 					}
 					if cmd != "" {
 						consoleMessage("> " + cmd)

@@ -496,6 +496,11 @@ func pluginEquip(id uint16) {
 			continue
 		}
 		if it.Equipped {
+			name := it.Name
+			if name == "" {
+				name = fmt.Sprintf("%d", id)
+			}
+			consoleMessage(name + " already equipped, skipping")
 			return
 		}
 		if idx < 0 {
