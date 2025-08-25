@@ -866,9 +866,11 @@ func parseDrawState(data []byte, buildCache bool) error {
 		again = 0
 		newPics = append([]framePicture(nil), pics...)
 		state.prevDescs = nil
+		state.prevMobiles = nil
+		state.prevPictures = nil
 		state.prevTime = time.Time{}
 		state.curTime = time.Time{}
-		logDebug("pictureShift failed; interpolation may be degraded")
+		logDebug("pictureShift failed; bypassing interpolation")
 	}
 	if state.descriptors == nil {
 		state.descriptors = make(map[uint8]frameDescriptor)
@@ -981,7 +983,7 @@ func parseDrawState(data []byte, buildCache bool) error {
 	state.prevPictures = append([]framePicture(nil), prevPics...)
 	state.pictures = newPics
 
-	needPrev := (gs.MotionSmoothing || gs.BlendMobiles) && !seekingMov
+	needPrev := (gs.MotionSmoothing || gs.BlendMobiles) && !seekingMov && ok
 	if needPrev {
 		if state.prevMobiles == nil {
 			state.prevMobiles = make(map[uint8]frameMobile)
@@ -1054,8 +1056,8 @@ func parseDrawState(data []byte, buildCache bool) error {
 		}
 		state.mobiles[m.Index] = m
 	}
-	// Keep prevMobiles regardless of pictureShift outcome so interpolation of
-	// mobiles and pinned effects remains available.
+	// Populate prevMobiles only when pictureShift succeeds so interpolation of
+	// mobiles and pinned effects is skipped on failure.
 	// Prepare render caches now that state has been updated when requested.
 	if buildCache {
 		prepareRenderCacheLocked()
