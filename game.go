@@ -540,6 +540,7 @@ func (g *Game) Update() error {
 	})
 
 	eui.Update() //We really need this to return eaten clicks
+	checkPluginMods()
 	updateNotifications()
 	updateThinkMessages()
 

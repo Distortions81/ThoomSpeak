@@ -225,6 +225,8 @@ var (
 	inputHandlersMu     sync.RWMutex
 	pluginCommandOwners = map[string]string{}
 	pluginSendHistory   = map[string][]time.Time{}
+	pluginModTime       time.Time
+	pluginModCheck      time.Time
 )
 
 // pluginRegisterCommand lets plugins handle a local slash command like
@@ -566,6 +568,121 @@ func pluginSource(owner string) string {
 	return string(data)
 }
 
+func refreshPluginMod() {
+	dirs := []string{userPluginsDir(), "plugins"}
+	latest := time.Time{}
+	for _, dir := range dirs {
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			continue
+		}
+		for _, e := range entries {
+			if e.IsDir() || !strings.HasSuffix(e.Name(), ".go") {
+				continue
+			}
+			if info, err := e.Info(); err == nil {
+				if info.ModTime().After(latest) {
+					latest = info.ModTime()
+				}
+			}
+		}
+	}
+	pluginModTime = latest
+}
+
+func rescanPlugins() {
+	pluginDirs := []string{
+		userPluginsDir(),
+		"plugins",
+	}
+	nameRE := regexp.MustCompile(`(?m)^\s*(?:var|const)\s+PluginName\s*=\s*"([^"]+)"`)
+	newDisplay := map[string]string{}
+	newPaths := map[string]string{}
+	seenNames := map[string]bool{}
+	for _, dir := range pluginDirs {
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			continue
+		}
+		for _, e := range entries {
+			if e.IsDir() || !strings.HasSuffix(e.Name(), ".go") {
+				continue
+			}
+			path := filepath.Join(dir, e.Name())
+			src, err := os.ReadFile(path)
+			if err != nil {
+				log.Printf("read plugin %s: %v", path, err)
+				continue
+			}
+			match := nameRE.FindSubmatch(src)
+			if len(match) < 2 {
+				continue
+			}
+			name := strings.TrimSpace(string(match[1]))
+			if name == "" {
+				continue
+			}
+			lower := strings.ToLower(name)
+			if seenNames[lower] {
+				continue
+			}
+			seenNames[lower] = true
+			base := strings.TrimSuffix(e.Name(), ".go")
+			owner := name + "_" + base
+			newDisplay[owner] = name
+			newPaths[owner] = path
+		}
+	}
+
+	pluginMu.RLock()
+	oldDisabled := make(map[string]bool, len(pluginDisabled))
+	for o, d := range pluginDisabled {
+		oldDisabled[o] = d
+	}
+	oldOwners := make(map[string]struct{}, len(pluginDisplayNames))
+	for o := range pluginDisplayNames {
+		oldOwners[o] = struct{}{}
+	}
+	pluginMu.RUnlock()
+
+	for o := range oldOwners {
+		if _, ok := newDisplay[o]; !ok {
+			disablePlugin(o, "removed")
+		}
+	}
+
+	pluginMu.Lock()
+	pluginDisplayNames = newDisplay
+	pluginPaths = newPaths
+	pluginDisabled = make(map[string]bool, len(newDisplay))
+	for o := range newDisplay {
+		if d, ok := oldDisabled[o]; ok {
+			pluginDisabled[o] = d
+		} else {
+			pluginDisabled[o] = true
+		}
+	}
+	pluginNames = make(map[string]bool, len(newDisplay))
+	for _, n := range newDisplay {
+		pluginNames[strings.ToLower(n)] = true
+	}
+	pluginMu.Unlock()
+
+	refreshPluginsWindow()
+}
+
+func checkPluginMods() {
+	if time.Since(pluginModCheck) < 500*time.Millisecond {
+		return
+	}
+	pluginModCheck = time.Now()
+	old := pluginModTime
+	refreshPluginMod()
+	if pluginModTime.After(old) {
+		rescanPlugins()
+	}
+}
+
 func loadPlugins() {
 	ensureDefaultPlugins()
 
@@ -629,4 +746,5 @@ func loadPlugins() {
 	hotkeysMu.Unlock()
 	refreshHotkeysList()
 	refreshPluginsWindow()
+	refreshPluginMod()
 }
