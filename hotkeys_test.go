@@ -155,6 +155,29 @@ func TestHotkeyFunctionPersisted(t *testing.T) {
 	}
 }
 
+// Test that editing a hotkey preselects its function in the dropdown.
+func TestHotkeyEditPreselectsFunction(t *testing.T) {
+	hotkeys = []Hotkey{{Combo: "Ctrl-P", Commands: []HotkeyCommand{{Function: "ponder"}}}}
+	pluginMu.Lock()
+	origFuncs := pluginFuncs
+	pluginFuncs = map[string]map[string]PluginFunc{"": {"ponder": nil}}
+	pluginMu.Unlock()
+	defer func() {
+		pluginMu.Lock()
+		pluginFuncs = origFuncs
+		pluginMu.Unlock()
+	}()
+
+	openHotkeyEditor(0)
+	flow := hotkeyEditWin.Contents[0]
+	fnRow := flow.Contents[4]
+	fnDD := fnRow.Contents[1]
+	if fnDD.Selected != 1 {
+		t.Fatalf("function dropdown not preselected: %d", fnDD.Selected)
+	}
+	hotkeyEditWin.Close()
+}
+
 // Test that editing a hotkey with no name still saves changes.
 func TestHotkeyEditWithoutName(t *testing.T) {
 	hotkeys = []Hotkey{{Combo: "Ctrl-A", Commands: []HotkeyCommand{{Command: "say hi"}}}}

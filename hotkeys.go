@@ -473,6 +473,18 @@ func openHotkeyEditor(idx int) {
 		hotkeyComboText.Text = hk.Combo
 		hotkeyNameInput.Text = hk.Name
 		if len(hk.Commands) > 0 {
+			firstFn := hk.Commands[0].Function
+			firstPlugin := hk.Commands[0].Plugin
+			if firstFn != "" {
+				fnSel = firstFn
+				fnSelKey = firstPlugin
+				for i, inf := range infos {
+					if inf.Name == firstFn && inf.Plugin == firstPlugin {
+						fnDD.Selected = i + 1
+						break
+					}
+				}
+			}
 			for _, c := range hk.Commands {
 				addHotkeyCommand(c.Command, c.Function, c.Plugin)
 			}
