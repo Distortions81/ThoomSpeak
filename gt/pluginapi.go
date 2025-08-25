@@ -24,6 +24,27 @@ func AddHotkey(combo, command string) {}
 // AddHotkeyFunc binds a key combo to a registered plugin function.
 func AddHotkeyFunc(combo, funcName string) {}
 
+// HotkeyCommand mirrors the command or function bound to a hotkey.
+type HotkeyCommand struct {
+	Command  string
+	Function string
+}
+
+// Hotkey represents a single key binding and its metadata.
+type Hotkey struct {
+	Name     string
+	Combo    string
+	Commands []HotkeyCommand
+	Plugin   string
+	Disabled bool
+}
+
+// Hotkeys returns the plugin's registered hotkeys.
+func Hotkeys() []Hotkey { return nil }
+
+// RemoveHotkey removes a plugin-owned hotkey by combo.
+func RemoveHotkey(combo string) {}
+
 // RegisterCommand handles a local slash command like "/example".
 func RegisterCommand(command string, handler func(args string)) {}
 

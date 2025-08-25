@@ -29,6 +29,8 @@ type Hotkey struct {
 	Name     string          `json:"name,omitempty"`
 	Combo    string          `json:"combo"`
 	Commands []HotkeyCommand `json:"commands"`
+	Plugin   string          `json:"plugin,omitempty"`
+	Disabled bool            `json:"disabled,omitempty"`
 }
 
 var (
@@ -62,6 +64,8 @@ func loadHotkeys() {
 		Commands []HotkeyCommand `json:"commands"`
 		Command  string          `json:"command"`
 		Text     string          `json:"text,omitempty"`
+		Plugin   string          `json:"plugin,omitempty"`
+		Disabled bool            `json:"disabled,omitempty"`
 	}
 	var raw []hotkeyJSON
 	if err := json.Unmarshal(data, &raw); err != nil {
@@ -69,7 +73,7 @@ func loadHotkeys() {
 	}
 	var newList []Hotkey
 	for _, r := range raw {
-		hk := Hotkey{Combo: r.Combo, Name: r.Name}
+		hk := Hotkey{Combo: r.Combo, Name: r.Name, Plugin: r.Plugin, Disabled: r.Disabled}
 		if len(r.Commands) > 0 {
 			hk.Commands = make([]HotkeyCommand, len(r.Commands))
 			copy(hk.Commands, r.Commands)
@@ -109,6 +113,32 @@ func saveHotkeys() {
 		return
 	}
 	_ = os.WriteFile(path, data, 0o644)
+}
+
+func pluginHotkeys(owner string) []Hotkey {
+	hotkeysMu.RLock()
+	defer hotkeysMu.RUnlock()
+	var list []Hotkey
+	for _, hk := range hotkeys {
+		if hk.Plugin == owner {
+			list = append(list, hk)
+		}
+	}
+	return list
+}
+
+func pluginRemoveHotkey(owner, combo string) {
+	hotkeysMu.Lock()
+	for i := 0; i < len(hotkeys); i++ {
+		hk := hotkeys[i]
+		if hk.Plugin == owner && hk.Combo == combo {
+			hotkeys = append(hotkeys[:i], hotkeys[i+1:]...)
+			i--
+		}
+	}
+	hotkeysMu.Unlock()
+	refreshHotkeysList()
+	saveHotkeys()
 }
 
 func makeHotkeysWindow() {
@@ -158,7 +188,12 @@ func refreshHotkeysList() {
 	hotkeysMu.RLock()
 	list := append([]Hotkey(nil), hotkeys...)
 	hotkeysMu.RUnlock()
+
+	// global hotkeys
 	for i, hk := range list {
+		if hk.Plugin != "" {
+			continue
+		}
 		idx := i
 		row := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL, Fixed: true}
 		row.Size = eui.Point{X: 220, Y: 20}
@@ -198,6 +233,45 @@ func refreshHotkeysList() {
 		row.AddItem(delBtn)
 		hotkeysList.AddItem(row)
 	}
+
+	// plugin hotkeys header and list
+	headerAdded := false
+	for i, hk := range list {
+		if hk.Plugin == "" {
+			continue
+		}
+		if !headerAdded {
+			label := &eui.ItemData{ItemType: eui.ITEM_TEXT, Text: "Plugin Hotkeys", Fixed: true}
+			label.Size = eui.Point{X: 220, Y: 20}
+			hotkeysList.AddItem(label)
+			headerAdded = true
+		}
+		idx := i
+		row := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL, Fixed: true}
+		row.Size = eui.Point{X: 220, Y: 20}
+		cb, cbEvents := eui.NewCheckbox()
+		cb.Checked = !hk.Disabled
+		cbEvents.Handle = func(ev eui.UIEvent) {
+			if ev.Type == eui.EventClick {
+				hotkeysMu.Lock()
+				if idx >= 0 && idx < len(hotkeys) {
+					hotkeys[idx].Disabled = !ev.Checked
+				}
+				hotkeysMu.Unlock()
+				saveHotkeys()
+			}
+		}
+		row.AddItem(cb)
+		text := hk.Combo
+		if hk.Name != "" {
+			text = hk.Name + " : " + hk.Combo
+		}
+		lbl := &eui.ItemData{ItemType: eui.ITEM_TEXT, Text: hk.Plugin + " -> " + text, Fixed: true}
+		lbl.Size = eui.Point{X: 200, Y: 20}
+		row.AddItem(lbl)
+		hotkeysList.AddItem(row)
+	}
+
 	hotkeysList.Dirty = true
 	if hotkeysWin != nil {
 		hotkeysWin.Refresh()
@@ -662,7 +736,7 @@ func checkHotkeys() {
 		list := append([]Hotkey(nil), hotkeys...)
 		hotkeysMu.RUnlock()
 		for _, hk := range list {
-			if hk.Combo == combo {
+			if hk.Combo == combo && !hk.Disabled {
 				for _, c := range hk.Commands {
 					cmd := strings.TrimSpace(c.Command)
 					if c.Function != "" {

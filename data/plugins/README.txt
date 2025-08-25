@@ -40,6 +40,10 @@ API
   runs a slash-command like "/ponder hello world".
 - gt.AddHotkeyFunc(combo, funcName)
   Binds a hotkey to a named plugin function registered via RegisterFunc.
+- gt.Hotkeys()
+  Returns the hotkeys registered by the calling plugin.
+- gt.RemoveHotkey(combo)
+  Removes a previously registered hotkey owned by the plugin.
 - gt.RegisterCommand(name, func(args string))
   Handles a local slash command like "/name" and receives the rest as args.
 - gt.RegisterFunc(name, func())
@@ -56,3 +60,5 @@ Notes
   and is created automatically on first run with the example file.
 - You can also place `.go` plugin files in a `plugins/` folder next to the
   gothoom binary; both locations are scanned.
+- Hotkeys added by plugins appear in a separate "Plugin Hotkeys" section of
+  the hotkeys window and can be enabled or disabled there.
