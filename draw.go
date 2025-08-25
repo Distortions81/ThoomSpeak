@@ -403,6 +403,128 @@ func pictureShift(prev, cur []framePicture, max int) (int, int, []int, bool) {
 	return best[0], best[1], idxs, true
 }
 
+// matchPictureGroups matches current frame pictures with previous frame
+// pictures while minimizing the total movement. The returned map keys are
+// indexes in the current slice and values are the matched indexes in the
+// previous slice. Only matches within maxInterp pixels are considered. When
+// multiple assignments yield the same total distance the group is treated as
+// ambiguous and omitted from the result.
+func matchPictureGroups(prev, cur []framePicture, shiftX, shiftY, maxInterp int) map[int]int {
+	prevGroups := make(map[uint16][]int)
+	for i, p := range prev {
+		prevGroups[p.PictID] = append(prevGroups[p.PictID], i)
+	}
+	curGroups := make(map[uint16][]int)
+	for i, c := range cur {
+		curGroups[c.PictID] = append(curGroups[c.PictID], i)
+	}
+	maxDist := maxInterp * maxInterp
+	result := make(map[int]int)
+	for id, cIdxs := range curGroups {
+		pIdxs := prevGroups[id]
+		if len(pIdxs) == 0 {
+			continue
+		}
+		m := assignGroup(pIdxs, cIdxs, shiftX, shiftY, maxDist, prev, cur)
+		for k, v := range m {
+			result[k] = v
+		}
+	}
+	return result
+}
+
+func assignGroup(prevIdxs, curIdxs []int, shiftX, shiftY, maxDist int, prev, cur []framePicture) map[int]int {
+	nPrev, nCur := len(prevIdxs), len(curIdxs)
+	bestCost := math.MaxInt
+	bestCount := 0
+	var best []int
+
+	eval := func(cis, pis []int) (int, bool) {
+		total := 0
+		for i := range cis {
+			c := cur[cis[i]]
+			p := prev[pis[i]]
+			dh := int(c.H) - int(p.H) - shiftX
+			dv := int(c.V) - int(p.V) - shiftY
+			dist := dh*dh + dv*dv
+			if dist > maxDist {
+				return 0, false
+			}
+			total += dist
+		}
+		return total, true
+	}
+
+	if nPrev >= nCur {
+		perm := append([]int(nil), prevIdxs...)
+		var dfs func(int)
+		dfs = func(i int) {
+			if i == len(perm) {
+				cost, ok := eval(curIdxs, perm[:nCur])
+				if !ok {
+					return
+				}
+				if cost < bestCost {
+					bestCost = cost
+					bestCount = 1
+					best = append([]int(nil), perm[:nCur]...)
+				} else if cost == bestCost {
+					bestCount++
+				}
+				return
+			}
+			for j := i; j < len(perm); j++ {
+				perm[i], perm[j] = perm[j], perm[i]
+				dfs(i + 1)
+				perm[i], perm[j] = perm[j], perm[i]
+			}
+		}
+		dfs(0)
+		if bestCount != 1 {
+			return nil
+		}
+		res := make(map[int]int)
+		for i := 0; i < nCur; i++ {
+			res[curIdxs[i]] = best[i]
+		}
+		return res
+	}
+
+	perm := append([]int(nil), curIdxs...)
+	var bestCur []int
+	var dfs func(int)
+	dfs = func(i int) {
+		if i == len(perm) {
+			cost, ok := eval(perm[:nPrev], prevIdxs)
+			if !ok {
+				return
+			}
+			if cost < bestCost {
+				bestCost = cost
+				bestCount = 1
+				bestCur = append([]int(nil), perm[:nPrev]...)
+			} else if cost == bestCost {
+				bestCount++
+			}
+			return
+		}
+		for j := i; j < len(perm); j++ {
+			perm[i], perm[j] = perm[j], perm[i]
+			dfs(i + 1)
+			perm[i], perm[j] = perm[j], perm[i]
+		}
+	}
+	dfs(0)
+	if bestCount != 1 {
+		return nil
+	}
+	res := make(map[int]int)
+	for i := 0; i < nPrev; i++ {
+		res[bestCur[i]] = prevIdxs[i]
+	}
+	return res
+}
+
 // drawStateEncrypted controls whether incoming draw state packets need to be
 // decrypted using SimpleEncrypt before parsing. By default frames from the
 // live server arrive unencrypted; set this flag to true only when handling
@@ -882,21 +1004,38 @@ func parseDrawState(data []byte, buildCache bool) error {
 			newPics[i].PrevH = int16(int(newPics[i].H) - state.picShiftX)
 			newPics[i].PrevV = int16(int(newPics[i].V) - state.picShiftY)
 		}
-		moving := true
+	}
+	assigns := matchPictureGroups(prevPics[again:], newPics[again:], state.picShiftX, state.picShiftY, maxInterp)
+	matched := make(map[int]int, len(assigns))
+	for curIdx, prevIdx := range assigns {
+		ni := curIdx + again
+		pj := prevIdx + again
+		matched[ni] = pj
+		newPics[ni].PrevH = prevPics[pj].H
+		newPics[ni].PrevV = prevPics[pj].V
+		prevPics[pj].Owned = true
+	}
+	for i := 0; i < again && i < len(prevPics); i++ {
+		prevPics[i].Owned = true
+	}
+	for i := range newPics {
+		moving := false
 		var owner *framePicture
 		if i < again {
-			moving = false
 			owner = &prevPics[i]
+		} else if j, ok := matched[i]; ok {
+			owner = &prevPics[j]
+			if int(owner.H)+state.picShiftX != int(newPics[i].H) || int(owner.V)+state.picShiftY != int(newPics[i].V) {
+				moving = true
+			}
 		} else {
 			for j := range prevPics {
 				pp := &prevPics[j]
-				if pp.Owned {
+				if pp.Owned || pp.PictID != newPics[i].PictID {
 					continue
 				}
-				if pp.PictID == newPics[i].PictID &&
-					int(pp.H)+state.picShiftX == int(newPics[i].H) &&
+				if int(pp.H)+state.picShiftX == int(newPics[i].H) &&
 					int(pp.V)+state.picShiftY == int(newPics[i].V) {
-					moving = false
 					owner = pp
 					break
 				}
@@ -905,28 +1044,7 @@ func parseDrawState(data []byte, buildCache bool) error {
 		if moving && pictureOnEdge(newPics[i]) {
 			moving = false
 		}
-		if moving && gs.smoothMoving {
-			bestDist := maxInterp*maxInterp + 1
-			var best *framePicture
-			for j := range prevPics {
-				pp := &prevPics[j]
-				if pp.Owned || pp.PictID != newPics[i].PictID {
-					continue
-				}
-				dh := int(newPics[i].H) - int(pp.H) - state.picShiftX
-				dv := int(newPics[i].V) - int(pp.V) - state.picShiftY
-				dist := dh*dh + dv*dv
-				if dist < bestDist {
-					bestDist = dist
-					best = pp
-				}
-			}
-			if best != nil && bestDist <= maxInterp*maxInterp {
-				newPics[i].PrevH = best.H
-				newPics[i].PrevV = best.V
-				best.Owned = true
-			}
-		} else if owner != nil {
+		if owner != nil {
 			owner.Owned = true
 		}
 		newPics[i].Moving = moving

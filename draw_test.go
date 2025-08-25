@@ -71,3 +71,20 @@ func TestPictureOnEdge(t *testing.T) {
 		})
 	}
 }
+
+func TestMatchPictureGroups(t *testing.T) {
+	prev := []framePicture{{PictID: 1, H: 0, V: 0}, {PictID: 1, H: 20, V: 0}}
+	cur := []framePicture{{PictID: 1, H: 2, V: 0}, {PictID: 1, H: 18, V: 0}}
+	m := matchPictureGroups(prev, cur, 0, 0, 5)
+	if len(m) != 2 || m[0] != 0 || m[1] != 1 {
+		t.Fatalf("unexpected mapping %v", m)
+	}
+
+	// ambiguous layout: two equidistant options, expect no mapping
+	prev = []framePicture{{PictID: 1, H: 0, V: 0}, {PictID: 1, H: 2, V: 0}}
+	cur = []framePicture{{PictID: 1, H: 1, V: -1}, {PictID: 1, H: 1, V: 1}}
+	m = matchPictureGroups(prev, cur, 0, 0, 5)
+	if len(m) != 0 {
+		t.Fatalf("expected ambiguous mapping, got %v", m)
+	}
+}
