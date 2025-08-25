@@ -5,14 +5,20 @@ import (
 	"strings"
 )
 
-// Init registers a simple hotkey example. Pressing the '1' key
-// (aka Ebiten's "Digit1") will run an exported plugin function.
+// Wave demonstrates an exported plugin function that sends a command.
+func Wave() {
+	pluginapi.RunCommand("/ponder hello world")
+}
+
+// Init sets up example hotkeys and commands. Pressing the '1' key
+// (aka Ebiten's "Digit1") will call the Wave function above.
 func Init() {
-	// Example 1: Bind a hotkey directly to a plugin function
-	// (this uses the special command format "plugin:<name>" under the hood).
+	// Bind a hotkey to the Wave function. This uses the special
+	// "plugin:<name>" command format under the hood.
+	pluginapi.RegisterFunc("wave", Wave)
 	pluginapi.AddHotkeyFunc("Digit1", "wave")
 
-	// Example 2: Slash command `/example` handled locally
+	// Slash command `/example` handled locally
 	pluginapi.RegisterCommand("example", func(args string) {
 		if args == "" {
 			args = "hello world"
@@ -26,10 +32,6 @@ func Init() {
 		}
 	})
 
-	// Example 3: Register a function callable from hotkeys
-	pluginapi.RegisterFunc("wave", func() {
-		pluginapi.RunCommand("/ponder hello world")
-	})
 	// Another binding example:
-	// pluginapi.AddHotkeyFunc("Digit2", "wave")
+	// pluginapi.AddHotkey("Digit2", "/ponder hello world")
 }
