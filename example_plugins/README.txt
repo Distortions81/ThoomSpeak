@@ -57,6 +57,8 @@ API
   Returns a slice of known players with basic info (name, race, etc.).
 - gt.RegisterChatHandler(func(msg string))
   Registers a callback invoked for each incoming chat message.
+- gt.RegisterPlayerHandler(func(p gt.Player))
+  Registers a callback invoked whenever player info changes.
 
 Notes
 -----
