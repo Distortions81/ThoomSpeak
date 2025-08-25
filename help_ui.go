@@ -23,20 +23,20 @@ func initHelpUI() {
 	helpWin, helpList, _ = makeTextWindow("Help", eui.HZoneCenter, eui.VZoneMiddleTop, false)
 	helpWin.AutoSize = true
 	helpLines = strings.Split(strings.ReplaceAll(helpText, "\r\n", "\n"), "\n")
-	helpWin.OnResize = func() { updateTextWindow(helpWin, helpList, nil, helpLines, 15, "") }
+	helpWin.OnResize = func() { updateTextWindow(helpWin, helpList, nil, helpLines, 15, "", monoFaceSource) }
 }
 
 func openHelpWindow(anchor *eui.ItemData) {
 	if helpWin == nil {
 		return
 	}
-	updateTextWindow(helpWin, helpList, nil, helpLines, 15, "")
+	updateTextWindow(helpWin, helpList, nil, helpLines, 15, "", monoFaceSource)
 	if anchor != nil {
 		helpWin.MarkOpenNear(anchor)
 	} else {
 		helpWin.MarkOpen()
 	}
-	updateTextWindow(helpWin, helpList, nil, helpLines, 15, "")
+	updateTextWindow(helpWin, helpList, nil, helpLines, 15, "", monoFaceSource)
 	helpWin.Refresh()
 }
 

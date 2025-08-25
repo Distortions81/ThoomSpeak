@@ -53,7 +53,8 @@ func newTextWindow(name string, hz eui.HZone, vz eui.VZone, hasInput bool, updat
 }
 
 // updateTextWindow refreshes a text window's content and optional input message.
-func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []string, fontSize float64, inputMsg string) {
+// If faceSrc is nil the default font source is used.
+func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []string, fontSize float64, inputMsg string, faceSrc *text.GoTextFaceSource) {
 	if list == nil || win == nil {
 		return
 	}
@@ -81,7 +82,9 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 	ui := eui.UIScale()
 	facePx := float64(float32(fontSize) * ui)
 	var goFace *text.GoTextFace
-	if src := eui.FontSource(); src != nil {
+	if faceSrc != nil {
+		goFace = &text.GoTextFace{Source: faceSrc, Size: facePx}
+	} else if src := eui.FontSource(); src != nil {
 		goFace = &text.GoTextFace{Source: src, Size: facePx}
 	} else {
 		goFace = &text.GoTextFace{Size: facePx}
@@ -108,12 +111,14 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 				list.Contents[i].Text = wrapped
 				list.Contents[i].FontSize = float32(fontSize)
 			}
+			list.Contents[i].Face = face
 			list.Contents[i].Size.Y = rowUnits * float32(linesN)
 			list.Contents[i].Size.X = clientWAvail
 		} else {
 			t, _ := eui.NewText()
 			t.Text = wrapped
 			t.FontSize = float32(fontSize)
+			t.Face = face
 			t.Size = eui.Point{X: clientWAvail, Y: rowUnits * float32(linesN)}
 			// Append to maintain ordering with the msgs index
 			list.AddItem(t)
@@ -150,6 +155,7 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 			t, _ := eui.NewText()
 			t.Text = wrappedIn
 			t.FontSize = float32(fontSize)
+			t.Face = face
 			t.Size = eui.Point{X: clientWAvail, Y: inputContentH}
 			t.Filled = true
 			input.AddItem(t)
@@ -158,6 +164,7 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 				input.Contents[0].Text = wrappedIn
 				input.Contents[0].FontSize = float32(fontSize)
 			}
+			input.Contents[0].Face = face
 			input.Contents[0].Size.X = clientWAvail
 			input.Contents[0].Size.Y = inputContentH
 		}
