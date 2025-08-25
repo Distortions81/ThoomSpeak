@@ -67,6 +67,9 @@ Common API calls:
   runs locally.
 - `gt.RunCommand(cmd)` – send a command to the server immediately.
 - `gt.EnqueueCommand(cmd)` – queue a command to send on the next tick.
+- `gt.AddMacro(short, full)` – expand a short prefix into a full command.
+- `gt.AddMacros(map[string]string)` – register many macros at once.
+- `gt.AutoReply(trigger, cmd)` – run a command when chat starts with trigger.
 - `gt.RegisterInputHandler(func(text string) string)` – inspect or change chat
   text before it is sent.
 - `gt.RegisterChatHandler(func(msg string))` – react to every chat message.
@@ -87,6 +90,9 @@ Common API calls:
 - `gt.LastClick()` – info about the most recent click.
 - `gt.FrameNumber()` – current frame count.
 - `gt.SetInputText(txt)` and `gt.InputText()` – set or read the chat input box.
+- Simple text helpers: `gt.Lower`, `gt.Upper`, `gt.IgnoreCase`, `gt.StartsWith`,
+  `gt.EndsWith`, `gt.Includes`, `gt.Trim`, `gt.TrimStart`, `gt.TrimEnd`,
+  `gt.Words`, `gt.Join`.
 
 Plugin Tutorials
 ----------------
@@ -104,10 +110,10 @@ It also adds hotkeys:
 - `Ctrl-N` shows a notification.
 
 ### Default Macros (`default_macros.go`)
-Replaces short text in the chat box with full commands.
+Replaces short text in the chat box with full commands using `gt.AddMacros`.
 1. Type `??` followed by text to open `/help`.
 2. Try typing `pphello` and it becomes `/ponder hello`.
-Edit the `macroMap` in the file to add your own shortcuts.
+Edit the `Init` function to add your own shortcuts with `gt.AddMacro`.
 
 ### Healer Self-Heal (`healer_selfheal.go`)
 Right-click yourself to cast a self-heal.

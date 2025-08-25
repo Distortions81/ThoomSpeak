@@ -53,6 +53,48 @@ func RunCommand(cmd string) {}
 // EnqueueCommand queues a command for the next tick without echoing.
 func EnqueueCommand(cmd string) {}
 
+// IgnoreCase reports whether a and b are equal ignoring capitalization.
+func IgnoreCase(a, b string) bool { return false }
+
+// StartsWith reports whether text begins with prefix.
+func StartsWith(text, prefix string) bool { return false }
+
+// EndsWith reports whether text ends with suffix.
+func EndsWith(text, suffix string) bool { return false }
+
+// Includes reports whether text contains substr.
+func Includes(text, substr string) bool { return false }
+
+// Lower returns text in lower case.
+func Lower(text string) string { return "" }
+
+// Upper returns text in upper case.
+func Upper(text string) string { return "" }
+
+// Trim removes spaces at the start and end of text.
+func Trim(text string) string { return "" }
+
+// TrimStart removes prefix from text if present.
+func TrimStart(text, prefix string) string { return "" }
+
+// TrimEnd removes suffix from text if present.
+func TrimEnd(text, suffix string) string { return "" }
+
+// Words splits text into fields separated by spaces.
+func Words(text string) []string { return nil }
+
+// Join concatenates parts with sep between elements.
+func Join(parts []string, sep string) string { return "" }
+
+// AddMacro replaces a short prefix with a full command in the chat box.
+func AddMacro(short, full string) {}
+
+// AddMacros registers multiple macros at once.
+func AddMacros(macros map[string]string) {}
+
+// AutoReply sends a command when a chat message begins with trigger.
+func AutoReply(trigger, command string) {}
+
 // PlayerName returns the current player's name.
 func PlayerName() string { return "" }
 
