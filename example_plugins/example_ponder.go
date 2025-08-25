@@ -113,11 +113,13 @@ func handleRad(args string) {
 		}
 		gt.Console("item not found")
 	case "hotkeys":
-		// List hotkeys that come from plugins.
+		// List hotkeys that come from plugins, capped at 15 lines.
+		count := 0
 		for _, hk := range gt.Hotkeys() {
 			if hk.Disabled {
 				continue
 			}
+		outer:
 			for _, cmd := range hk.Commands {
 				if cmd.Plugin == "" {
 					continue
@@ -127,6 +129,13 @@ func handleRad(args string) {
 				} else if cmd.Function != "" {
 					gt.Console(fmt.Sprintf("%s -> func %s", hk.Combo, cmd.Function))
 				}
+				count++
+				if count >= 15 {
+					break outer
+				}
+			}
+			if count >= 15 {
+				break
 			}
 		}
 	case "rmhotkey":
