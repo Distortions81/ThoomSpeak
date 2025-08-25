@@ -236,7 +236,11 @@ func refreshHotkeysList() {
 		if len(hk.Commands) > 0 {
 			text := hk.Commands[0].Command
 			if text == "" && hk.Commands[0].Function != "" {
-				text = "plugin:" + hk.Commands[0].Function
+				if hk.Commands[0].Plugin != "" {
+					text = hk.Commands[0].Plugin + "->" + hk.Commands[0].Function
+				} else {
+					text = "plugin:" + hk.Commands[0].Function
+				}
 			}
 			if len(hk.Commands) > 1 {
 				text += " ..."
@@ -421,21 +425,27 @@ func openHotkeyEditor(idx int) {
 	fnDD, fnDDEvents := eui.NewDropdown()
 	fnDD.Size = eui.Point{X: hotkeyEditWin.Size.X - 120, Y: 20}
 	infos := pluginFunctionInfos()
-	fnOpts := make([]string, len(infos))
+	fnNames := make([]string, len(infos))
 	fnKeys := make([]string, len(infos))
+	fnDisp := make([]string, len(infos))
 	for i, inf := range infos {
-		fnOpts[i] = inf.Name
+		fnNames[i] = inf.Name
 		fnKeys[i] = inf.Plugin
+		if inf.Plugin != "" {
+			fnDisp[i] = inf.Plugin + "->" + inf.Name
+		} else {
+			fnDisp[i] = inf.Name
+		}
 	}
-	fnDD.Options = append([]string{"none"}, fnOpts...)
+	fnDD.Options = append([]string{"none"}, fnDisp...)
 	fnDD.Selected = 0
 	fnSel := ""
 	fnSelKey := ""
 	fnDDEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventDropdownSelected {
 			fnDD.Selected = ev.Index
-			if ev.Index > 0 && ev.Index <= len(fnOpts) {
-				fnSel = fnOpts[ev.Index-1]
+			if ev.Index > 0 && ev.Index <= len(fnNames) {
+				fnSel = fnNames[ev.Index-1]
 				fnSelKey = fnKeys[ev.Index-1]
 			} else {
 				fnSel = ""
@@ -450,7 +460,7 @@ func openHotkeyEditor(idx int) {
 	addFnBtn.Text = "+"
 	addFnBtn.Size = eui.Point{X: 20, Y: 20}
 	addFnBtn.FontSize = 14
-	addFnBtn.Disabled = len(fnOpts) == 0
+	addFnBtn.Disabled = len(fnNames) == 0
 	addFnEv.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
 			if fnSel == "" {
@@ -529,7 +539,11 @@ func addHotkeyCommand(cmd, fn, plugin string) {
 	}
 	if fn != "" {
 		fnLabel, _ := eui.NewText()
-		fnLabel.Text = "Function: " + fn
+		disp := fn
+		if plugin != "" {
+			disp = plugin + "->" + fn
+		}
+		fnLabel.Text = "Function: " + disp
 		fnLabel.Size = eui.Point{X: hotkeyEditWin.Size.X - 40, Y: 20}
 		fnLabel.FontSize = 12
 		hotkeyCmdSection.AddItem(fnLabel)
@@ -589,7 +603,11 @@ func selectHotkeyFunction(fn, plugin string) {
 		hotkeyFnLabel.FontSize = 12
 		hotkeyCmdSection.Contents = append([]*eui.ItemData{hotkeyFnLabel}, hotkeyCmdSection.Contents...)
 	}
-	hotkeyFnLabel.Text = "Function: " + fn
+	disp := fn
+	if plugin != "" {
+		disp = plugin + "->" + fn
+	}
+	hotkeyFnLabel.Text = "Function: " + disp
 	hotkeyEditWin.Refresh()
 }
 
