@@ -152,8 +152,8 @@ Plays tunes without typing long commands.
 The plugin pulls the instrument from your case, plays it, then puts it back.
 
 ### Dance Macros (`dance.go`)
-Adds a simple dance command.
-- Type `/dance` or press `Shift-D` to dance.
+Adds a simple dance command using `/pose` positions.
+- Type `/dance` or press `Shift-D` to run a short pose routine.
 
 ### Dice Roller (`dice_roll.go`) *(optional example)*
 Roll virtual dice.
