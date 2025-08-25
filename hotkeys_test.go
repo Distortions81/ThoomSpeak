@@ -288,9 +288,9 @@ func TestApplyHotkeyVars(t *testing.T) {
 	lastClickMu.Lock()
 	lastClick = ClickInfo{OnMobile: true, Mobile: Mobile{Name: "Target"}}
 	lastClickMu.Unlock()
-	got := applyHotkeyVars("/use @clicked")
-	if got != "/use Target" {
-		t.Fatalf("got %q, want %q", got, "/use Target")
+	got, ok := applyHotkeyVars("/use @clicked")
+	if !ok || got != "/use Target" {
+		t.Fatalf("got %q, ok %v", got, ok)
 	}
 }
 
@@ -299,8 +299,28 @@ func TestApplyHotkeyVarsHovered(t *testing.T) {
 	lastHoverMu.Lock()
 	lastHover = ClickInfo{OnMobile: true, Mobile: Mobile{Name: "Hover"}}
 	lastHoverMu.Unlock()
-	got := applyHotkeyVars("/inspect @hovered")
-	if got != "/inspect Hover" {
-		t.Fatalf("got %q, want %q", got, "/inspect Hover")
+	got, ok := applyHotkeyVars("/inspect @hovered")
+	if !ok || got != "/inspect Hover" {
+		t.Fatalf("got %q, ok %v", got, ok)
+	}
+}
+
+// Test that commands referencing @clicked don't fire without a target.
+func TestApplyHotkeyVarsNoClicked(t *testing.T) {
+	lastClickMu.Lock()
+	lastClick = ClickInfo{}
+	lastClickMu.Unlock()
+	if got, ok := applyHotkeyVars("/use @clicked"); ok || got != "" {
+		t.Fatalf("got %q, ok %v", got, ok)
+	}
+}
+
+// Test that commands referencing @hovered don't fire without a target.
+func TestApplyHotkeyVarsNoHovered(t *testing.T) {
+	lastHoverMu.Lock()
+	lastHover = ClickInfo{}
+	lastHoverMu.Unlock()
+	if got, ok := applyHotkeyVars("/inspect @hovered"); ok || got != "" {
+		t.Fatalf("got %q, ok %v", got, ok)
 	}
 }
