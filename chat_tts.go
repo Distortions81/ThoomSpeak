@@ -210,8 +210,17 @@ func extractArchive(src, dst string) error {
 				return err
 			}
 			target := filepath.Join(dst, hdr.Name)
-			if hdr.Typeflag == tar.TypeDir {
+			switch hdr.Typeflag {
+			case tar.TypeDir:
 				if err := os.MkdirAll(target, os.FileMode(hdr.Mode)); err != nil {
+					return err
+				}
+				continue
+			case tar.TypeSymlink:
+				if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+					return err
+				}
+				if err := os.Symlink(hdr.Linkname, target); err != nil {
 					return err
 				}
 				continue
