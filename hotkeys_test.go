@@ -96,6 +96,27 @@ func TestHotkeyFunctionWithoutCommand(t *testing.T) {
 	}
 }
 
+// Test that a function-only hotkey persists through save/load cycles.
+func TestHotkeyFunctionPersisted(t *testing.T) {
+	hotkeys = []Hotkey{{Combo: "Ctrl-P", Commands: []HotkeyCommand{{Function: "ponder"}}}}
+	dir := t.TempDir()
+	origDir := dataDirPath
+	dataDirPath = dir
+	defer func() { dataDirPath = origDir }()
+
+	saveHotkeys()
+	hotkeys = nil
+	loadHotkeys()
+
+	if len(hotkeys) != 1 {
+		t.Fatalf("hotkey not loaded")
+	}
+	cmd := hotkeys[0].Commands[0]
+	if cmd.Command != "" || cmd.Function != "ponder" {
+		t.Fatalf("unexpected hotkey after load: %+v", cmd)
+	}
+}
+
 // Test that editing a hotkey with no name still saves changes.
 func TestHotkeyEditWithoutName(t *testing.T) {
 	hotkeys = []Hotkey{{Combo: "Ctrl-A", Commands: []HotkeyCommand{{Command: "say hi"}}}}
