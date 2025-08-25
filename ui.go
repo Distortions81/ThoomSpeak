@@ -604,14 +604,25 @@ func makeMixerWindow() {
 		},
 		func(ev eui.UIEvent) {
 			if ev.Type == eui.EventCheckboxChanged {
-				gs.Music = ev.Checked
-				musicMixSlider.Disabled = !ev.Checked
-				if !ev.Checked {
-					stopAllMusic()
-					clearTuneQueue()
+				if ev.Checked {
+					gs.Music = true
+					musicMixSlider.Disabled = false
+					if s, err := checkDataFiles(clientVersion); err == nil {
+						status = s
+						if status.NeedSoundfont {
+							disableMusic()
+							makeDownloadsWindow()
+							if downloadWin != nil {
+								downloadWin.MarkOpen()
+							}
+							return
+						}
+					}
+					settingsDirty = true
+					updateSoundVolume()
+				} else {
+					disableMusic()
 				}
-				settingsDirty = true
-				updateSoundVolume()
 			}
 		})
 
@@ -627,13 +638,25 @@ func makeMixerWindow() {
 		},
 		func(ev eui.UIEvent) {
 			if ev.Type == eui.EventCheckboxChanged {
-				gs.ChatTTS = ev.Checked
-				ttsMixSlider.Disabled = !ev.Checked
-				if !ev.Checked {
-					stopAllTTS()
+				if ev.Checked {
+					gs.ChatTTS = true
+					ttsMixSlider.Disabled = false
+					if s, err := checkDataFiles(clientVersion); err == nil {
+						status = s
+						if status.NeedPiper || status.NeedPiperFem || status.NeedPiperMale {
+							disableTTS()
+							makeDownloadsWindow()
+							if downloadWin != nil {
+								downloadWin.MarkOpen()
+							}
+							return
+						}
+					}
+					settingsDirty = true
+					updateSoundVolume()
+				} else {
+					disableTTS()
 				}
-				settingsDirty = true
-				updateSoundVolume()
 			}
 		})
 
