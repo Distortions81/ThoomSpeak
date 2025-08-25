@@ -75,7 +75,7 @@ func ensurePiper() bool {
 }
 
 func playChatTTS(text string) {
-	if audioContext == nil || blockTTS || gs.Mute {
+	if audioContext == nil || blockTTS || gs.Mute || !gs.ChatTTS {
 		return
 	}
 	if !ensurePiper() {
@@ -124,7 +124,7 @@ func playChatTTS(text string) {
 }
 
 func speakChatMessage(msg string) {
-	if audioContext == nil || blockTTS || gs.Mute {
+	if audioContext == nil || blockTTS || gs.Mute || !gs.ChatTTS {
 		if audioContext == nil {
 			logError("chat tts: audio context is nil")
 		}
@@ -133,6 +133,9 @@ func speakChatMessage(msg string) {
 		}
 		if gs.Mute {
 			logDebug("chat tts: client muted")
+		}
+		if !gs.ChatTTS {
+			logDebug("chat tts: disabled in settings")
 		}
 		return
 	}
