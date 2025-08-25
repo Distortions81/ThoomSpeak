@@ -459,15 +459,25 @@ func checkDataFiles(clientVer int) (dataFilesStatus, error) {
 		binName = "piper.exe"
 		archiveName = "piper_windows_amd64.zip"
 	}
-	binPath := filepath.Join(binDir, binName)
-	info, err := os.Stat(binPath)
-	if err != nil || info.IsDir() {
-		altPath := filepath.Join(binPath, binName)
-		if altInfo, altErr := os.Stat(altPath); altErr != nil || altInfo.IsDir() {
-			if _, err := os.Stat(filepath.Join(piperDir, archiveName)); errors.Is(err, os.ErrNotExist) {
-				status.NeedPiper = true
-				status.PiperSize = headSize(extraDataBase + archiveName)
+	exists := func() bool {
+		candidates := []string{
+			filepath.Join(binDir, binName),
+			filepath.Join(binDir, "piper", binName),
+		}
+		if runtime.GOOS == "windows" {
+			candidates = append(candidates, filepath.Join(binDir, "piper", "piper"))
+		}
+		for _, p := range candidates {
+			if info, err := os.Stat(p); err == nil && !info.IsDir() {
+				return true
 			}
+		}
+		return false
+	}
+	if !exists() {
+		if _, err := os.Stat(filepath.Join(piperDir, archiveName)); errors.Is(err, os.ErrNotExist) {
+			status.NeedPiper = true
+			status.PiperSize = headSize(extraDataBase + archiveName)
 		}
 	}
 
