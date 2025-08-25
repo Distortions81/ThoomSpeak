@@ -387,6 +387,22 @@ func refreshPluginsWindow() {
 		}
 		row.AddItem(viewBtn)
 
+		reloadBtn, rh := eui.NewButton()
+		reloadBtn.Text = "Reload"
+		reloadBtn.Size = eui.Point{X: 48, Y: 24}
+		rh.Handle = func(ev eui.UIEvent) {
+			if ev.Type == eui.EventClick {
+				pluginMu.RLock()
+				enabled := !pluginDisabled[owner]
+				pluginMu.RUnlock()
+				disablePlugin(owner, "reloaded")
+				if enabled {
+					enablePlugin(owner)
+				}
+			}
+		}
+		row.AddItem(reloadBtn)
+
 		pluginsList.AddItem(row)
 	}
 	if pluginsWin != nil {
