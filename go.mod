@@ -6,9 +6,9 @@ require github.com/hajimehoshi/ebiten/v2 v2.8.8
 
 require (
 	github.com/dustin/go-humanize v1.0.1
-	github.com/go-tts/tts v1.0.1
 	github.com/google/gopacket v1.1.19
 	github.com/hako/durafmt v0.0.0-20210608085754-5c1018a4e16b
+	github.com/hegedustibor/htgo-tts v0.0.0-20240912200108-467b3e535435
 	github.com/hugolgst/rich-go v0.0.0-20240715122152-74618cc1ace2
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/remeh/sizedwaitgroup v1.0.0
@@ -31,6 +31,7 @@ require (
 	github.com/go-text/typesetting v0.3.0 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/hajimehoshi/go-mp3 v0.3.4 // indirect
+	github.com/hajimehoshi/oto/v2 v2.3.1 // indirect
 	github.com/jezek/xgb v1.1.1 // indirect
 	golang.org/x/exp/shiny v0.0.0-20250606033433-dcc06ee1d476 // indirect
 	golang.org/x/image v0.30.0 // indirect
