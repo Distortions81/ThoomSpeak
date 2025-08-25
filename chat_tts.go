@@ -179,8 +179,8 @@ func preparePiper(dataDir string) (string, string, string, error) {
 		if err := extractArchive(archivePath, binDir); err != nil {
 			return "", "", "", err
 		}
-		_ = os.Chmod(binPath, 0o755)
 	}
+	_ = os.Chmod(binPath, 0o755)
 
 	voice := "en_US-hfc_female-medium"
 	model := filepath.Join(piperDir, "voices", voice, voice+".onnx")
