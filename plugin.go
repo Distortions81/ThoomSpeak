@@ -16,14 +16,12 @@ import (
 
 // Expose the plugin API under both a short and a module-qualified path so
 // Yaegi can resolve imports regardless of how the script refers to it.
-var pluginExports = interp.Exports{
+var basePluginExports = interp.Exports{
 	// Short path used by simple plugin scripts: import "gt"
 	// Yaegi expects keys as "importPath/pkgName".
 	"gt/gt": {
 		"Logf":                reflect.ValueOf(pluginLogf),
 		"Console":             reflect.ValueOf(pluginConsole),
-		"AddHotkey":           reflect.ValueOf(pluginAddHotkey),
-		"AddHotkeyFunc":       reflect.ValueOf(pluginAddHotkeyFunc),
 		"RegisterCommand":     reflect.ValueOf(pluginRegisterCommand),
 		"RegisterFunc":        reflect.ValueOf(pluginRegisterFunc),
 		"RunCommand":          reflect.ValueOf(pluginRunCommand),
@@ -34,6 +32,22 @@ var pluginExports = interp.Exports{
 		"Player":              reflect.ValueOf((*Player)(nil)),
 		"RegisterChatHandler": reflect.ValueOf(pluginRegisterChatHandler),
 	},
+}
+
+func exportsForPlugin(owner string) interp.Exports {
+	ex := make(interp.Exports)
+	for pkg, symbols := range basePluginExports {
+		m := map[string]reflect.Value{}
+		for k, v := range symbols {
+			m[k] = v
+		}
+		m["AddHotkey"] = reflect.ValueOf(func(combo, command string) { pluginAddHotkey(owner, combo, command) })
+		m["AddHotkeyFunc"] = reflect.ValueOf(func(combo, funcName string) { pluginAddHotkeyFunc(owner, combo, funcName) })
+		m["Hotkeys"] = reflect.ValueOf(func() []Hotkey { return pluginHotkeys(owner) })
+		m["RemoveHotkey"] = reflect.ValueOf(func(combo string) { pluginRemoveHotkey(owner, combo) })
+		ex[pkg] = m
+	}
+	return ex
 }
 
 //go:embed example_plugins/example_ponder.go example_plugins/README.txt
@@ -94,28 +108,40 @@ func pluginConsole(msg string) {
 	consoleMessage(msg)
 }
 
-func pluginAddHotkey(combo, command string) {
-	hk := Hotkey{Name: command, Combo: combo, Commands: []HotkeyCommand{{Command: command}}}
+func pluginAddHotkey(owner, combo, command string) {
+	hk := Hotkey{Name: command, Combo: combo, Commands: []HotkeyCommand{{Command: command}}, Plugin: owner}
 	hotkeysMu.Lock()
+	for _, existing := range hotkeys {
+		if existing.Plugin == owner && existing.Combo == combo {
+			hotkeysMu.Unlock()
+			return
+		}
+	}
 	hotkeys = append(hotkeys, hk)
 	hotkeysMu.Unlock()
 	refreshHotkeysList()
 	saveHotkeys()
-	msg := "[plugin] hotkey added: " + combo + " -> " + command
+	msg := fmt.Sprintf("[plugin:%s] hotkey added: %s -> %s", owner, combo, command)
 	consoleMessage(msg)
 	log.Print(msg)
 }
 
 // pluginAddHotkeyFunc registers a hotkey that invokes a named plugin function
 // registered via RegisterFunc.
-func pluginAddHotkeyFunc(combo, funcName string) {
-	hk := Hotkey{Name: funcName, Combo: combo, Commands: []HotkeyCommand{{Function: funcName}}}
+func pluginAddHotkeyFunc(owner, combo, funcName string) {
+	hk := Hotkey{Name: funcName, Combo: combo, Commands: []HotkeyCommand{{Function: funcName}}, Plugin: owner}
 	hotkeysMu.Lock()
+	for _, existing := range hotkeys {
+		if existing.Plugin == owner && existing.Combo == combo {
+			hotkeysMu.Unlock()
+			return
+		}
+	}
 	hotkeys = append(hotkeys, hk)
 	hotkeysMu.Unlock()
 	refreshHotkeysList()
 	saveHotkeys()
-	msg := "[plugin] hotkey added: " + combo + " -> plugin:" + funcName
+	msg := fmt.Sprintf("[plugin:%s] hotkey added: %s -> plugin:%s", owner, combo, funcName)
 	consoleMessage(msg)
 	log.Print(msg)
 }
@@ -255,7 +281,8 @@ func loadPlugins() {
 			if len(restricted) > 0 {
 				i.Use(restricted)
 			}
-			i.Use(pluginExports)
+			owner := strings.TrimSuffix(e.Name(), ".go")
+			i.Use(exportsForPlugin(owner))
 			if _, err := i.Eval(string(src)); err != nil {
 				log.Printf("plugin %s: %v", e.Name(), err)
 				consoleMessage("[plugin] load error for " + path + ": " + err.Error())
