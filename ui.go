@@ -232,6 +232,7 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 	plugBtn.FontSize = toolFontSize
 	plugEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
+			refreshPluginsWindow()
 			pluginsWin.ToggleNear(ev.Item)
 		}
 	}
