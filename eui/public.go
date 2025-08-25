@@ -21,6 +21,12 @@ func WindowSnapping() bool { return windowSnapping }
 // SetWindowSnapping enables or disables window snapping.
 func SetWindowSnapping(enabled bool) { windowSnapping = enabled }
 
+// MiddleClickMove reports whether middle-click window dragging is enabled.
+func MiddleClickMove() bool { return middleClickMove }
+
+// SetMiddleClickMove enables or disables dragging windows with the middle mouse button.
+func SetMiddleClickMove(enabled bool) { middleClickMove = enabled }
+
 // SetScreenSize sets the current screen size used for layout calculations.
 func SetScreenSize(w, h int) {
 	screenWidth = w

@@ -1814,6 +1814,22 @@ func makeSettingsWindow() {
 	}
 	left.AddItem(toggle)
 
+	midMove, midMoveEvents := eui.NewCheckbox()
+	midMove.Text = "Middle-click moves windows"
+	midMove.Size = eui.Point{X: leftW, Y: 24}
+	midMove.Checked = gs.MiddleClickMoveWindow
+	midMove.Tooltip = "Drag windows using the middle mouse button"
+	midMoveEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			SettingsLock.Lock()
+			gs.MiddleClickMoveWindow = ev.Checked
+			eui.SetMiddleClickMove(ev.Checked)
+			SettingsLock.Unlock()
+			settingsDirty = true
+		}
+	}
+	left.AddItem(midMove)
+
 	keySpeedSlider, keySpeedEvents := eui.NewSlider()
 	keySpeedSlider.Label = "Keyboard Walk Speed"
 	keySpeedSlider.MinValue = 0.1
