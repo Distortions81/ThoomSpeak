@@ -90,7 +90,7 @@ func exportsForPlugin(owner string) interp.Exports {
 	return ex
 }
 
-//go:embed example_plugins/example_ponder.go example_plugins/default_macros.go example_plugins/README.txt example_plugins/chain_swap.go example_plugins/healer_selfheal.go example_plugins/coin_lord.go example_plugins/sharecads.go example_plugins/kudzu.go example_plugins/bard.go example_plugins/dance.go example_plugins/ledger.go
+//go:embed example_plugins
 var pluginExamples embed.FS
 
 func userPluginsDir() string {
@@ -131,6 +131,7 @@ func ensureDefaultPlugins() {
 		"plugins/bard.go",
 		"plugins/dance.go",
 		"plugins/ledger.go",
+		"plugins/numpad_poser.go",
 	}
 	for _, src := range files {
 		data, err := pluginExamples.ReadFile(src)

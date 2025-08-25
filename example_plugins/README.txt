@@ -174,6 +174,18 @@ Reply to the last exile who thinks to you.
 Automatically whisper "yes" when a boat ferryman offers a ride.
 1. When the ferryman says "My fine boats", the plugin replies for you.
 
+### Numpad Poser (`numpad_poser.go`)
+Use the numeric keypad to strike poses quickly.
+- `Numpad1` → `/pose leanleft`
+- `Numpad2` → `/pose akimbo`
+- `Numpad3` → `/pose leanright`
+- `Numpad4` → `/pose kneel`
+- `Numpad5` → `/pose sit`
+- `Numpad6` → `/pose angry`
+- `Numpad7` → `/pose lie`
+- `Numpad8` → `/pose seated`
+- `Numpad9` → `/pose celebrate`
+
 Notes
 -----
 - This directory is created automatically the first time the game runs.
