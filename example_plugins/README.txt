@@ -59,6 +59,11 @@ API
   Registers a callback invoked for each incoming chat message.
 - gt.RegisterPlayerHandler(func(p gt.Player))
   Registers a callback invoked whenever player info changes.
+- gt.Inventory()
+  Returns a slice of inventory items with ID, name, equipped state and quantity.
+- gt.ToggleEquip(id)
+  Toggles the equipped state of the first matching item by ID.
+
 
 Notes
 -----

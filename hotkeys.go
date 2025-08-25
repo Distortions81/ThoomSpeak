@@ -328,12 +328,11 @@ func openHotkeyEditor(idx int) {
 	addFnBtn.Disabled = len(fnOpts) == 0
 	addFnEv.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
-			opts := pluginFunctionNames()
 			sel := fnDD.Selected
-			if sel <= 0 || sel > len(opts) {
+			if sel <= 0 || sel >= len(fnDD.Options) {
 				return
 			}
-			addHotkeyCommand("", opts[sel-1])
+			addHotkeyCommand("", fnDD.Options[sel])
 		}
 	}
 	fnRow.AddItem(addFnBtn)
@@ -475,8 +474,15 @@ func finishHotkeyEdit(save bool) {
 		combo := strings.ReplaceAll(hotkeyComboText.Text, "\n", " ")
 		name := strings.ReplaceAll(hotkeyNameInput.Text, "\n", " ")
 		cmds := []HotkeyCommand{}
-		for i := range hotkeyCmdInputs {
-			cmd := strings.ReplaceAll(hotkeyCmdInputs[i].Text, "\n", " ")
+		max := len(hotkeyCmdInputs)
+		if len(hotkeyCmdFuncs) > max {
+			max = len(hotkeyCmdFuncs)
+		}
+		for i := 0; i < max; i++ {
+			cmd := ""
+			if i < len(hotkeyCmdInputs) {
+				cmd = strings.ReplaceAll(hotkeyCmdInputs[i].Text, "\n", " ")
+			}
 			fn := ""
 			if i < len(hotkeyCmdFuncs) {
 				fn = hotkeyCmdFuncs[i]

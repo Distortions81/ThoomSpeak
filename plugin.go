@@ -20,20 +20,23 @@ var pluginExports = interp.Exports{
 	// Short path used by simple plugin scripts: import "gt"
 	// Yaegi expects keys as "importPath/pkgName".
 	"gt/gt": {
-		"Logf":                  reflect.ValueOf(pluginLogf),
-		"Console":               reflect.ValueOf(pluginConsole),
-		"AddHotkey":             reflect.ValueOf(pluginAddHotkey),
-		"AddHotkeyFunc":         reflect.ValueOf(pluginAddHotkeyFunc),
-		"RegisterCommand":       reflect.ValueOf(pluginRegisterCommand),
-		"RegisterFunc":          reflect.ValueOf(pluginRegisterFunc),
-		"RunCommand":            reflect.ValueOf(pluginRunCommand),
-		"EnqueueCommand":        reflect.ValueOf(pluginEnqueueCommand),
-		"ClientVersion":         reflect.ValueOf(&clientVersion).Elem(),
-		"PlayerName":            reflect.ValueOf(pluginPlayerName),
-		"Players":               reflect.ValueOf(pluginPlayers),
-		"Player":                reflect.ValueOf((*Player)(nil)),
-		"RegisterChatHandler":   reflect.ValueOf(pluginRegisterChatHandler),
-		"RegisterPlayerHandler": reflect.ValueOf(pluginRegisterPlayerHandler),
+		"Logf":                reflect.ValueOf(pluginLogf),
+		"Console":             reflect.ValueOf(pluginConsole),
+		"AddHotkey":           reflect.ValueOf(pluginAddHotkey),
+		"AddHotkeyFunc":       reflect.ValueOf(pluginAddHotkeyFunc),
+		"RegisterCommand":     reflect.ValueOf(pluginRegisterCommand),
+		"RegisterFunc":        reflect.ValueOf(pluginRegisterFunc),
+		"RunCommand":          reflect.ValueOf(pluginRunCommand),
+		"EnqueueCommand":      reflect.ValueOf(pluginEnqueueCommand),
+		"ClientVersion":       reflect.ValueOf(&clientVersion).Elem(),
+		"PlayerName":          reflect.ValueOf(pluginPlayerName),
+		"Players":             reflect.ValueOf(pluginPlayers),
+		"Player":              reflect.ValueOf((*Player)(nil)),
+		"Inventory":           reflect.ValueOf(pluginInventory),
+		"InventoryItem":       reflect.ValueOf((*InventoryItem)(nil)),
+		"ToggleEquip":         reflect.ValueOf(pluginToggleEquip),
+		"RegisterChatHandler": reflect.ValueOf(pluginRegisterChatHandler),
+    "RegisterPlayerHandler": reflect.ValueOf(pluginRegisterPlayerHandler),
 	},
 }
 
@@ -191,6 +194,14 @@ func pluginPlayers() []Player {
 	out := make([]Player, len(ps))
 	copy(out, ps)
 	return out
+}
+
+func pluginInventory() []InventoryItem {
+	return getInventory()
+}
+
+func pluginToggleEquip(id uint16) {
+	toggleInventoryEquip(id)
 }
 
 func pluginRegisterChatHandler(fn func(string)) {

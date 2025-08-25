@@ -6,7 +6,7 @@ import (
 	"sync"
 )
 
-type inventoryItem struct {
+type InventoryItem struct {
 	ID       uint16
 	Name     string
 	Equipped bool
@@ -22,7 +22,7 @@ type inventoryKey struct {
 
 var (
 	inventoryMu    sync.RWMutex
-	inventoryItems []inventoryItem
+	inventoryItems []InventoryItem
 	inventoryNames = make(map[inventoryKey]string)
 )
 
@@ -58,7 +58,7 @@ func addInventoryItem(id uint16, idx int, name string, equip bool) {
 			}
 		}
 		// Append as a distinct instance; keep display order by placing at end
-		item := inventoryItem{ID: id, Name: name, Equipped: equip, Index: len(inventoryItems), IDIndex: idx, Quantity: 1}
+		item := InventoryItem{ID: id, Name: name, Equipped: equip, Index: len(inventoryItems), IDIndex: idx, Quantity: 1}
 		inventoryItems = append(inventoryItems, item)
 	} else {
 		// Legacy/non-template: coalesce by ID and bump quantity
@@ -74,7 +74,7 @@ func addInventoryItem(id uint16, idx int, name string, equip bool) {
 			}
 		}
 		if !found {
-			item := inventoryItem{ID: id, Name: name, Equipped: equip, Index: len(inventoryItems), IDIndex: -1, Quantity: 1}
+			item := InventoryItem{ID: id, Name: name, Equipped: equip, Index: len(inventoryItems), IDIndex: -1, Quantity: 1}
 			inventoryItems = append(inventoryItems, item)
 		}
 	}
@@ -246,10 +246,10 @@ func renameInventoryItem(id uint16, idx int, name string) {
 	inventoryDirty = true
 }
 
-func getInventory() []inventoryItem {
+func getInventory() []InventoryItem {
 	inventoryMu.RLock()
 	defer inventoryMu.RUnlock()
-	out := make([]inventoryItem, len(inventoryItems))
+	out := make([]InventoryItem, len(inventoryItems))
 	copy(out, inventoryItems)
 	sort.SliceStable(out, func(i, j int) bool {
 		if out[i].Equipped != out[j].Equipped {
@@ -261,7 +261,7 @@ func getInventory() []inventoryItem {
 }
 
 func setFullInventory(ids []uint16, equipped []bool) {
-	items := make([]inventoryItem, 0, len(ids))
+	items := make([]InventoryItem, 0, len(ids))
 	seen := make(map[uint16]int)
 	inventoryMu.Lock()
 	newNames := make(map[inventoryKey]string)
@@ -290,7 +290,7 @@ func setFullInventory(ids []uint16, equipped []bool) {
 		}
 		// Assign per-ID index sequentially
 		idIdx := seen[id]
-		items = append(items, inventoryItem{ID: id, Name: name, Equipped: equip, Index: len(items), IDIndex: idIdx, Quantity: 1})
+		items = append(items, InventoryItem{ID: id, Name: name, Equipped: equip, Index: len(items), IDIndex: idIdx, Quantity: 1})
 		seen[id] = idIdx + 1
 	}
 	inventoryItems = items

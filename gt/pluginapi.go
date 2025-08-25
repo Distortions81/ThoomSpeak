@@ -69,3 +69,18 @@ func RegisterChatHandler(fn func(msg string)) {}
 
 // RegisterPlayerHandler registers a callback for player info updates.
 func RegisterPlayerHandler(fn func(Player)) {}
+// InventoryItem mirrors the client's inventory item structure.
+type InventoryItem struct {
+	ID       uint16
+	Name     string
+	Equipped bool
+	Index    int
+	IDIndex  int
+	Quantity int
+}
+
+// Inventory returns the player's inventory.
+func Inventory() []InventoryItem { return nil }
+
+// ToggleEquip toggles the equipped state of an item by ID.
+func ToggleEquip(id uint16) {}
