@@ -28,8 +28,8 @@ done
 # Download voices
 VOICE_BASE="https://huggingface.co/rhasspy/piper-voices/resolve/main"
 declare -A VOICES=(
-  [en_GB-jenny_dioco-medium]="en/en_GB/jenny_dioco/medium"
-  [en_GB-alan-medium]="en/en_GB/alan/medium"
+  [en_US-hfc_female-medium]="en/en_US/hfc_female/medium"
+  [en_US-hfc_male-medium]="en/en_US/hfc_male/medium"
 )
 
 for name in "${!VOICES[@]}"; do
