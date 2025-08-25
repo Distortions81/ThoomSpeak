@@ -460,10 +460,14 @@ func checkDataFiles(clientVer int) (dataFilesStatus, error) {
 		archiveName = "piper_windows_amd64.zip"
 	}
 	binPath := filepath.Join(binDir, binName)
-	if _, err := os.Stat(binPath); err != nil {
-		if _, err := os.Stat(filepath.Join(piperDir, archiveName)); errors.Is(err, os.ErrNotExist) {
-			status.NeedPiper = true
-			status.PiperSize = headSize(extraDataBase + archiveName)
+	info, err := os.Stat(binPath)
+	if err != nil || info.IsDir() {
+		altPath := filepath.Join(binPath, binName)
+		if altInfo, altErr := os.Stat(altPath); altErr != nil || altInfo.IsDir() {
+			if _, err := os.Stat(filepath.Join(piperDir, archiveName)); errors.Is(err, os.ErrNotExist) {
+				status.NeedPiper = true
+				status.PiperSize = headSize(extraDataBase + archiveName)
+			}
 		}
 	}
 
