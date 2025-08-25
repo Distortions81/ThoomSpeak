@@ -327,6 +327,7 @@ func enablePlugin(owner string) {
 	}
 	loadPluginSource(owner, name, path, src, restrictedStdlib())
 	refreshPluginsWindow()
+	refreshPluginInfoWindow(owner)
 }
 
 func recordPluginSend(owner string) bool {
@@ -383,21 +384,26 @@ func disablePlugin(owner, reason string) {
 	}
 	consoleMessage("[plugin:" + disp + "] stopped: " + reason)
 	refreshPluginsWindow()
+	refreshPluginInfoWindow(owner)
 }
 
 func stopAllPlugins() {
 	pluginMu.RLock()
 	owners := make([]string, 0, len(pluginDisplayNames))
 	for o := range pluginDisplayNames {
-		owners = append(owners, o)
+		if !pluginDisabled[o] {
+			owners = append(owners, o)
+		}
 	}
 	pluginMu.RUnlock()
 	for _, o := range owners {
 		disablePlugin(o, "stopped by user")
 	}
-	commandQueue = nil
-	pendingCommand = ""
-	consoleMessage("[plugin] all plugins stopped")
+	if len(owners) > 0 {
+		commandQueue = nil
+		pendingCommand = ""
+		consoleMessage("[plugin] all plugins stopped")
+	}
 }
 
 func pluginPlayerName() string {
