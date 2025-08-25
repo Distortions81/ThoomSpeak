@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -30,10 +32,19 @@ func stopAllTTS() {
 
 func fetchTTS(text string) (io.ReadCloser, error) {
 	fileName := fmt.Sprintf("chat_%d", time.Now().UnixNano())
+
+	if err := os.MkdirAll(chatSpeech.Folder, 0o755); err != nil {
+		return nil, fmt.Errorf("create audio dir: %w", err)
+	}
+
 	r, err := chatSpeech.CreateSpeechBuff(text, fileName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create speech: %w", err)
 	}
+
+	// Remove the temporary file written by CreateSpeechBuff.
+	_ = os.Remove(filepath.Join(chatSpeech.Folder, fileName+".mp3"))
+
 	return io.NopCloser(r), nil
 }
 
