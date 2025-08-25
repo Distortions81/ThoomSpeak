@@ -64,14 +64,14 @@ func TestHotkeyCommandInput(t *testing.T) {
 	}
 
 	hotkeyComboText.Text = "Ctrl-A"
-	hotkeyCmdInputs[0].Text = "say"
-	hotkeyTextInputs[0].Text = "hi"
+	hotkeyNameInput.Text = "Test"
+	hotkeyCmdInputs[0].Text = "say hi"
 	finishHotkeyEdit(true)
 
 	if len(hotkeys) != 1 {
 		t.Fatalf("hotkey not saved")
 	}
-	if hotkeys[0].Combo != "Ctrl-A" || len(hotkeys[0].Commands) != 1 || hotkeys[0].Commands[0].Command != "say" || hotkeys[0].Commands[0].Text != "hi" {
+	if hotkeys[0].Combo != "Ctrl-A" || hotkeys[0].Name != "Test" || len(hotkeys[0].Commands) != 1 || hotkeys[0].Commands[0].Command != "say hi" {
 		t.Fatalf("unexpected hotkey data: %+v", hotkeys[0])
 	}
 }
@@ -97,7 +97,7 @@ func TestLoadHotkeysShowsEntriesInWindow(t *testing.T) {
 	}
 
 	// Write a hotkey entry to disk and load it.
-	hk := []Hotkey{{Combo: "Ctrl-B", Commands: []HotkeyCommand{{Command: "say", Text: "bye"}}}}
+	hk := []Hotkey{{Combo: "Ctrl-B", Name: "Bye", Commands: []HotkeyCommand{{Command: "say bye"}}}}
 	data, err := json.Marshal(hk)
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
@@ -124,7 +124,6 @@ func TestHotkeyEditorWrapsAndResizes(t *testing.T) {
 	base := hotkeyEditWin.Size.Y
 	long := "this is a very long command line that should wrap across multiple lines for testing"
 	hotkeyCmdInputs[0].Text = long
-	hotkeyTextInputs[0].Text = long
 	wrapHotkeyInputs()
 	if !strings.Contains(hotkeyCmdInputs[0].Text, "\n") || hotkeyCmdInputs[0].Size.Y <= 20 {
 		t.Fatalf("command input did not wrap or grow: %q size %v", hotkeyCmdInputs[0].Text, hotkeyCmdInputs[0].Size.Y)

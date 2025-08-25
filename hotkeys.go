@@ -20,10 +20,10 @@ const hotkeysFile = "global-hotkeys.json"
 
 type HotkeyCommand struct {
 	Command string `json:"command"`
-	Text    string `json:"text,omitempty"`
 }
 
 type Hotkey struct {
+	Name     string          `json:"name,omitempty"`
 	Combo    string          `json:"combo"`
 	Commands []HotkeyCommand `json:"commands"`
 }
@@ -34,9 +34,9 @@ var (
 	hotkeysList      *eui.ItemData
 	hotkeyEditWin    *eui.WindowData
 	hotkeyComboText  *eui.ItemData
+	hotkeyNameInput  *eui.ItemData
 	hotkeyCmdSection *eui.ItemData
 	hotkeyCmdInputs  []*eui.ItemData
-	hotkeyTextInputs []*eui.ItemData
 	editingHotkey    int = -1
 
 	recording     bool
@@ -53,6 +53,7 @@ func loadHotkeys() {
 	}
 	type hotkeyJSON struct {
 		Combo    string          `json:"combo"`
+		Name     string          `json:"name,omitempty"`
 		Commands []HotkeyCommand `json:"commands"`
 		Command  string          `json:"command"`
 		Text     string          `json:"text,omitempty"`
@@ -63,11 +64,12 @@ func loadHotkeys() {
 	}
 	hotkeys = hotkeys[:0]
 	for _, r := range raw {
-		hk := Hotkey{Combo: r.Combo}
+		hk := Hotkey{Combo: r.Combo, Name: r.Name}
 		if len(r.Commands) > 0 {
 			hk.Commands = r.Commands
 		} else if r.Command != "" {
-			hk.Commands = []HotkeyCommand{{Command: r.Command, Text: r.Text}}
+			cmd := strings.TrimSpace(r.Command + " " + r.Text)
+			hk.Commands = []HotkeyCommand{{Command: cmd}}
 		}
 		hotkeys = append(hotkeys, hk)
 	}
@@ -135,14 +137,15 @@ func refreshHotkeysList() {
 		text := ""
 		if len(hk.Commands) > 0 {
 			text = hk.Commands[0].Command
-			if hk.Commands[0].Text != "" {
-				text += " " + hk.Commands[0].Text
-			}
 			if len(hk.Commands) > 1 {
 				text += " ..."
 			}
 		}
-		btn.Text = hk.Combo + " -> " + text
+		btn.Text = hk.Combo
+		if hk.Name != "" {
+			btn.Text += " [" + hk.Name + "]"
+		}
+		btn.Text += " -> " + text
 		btn.Size = eui.Point{X: 200, Y: 20}
 		btn.FontSize = 10
 		events.Handle = func(ev eui.UIEvent) {
@@ -196,7 +199,7 @@ func openHotkeyEditor(idx int) {
 	hotkeyEditWin = eui.NewWindow()
 	hotkeyEditWin.OnClose = func() { hotkeyEditWin = nil }
 	hotkeyEditWin.Title = "Hotkey"
-	hotkeyEditWin.Size = eui.Point{X: 260, Y: 160}
+	hotkeyEditWin.Size = eui.Point{X: 400, Y: 160}
 	hotkeyEditWin.AutoSize = true
 	hotkeyEditWin.Closable = true
 	hotkeyEditWin.Movable = true
@@ -215,7 +218,7 @@ func openHotkeyEditor(idx int) {
 	row.AddItem(label)
 	hotkeyComboText, _ = eui.NewText()
 	hotkeyComboText.Text = ""
-	hotkeyComboText.Size = eui.Point{X: 120, Y: 20}
+	hotkeyComboText.Size = eui.Point{X: 200, Y: 20}
 	hotkeyComboText.FontSize = 12
 	row.AddItem(hotkeyComboText)
 	recordBtn, recordEvents := eui.NewButton()
@@ -230,11 +233,22 @@ func openHotkeyEditor(idx int) {
 	row.AddItem(recordBtn)
 	flow.AddItem(row)
 
+	nameRow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL, Fixed: true}
+	nameLabel, _ := eui.NewText()
+	nameLabel.Text = "Name:"
+	nameLabel.Size = eui.Point{X: 40, Y: 20}
+	nameLabel.FontSize = 12
+	nameRow.AddItem(nameLabel)
+	hotkeyNameInput, _ = eui.NewInput()
+	hotkeyNameInput.Size = eui.Point{X: hotkeyEditWin.Size.X - 40, Y: 20}
+	hotkeyNameInput.FontSize = 12
+	nameRow.AddItem(hotkeyNameInput)
+	flow.AddItem(nameRow)
+
 	hotkeyCmdSection = &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL, Fixed: true}
 	flow.AddItem(hotkeyCmdSection)
 	hotkeyCmdInputs = nil
-	hotkeyTextInputs = nil
-	addHotkeyCommand("", "")
+	addHotkeyCommand("")
 
 	addCmdRow, addCmdEvents := eui.NewButton()
 	addCmdRow.Text = "+"
@@ -242,7 +256,7 @@ func openHotkeyEditor(idx int) {
 	addCmdRow.FontSize = 14
 	addCmdEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
-			addHotkeyCommand("", "")
+			addHotkeyCommand("")
 		}
 	}
 	flow.AddItem(addCmdRow)
@@ -274,11 +288,11 @@ func openHotkeyEditor(idx int) {
 
 	if idx >= 0 && idx < len(hotkeys) {
 		hotkeyComboText.Text = hotkeys[idx].Combo
+		hotkeyNameInput.Text = hotkeys[idx].Name
 		if len(hotkeys[idx].Commands) > 0 {
 			hotkeyCmdInputs[0].Text = hotkeys[idx].Commands[0].Command
-			hotkeyTextInputs[0].Text = hotkeys[idx].Commands[0].Text
 			for _, c := range hotkeys[idx].Commands[1:] {
-				addHotkeyCommand(c.Command, c.Text)
+				addHotkeyCommand(c.Command)
 			}
 		}
 	}
@@ -288,19 +302,19 @@ func openHotkeyEditor(idx int) {
 	wrapHotkeyInputs()
 }
 
-func addHotkeyCommand(cmd, txt string) {
+func addHotkeyCommand(cmd string) {
 	if hotkeyCmdSection == nil {
 		return
 	}
 	cmdLabel, _ := eui.NewText()
 	cmdLabel.Text = "Command:"
-	cmdLabel.Size = eui.Point{X: 220, Y: 20}
+	cmdLabel.Size = eui.Point{X: hotkeyEditWin.Size.X - 40, Y: 20}
 	cmdLabel.FontSize = 12
 	hotkeyCmdSection.AddItem(cmdLabel)
 
 	var cmdEvents *eui.EventHandler
 	cmdInput, cmdEvents := eui.NewInput()
-	cmdInput.Size = eui.Point{X: 220, Y: 20}
+	cmdInput.Size = eui.Point{X: hotkeyEditWin.Size.X - 40, Y: 20}
 	cmdInput.FontSize = 12
 	cmdInput.Scrollable = true
 	cmdInput.Text = cmd
@@ -312,26 +326,6 @@ func addHotkeyCommand(cmd, txt string) {
 	hotkeyCmdSection.AddItem(cmdInput)
 	hotkeyCmdInputs = append(hotkeyCmdInputs, cmdInput)
 
-	textLabel, _ := eui.NewText()
-	textLabel.Text = "Text:"
-	textLabel.Size = eui.Point{X: 220, Y: 20}
-	textLabel.FontSize = 12
-	hotkeyCmdSection.AddItem(textLabel)
-
-	var textEvents *eui.EventHandler
-	textInput, textEvents := eui.NewInput()
-	textInput.Size = eui.Point{X: 220, Y: 20}
-	textInput.FontSize = 12
-	textInput.Scrollable = true
-	textInput.Text = txt
-	textEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventInputChanged {
-			wrapHotkeyInputs()
-		}
-	}
-	hotkeyCmdSection.AddItem(textInput)
-	hotkeyTextInputs = append(hotkeyTextInputs, textInput)
-
 	hotkeyEditWin.Refresh()
 	wrapHotkeyInputs()
 }
@@ -341,7 +335,7 @@ func wrapHotkeyInputs() {
 		return
 	}
 	ui := eui.UIScale()
-	fs := 12
+	fs := float32(12)
 	if len(hotkeyCmdInputs) > 0 {
 		fs = hotkeyCmdInputs[0].FontSize
 	}
@@ -366,6 +360,9 @@ func wrapHotkeyInputs() {
 		if len(lines) == 0 {
 			lines = []string{""}
 		}
+		if n := len(raw) - len(strings.TrimRight(raw, " ")); n > 0 {
+			lines[len(lines)-1] += strings.Repeat(" ", n)
+		}
 		it.Text = strings.Join(lines, "\n")
 		if it.TextPtr != nil {
 			*it.TextPtr = it.Text
@@ -376,28 +373,22 @@ func wrapHotkeyInputs() {
 	for _, it := range hotkeyCmdInputs {
 		resize(it)
 	}
-	for _, it := range hotkeyTextInputs {
-		resize(it)
-	}
 	hotkeyEditWin.Refresh()
 }
 
 func finishHotkeyEdit(save bool) {
 	if save {
 		combo := strings.ReplaceAll(hotkeyComboText.Text, "\n", " ")
+		name := strings.ReplaceAll(hotkeyNameInput.Text, "\n", " ")
 		cmds := []HotkeyCommand{}
 		for i := range hotkeyCmdInputs {
 			cmd := strings.ReplaceAll(hotkeyCmdInputs[i].Text, "\n", " ")
-			txt := ""
-			if i < len(hotkeyTextInputs) {
-				txt = strings.ReplaceAll(hotkeyTextInputs[i].Text, "\n", " ")
-			}
 			if cmd != "" {
-				cmds = append(cmds, HotkeyCommand{Command: cmd, Text: txt})
+				cmds = append(cmds, HotkeyCommand{Command: cmd})
 			}
 		}
 		if combo != "" && len(cmds) > 0 {
-			hk := Hotkey{Combo: combo, Commands: cmds}
+			hk := Hotkey{Name: name, Combo: combo, Commands: cmds}
 			if editingHotkey >= 0 && editingHotkey < len(hotkeys) {
 				hotkeys[editingHotkey] = hk
 			} else {
@@ -561,7 +552,7 @@ func checkHotkeys() {
 		for _, hk := range hotkeys {
 			if hk.Combo == combo {
 				for _, c := range hk.Commands {
-					enqueueCommand(strings.TrimSpace(c.Command + " " + c.Text))
+					enqueueCommand(strings.TrimSpace(c.Command))
 				}
 				nextCommand()
 				break
