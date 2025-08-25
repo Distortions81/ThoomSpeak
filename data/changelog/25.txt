@@ -1,0 +1,12 @@
+tts will now work with unmatched voice folder name.
+fixed windows tts path was wrong.
+added refresh button to plugins window, and for each plugin for testing changes.
+Now prevent windows prompt from appearing for each TTS in windows 10 or earlier.
+Clicking tts test now auto-enables TTS.
+opening chat window with combine console/chat mode on will no longer cause a crash 
+got rid of plugins viewer, now just has a button to reveal the plugins folder on the desktop.
+stop/reload plugin only reloads or stops plugins that are running (less console spam)
+downloads window correctly refreshes if reopened after downloading assets.
+fixed a bug with hotkeys window
+goThoom will auto-create example_plugins folder and add example plugins
+updated some example plugins that had errors
