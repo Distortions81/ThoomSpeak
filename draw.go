@@ -382,9 +382,9 @@ func pictureShift(prev, cur []framePicture, max int) (int, int, []int, bool) {
 	}
 
 	// Collect candidate background indices for the winning motion.
-	// Filter out tiny sprites (e.g., UI-like icons) so we don't pin
-	// small pictures to the screen background when the camera pans.
-	const minBackgroundPixels = 1000
+	// Filter out tiny sprites so we don't pin small pictures to
+	// the screen background when the camera pans.
+	const minBackgroundPixels = 900
 	idxs := make([]int, 0, len(idxMap[best]))
 	for idx := range idxMap[best] {
 		if idx >= 0 && idx < len(cur) {
