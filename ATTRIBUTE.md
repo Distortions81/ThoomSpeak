@@ -6,7 +6,7 @@ This project uses the following third-party Go libraries.
 | --- | --- | --- | --- |
 | Ebitengine | https://github.com/hajimehoshi/ebiten | Apache-2.0 | Hajime Hoshi |
 | go-humanize | https://github.com/dustin/go-humanize | MIT | Dustin Sallings |
-| htgo-tts | https://github.com/hegedustibor/htgo-tts | MIT | Tibor Hegedus |
+| piper | https://github.com/fresh-cut/piper | MIT | Amity Bell |
 | gopacket | https://github.com/google/gopacket | BSD-3-Clause | Google, Inc.; Andreas Krennmair |
 | durafmt | https://github.com/hako/durafmt | MIT | Wesley Hill |
 | rich-go | https://github.com/hugolgst/rich-go | MIT | Hugo Lageneste |
