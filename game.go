@@ -770,6 +770,9 @@ func (g *Game) Update() error {
 			heldTime = 0
 		}
 	}
+	if click && !uiMouseDown {
+		handleWorldClick(baseX, baseY)
+	}
 
 	x, y := baseX, baseY
 	walk := false
