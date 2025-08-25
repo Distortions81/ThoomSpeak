@@ -61,14 +61,17 @@ var rankMessages = map[string]string{
 	"You chart a way through the unknown.":              "4500-4749",
 	"Your path illuminates the wilderness.":             "4750-4999",
 	"Your path is ablaze with glory.":                   "6000-",
-	"You are enlightened beyond measure.":               "?",
+	"You are enlightened beyond measure.":               "???",
 	"There is nothing I can teach you.":                 "MAXED",
 }
 
 func Init() {
 	gt.RegisterChatHandler(func(msg string) {
-		if r, ok := rankMessages[msg]; ok {
-			gt.ShowNotification("Rank " + r)
+		for r, rank := range rankMessages {
+			if gt.EndsWith(msg, rank) {
+				gt.ShowNotification("Rank " + r)
+				break
+			}
 		}
 	})
 }
