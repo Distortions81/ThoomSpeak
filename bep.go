@@ -69,9 +69,11 @@ func parseBackendInfo(data []byte) {
 	p.Clan = clan
 	p.LastSeen = time.Now()
 	p.Offline = false
+	playerCopy := *p
 	playersMu.Unlock()
 	playersDirty = true
 	playersPersistDirty = true
+	notifyPlayerHandlers(playerCopy)
 
 	if playerName != "" && strings.EqualFold(name, playerName) {
 		for i := range characters {
@@ -89,17 +91,18 @@ func parseBackendInfo(data []byte) {
 // parseBackendShare parses "be-sh" messages describing sharing relationships.
 func parseBackendShare(data []byte) {
 	playersMu.Lock()
-	cleared := make([]string, 0, len(players))
+	cleared := make([]Player, 0, len(players))
 	for _, p := range players {
 		if p.Sharee || p.Sharing {
 			p.Sharee = false
 			p.Sharing = false
-			cleared = append(cleared, p.Name)
+			cleared = append(cleared, *p)
 		}
 	}
 	playersMu.Unlock()
-	for _, n := range cleared {
-		killNameTagCacheFor(n)
+	for _, pl := range cleared {
+		killNameTagCacheFor(pl.Name)
+		notifyPlayerHandlers(pl)
 	}
 	parts := bytes.SplitN(data, []byte{'\t'}, 2)
 	shareePart := parts[0]
@@ -107,7 +110,6 @@ func parseBackendShare(data []byte) {
 	if len(parts) > 1 {
 		sharerPart = parts[1]
 	}
-	changed := []string{}
 	for _, name := range parseNames(shareePart) {
 		playersMu.Lock()
 		p, ok := players[name]
@@ -115,12 +117,15 @@ func parseBackendShare(data []byte) {
 			p = &Player{Name: name}
 			players[name] = p
 		}
-		if !p.Sharee {
-			p.Sharee = true
-			changed = append(changed, name)
-		}
+		changed := !p.Sharee
+		p.Sharee = true
 		p.LastSeen = time.Now()
+		playerCopy := *p
 		playersMu.Unlock()
+		if changed {
+			killNameTagCacheFor(name)
+		}
+		notifyPlayerHandlers(playerCopy)
 	}
 	for _, name := range parseNames(sharerPart) {
 		playersMu.Lock()
@@ -129,15 +134,15 @@ func parseBackendShare(data []byte) {
 			p = &Player{Name: name}
 			players[name] = p
 		}
-		if !p.Sharing {
-			p.Sharing = true
-			changed = append(changed, name)
-		}
+		changed := !p.Sharing
+		p.Sharing = true
 		p.LastSeen = time.Now()
+		playerCopy := *p
 		playersMu.Unlock()
-	}
-	for _, n := range changed {
-		killNameTagCacheFor(n)
+		if changed {
+			killNameTagCacheFor(name)
+		}
+		notifyPlayerHandlers(playerCopy)
 	}
 	playersDirty = true
 }
@@ -188,7 +193,9 @@ func parseBackendWho(data []byte) {
 		}
 		p.LastSeen = time.Now()
 		p.Offline = false
+		playerCopy := *p
 		playersMu.Unlock()
+		notifyPlayerHandlers(playerCopy)
 		queueInfoRequest(name)
 		batchCount++
 	}

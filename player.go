@@ -31,8 +31,10 @@ type Player struct {
 }
 
 var (
-	players   = make(map[string]*Player)
-	playersMu sync.RWMutex
+	players          = make(map[string]*Player)
+	playersMu        sync.RWMutex
+	playerHandlers   []func(Player)
+	playerHandlersMu sync.RWMutex
 )
 
 func getPlayer(name string) *Player {
@@ -71,8 +73,10 @@ func updatePlayerAppearance(name string, pictID uint16, colors []byte, isNPC boo
 	// Seeing a player on screen implies they are present now.
 	p.LastSeen = time.Now()
 	p.Offline = false
+	playerCopy := *p
 	playersMu.Unlock()
 	playersDirty = true
+	notifyPlayerHandlers(playerCopy)
 
 	if playerName != "" && strings.EqualFold(name, playerName) {
 		changed := false
@@ -103,4 +107,13 @@ func getPlayers() []Player {
 		out = append(out, *p)
 	}
 	return out
+}
+
+func notifyPlayerHandlers(p Player) {
+	playerHandlersMu.RLock()
+	handlers := append([]func(Player){}, playerHandlers...)
+	playerHandlersMu.RUnlock()
+	for _, fn := range handlers {
+		fn(p)
+	}
 }

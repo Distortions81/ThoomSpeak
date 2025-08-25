@@ -36,6 +36,7 @@ var pluginExports = interp.Exports{
 		"InventoryItem":       reflect.ValueOf((*InventoryItem)(nil)),
 		"ToggleEquip":         reflect.ValueOf(pluginToggleEquip),
 		"RegisterChatHandler": reflect.ValueOf(pluginRegisterChatHandler),
+    "RegisterPlayerHandler": reflect.ValueOf(pluginRegisterPlayerHandler),
 	},
 }
 
@@ -210,6 +211,15 @@ func pluginRegisterChatHandler(fn func(string)) {
 	chatHandlersMu.Lock()
 	chatHandlers = append(chatHandlers, fn)
 	chatHandlersMu.Unlock()
+}
+
+func pluginRegisterPlayerHandler(fn func(Player)) {
+	if fn == nil {
+		return
+	}
+	playerHandlersMu.Lock()
+	playerHandlers = append(playerHandlers, fn)
+	playerHandlersMu.Unlock()
 }
 
 func loadPlugins() {
