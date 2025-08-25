@@ -374,6 +374,11 @@ func synthesizeWithPiper(text string) ([]byte, error) {
 		cmd.Stdin = strings.NewReader(text)
 		cmd.Stderr = &stderr
 		if err := cmd.Run(); err != nil {
+			if os.IsPermission(err) {
+				if info, statErr := os.Stat(piperPath); statErr == nil {
+					return nil, fmt.Errorf("piper run: %v (file mode %v): %s", err, info.Mode(), stderr.String())
+				}
+			}
 			return nil, fmt.Errorf("piper run: %v: %s", err, stderr.String())
 		}
 		data, err := os.ReadFile(tmpName)
@@ -391,6 +396,11 @@ func synthesizeWithPiper(text string) ([]byte, error) {
 	cmd.Stdout = &out
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
+		if os.IsPermission(err) {
+			if info, statErr := os.Stat(piperPath); statErr == nil {
+				return nil, fmt.Errorf("piper run: %v (file mode %v): %s", err, info.Mode(), stderr.String())
+			}
+		}
 		return nil, fmt.Errorf("piper run: %v: %s", err, stderr.String())
 	}
 	return out.Bytes(), nil
