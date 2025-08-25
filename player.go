@@ -21,6 +21,8 @@ type Player struct {
 	Sharing    bool // player is sharing to us
 	GMLevel    int  // parsed from be-who; not rendered
 	Friend     bool // marked as friend
+	Blocked    bool // player is blocked (chat muted)
+	Ignored    bool // player is ignored (muted and hidden)
 	Dead       bool // parsed from obit messages (future)
 	FellWhere  string
 	KillerName string
