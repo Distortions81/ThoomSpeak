@@ -1,22 +1,22 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"io"
-	"net/http"
-	"net/url"
 	"sync"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2/audio"
 	"github.com/hajimehoshi/ebiten/v2/audio/mp3"
+	htgotts "github.com/hegedustibor/htgo-tts"
+	"github.com/hegedustibor/htgo-tts/voices"
 )
 
 var (
 	chatTTSMu    sync.Mutex
 	ttsPlayers   = make(map[*audio.Player]struct{})
 	ttsPlayersMu sync.Mutex
+	chatSpeech   = htgotts.Speech{Folder: "audio", Language: voices.English}
 )
 
 func stopAllTTS() {
@@ -28,26 +28,13 @@ func stopAllTTS() {
 	}
 }
 
-func fetchTTS(ctx context.Context, text, lang string) (io.ReadCloser, error) {
-	u := fmt.Sprintf("http://translate.google.com/translate_tts?ie=UTF-8&q=%s&tl=%s&client=tw-ob", url.QueryEscape(text), lang)
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
+func fetchTTS(text string) (io.ReadCloser, error) {
+	fileName := fmt.Sprintf("chat_%d", time.Now().UnixNano())
+	r, err := chatSpeech.CreateSpeechBuff(text, fileName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return nil, fmt.Errorf("failed to create speech: %w", err)
 	}
-
-	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:39.0) Gecko/20100101 Firefox/39.0")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query google: %w", err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		defer resp.Body.Close()
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("failed to query google: response status %d: %s", resp.StatusCode, string(body))
-	}
-	return resp.Body, nil
+	return io.NopCloser(r), nil
 }
 
 func speakChatMessage(msg string) {
@@ -64,10 +51,7 @@ func speakChatMessage(msg string) {
 		return
 	}
 	go func(text string) {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-
-		rc, err := fetchTTS(ctx, text, "en")
+		rc, err := fetchTTS(text)
 		if err != nil {
 			logError("chat tts: %v", err)
 			return
