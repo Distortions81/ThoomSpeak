@@ -174,6 +174,11 @@ Reply to the last exile who thinks to you.
 Automatically whisper "yes" when a boat ferryman offers a ride.
 1. When the ferryman says "My fine boats", the plugin replies for you.
 
+### Right Click Mode (`right_click_mode.go`)
+Cycle the action performed by right-clicking.
+1. Use `/pushpull`, `/trade`, `/healpotion`, or `/cadset` to change modes.
+2. Right-click a target to run the selected command.
+
 Notes
 -----
 - This directory is created automatically the first time the game runs.
