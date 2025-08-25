@@ -217,7 +217,12 @@ const (
 )
 
 func isChatBubble(t int) bool {
-	return t == kBubbleNormal || t == kBubbleWhisper || t == kBubbleYell
+	switch t {
+	case kBubbleNormal, kBubbleWhisper, kBubbleYell, kBubbleThought, kBubblePonder, kBubbleRealAction, kBubblePlayerAction:
+		return true
+	default:
+		return false
+	}
 }
 
 // bubble languages and codes from Public_cl.h
