@@ -188,8 +188,8 @@ func loadPlugins() {
 	}
     // Build restricted stdlib symbol map
     allowedPkgs := []string{
-        // "fmt/fmt",
-        // "strings/strings",
+        "fmt/fmt",
+        "strings/strings",
     }
     restricted := interp.Exports{}
     for _, key := range allowedPkgs {
