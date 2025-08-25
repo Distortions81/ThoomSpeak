@@ -333,9 +333,23 @@ func makePluginsWindow() {
 	pluginsWin.Movable = true
 	pluginsWin.SetZone(eui.HZoneCenterLeft, eui.VZoneMiddleTop)
 
-	flow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
-	pluginsList = flow
-	pluginsWin.AddItem(flow)
+	root := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
+	pluginsWin.AddItem(root)
+
+	list := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
+	pluginsList = list
+	root.AddItem(list)
+
+	refreshBtn, rh := eui.NewButton()
+	refreshBtn.Text = "Refresh"
+	refreshBtn.Size = eui.Point{X: 64, Y: 24}
+	rh.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			rescanPlugins()
+		}
+	}
+	root.AddItem(refreshBtn)
+
 	pluginsWin.AddWindow(false)
 	refreshPluginsWindow()
 }
