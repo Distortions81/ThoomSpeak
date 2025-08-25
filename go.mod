@@ -15,6 +15,7 @@ require (
 	github.com/sinshu/go-meltysynth v0.0.0-20230205031334-05d311382fc4
 	github.com/sqweek/dialog v0.0.0-20240226140203-065105509627
 	github.com/thiagokokada/dark-mode-go v0.0.1
+	github.com/traefik/yaegi v0.16.1
 	golang.design/x/clipboard v0.7.1
 	golang.org/x/crypto v0.41.0
 	golang.org/x/text v0.28.0

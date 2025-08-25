@@ -55,6 +55,35 @@ go run . -pcap reference-client.pcapng
 
 ---
 
+## Plugins
+
+goThoom can load optional plugins at startup using [yaegi](https://github.com/traefik/yaegi), a Go interpreter.
+Place `.go` files inside the `plugins/` directory. Each plugin is evaluated and may
+define an `Init()` function that runs after client initialization.
+
+Plugins only see a small, approved API exposed through the `pluginapi` package:
+
+```go
+import "pluginapi"
+
+func Init() {
+    pluginapi.Logf("plugin active")
+    pluginapi.AddHotkey("ctrl+h", "/hello")
+    _ = pluginapi.ClientVersion
+}
+```
+
+Currently exposed symbols:
+
+- `pluginapi.Logf(format, ...any)` – write to the client log
+- `pluginapi.AddHotkey(combo, command)` – register a global hotkey
+- `pluginapi.ClientVersion` – current client version (read/write)
+
+All plugin code runs in the same process but is sandboxed to this approved list of
+functions and variables.
+
+---
+
 ## Build from source (devs)
 
 ### Linux (Debian/Ubuntu)

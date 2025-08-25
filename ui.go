@@ -144,6 +144,7 @@ func initUI() {
 	}
 
 	loadHotkeys()
+	loadPlugins()
 
 	makeGameWindow()
 	makeDownloadsWindow()
