@@ -194,6 +194,21 @@ func decodeBEPP(data []byte) string {
 		// Back-end command: handle internally using raw (unstripped) data.
 		parseBackend(raw)
 		return ""
+	case "kr":
+		// Karma received: suppress notifications from blocked or ignored players.
+		name := utfFold(firstTagContent(raw, 'p', 'n'))
+		if name != "" {
+			playersMu.RLock()
+			p, ok := players[name]
+			blocked := ok && (p.Blocked || p.Ignored)
+			playersMu.RUnlock()
+			if blocked {
+				return ""
+			}
+		}
+		if text != "" {
+			return text
+		}
 	case "yk", "iv", "hp", "cf", "pn", "ka", "tl":
 		// Known simple pass-through prefixes (e.g., iv: item/verb,
 		// ka: karma, tl: text log only)
