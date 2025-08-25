@@ -1,10 +1,15 @@
 package main
 
+import "sync"
+
 const (
 	maxChatMessages = 1000
 )
 
-var chatLog = messageLog{max: maxChatMessages}
+var (
+	chatLog             = messageLog{max: maxChatMessages}
+	chatTTSDisabledOnce sync.Once
+)
 
 func chatMessage(msg string) {
 	if msg == "" {
@@ -17,6 +22,10 @@ func chatMessage(msg string) {
 
 	if gs.ChatTTS && !blockTTS {
 		speakChatMessage(msg)
+	} else if !gs.ChatTTS {
+		chatTTSDisabledOnce.Do(func() {
+			consoleMessage("Chat TTS is disabled. Enable it in settings to hear messages.")
+		})
 	}
 }
 

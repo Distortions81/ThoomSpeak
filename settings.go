@@ -75,6 +75,7 @@ var gsdef settings = settings{
 	GameScale:            2,
 	BarPlacement:         BarPlacementBottom,
 	MaxNightLevel:        100,
+	ChatTTS:              true,
 	ChatTTSVolume:        1.0,
 	Notifications:        true,
 	NotifyFallen:         true,
