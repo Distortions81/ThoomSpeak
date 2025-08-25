@@ -76,6 +76,26 @@ func TestHotkeyCommandInput(t *testing.T) {
 	}
 }
 
+// Test that a hotkey invoking a function can omit the command text.
+func TestHotkeyFunctionWithoutCommand(t *testing.T) {
+	hotkeys = nil
+	openHotkeyEditor(-1)
+	hotkeyComboText.Text = "Ctrl-F"
+	addHotkeyCommand("", "ponder")
+	finishHotkeyEdit(true)
+
+	if len(hotkeys) != 1 {
+		t.Fatalf("hotkey not saved")
+	}
+	cmd := hotkeys[0].Commands[0]
+	if cmd.Command != "" || cmd.Function != "ponder" {
+		t.Fatalf("unexpected hotkey command: %+v", cmd)
+	}
+	if hotkeyEditWin != nil {
+		hotkeyEditWin.Close()
+	}
+}
+
 // Test that editing a hotkey with no name still saves changes.
 func TestHotkeyEditWithoutName(t *testing.T) {
 	hotkeys = []Hotkey{{Combo: "Ctrl-A", Commands: []HotkeyCommand{{Command: "say hi"}}}}
