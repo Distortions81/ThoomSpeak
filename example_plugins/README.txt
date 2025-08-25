@@ -83,3 +83,25 @@ Notes
   gothoom binary; both locations are scanned.
 - Hotkeys added by plugins appear in a separate "Plugin Hotkeys" section of
   the hotkeys window and can be enabled or disabled there.
+
+Additional Example Plugins
+-------------------------
+sharecads.go
+  - Command: /shcads toggles automatic sharing when heal messages are seen.
+  - Hotkey: Shift-S toggles Sharecads.
+
+kudzu.go
+  - Commands: /zu plants a seed, /zuget adds a seed to a bag, /zustore removes seeds, /zutrans <args> transfers seeds.
+  - Hotkey: Shift-K plants a seed.
+
+coin_lord.go
+  - Commands: /cw start or stop tracking, /cwnew resets totals, /cwdata shows current coin statistics.
+  - Hotkey: Shift-C prints coin statistics.
+
+bard.go
+  - Command: /playsong <instrument> <notes> pulls an instrument from the case, plays it, and stores it again.
+  - Hotkey: Shift-B plays a sample Windweft tune.
+
+dance.go
+  - Command: /dance performs the standard dance.
+  - Hotkey: Shift-D runs /dance.
