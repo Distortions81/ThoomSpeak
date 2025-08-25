@@ -166,6 +166,31 @@ Cycle through a list of weapons with a single key.
 1. Edit the `cycleItems` list in the file to match your weapons.
 2. Press `F3` or type `/cycleweapon` to equip the next item in the list.
 
+### Quick Reply (`quick_reply.go`)
+Reply to the last exile who thinks to you.
+1. Type `/r <message>` to respond with `/thinkto <name> <message>`.
+
+### Auto Yes Boats (`auto_yes_boats.go`)
+Automatically whisper "yes" when a boat ferryman offers a ride.
+1. When the ferryman says "My fine boats", the plugin replies for you.
+
+### Right Click Mode (`right_click_mode.go`)
+Cycle the action performed by right-clicking.
+1. Use `/pushpull`, `/trade`, `/healpotion`, or `/cadset` to change modes.
+2. Right-click a target to run the selected command.
+
+### Numpad Poser (`numpad_poser.go`)
+Use the numeric keypad to strike poses quickly.
+- `Numpad1` → `/pose leanleft`
+- `Numpad2` → `/pose akimbo`
+- `Numpad3` → `/pose leanright`
+- `Numpad4` → `/pose kneel`
+- `Numpad5` → `/pose sit`
+- `Numpad6` → `/pose angry`
+- `Numpad7` → `/pose lie`
+- `Numpad8` → `/pose seated`
+- `Numpad9` → `/pose celebrate`
+
 Notes
 -----
 - This directory is created automatically the first time the game runs.

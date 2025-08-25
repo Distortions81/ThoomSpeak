@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -122,26 +123,18 @@ func ensureDefaultPlugins() {
 	}
 	// Write example plugin files
 	files := []string{
-		"plugins/example_ponder.go",
-		"plugins/default_macros.go",
-		"plugins/healer_selfheal.go",
-		"plugins/README.txt",
-		"plugins/chain_swap.go",
-		"plugins/coin_lord.go",
-		"plugins/sharecads.go",
-		"plugins/kudzu.go",
-		"plugins/bard.go",
-		"plugins/dance.go",
-		"plugins/ledger.go",
-		"plugins/numpad_poser.go",
+		"default_macros.go",
+		"README.txt",
+		"numpad_poser.go",
 	}
 	for _, src := range files {
-		data, err := pluginExamples.ReadFile(src)
+		sPath := path.Join("example_plugins", src)
+		data, err := pluginExamples.ReadFile(sPath)
 		if err != nil {
-			log.Printf("read embedded %s: %v", src, err)
+			log.Printf("read embedded %s: %v", sPath, err)
 			continue
 		}
-		base := filepath.Base(src)
+		base := filepath.Base(sPath)
 		dst := filepath.Join(dir, base)
 		if err := os.WriteFile(dst, data, 0o644); err != nil {
 			log.Printf("write %s: %v", dst, err)
