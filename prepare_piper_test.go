@@ -138,3 +138,52 @@ func TestPreparePiperNestedDir(t *testing.T) {
 		t.Fatalf("expected binary file, got directory: %s", binPath)
 	}
 }
+
+// Test that preparePiper finds voices inside directories with different names.
+func TestPreparePiperMismatchedVoiceDir(t *testing.T) {
+	dataDir := t.TempDir()
+	piperDir := filepath.Join(dataDir, "piper")
+	binDir := filepath.Join(piperDir, "bin")
+	if err := os.MkdirAll(filepath.Join(binDir, "piper"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	binName := "piper"
+	if runtime.GOOS == "windows" {
+		binName = "piper.exe"
+	}
+	binPath := filepath.Join(binDir, "piper", binName)
+	if err := os.WriteFile(binPath, []byte(""), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	voicesDir := filepath.Join(piperDir, "voices")
+	mismatch := filepath.Join(voicesDir, "mismatch")
+	if err := os.MkdirAll(mismatch, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(mismatch, "voice.onnx"), []byte(""), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(mismatch, "voice.onnx.json"), []byte("{}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	orig := gs.ChatTTSVoice
+	gs.ChatTTSVoice = "voice"
+	defer func() { gs.ChatTTSVoice = orig }()
+
+	gotBin, model, cfg, err := preparePiper(dataDir)
+	if err != nil {
+		t.Fatalf("preparePiper: %v", err)
+	}
+	if gotBin != binPath {
+		t.Fatalf("bin path = %v, want %v", gotBin, binPath)
+	}
+	wantModel := filepath.Join(mismatch, "voice.onnx")
+	wantCfg := filepath.Join(mismatch, "voice.onnx.json")
+	if model != wantModel {
+		t.Fatalf("model = %v, want %v", model, wantModel)
+	}
+	if cfg != wantCfg {
+		t.Fatalf("cfg = %v, want %v", cfg, wantCfg)
+	}
+}
