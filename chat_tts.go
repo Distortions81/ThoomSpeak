@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -237,7 +238,10 @@ func preparePiper(dataDir string) (string, string, string, error) {
 			_ = os.Remove(arch)
 		}
 	}
-	voice := "en_US-hfc_female-medium"
+	voice := gs.ChatTTSVoice
+	if voice == "" {
+		voice = "en_US-hfc_female-medium"
+	}
 
 	model := filepath.Join(voicesDir, voice, voice+".onnx")
 	cfg := filepath.Join(voicesDir, voice, voice+".onnx.json")
@@ -248,6 +252,32 @@ func preparePiper(dataDir string) (string, string, string, error) {
 		return "", "", "", fmt.Errorf("missing piper voice config: %w", err)
 	}
 	return binPath, model, cfg, nil
+}
+
+func listPiperVoices() ([]string, error) {
+	voicesDir := filepath.Join(dataDirPath, "piper", "voices")
+	entries, err := os.ReadDir(voicesDir)
+	if err != nil {
+		return nil, err
+	}
+	voices := []string{}
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		name := e.Name()
+		model := filepath.Join(voicesDir, name, name+".onnx")
+		cfg := filepath.Join(voicesDir, name, name+".onnx.json")
+		if _, err := os.Stat(model); err != nil {
+			continue
+		}
+		if _, err := os.Stat(cfg); err != nil {
+			continue
+		}
+		voices = append(voices, name)
+	}
+	sort.Strings(voices)
+	return voices, nil
 }
 
 func extractArchive(src, dst string) error {
@@ -397,6 +427,7 @@ func synthesizeWithPiper(text string) ([]byte, error) {
 		"--model", piperModel,
 		"--config", piperConfig,
 		"--espeak_data", filepath.Join(dir, "espeak-ng-data"),
+		"--length_scale", fmt.Sprintf("%f", 1/gs.ChatTTSSpeed),
 	}
 	var stderr bytes.Buffer
 

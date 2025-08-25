@@ -77,6 +77,8 @@ var gsdef settings = settings{
 	MaxNightLevel:        100,
 	ChatTTS:              true,
 	ChatTTSVolume:        1.0,
+	ChatTTSSpeed:         1.0,
+	ChatTTSVoice:         "en_US-hfc_female-medium",
 	Notifications:        true,
 	NotifyFallen:         true,
 	NotifyNotFallen:      true,
@@ -159,6 +161,8 @@ type settings struct {
 	MessagesToConsole    bool
 	ChatTTS              bool
 	ChatTTSVolume        float64
+	ChatTTSSpeed         float64
+	ChatTTSVoice         string
 	Notifications        bool
 	NotifyFallen         bool
 	NotifyNotFallen      bool
@@ -265,6 +269,13 @@ func loadSettings() bool {
 	}
 	if gs.DenoiseSharpness < 0 || gs.DenoiseSharpness > 20 {
 		gs.DenoiseSharpness = gsdef.DenoiseSharpness
+	}
+
+	if gs.ChatTTSSpeed <= 0 {
+		gs.ChatTTSSpeed = gsdef.ChatTTSSpeed
+	}
+	if gs.ChatTTSVoice == "" {
+		gs.ChatTTSVoice = gsdef.ChatTTSVoice
 	}
 
 	if gs.WindowWidth > 0 && gs.WindowHeight > 0 {
