@@ -2190,6 +2190,17 @@ func makeSettingsWindow() {
 	ttsTestBtn.Size = eui.Point{X: leftW, Y: 24}
 	ttsTestBtnEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
+			if !gs.ChatTTS {
+				gs.ChatTTS = true
+				settingsDirty = true
+				if ttsMixCB != nil {
+					ttsMixCB.Checked = true
+				}
+				if ttsMixSlider != nil {
+					ttsMixSlider.Disabled = false
+				}
+				updateSoundVolume()
+			}
 			go playChatTTS(ttsTestPhrase)
 		}
 	}
