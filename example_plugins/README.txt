@@ -166,6 +166,14 @@ Cycle through a list of weapons with a single key.
 1. Edit the `cycleItems` list in the file to match your weapons.
 2. Press `F3` or type `/cycleweapon` to equip the next item in the list.
 
+### Quick Reply (`quick_reply.go`)
+Reply to the last exile who thinks to you.
+1. Type `/r <message>` to respond with `/thinkto <name> <message>`.
+
+### Auto Yes Boats (`auto_yes_boats.go`)
+Automatically whisper "yes" when a boat ferryman offers a ride.
+1. When the ferryman says "My fine boats", the plugin replies for you.
+
 Notes
 -----
 - This directory is created automatically the first time the game runs.
