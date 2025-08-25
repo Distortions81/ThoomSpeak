@@ -5,13 +5,16 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 PIPER_DIR="$ROOT_DIR/data/piper"
+VOICE_DIR="$PIPER_DIR/voices"
 
-mkdir -p "$PIPER_DIR"
+mkdir -p "$PIPER_DIR" "$VOICE_DIR"
 
 # Download piper binaries
 PIPER_RELEASE="https://github.com/rhasspy/piper/releases/latest/download"
 BINS=(
   "piper_linux_x86_64.tar.gz"
+  "piper_linux_aarch64.tar.gz"
+  "piper_linux_armv7l.tar.gz"
   "piper_macos_x64.tar.gz"
   "piper_macos_aarch64.tar.gz"
   "piper_windows_amd64.zip"
@@ -31,7 +34,7 @@ declare -A VOICES=(
 
 for name in "${!VOICES[@]}"; do
   path="${VOICES[$name]}"
-  vdir="$PIPER_DIR/$name"
+  vdir="$VOICE_DIR/$name"
   mkdir -p "$vdir"
   echo "Downloading voice $name..."
   curl -L "$VOICE_BASE/$path/$name.onnx" -o "$vdir/$name.onnx"
@@ -39,4 +42,4 @@ for name in "${!VOICES[@]}"; do
   curl -L "$VOICE_BASE/$path/MODEL_CARD" -o "$vdir/MODEL_CARD"
 done
 
-echo "Piper binaries and voices downloaded to $PIPER_DIR"
+echo "Piper binaries downloaded to $PIPER_DIR and voices to $VOICE_DIR"
