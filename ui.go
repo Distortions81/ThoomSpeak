@@ -510,7 +510,9 @@ func makeMixerWindow() {
 			gs.Mute = !gs.Mute
 			if gs.Mute {
 				mixMuteBtn.Text = "Unmute"
-				volumeSlider.Value = 0
+				if volumeSlider != nil {
+					volumeSlider.Value = 0
+				}
 				if masterMixSlider != nil {
 					masterMixSlider.Value = 0
 					masterMixSlider.Dirty = true
@@ -523,7 +525,9 @@ func makeMixerWindow() {
 				clearTuneQueue()
 			} else {
 				mixMuteBtn.Text = "Mute"
-				volumeSlider.Value = float32(gs.MasterVolume)
+				if volumeSlider != nil {
+					volumeSlider.Value = float32(gs.MasterVolume)
+				}
 				if masterMixSlider != nil {
 					masterMixSlider.Value = float32(gs.MasterVolume)
 					masterMixSlider.Dirty = true
@@ -534,7 +538,9 @@ func makeMixerWindow() {
 				}
 			}
 			mixMuteBtn.Dirty = true
-			volumeSlider.Dirty = true
+			if volumeSlider != nil {
+				volumeSlider.Dirty = true
+			}
 			settingsDirty = true
 			updateSoundVolume()
 		}
