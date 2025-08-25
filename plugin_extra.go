@@ -72,6 +72,10 @@ func pluginMouseJustPressed(name string) bool {
 	return false
 }
 
+func pluginMouseWheel() (float64, float64) {
+	return ebiten.Wheel()
+}
+
 func pluginLastClick() ClickInfo {
 	lastClickMu.Lock()
 	defer lastClickMu.Unlock()
