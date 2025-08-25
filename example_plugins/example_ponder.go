@@ -1,3 +1,5 @@
+//go:build plugin
+
 package main
 
 // Example plugin showcasing most of the available scripting features.

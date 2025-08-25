@@ -35,6 +35,7 @@ var basePluginExports = interp.Exports{
 		"Equip":                 reflect.ValueOf(pluginEquip),
 		"Unequip":               reflect.ValueOf(pluginUnequip),
 		"PlaySound":             reflect.ValueOf(pluginPlaySound),
+		"RegisterInputHandler":  reflect.ValueOf(pluginRegisterInputHandler),
 		"RegisterChatHandler":   reflect.ValueOf(pluginRegisterChatHandler),
 		"InputText":             reflect.ValueOf(pluginInputText),
 		"SetInputText":          reflect.ValueOf(pluginSetInputText),
@@ -76,7 +77,7 @@ func exportsForPlugin(owner string) interp.Exports {
 	return ex
 }
 
-//go:embed example_plugins/example_ponder.go example_plugins/README.txt
+//go:embed example_plugins/example_ponder.go example_plugins/default_macros.go example_plugins/README.txt
 var pluginExamples embed.FS
 
 func userPluginsDir() string {
@@ -107,6 +108,7 @@ func ensureDefaultPlugins() {
 	// Write example plugin files
 	files := []string{
 		"plugins/example_ponder.go",
+		"plugins/default_macros.go",
 		"plugins/README.txt",
 	}
 	for _, src := range files {
@@ -195,16 +197,18 @@ type PluginCommandHandler func(args string)
 type PluginFunc func()
 
 var (
-	pluginCommands      = map[string]PluginCommandHandler{}
+	pluginCommands     = map[string]PluginCommandHandler{}
+	pluginFuncs        = map[string]map[string]PluginFunc{}
+	pluginMu           sync.RWMutex
+	pluginNames        = map[string]bool{}
+	pluginDisplayNames = map[string]string{}
+  pluginDisabled      = map[string]bool{}
+	chatHandlers       []func(string)
+	chatHandlersMu     sync.RWMutex
+	inputHandlers      []func(string) string
+	inputHandlersMu    sync.RWMutex
 	pluginCommandOwners = map[string]string{}
-	pluginFuncs         = map[string]map[string]PluginFunc{}
-	pluginMu            sync.RWMutex
-	pluginNames         = map[string]bool{}
-	pluginDisplayNames  = map[string]string{}
-	pluginDisabled      = map[string]bool{}
-	pluginSendHistory   = map[string][]time.Time{}
-	chatHandlers        []func(string)
-	chatHandlersMu      sync.RWMutex
+  pluginSendHistory   = map[string][]time.Time{}
 )
 
 // pluginRegisterCommand lets plugins handle a local slash command like
@@ -442,6 +446,15 @@ func pluginUnequip(id uint16) {
 	equipInventoryItem(id, -1, false)
 }
 
+func pluginRegisterInputHandler(fn func(string) string) {
+	if fn == nil {
+		return
+	}
+	inputHandlersMu.Lock()
+	inputHandlers = append(inputHandlers, fn)
+	inputHandlersMu.Unlock()
+}
+
 func pluginRegisterChatHandler(fn func(string)) {
 	if fn == nil {
 		return
@@ -458,6 +471,18 @@ func pluginRegisterPlayerHandler(fn func(Player)) {
 	playerHandlersMu.Lock()
 	playerHandlers = append(playerHandlers, fn)
 	playerHandlersMu.Unlock()
+}
+
+func runInputHandlers(txt string) string {
+	inputHandlersMu.RLock()
+	handlers := append([]func(string) string{}, inputHandlers...)
+	inputHandlersMu.RUnlock()
+	for _, h := range handlers {
+		if h != nil {
+			txt = h(txt)
+		}
+	}
+	return txt
 }
 
 func pluginPlaySound(ids []uint16) {
