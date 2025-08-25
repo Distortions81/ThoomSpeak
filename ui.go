@@ -675,7 +675,7 @@ func makeDownloadsWindow() {
 	}
 	downloadWin = eui.NewWindow()
 	downloadWin.Title = "Downloads"
-	downloadWin.Closable = false
+	downloadWin.Closable = !(status.NeedImages || status.NeedSounds)
 	downloadWin.Resizable = false
 	downloadWin.AutoSize = true
 	downloadWin.Movable = true
@@ -960,19 +960,20 @@ func makeDownloadsWindow() {
 			if s, err := checkDataFiles(clientVersion); err == nil {
 				status = s
 			}
-			// Force reselect from LastCharacter if available
-			name = ""
-			passHash = ""
-			pass = ""
-			updateCharacterButtons()
-			if loginWin != nil {
+			if name == "" && loginWin != nil {
+				// Force reselect from LastCharacter if available
+				passHash = ""
+				pass = ""
+				updateCharacterButtons()
 				loginWin.Refresh()
 			}
 			// Clear the callback to avoid stray updates after closing.
 			downloadStatus = nil
 			downloadProgress = nil
 			downloadWin.Close()
-			loginWin.MarkOpen()
+			if name == "" && loginWin != nil {
+				loginWin.MarkOpen()
+			}
 		}()
 	}
 
@@ -988,11 +989,20 @@ func makeDownloadsWindow() {
 	btnFlow.AddItem(dlBtn)
 
 	closeBtn, closeEvents := eui.NewButton()
-	closeBtn.Text = "Quit"
 	closeBtn.Size = eui.Point{X: 100, Y: 24}
-	closeEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventClick {
-			confirmQuit()
+	if status.NeedImages || status.NeedSounds {
+		closeBtn.Text = "Quit"
+		closeEvents.Handle = func(ev eui.UIEvent) {
+			if ev.Type == eui.EventClick {
+				confirmQuit()
+			}
+		}
+	} else {
+		closeBtn.Text = "Close"
+		closeEvents.Handle = func(ev eui.UIEvent) {
+			if ev.Type == eui.EventClick {
+				downloadWin.Close()
+			}
 		}
 	}
 	btnFlow.AddItem(closeBtn)
@@ -2266,6 +2276,28 @@ func makeSettingsWindow() {
 		}
 	}
 	right.AddItem(debugBtn)
+
+	dlBtn, dlEvents := eui.NewButton()
+	dlBtn.Text = "Download Files"
+	dlBtn.Size = eui.Point{X: rightW, Y: 24}
+	dlBtn.Tooltip = "Download missing or optional files"
+	dlEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
+			if s, err := checkDataFiles(clientVersion); err == nil {
+				status = s
+			}
+			if downloadWin != nil {
+				downloadWin.Close()
+				downloadWin = nil
+			}
+			makeDownloadsWindow()
+			downloadWin.MarkOpen()
+		}
+	}
+	right.AddItem(dlBtn)
 
 	// Bottom-right: Reset All Settings
 	resetBtn, resetEv := eui.NewButton()
