@@ -76,46 +76,6 @@ func TestHotkeyCommandInput(t *testing.T) {
 	}
 }
 
-// Test that a hotkey invoking a function can omit the command text.
-func TestHotkeyFunctionWithoutCommand(t *testing.T) {
-	hotkeys = nil
-	openHotkeyEditor(-1)
-	hotkeyComboText.Text = "Ctrl-F"
-	addHotkeyCommand("", "ponder", "")
-	finishHotkeyEdit(true)
-
-	if len(hotkeys) != 1 {
-		t.Fatalf("hotkey not saved")
-	}
-	cmd := hotkeys[0].Commands[0]
-	if cmd.Command != "" || cmd.Function != "ponder" {
-		t.Fatalf("unexpected hotkey command: %+v", cmd)
-	}
-	if hotkeyEditWin != nil {
-		hotkeyEditWin.Close()
-	}
-}
-
-// Test that selecting a function without clicking add saves the hotkey.
-func TestHotkeyFunctionSelectionSaves(t *testing.T) {
-	hotkeys = nil
-	openHotkeyEditor(-1)
-	hotkeyComboText.Text = "Ctrl-H"
-	selectHotkeyFunction("ponder", "")
-	finishHotkeyEdit(true)
-
-	if len(hotkeys) != 1 {
-		t.Fatalf("hotkey not saved")
-	}
-	cmd := hotkeys[0].Commands[0]
-	if cmd.Command != "" || cmd.Function != "ponder" {
-		t.Fatalf("unexpected hotkey command: %+v", cmd)
-	}
-	if hotkeyEditWin != nil {
-		hotkeyEditWin.Close()
-	}
-}
-
 // Test that a hotkey with an empty command saves correctly.
 func TestHotkeyEmptyCommandSaved(t *testing.T) {
 	hotkeys = nil
@@ -132,50 +92,6 @@ func TestHotkeyEmptyCommandSaved(t *testing.T) {
 	if hotkeyEditWin != nil {
 		hotkeyEditWin.Close()
 	}
-}
-
-// Test that a function-only hotkey persists through save/load cycles.
-func TestHotkeyFunctionPersisted(t *testing.T) {
-	hotkeys = []Hotkey{{Combo: "Ctrl-P", Commands: []HotkeyCommand{{Function: "ponder"}}}}
-	dir := t.TempDir()
-	origDir := dataDirPath
-	dataDirPath = dir
-	defer func() { dataDirPath = origDir }()
-
-	saveHotkeys()
-	hotkeys = nil
-	loadHotkeys()
-
-	if len(hotkeys) != 2 {
-		t.Fatalf("hotkeys not loaded: %d", len(hotkeys))
-	}
-	cmd := hotkeys[0].Commands[0]
-	if cmd.Command != "" || cmd.Function != "ponder" {
-		t.Fatalf("unexpected hotkey after load: %+v", cmd)
-	}
-}
-
-// Test that editing a hotkey preselects its function in the dropdown.
-func TestHotkeyEditPreselectsFunction(t *testing.T) {
-	hotkeys = []Hotkey{{Combo: "Ctrl-P", Commands: []HotkeyCommand{{Function: "ponder"}}}}
-	pluginMu.Lock()
-	origFuncs := pluginFuncs
-	pluginFuncs = map[string]map[string]PluginFunc{"": {"ponder": nil}}
-	pluginMu.Unlock()
-	defer func() {
-		pluginMu.Lock()
-		pluginFuncs = origFuncs
-		pluginMu.Unlock()
-	}()
-
-	openHotkeyEditor(0)
-	flow := hotkeyEditWin.Contents[0]
-	fnRow := flow.Contents[4]
-	fnDD := fnRow.Contents[1]
-	if fnDD.Selected != 1 {
-		t.Fatalf("function dropdown not preselected: %d", fnDD.Selected)
-	}
-	hotkeyEditWin.Close()
 }
 
 // Test that editing a hotkey with no name still saves changes.

@@ -396,12 +396,10 @@ func refreshPluginsWindow() {
 
 func showPluginInfo(owner string) {
 	cmds := pluginCommandsFor(owner)
-	funcs := pluginFunctionsFor(owner)
 	hks := pluginHotkeys(owner)
 	src := pluginSource(owner)
 
 	sort.Strings(cmds)
-	sort.Strings(funcs)
 	sort.Slice(hks, func(i, j int) bool { return strings.ToLower(hks[i].Combo) < strings.ToLower(hks[j].Combo) })
 
 	pluginMu.RLock()
@@ -433,33 +431,21 @@ func showPluginInfo(owner string) {
 		}
 	}
 
-	if len(funcs) > 0 {
-		header, _ := eui.NewText()
-		header.Text = "Functions:"
-		flow.AddItem(header)
-		for _, f := range funcs {
-			line, _ := eui.NewText()
-			line.Text = f
-			flow.AddItem(line)
-		}
-	}
-
 	if len(hks) > 0 {
 		header, _ := eui.NewText()
-		header.Text = "Hotkeys:"
+		header.Text = "Key Inputs:"
 		flow.AddItem(header)
 		for _, hk := range hks {
-			target := hk.Name
+			target := ""
 			if len(hk.Commands) > 0 {
-				cmd := hk.Commands[0]
-				if cmd.Command != "" {
-					target = cmd.Command
-				} else if cmd.Function != "" {
-					target = "plugin:" + cmd.Function
-				}
+				target = hk.Commands[0].Command
 			}
 			line, _ := eui.NewText()
-			line.Text = hk.Combo + " -> " + target
+			if target != "" {
+				line.Text = hk.Combo + " -> " + target
+			} else {
+				line.Text = hk.Combo
+			}
 			flow.AddItem(line)
 		}
 	}

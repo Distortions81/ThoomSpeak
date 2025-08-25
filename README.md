@@ -80,9 +80,7 @@ Currently exposed symbols:
 
 - `gt.Logf(format, ...any)` – write to the client log
 - `gt.AddHotkey(combo, command)` – bind a hotkey to a slash command
-- `gt.AddHotkeyFunc(combo, funcName)` – bind a hotkey to a plugin function
 - `gt.RegisterCommand(name, func(args string))` – handle a local slash command
-- `gt.RegisterFunc(name, func())` – register a callable plugin function
 - `gt.RunCommand(cmd)` – echo and send a command immediately
 - `gt.EnqueueCommand(cmd)` – queue a command silently for the next tick
 - `gt.ClientVersion` – current client version (read/write)

@@ -64,8 +64,6 @@ func exportsForPlugin(owner string) interp.Exports {
 			m[k] = v
 		}
 		m["AddHotkey"] = reflect.ValueOf(func(combo, command string) { pluginAddHotkey(owner, combo, command) })
-		m["AddHotkeyFunc"] = reflect.ValueOf(func(combo, funcName string) { pluginAddHotkeyFunc(owner, combo, funcName) })
-		m["RegisterFunc"] = reflect.ValueOf(func(name string, fn PluginFunc) { pluginRegisterFunc(owner, name, fn) })
 		m["Hotkeys"] = reflect.ValueOf(func() []Hotkey { return pluginHotkeys(owner) })
 		m["RemoveHotkey"] = reflect.ValueOf(func(combo string) { pluginRemoveHotkey(owner, combo) })
 		m["RegisterCommand"] = reflect.ValueOf(func(name string, handler PluginCommandHandler) {
@@ -194,40 +192,11 @@ func pluginAddHotkey(owner, combo, command string) {
 	log.Print(msg)
 }
 
-// pluginAddHotkeyFunc registers a hotkey that invokes a named plugin function
-// registered via RegisterFunc.
-func pluginAddHotkeyFunc(owner, combo, funcName string) {
-	if pluginDisabled[owner] {
-		return
-	}
-	hk := Hotkey{Name: funcName, Combo: combo, Commands: []HotkeyCommand{{Function: funcName, Plugin: owner}}, Plugin: owner, Disabled: true}
-	hotkeysMu.Lock()
-	for _, existing := range hotkeys {
-		if existing.Plugin == owner && existing.Combo == combo {
-			hotkeysMu.Unlock()
-			return
-		}
-	}
-	hotkeys = append(hotkeys, hk)
-	hotkeysMu.Unlock()
-	refreshHotkeysList()
-	saveHotkeys()
-	name := pluginDisplayNames[owner]
-	if name == "" {
-		name = owner
-	}
-	msg := fmt.Sprintf("[plugin:%s] hotkey added: %s -> plugin:%s", name, combo, funcName)
-	consoleMessage(msg)
-	log.Print(msg)
-}
-
-// Plugin command and function registries.
+// Plugin command registries.
 type PluginCommandHandler func(args string)
-type PluginFunc func()
 
 var (
 	pluginCommands      = map[string]PluginCommandHandler{}
-	pluginFuncs         = map[string]map[string]PluginFunc{}
 	pluginMu            sync.RWMutex
 	pluginNames         = map[string]bool{}
 	pluginDisplayNames  = map[string]string{}
@@ -259,30 +228,6 @@ func pluginRegisterCommand(owner, name string, handler PluginCommandHandler) {
 	pluginMu.Unlock()
 	consoleMessage("[plugin] command registered: /" + key)
 	log.Printf("[plugin] command registered: /%s", key)
-}
-
-// pluginRegisterFunc registers a named function that can be called from
-// hotkeys using AddHotkeyFunc or a command string "plugin:<name>".
-func pluginRegisterFunc(owner, name string, fn PluginFunc) {
-	if name == "" || fn == nil {
-		return
-	}
-	if pluginDisabled[owner] {
-		return
-	}
-	key := strings.ToLower(name)
-	pluginMu.Lock()
-	if pluginFuncs[owner] == nil {
-		pluginFuncs[owner] = map[string]PluginFunc{}
-	}
-	pluginFuncs[owner][key] = fn
-	pluginMu.Unlock()
-	disp := pluginDisplayNames[owner]
-	if disp == "" {
-		disp = owner
-	}
-	consoleMessage("[plugin:" + disp + "] function registered: " + key)
-	log.Printf("[plugin] function registered: %s (%s)", key, owner)
 }
 
 // pluginRunCommand echoes and enqueues a command for immediate sending.
@@ -412,7 +357,6 @@ func disablePlugin(owner, reason string) {
 			delete(pluginCommandOwners, cmd)
 		}
 	}
-	delete(pluginFuncs, owner)
 	delete(pluginSendHistory, owner)
 	disp := pluginDisplayNames[owner]
 	pluginMu.Unlock()
@@ -588,16 +532,6 @@ func pluginCommandsFor(owner string) []string {
 		if o == owner {
 			list = append(list, cmd)
 		}
-	}
-	return list
-}
-
-func pluginFunctionsFor(owner string) []string {
-	pluginMu.RLock()
-	defer pluginMu.RUnlock()
-	var list []string
-	for fn := range pluginFuncs[owner] {
-		list = append(list, fn)
 	}
 	return list
 }
