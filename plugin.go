@@ -30,8 +30,8 @@ var pluginExports = interp.Exports{
 	},
 }
 
-//go:embed embedded_plugins/*
-var embeddedPlugins embed.FS
+//go:embed plugins/example_ponder.go plugins/README.txt
+var pluginExamples embed.FS
 
 func userPluginsDir() string {
 	return filepath.Join(dataDirPath, "plugins")
@@ -60,11 +60,11 @@ func ensureDefaultPlugins() {
 	}
 	// Write example plugin files
 	files := []string{
-		"embedded_plugins/example_ponder.go",
-		"embedded_plugins/README.txt",
+		"plugins/example_ponder.go",
+		"plugins/README.txt",
 	}
 	for _, src := range files {
-		data, err := embeddedPlugins.ReadFile(src)
+		data, err := pluginExamples.ReadFile(src)
 		if err != nil {
 			log.Printf("read embedded %s: %v", src, err)
 			continue

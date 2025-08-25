@@ -252,23 +252,6 @@ func pictureVisible(p framePicture) bool {
 	return true
 }
 
-// pictureVisibleAt reports visibility for a pictID at the given H,V.
-func pictureVisibleAt(pictID uint16, h, v int16) bool {
-	if clImages == nil {
-		return false
-	}
-	w, hpx := clImages.Size(uint32(pictID))
-	halfW := w / 2
-	halfH := hpx / 2
-	if int(h)+halfW < -fieldCenterX ||
-		int(h)-halfW > fieldCenterX ||
-		int(v)+halfH < -fieldCenterY ||
-		int(v)-halfH > fieldCenterY {
-		return false
-	}
-	return true
-}
-
 // buildNameTagImage creates a cached image for a mobile name tag using the
 // current font and settings. Returns the image and its width/height in pixels.
 func buildNameTagImage(name string, colorCode uint8, opacity uint8, style uint8) (*ebiten.Image, int, int) {
