@@ -96,6 +96,24 @@ func TestHotkeyFunctionWithoutCommand(t *testing.T) {
 	}
 }
 
+// Test that a hotkey with an empty command saves correctly.
+func TestHotkeyEmptyCommandSaved(t *testing.T) {
+	hotkeys = nil
+	openHotkeyEditor(-1)
+	hotkeyComboText.Text = "Ctrl-E"
+	finishHotkeyEdit(true)
+
+	if len(hotkeys) != 1 {
+		t.Fatalf("hotkey not saved")
+	}
+	if len(hotkeys[0].Commands) != 0 {
+		t.Fatalf("expected no commands, got: %+v", hotkeys[0].Commands)
+	}
+	if hotkeyEditWin != nil {
+		hotkeyEditWin.Close()
+	}
+}
+
 // Test that a function-only hotkey persists through save/load cycles.
 func TestHotkeyFunctionPersisted(t *testing.T) {
 	hotkeys = []Hotkey{{Combo: "Ctrl-P", Commands: []HotkeyCommand{{Function: "ponder"}}}}
