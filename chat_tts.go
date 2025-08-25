@@ -6,8 +6,9 @@ import (
 	"sync"
 	"time"
 
+	piper "github.com/amitybell/piper"
+	_ "github.com/amitybell/piper-bin-linux"
 	jenny "github.com/amitybell/piper-voice-jenny"
-	piper "github.com/fresh-cut/piper"
 	"github.com/hajimehoshi/ebiten/v2/audio"
 	"github.com/hajimehoshi/ebiten/v2/audio/wav"
 )
@@ -22,7 +23,7 @@ var (
 
 func init() {
 	var err error
-	ttsEngine, err = piper.New("", jenny.Asset)
+	ttsEngine, err = piper.New(dataDirPath, jenny.Asset)
 	if err != nil {
 		logError("chat tts init: %v", err)
 	}

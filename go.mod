@@ -5,7 +5,7 @@ go 1.24.3
 require github.com/hajimehoshi/ebiten/v2 v2.8.8
 
 require (
-	github.com/amitybell/piper-voice-jenny v0.0.0-20231030195502-2afb5ebf3c45
+	github.com/amitybell/piper-voice-jenny v0.0.0-20231118093224-dcf0d49e46b7
 	github.com/dustin/go-humanize v1.0.1
 	github.com/fresh-cut/piper v0.0.0-20240327030424-ba336170f45f
 	github.com/google/gopacket v1.1.19
@@ -26,8 +26,9 @@ require (
 require (
 	github.com/TheTitanrain/w32 v0.0.0-20200114052255-2654d97dbd3d // indirect
 	github.com/adrg/xdg v0.4.0 // indirect
+	github.com/amitybell/piper v0.0.0-20250621082041-2bb74e3a4a55 // indirect
 	github.com/amitybell/piper-asset v0.0.0-20231030194325-d36a29e3b1fd // indirect
-	github.com/amitybell/piper-bin-linux v0.0.0-20231118093037-92b3de178ad8 // indirect
+	github.com/amitybell/piper-bin-linux v0.0.0-20250621082830-f5d5d85fa076 // indirect
 	github.com/amitybell/piper-bin-windows v0.0.0-20231118093113-cc2cef2f6b74 // indirect
 	github.com/ebitengine/gomobile v0.0.0-20250329061421-6d0a8e981e4c // indirect
 	github.com/ebitengine/hideconsole v1.0.0 // indirect
