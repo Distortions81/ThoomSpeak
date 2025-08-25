@@ -683,6 +683,9 @@ func makeDownloadsWindow() {
 
 	startedDownload := false
 	downloadSoundfont := false
+	downloadPiper := false
+	downloadPiperFem := false
+	downloadPiperMale := false
 
 	flow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
 
@@ -791,11 +794,18 @@ func makeDownloadsWindow() {
 		flow.AddItem(t)
 	}
 
+	if status.NeedSoundfont || status.NeedPiper || status.NeedPiperFem || status.NeedPiperMale {
+		opt, _ := eui.NewText()
+		opt.Text = "Optional downloads:"
+		opt.FontSize = 15
+		opt.Size = eui.Point{X: 320, Y: 25}
+		flow.AddItem(opt)
+	}
 	if status.NeedSoundfont {
 		sfCB, sfEvents := eui.NewCheckbox()
-		label := "Download soundfont"
+		label := "Download soundfont (music)"
 		if status.SoundfontSize > 0 {
-			label = fmt.Sprintf("Download soundfont (%s) (music test)", humanize.Bytes(uint64(status.SoundfontSize)))
+			label = fmt.Sprintf("Download soundfont (%s) (music)", humanize.Bytes(uint64(status.SoundfontSize)))
 		}
 		sfCB.Text = label
 		sfCB.Size = eui.Point{X: 320, Y: 24}
@@ -805,6 +815,51 @@ func makeDownloadsWindow() {
 			}
 		}
 		flow.AddItem(sfCB)
+	}
+	if status.NeedPiper {
+		pc, pe := eui.NewCheckbox()
+		label := "Download Piper TTS binary"
+		if status.PiperSize > 0 {
+			label = fmt.Sprintf("Download Piper TTS binary (%s)", humanize.Bytes(uint64(status.PiperSize)))
+		}
+		pc.Text = label
+		pc.Size = eui.Point{X: 320, Y: 24}
+		pe.Handle = func(ev eui.UIEvent) {
+			if ev.Type == eui.EventCheckboxChanged {
+				downloadPiper = ev.Checked
+			}
+		}
+		flow.AddItem(pc)
+	}
+	if status.NeedPiperFem {
+		pf, pfe := eui.NewCheckbox()
+		label := "Download Piper female voice"
+		if status.PiperFemSize > 0 {
+			label = fmt.Sprintf("Download Piper female voice (%s)", humanize.Bytes(uint64(status.PiperFemSize)))
+		}
+		pf.Text = label + " (TTS)"
+		pf.Size = eui.Point{X: 320, Y: 24}
+		pfe.Handle = func(ev eui.UIEvent) {
+			if ev.Type == eui.EventCheckboxChanged {
+				downloadPiperFem = ev.Checked
+			}
+		}
+		flow.AddItem(pf)
+	}
+	if status.NeedPiperMale {
+		pm, pme := eui.NewCheckbox()
+		label := "Download Piper male voice"
+		if status.PiperMaleSize > 0 {
+			label = fmt.Sprintf("Download Piper male voice (%s)", humanize.Bytes(uint64(status.PiperMaleSize)))
+		}
+		pm.Text = label + " (TTS)"
+		pm.Size = eui.Point{X: 320, Y: 24}
+		pme.Handle = func(ev eui.UIEvent) {
+			if ev.Type == eui.EventCheckboxChanged {
+				downloadPiperMale = ev.Checked
+			}
+		}
+		flow.AddItem(pm)
 	}
 
 	z, _ := eui.NewText()
@@ -853,7 +908,7 @@ func makeDownloadsWindow() {
 			dlMutex.Lock()
 			defer dlMutex.Unlock()
 
-			if err := downloadDataFiles(clientVersion, status, downloadSoundfont); err != nil {
+			if err := downloadDataFiles(clientVersion, status, downloadSoundfont, downloadPiper, downloadPiperFem, downloadPiperMale); err != nil {
 				logError("download data files: %v", err)
 				// Present inline Retry and Quit buttons
 				flow.Contents = []*eui.ItemData{statusText, pb}

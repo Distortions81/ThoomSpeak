@@ -182,9 +182,18 @@ func preparePiper(dataDir string) (string, string, string, error) {
 	}
 	_ = os.Chmod(binPath, 0o755)
 
+	voicesDir := filepath.Join(piperDir, "voices")
+	voices := []string{"en_US-hfc_female-medium", "en_US-hfc_male-medium"}
+	for _, v := range voices {
+		modelPath := filepath.Join(voicesDir, v, v+".onnx")
+		if _, err := os.Stat(modelPath); err != nil {
+			archive := filepath.Join(piperDir, v+".tar.gz")
+			_ = extractArchive(archive, voicesDir)
+		}
+	}
 	voice := "en_US-hfc_female-medium"
-	model := filepath.Join(piperDir, "voices", voice, voice+".onnx")
-	cfg := filepath.Join(piperDir, "voices", voice, voice+".onnx.json")
+	model := filepath.Join(voicesDir, voice, voice+".onnx")
+	cfg := filepath.Join(voicesDir, voice, voice+".onnx.json")
 	return binPath, model, cfg, nil
 }
 
