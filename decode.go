@@ -183,8 +183,9 @@ func decodeBEPP(data []byte) string {
 		if !handled && text != "" {
 			return text
 		}
-	case "lg":
-		// Login/logout presence notices
+	case "lg", "lf", "er":
+		// Login/logout presence notices and error messages like
+		// "<name> is not in the lands." which imply logoff
 		parsePresenceText(raw, text)
 		if text != "" {
 			return text
@@ -193,8 +194,9 @@ func decodeBEPP(data []byte) string {
 		// Back-end command: handle internally using raw (unstripped) data.
 		parseBackend(raw)
 		return ""
-	case "yk", "iv", "hp", "cf", "pn":
-		// Known simple pass-through prefixes (e.g., iv: item/verb)
+	case "yk", "iv", "hp", "cf", "pn", "ka", "tl":
+		// Known simple pass-through prefixes (e.g., iv: item/verb,
+		// ka: karma, tl: text log only)
 		if text != "" {
 			return text
 		}

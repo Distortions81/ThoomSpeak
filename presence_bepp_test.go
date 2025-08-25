@@ -2,9 +2,10 @@ package main
 
 import "testing"
 
-// helper to build BEPP line with lg prefix
-func presenceLine(msg []byte) []byte {
-	b := []byte{0xC2, 'l', 'g'}
+// helper to build BEPP line with specified prefix
+func presenceLine(prefix string, msg []byte) []byte {
+	b := []byte{0xC2}
+	b = append(b, prefix[0], prefix[1])
 	b = append(b, msg...)
 	b = append(b, 0)
 	return b
@@ -14,7 +15,7 @@ func TestDecodeLoginBEPP(t *testing.T) {
 	players = make(map[string]*Player)
 	players["Bob"] = &Player{Name: "Bob", Offline: true}
 	msg := append(pnTag("Bob"), []byte(" has logged on")...)
-	raw := presenceLine(msg)
+	raw := presenceLine("lg", msg)
 	if got := decodeBEPP(raw); got != "Bob has logged on" {
 		t.Fatalf("decodeBEPP returned %q", got)
 	}
@@ -30,7 +31,7 @@ func TestDecodeLogoutBEPP(t *testing.T) {
 	players = make(map[string]*Player)
 	players["Bob"] = &Player{Name: "Bob", Offline: false}
 	msg := append(pnTag("Bob"), []byte(" has left the lands")...)
-	raw := presenceLine(msg)
+	raw := presenceLine("lf", msg)
 	if got := decodeBEPP(raw); got != "Bob has left the lands" {
 		t.Fatalf("decodeBEPP returned %q", got)
 	}
