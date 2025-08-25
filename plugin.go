@@ -126,6 +126,32 @@ func ensureDefaultPlugins() {
 	}
 }
 
+var pluginAllowedPkgs = []string{
+	"bytes/bytes",
+	"encoding/json/json",
+	"errors/errors",
+	"fmt/fmt",
+	"math/big/big",
+	"math/math",
+	"math/rand",
+	"regexp/regexp",
+	"sort/sort",
+	"strconv/strconv",
+	"strings/strings",
+	"time/time",
+	"unicode/utf8",
+}
+
+func restrictedStdlib() interp.Exports {
+	restricted := interp.Exports{}
+	for _, key := range pluginAllowedPkgs {
+		if syms, ok := stdlib.Symbols[key]; ok {
+			restricted[key] = syms
+		}
+	}
+	return restricted
+}
+
 func pluginLogf(format string, args ...interface{}) {
 	msg := fmt.Sprintf("[plugin] "+format, args...)
 	pluginConsole(msg)
@@ -197,18 +223,20 @@ type PluginCommandHandler func(args string)
 type PluginFunc func()
 
 var (
-	pluginCommands     = map[string]PluginCommandHandler{}
-	pluginFuncs        = map[string]map[string]PluginFunc{}
-	pluginMu           sync.RWMutex
-	pluginNames        = map[string]bool{}
-	pluginDisplayNames = map[string]string{}
-  pluginDisabled      = map[string]bool{}
-	chatHandlers       []func(string)
-	chatHandlersMu     sync.RWMutex
-	inputHandlers      []func(string) string
-	inputHandlersMu    sync.RWMutex
+	pluginCommands      = map[string]PluginCommandHandler{}
+	pluginFuncs         = map[string]map[string]PluginFunc{}
+	pluginMu            sync.RWMutex
+	pluginNames         = map[string]bool{}
+	pluginDisplayNames  = map[string]string{}
+	pluginDisabled      = map[string]bool{}
+	pluginPaths         = map[string]string{}
+	pluginTerminators   = map[string]func(){}
+	chatHandlers        []func(string)
+	chatHandlersMu      sync.RWMutex
+	inputHandlers       []func(string) string
+	inputHandlersMu     sync.RWMutex
 	pluginCommandOwners = map[string]string{}
-  pluginSendHistory   = map[string][]time.Time{}
+	pluginSendHistory   = map[string][]time.Time{}
 )
 
 // pluginRegisterCommand lets plugins handle a local slash command like
@@ -286,6 +314,55 @@ func pluginEnqueueCommand(owner, cmd string) {
 	enqueueCommand(cmd)
 }
 
+func loadPluginSource(owner, name, path string, src []byte, restricted interp.Exports) {
+	i := interp.New(interp.Options{})
+	if len(restricted) > 0 {
+		i.Use(restricted)
+	}
+	i.Use(exportsForPlugin(owner))
+	pluginMu.Lock()
+	pluginDisabled[owner] = false
+	pluginMu.Unlock()
+	if _, err := i.Eval(string(src)); err != nil {
+		log.Printf("plugin %s: %v", path, err)
+		consoleMessage("[plugin] load error for " + path + ": " + err.Error())
+		disablePlugin(owner, "load error")
+		return
+	}
+	if v, err := i.Eval("Terminate"); err == nil {
+		if fn, ok := v.Interface().(func()); ok {
+			pluginMu.Lock()
+			pluginTerminators[owner] = fn
+			pluginMu.Unlock()
+		}
+	}
+	if v, err := i.Eval("Init"); err == nil {
+		if fn, ok := v.Interface().(func()); ok {
+			fn()
+		}
+	}
+	log.Printf("loaded plugin %s", path)
+	consoleMessage("[plugin] loaded: " + name)
+}
+
+func enablePlugin(owner string) {
+	pluginMu.RLock()
+	path := pluginPaths[owner]
+	name := pluginDisplayNames[owner]
+	pluginMu.RUnlock()
+	if path == "" {
+		return
+	}
+	src, err := os.ReadFile(path)
+	if err != nil {
+		log.Printf("read plugin %s: %v", path, err)
+		consoleMessage("[plugin] read error for " + path + ": " + err.Error())
+		return
+	}
+	loadPluginSource(owner, name, path, src, restrictedStdlib())
+	refreshPluginsWindow()
+}
+
 func recordPluginSend(owner string) bool {
 	if !gs.PluginSpamKill {
 		return false
@@ -316,7 +393,12 @@ func recordPluginSend(owner string) bool {
 func disablePlugin(owner, reason string) {
 	pluginMu.Lock()
 	pluginDisabled[owner] = true
+	term := pluginTerminators[owner]
+	delete(pluginTerminators, owner)
 	pluginMu.Unlock()
+	if term != nil {
+		term()
+	}
 	for _, hk := range pluginHotkeys(owner) {
 		pluginRemoveHotkey(owner, hk.Combo)
 	}
@@ -335,12 +417,13 @@ func disablePlugin(owner, reason string) {
 		disp = owner
 	}
 	consoleMessage("[plugin:" + disp + "] stopped: " + reason)
+	refreshPluginsWindow()
 }
 
 func stopAllPlugins() {
 	pluginMu.RLock()
-	owners := make([]string, 0, len(pluginFuncs))
-	for o := range pluginFuncs {
+	owners := make([]string, 0, len(pluginDisplayNames))
+	for o := range pluginDisplayNames {
 		owners = append(owners, o)
 	}
 	pluginMu.RUnlock()
@@ -490,35 +573,13 @@ func pluginPlaySound(ids []uint16) {
 }
 
 func loadPlugins() {
-	// Ensure user plugins directory and example exist
 	ensureDefaultPlugins()
 
 	pluginDirs := []string{
-		userPluginsDir(), // per-user/app data directory
-		"plugins",        // legacy: relative to current working directory
+		userPluginsDir(),
+		"plugins",
 	}
-	// Build restricted stdlib symbol map containing safe stdlib packages
-	allowedPkgs := []string{
-		"bytes/bytes",
-		"encoding/json/json",
-		"errors/errors",
-		"fmt/fmt",
-		"math/big/big",
-		"math/math",
-		"math/rand",
-		"regexp/regexp",
-		"sort/sort",
-		"strconv/strconv",
-		"strings/strings",
-		"time/time",
-		"unicode/utf8",
-	}
-	restricted := interp.Exports{}
-	for _, key := range allowedPkgs {
-		if syms, ok := stdlib.Symbols[key]; ok {
-			restricted[key] = syms
-		}
-	}
+	restricted := restrictedStdlib()
 
 	nameRE := regexp.MustCompile(`(?m)^\s*(?:var|const)\s+PluginName\s*=\s*"([^"]+)"`)
 	for _, dir := range pluginDirs {
@@ -560,24 +621,12 @@ func loadPlugins() {
 			pluginNames[lower] = true
 			base := strings.TrimSuffix(e.Name(), ".go")
 			owner := name + "_" + base
+			pluginMu.Lock()
 			pluginDisplayNames[owner] = name
-			i := interp.New(interp.Options{})
-			if len(restricted) > 0 {
-				i.Use(restricted)
-			}
-			i.Use(exportsForPlugin(owner))
-			if _, err := i.Eval(string(src)); err != nil {
-				log.Printf("plugin %s: %v", e.Name(), err)
-				consoleMessage("[plugin] load error for " + path + ": " + err.Error())
-				continue
-			}
-			if v, err := i.Eval("Init"); err == nil {
-				if fn, ok := v.Interface().(func()); ok {
-					fn()
-				}
-			}
-			log.Printf("loaded plugin %s", path)
-			consoleMessage("[plugin] loaded: " + name)
+			pluginPaths[owner] = path
+			pluginMu.Unlock()
+			loadPluginSource(owner, name, path, src, restricted)
 		}
 	}
+	refreshPluginsWindow()
 }

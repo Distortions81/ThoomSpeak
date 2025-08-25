@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -56,6 +57,8 @@ var changelogNextBtn *eui.ItemData
 var addCharNameInput *eui.ItemData
 var addCharPassInput *eui.ItemData
 var windowsWin *eui.WindowData
+var pluginsWin *eui.WindowData
+var pluginsList *eui.ItemData
 
 // Checkboxes in the Windows window so we can update their state live
 var windowsPlayersCB *eui.ItemData
@@ -173,6 +176,7 @@ func initUI() {
 	makeInventoryWindow()
 	makePlayersWindow()
 	makeHotkeysWindow()
+	makePluginsWindow()
 	makeMixerWindow()
 	makeToolbar()
 
@@ -219,6 +223,17 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 		}
 	}
 	row1.AddItem(hotBtn)
+
+	plugBtn, plugEvents := eui.NewButton()
+	plugBtn.Text = "Plugins"
+	plugBtn.Size = eui.Point{X: buttonWidth, Y: buttonHeight}
+	plugBtn.FontSize = toolFontSize
+	plugEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			pluginsWin.ToggleNear(ev.Item)
+		}
+	}
+	row1.AddItem(plugBtn)
 
 	btn, setEvents := eui.NewButton()
 	btn.Text = "Settings"
@@ -301,6 +316,67 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 	menu.AddItem(row2)
 
 	return menu
+}
+
+func makePluginsWindow() {
+	if pluginsWin != nil {
+		return
+	}
+	pluginsWin = eui.NewWindow()
+	pluginsWin.Title = "Plugins"
+	pluginsWin.Closable = true
+	pluginsWin.Resizable = false
+	pluginsWin.AutoSize = true
+	pluginsWin.Movable = true
+	pluginsWin.SetZone(eui.HZoneCenterLeft, eui.VZoneMiddleTop)
+
+	flow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
+	pluginsList = flow
+	pluginsWin.AddItem(flow)
+	pluginsWin.AddWindow(false)
+	refreshPluginsWindow()
+}
+
+func refreshPluginsWindow() {
+	if pluginsList == nil {
+		return
+	}
+	pluginsList.Contents = pluginsList.Contents[:0]
+	type entry struct {
+		owner string
+		name  string
+	}
+	pluginMu.RLock()
+	list := make([]entry, 0, len(pluginDisplayNames))
+	for o, n := range pluginDisplayNames {
+		list = append(list, entry{owner: o, name: n})
+	}
+	pluginMu.RUnlock()
+	sort.Slice(list, func(i, j int) bool {
+		return strings.ToLower(list[i].name) < strings.ToLower(list[j].name)
+	})
+	for _, e := range list {
+		cb, events := eui.NewCheckbox()
+		cb.Text = e.name
+		cb.Size = eui.Point{X: 128, Y: 24}
+		pluginMu.RLock()
+		cb.Checked = !pluginDisabled[e.owner]
+		pluginMu.RUnlock()
+		owner := e.owner
+		events.Handle = func(ev eui.UIEvent) {
+			if ev.Type == eui.EventCheckboxChanged {
+				if ev.Checked {
+					enablePlugin(owner)
+				} else {
+					disablePlugin(owner, "disabled by user")
+				}
+			}
+		}
+		pluginsList.AddItem(cb)
+	}
+	if pluginsWin != nil {
+		pluginsWin.Refresh()
+	}
 }
 
 func makeMixerWindow() {
