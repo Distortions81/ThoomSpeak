@@ -302,15 +302,53 @@ func extractArchive(src, dst string) error {
 	return fmt.Errorf("unknown archive format: %s", src)
 }
 
+// synthesizeWithPiper invokes the piper binary to generate speech from text.
+//
+// On Windows the piper binary cannot stream audio to stdout, so the output is
+// written to a temporary file which is read back after the process completes.
 func synthesizeWithPiper(text string) ([]byte, error) {
 	if piperPath == "" || piperModel == "" {
 		return nil, fmt.Errorf("piper not initialized")
 	}
+
+	dir := filepath.Dir(piperPath)
+	args := []string{
+		"--model", piperModel,
+		"--config", piperConfig,
+		"--espeak_data", filepath.Join(dir, "espeak-ng-data"),
+	}
+	var stderr bytes.Buffer
+
+	if runtime.GOOS == "windows" {
+		tmp, err := os.CreateTemp("", "piper-*.wav")
+		if err != nil {
+			return nil, fmt.Errorf("piper temp file: %v", err)
+		}
+		tmpName := tmp.Name()
+		_ = tmp.Close()
+		defer os.Remove(tmpName)
+
+		args = append(args, "--output_file", tmpName)
+		cmd := exec.Command(piperPath, args...)
+		cmd.Dir = dir
+		cmd.Stdin = strings.NewReader(text)
+		cmd.Stderr = &stderr
+		if err := cmd.Run(); err != nil {
+			return nil, fmt.Errorf("piper run: %v: %s", err, stderr.String())
+		}
+		data, err := os.ReadFile(tmpName)
+		if err != nil {
+			return nil, fmt.Errorf("read piper output: %v", err)
+		}
+		return data, nil
+	}
+
 	var out bytes.Buffer
-	cmd := exec.Command(piperPath, "--model", piperModel, "--config", piperConfig, "--output_file", "-")
+	args = append(args, "--output_file", "-")
+	cmd := exec.Command(piperPath, args...)
+	cmd.Dir = dir
 	cmd.Stdin = strings.NewReader(text)
 	cmd.Stdout = &out
-	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
 		return nil, fmt.Errorf("piper run: %v: %s", err, stderr.String())
