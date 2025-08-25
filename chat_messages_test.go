@@ -21,3 +21,29 @@ func TestIsSelfChatMessage(t *testing.T) {
 		}
 	}
 }
+
+func TestChatMessageBlocked(t *testing.T) {
+	players = make(map[string]*Player)
+	chatLog = messageLog{max: maxChatMessages}
+	p := getPlayer("Bob")
+	playersMu.Lock()
+	p.Blocked = true
+	playersMu.Unlock()
+	chatMessage("Bob says, hi")
+	if len(getChatMessages()) != 0 {
+		t.Fatalf("expected no messages")
+	}
+}
+
+func TestChatMessageIgnored(t *testing.T) {
+	players = make(map[string]*Player)
+	chatLog = messageLog{max: maxChatMessages}
+	p := getPlayer("Bob")
+	playersMu.Lock()
+	p.Ignored = true
+	playersMu.Unlock()
+	chatMessage("Bob says, hi")
+	if len(getChatMessages()) != 0 {
+		t.Fatalf("expected no messages")
+	}
+}

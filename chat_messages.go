@@ -19,6 +19,16 @@ func chatMessage(msg string) {
 		return
 	}
 
+	if name := chatSpeaker(msg); name != "" {
+		playersMu.RLock()
+		p, ok := players[name]
+		blocked := ok && (p.Blocked || p.Ignored)
+		playersMu.RUnlock()
+		if blocked {
+			return
+		}
+	}
+
 	chatLog.Add(msg)
 
 	updateChatWindow()
@@ -61,4 +71,17 @@ func isSelfChatMessage(msg string) bool {
 		return true
 	}
 	return false
+}
+
+// chatSpeaker extracts the leading player name from a chat message, folded to
+// canonical form. It returns an empty string if no name could be parsed.
+func chatSpeaker(msg string) string {
+	m := strings.TrimSpace(msg)
+	if strings.HasPrefix(m, "(") {
+		m = m[1:]
+	}
+	if i := strings.IndexByte(m, ' '); i > 0 {
+		return utfFold(m[:i])
+	}
+	return ""
 }

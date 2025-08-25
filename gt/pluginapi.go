@@ -70,6 +70,8 @@ type Player struct {
 	Sharing    bool
 	GMLevel    int
 	Friend     bool
+	Blocked    bool
+	Ignored    bool
 	Dead       bool
 	FellWhere  string
 	KillerName string
