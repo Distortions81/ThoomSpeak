@@ -18,6 +18,9 @@ func Logf(format string, args ...interface{}) {}
 // Console writes a message to the in-client console.
 func Console(msg string) {}
 
+// ShowNotification displays a notification bubble.
+func ShowNotification(msg string) {}
+
 // AddHotkey binds a key combo to a slash command.
 func AddHotkey(combo, command string) {}
 

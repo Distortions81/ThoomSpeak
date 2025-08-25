@@ -23,6 +23,7 @@ var basePluginExports = interp.Exports{
 	"gt/gt": {
 		"Logf":                  reflect.ValueOf(pluginLogf),
 		"Console":               reflect.ValueOf(pluginConsole),
+		"ShowNotification":      reflect.ValueOf(pluginShowNotification),
 		"RegisterCommand":       reflect.ValueOf(pluginRegisterCommand),
 		"RegisterFunc":          reflect.ValueOf(pluginRegisterFunc),
 		"RunCommand":            reflect.ValueOf(pluginRunCommand),
@@ -118,6 +119,10 @@ func pluginLogf(format string, args ...interface{}) {
 
 func pluginConsole(msg string) {
 	consoleMessage(msg)
+}
+
+func pluginShowNotification(msg string) {
+	showNotification(msg)
 }
 
 func pluginAddHotkey(owner, combo, command string) {
