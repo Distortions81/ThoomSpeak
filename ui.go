@@ -59,6 +59,7 @@ var addCharPassInput *eui.ItemData
 var windowsWin *eui.WindowData
 var pluginsWin *eui.WindowData
 var pluginsList *eui.ItemData
+var pluginInfoWins = map[string]*eui.WindowData{}
 
 // Checkboxes in the Windows window so we can update their state live
 var windowsPlayersCB *eui.ItemData
@@ -396,8 +397,8 @@ func refreshPluginsWindow() {
 				pluginMu.RLock()
 				enabled := !pluginDisabled[owner]
 				pluginMu.RUnlock()
-				disablePlugin(owner, "reloaded")
 				if enabled {
+					disablePlugin(owner, "reloaded")
 					enablePlugin(owner)
 				}
 			}
@@ -412,13 +413,6 @@ func refreshPluginsWindow() {
 }
 
 func showPluginInfo(owner string) {
-	cmds := pluginCommandsFor(owner)
-	hks := pluginHotkeys(owner)
-	src := pluginSource(owner)
-
-	sort.Strings(cmds)
-	sort.Slice(hks, func(i, j int) bool { return strings.ToLower(hks[i].Combo) < strings.ToLower(hks[j].Combo) })
-
 	pluginMu.RLock()
 	name := pluginDisplayNames[owner]
 	pluginMu.RUnlock()
@@ -434,8 +428,23 @@ func showPluginInfo(owner string) {
 	win.Movable = true
 	win.SetZone(eui.HZoneCenterLeft, eui.VZoneMiddleTop)
 
+	win.AddItem(buildPluginInfoFlow(owner))
+	win.AddWindow(false)
+	win.MarkOpen()
+
+	pluginInfoWins[owner] = win
+	win.OnClose = func() { delete(pluginInfoWins, owner) }
+}
+
+func buildPluginInfoFlow(owner string) *eui.ItemData {
+	cmds := pluginCommandsFor(owner)
+	hks := pluginHotkeys(owner)
+	src := pluginSource(owner)
+
+	sort.Strings(cmds)
+	sort.Slice(hks, func(i, j int) bool { return strings.ToLower(hks[i].Combo) < strings.ToLower(hks[j].Combo) })
+
 	flow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
-	win.AddItem(flow)
 
 	if len(cmds) > 0 {
 		header, _ := eui.NewText()
@@ -502,8 +511,17 @@ func showPluginInfo(owner string) {
 		flow.AddItem(saveBtn)
 	}
 
-	win.AddWindow(false)
-	win.MarkOpen()
+	return flow
+}
+
+func refreshPluginInfoWindow(owner string) {
+	win := pluginInfoWins[owner]
+	if win == nil {
+		return
+	}
+	win.Contents = win.Contents[:0]
+	win.AddItem(buildPluginInfoFlow(owner))
+	win.Refresh()
 }
 
 func makeMixerWindow() {
