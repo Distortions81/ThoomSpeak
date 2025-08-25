@@ -793,25 +793,36 @@ func isModifier(k ebiten.Key) bool {
 	return false
 }
 
-func applyHotkeyVars(cmd string) string {
-	if strings.Contains(cmd, "@clicked") || strings.Contains(cmd, "@hovered") || strings.Contains(cmd, "@") {
+func applyHotkeyVars(cmd string) (string, bool) {
+	needClicked := strings.Contains(cmd, "@clicked") || strings.Contains(cmd, "@")
+	needHovered := strings.Contains(cmd, "@hovered")
+
+	var clickedName, hoveredName string
+	if needClicked {
 		lastClickMu.Lock()
-		clickedName := lastClick.Mobile.Name
+		clickedName = lastClick.Mobile.Name
 		lastClickMu.Unlock()
-
-		lastHoverMu.Lock()
-		hoveredName := lastHover.Mobile.Name
-		lastHoverMu.Unlock()
-
-		if clickedName != "" {
-			cmd = strings.ReplaceAll(cmd, "@clicked", clickedName)
-			cmd = strings.ReplaceAll(cmd, "@", clickedName)
-		}
-		if hoveredName != "" {
-			cmd = strings.ReplaceAll(cmd, "@hovered", hoveredName)
+		if clickedName == "" {
+			return "", false
 		}
 	}
-	return cmd
+	if needHovered {
+		lastHoverMu.Lock()
+		hoveredName = lastHover.Mobile.Name
+		lastHoverMu.Unlock()
+		if hoveredName == "" {
+			return "", false
+		}
+	}
+
+	if needClicked {
+		cmd = strings.ReplaceAll(cmd, "@clicked", clickedName)
+		cmd = strings.ReplaceAll(cmd, "@", clickedName)
+	}
+	if needHovered {
+		cmd = strings.ReplaceAll(cmd, "@hovered", hoveredName)
+	}
+	return cmd, true
 }
 
 func updateHotkeyRecording() {
@@ -884,7 +895,11 @@ func checkHotkeys() {
 						continue
 					}
 					// Show hotkey-triggered command as if it were typed
-					cmd = applyHotkeyVars(cmd)
+					var ok bool
+					cmd, ok = applyHotkeyVars(cmd)
+					if !ok {
+						return
+					}
 					if cmd != "" {
 						consoleMessage("> " + cmd)
 					}
