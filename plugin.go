@@ -36,6 +36,7 @@ var basePluginExports = interp.Exports{
 		"ToggleEquip":           reflect.ValueOf(pluginToggleEquip),
 		"Equip":                 reflect.ValueOf(pluginEquip),
 		"Unequip":               reflect.ValueOf(pluginUnequip),
+		"PlaySound":             reflect.ValueOf(pluginPlaySound),
 		"RegisterChatHandler":   reflect.ValueOf(pluginRegisterChatHandler),
 		"InputText":             reflect.ValueOf(pluginInputText),
 		"SetInputText":          reflect.ValueOf(pluginSetInputText),
@@ -346,6 +347,10 @@ func pluginRegisterPlayerHandler(fn func(Player)) {
 	playerHandlersMu.Lock()
 	playerHandlers = append(playerHandlers, fn)
 	playerHandlersMu.Unlock()
+}
+
+func pluginPlaySound(ids []uint16) {
+	playSound(ids)
 }
 
 func loadPlugins() {
