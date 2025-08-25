@@ -130,6 +130,7 @@ func ensureDefaultPlugins() {
 		"plugins/kudzu.go",
 		"plugins/bard.go",
 		"plugins/dance.go",
+		"plugins/numpad_poser.go",
 	}
 	for _, src := range files {
 		data, err := pluginExamples.ReadFile(src)
