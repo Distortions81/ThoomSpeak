@@ -259,9 +259,23 @@ func preparePiper(dataDir string) (string, string, string, error) {
 		// Try voice files directly in voicesDir
 		model = filepath.Join(voicesDir, voice+".onnx")
 		cfg = filepath.Join(voicesDir, voice+".onnx.json")
-	}
-	if _, err := os.Stat(model); err != nil {
-		return "", "", "", fmt.Errorf("missing piper voice model: %w", err)
+		if _, err := os.Stat(model); err != nil {
+			// Search subdirectories for the voice files
+			matches, _ := filepath.Glob(filepath.Join(voicesDir, "*", voice+".onnx"))
+			found := false
+			for _, m := range matches {
+				c := filepath.Join(filepath.Dir(m), voice+".onnx.json")
+				if _, err2 := os.Stat(c); err2 == nil {
+					model = m
+					cfg = c
+					found = true
+					break
+				}
+			}
+			if !found {
+				return "", "", "", fmt.Errorf("missing piper voice model: %w", err)
+			}
+		}
 	}
 	if _, err := os.Stat(cfg); err != nil {
 		return "", "", "", fmt.Errorf("missing piper voice config: %w", err)
@@ -279,15 +293,23 @@ func listPiperVoices() ([]string, error) {
 	for _, e := range entries {
 		name := e.Name()
 		if e.IsDir() {
-			model := filepath.Join(voicesDir, name, name+".onnx")
-			cfg := filepath.Join(voicesDir, name, name+".onnx.json")
-			if _, err := os.Stat(model); err != nil {
+			subdir := filepath.Join(voicesDir, name)
+			files, err := os.ReadDir(subdir)
+			if err != nil {
 				continue
 			}
-			if _, err := os.Stat(cfg); err != nil {
-				continue
+			for _, f := range files {
+				fname := f.Name()
+				if f.IsDir() || !strings.HasSuffix(fname, ".onnx") {
+					continue
+				}
+				base := strings.TrimSuffix(fname, ".onnx")
+				cfg := filepath.Join(subdir, base+".onnx.json")
+				if _, err := os.Stat(cfg); err != nil {
+					continue
+				}
+				voiceSet[base] = struct{}{}
 			}
-			voiceSet[name] = struct{}{}
 		} else if strings.HasSuffix(name, ".onnx") {
 			base := strings.TrimSuffix(name, ".onnx")
 			cfg := filepath.Join(voicesDir, base+".onnx.json")

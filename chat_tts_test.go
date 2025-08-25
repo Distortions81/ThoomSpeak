@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestListPiperVoicesRootFiles(t *testing.T) {
+func TestListPiperVoices(t *testing.T) {
 	dir := t.TempDir()
 	orig := dataDirPath
 	dataDirPath = dir
@@ -35,12 +35,23 @@ func TestListPiperVoicesRootFiles(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(sub, "dirvoice.onnx.json"), []byte("{}"), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	// voice stored inside a mismatching subdirectory
+	mis := filepath.Join(voicesDir, "mismatch")
+	if err := os.MkdirAll(mis, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(mis, "othervoice.onnx"), []byte(""), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(mis, "othervoice.onnx.json"), []byte("{}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	voices, err := listPiperVoices()
 	if err != nil {
 		t.Fatalf("listPiperVoices: %v", err)
 	}
-	want := []string{"dirvoice", "rootvoice"}
+	want := []string{"dirvoice", "othervoice", "rootvoice"}
 	if !reflect.DeepEqual(voices, want) {
 		t.Fatalf("voices = %v, want %v", voices, want)
 	}
