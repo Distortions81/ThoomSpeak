@@ -21,7 +21,8 @@ import (
 const hotkeysFile = "global-hotkeys.json"
 
 type HotkeyCommand struct {
-	Command string `json:"command"`
+	Command  string `json:"command,omitempty"`
+	Function string `json:"function,omitempty"`
 }
 
 type Hotkey struct {
@@ -40,6 +41,7 @@ var (
 	hotkeyNameInput  *eui.ItemData
 	hotkeyCmdSection *eui.ItemData
 	hotkeyCmdInputs  []*eui.ItemData
+	hotkeyCmdFuncs   []string
 	editingHotkey    int = -1
 
 	recording     bool
@@ -69,10 +71,23 @@ func loadHotkeys() {
 	for _, r := range raw {
 		hk := Hotkey{Combo: r.Combo, Name: r.Name}
 		if len(r.Commands) > 0 {
-			hk.Commands = r.Commands
+			hk.Commands = make([]HotkeyCommand, len(r.Commands))
+			copy(hk.Commands, r.Commands)
+			for i := range hk.Commands {
+				c := &hk.Commands[i]
+				if c.Function == "" && strings.HasPrefix(strings.ToLower(c.Command), "plugin:") {
+					c.Function = strings.TrimSpace(strings.TrimPrefix(c.Command, "plugin:"))
+					c.Command = ""
+				}
+			}
 		} else if r.Command != "" {
 			cmd := strings.TrimSpace(r.Command + " " + r.Text)
-			hk.Commands = []HotkeyCommand{{Command: cmd}}
+			if strings.HasPrefix(strings.ToLower(cmd), "plugin:") {
+				fn := strings.TrimSpace(strings.TrimPrefix(cmd, "plugin:"))
+				hk.Commands = []HotkeyCommand{{Function: fn}}
+			} else if cmd != "" {
+				hk.Commands = []HotkeyCommand{{Command: cmd}}
+			}
 		}
 		newList = append(newList, hk)
 	}
@@ -154,6 +169,9 @@ func refreshHotkeysList() {
 		}
 		if len(hk.Commands) > 0 {
 			text := hk.Commands[0].Command
+			if text == "" && hk.Commands[0].Function != "" {
+				text = "plugin:" + hk.Commands[0].Function
+			}
 			if len(hk.Commands) > 1 {
 				text += " ..."
 			}
@@ -269,7 +287,7 @@ func openHotkeyEditor(idx int) {
 	hotkeyCmdSection = &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL, Fixed: true}
 	flow.AddItem(hotkeyCmdSection)
 	hotkeyCmdInputs = nil
-	addHotkeyCommand("")
+	hotkeyCmdFuncs = nil
 
 	// Row to add a plain command input
 	addCmdRow, addCmdEvents := eui.NewButton()
@@ -278,7 +296,7 @@ func openHotkeyEditor(idx int) {
 	addCmdRow.FontSize = 14
 	addCmdEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
-			addHotkeyCommand("")
+			addHotkeyCommand("", "")
 		}
 	}
 	flow.AddItem(addCmdRow)
@@ -315,7 +333,7 @@ func openHotkeyEditor(idx int) {
 			if sel <= 0 || sel > len(opts) {
 				return
 			}
-			addHotkeyCommand("plugin:" + opts[sel-1])
+			addHotkeyCommand("", opts[sel-1])
 		}
 	}
 	fnRow.AddItem(addFnBtn)
@@ -354,13 +372,15 @@ func openHotkeyEditor(idx int) {
 		hotkeyComboText.Text = hk.Combo
 		hotkeyNameInput.Text = hk.Name
 		if len(hk.Commands) > 0 {
-			hotkeyCmdInputs[0].Text = hk.Commands[0].Command
-			for _, c := range hk.Commands[1:] {
-				addHotkeyCommand(c.Command)
+			for _, c := range hk.Commands {
+				addHotkeyCommand(c.Command, c.Function)
 			}
+		} else {
+			addHotkeyCommand("", "")
 		}
 	} else {
 		hotkeysMu.RUnlock()
+		addHotkeyCommand("", "")
 	}
 
 	hotkeyEditWin.AddWindow(true)
@@ -368,9 +388,16 @@ func openHotkeyEditor(idx int) {
 	wrapHotkeyInputs()
 }
 
-func addHotkeyCommand(cmd string) {
+func addHotkeyCommand(cmd, fn string) {
 	if hotkeyCmdSection == nil {
 		return
+	}
+	if fn != "" {
+		fnLabel, _ := eui.NewText()
+		fnLabel.Text = "Function: " + fn
+		fnLabel.Size = eui.Point{X: hotkeyEditWin.Size.X - 40, Y: 20}
+		fnLabel.FontSize = 12
+		hotkeyCmdSection.AddItem(fnLabel)
 	}
 	cmdLabel, _ := eui.NewText()
 	cmdLabel.Text = "Command:"
@@ -391,6 +418,7 @@ func addHotkeyCommand(cmd string) {
 	}
 	hotkeyCmdSection.AddItem(cmdInput)
 	hotkeyCmdInputs = append(hotkeyCmdInputs, cmdInput)
+	hotkeyCmdFuncs = append(hotkeyCmdFuncs, fn)
 
 	hotkeyEditWin.Refresh()
 	wrapHotkeyInputs()
@@ -449,8 +477,12 @@ func finishHotkeyEdit(save bool) {
 		cmds := []HotkeyCommand{}
 		for i := range hotkeyCmdInputs {
 			cmd := strings.ReplaceAll(hotkeyCmdInputs[i].Text, "\n", " ")
-			if cmd != "" {
-				cmds = append(cmds, HotkeyCommand{Command: cmd})
+			fn := ""
+			if i < len(hotkeyCmdFuncs) {
+				fn = hotkeyCmdFuncs[i]
+			}
+			if cmd != "" || fn != "" {
+				cmds = append(cmds, HotkeyCommand{Command: cmd, Function: fn})
 			}
 		}
 		if combo != "" && len(cmds) > 0 {
@@ -627,13 +659,25 @@ func checkHotkeys() {
 			if hk.Combo == combo {
 				for _, c := range hk.Commands {
 					cmd := strings.TrimSpace(c.Command)
+					if c.Function != "" {
+						name := strings.ToLower(strings.TrimSpace(c.Function))
+						pluginMu.RLock()
+						fn, ok := pluginFuncs[name]
+						pluginMu.RUnlock()
+						if ok && fn != nil {
+							consoleMessage("> [plugin] " + name)
+							go fn()
+						} else {
+							consoleMessage("[plugin] function not found: " + name)
+						}
+						continue
+					}
 					if strings.HasPrefix(strings.ToLower(cmd), "plugin:") {
 						name := strings.ToLower(strings.TrimSpace(strings.TrimPrefix(cmd, "plugin:")))
 						pluginMu.RLock()
 						fn, ok := pluginFuncs[name]
 						pluginMu.RUnlock()
 						if ok && fn != nil {
-							// Surface plugin invocation as console input for visibility
 							consoleMessage("> [plugin] " + name)
 							go fn()
 						} else {

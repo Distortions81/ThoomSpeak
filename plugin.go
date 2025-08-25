@@ -31,7 +31,7 @@ var pluginExports = interp.Exports{
 		"ClientVersion":       reflect.ValueOf(&clientVersion).Elem(),
 		"PlayerName":          reflect.ValueOf(pluginPlayerName),
 		"Players":             reflect.ValueOf(pluginPlayers),
-		"Player":              reflect.TypeOf(Player{}),
+		"Player":              reflect.ValueOf((*Player)(nil)),
 		"RegisterChatHandler": reflect.ValueOf(pluginRegisterChatHandler),
 	},
 }
@@ -109,7 +109,7 @@ func pluginAddHotkey(combo, command string) {
 // pluginAddHotkeyFunc registers a hotkey that invokes a named plugin function
 // registered via RegisterFunc.
 func pluginAddHotkeyFunc(combo, funcName string) {
-	hk := Hotkey{Name: funcName, Combo: combo, Commands: []HotkeyCommand{{Command: "plugin:" + funcName}}}
+	hk := Hotkey{Name: funcName, Combo: combo, Commands: []HotkeyCommand{{Function: funcName}}}
 	hotkeysMu.Lock()
 	hotkeys = append(hotkeys, hk)
 	hotkeysMu.Unlock()
@@ -148,7 +148,7 @@ func pluginRegisterCommand(name string, handler PluginCommandHandler) {
 }
 
 // pluginRegisterFunc registers a named function that can be called from
-// hotkeys using the special command string "plugin:<name>".
+// hotkeys using AddHotkeyFunc or a command string "plugin:<name>".
 func pluginRegisterFunc(name string, fn PluginFunc) {
 	if name == "" || fn == nil {
 		return
