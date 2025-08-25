@@ -13,9 +13,21 @@ Getting Started
 
 Imports
 -------
-- Plugins can import only `gt` by default. System packages like `os`,
-  `io`, `net`, etc. are not available from the interpreter to prevent file or
-  network access.
+The interpreter allows only the following packages:
+
+- `gt` (client API)
+- `bytes`
+- `fmt`
+- `math`
+- `math/rand`
+- `sort`
+- `strconv`
+- `strings`
+- `time`
+- `unicode/utf8`
+
+Other system packages like `os`, `io`, `net`, etc. are not available to prevent
+file or network access.
 
 API
 ---
