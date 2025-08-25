@@ -85,6 +85,21 @@ func Inventory() []InventoryItem { return nil }
 // ToggleEquip toggles the equipped state of an item by ID.
 func ToggleEquip(id uint16) {}
 
+// InputText returns the current text in the input bar.
+func InputText() string { return "" }
+
+// SetInputText replaces the text in the input bar.
+func SetInputText(text string) {}
+
+// Stats mirrors the player's HP, SP, and balance values.
+type Stats struct {
+	HP, HPMax           int
+	SP, SPMax           int
+	Balance, BalanceMax int
+}
+
+// PlayerStats returns the player's current stat values.
+func PlayerStats() Stats { return Stats{} }
 // Equip equips the specified item by ID if it isn't already equipped.
 func Equip(id uint16) {}
 

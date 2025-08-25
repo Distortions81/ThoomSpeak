@@ -38,6 +38,10 @@ var pluginExports = interp.Exports{
 		"Equip":               reflect.ValueOf(pluginEquip),
 		"Unequip":             reflect.ValueOf(pluginUnequip),
 		"RegisterChatHandler": reflect.ValueOf(pluginRegisterChatHandler),
+		"InputText":           reflect.ValueOf(pluginInputText),
+		"SetInputText":        reflect.ValueOf(pluginSetInputText),
+		"PlayerStats":         reflect.ValueOf(pluginPlayerStats),
+		"Stats":               reflect.ValueOf((*Stats)(nil)),
     "RegisterPlayerHandler": reflect.ValueOf(pluginRegisterPlayerHandler),
 	},
 }
@@ -206,6 +210,38 @@ func pluginToggleEquip(id uint16) {
 	toggleInventoryEquip(id)
 }
 
+type Stats struct {
+	HP, HPMax           int
+	SP, SPMax           int
+	Balance, BalanceMax int
+}
+
+func pluginPlayerStats() Stats {
+	stateMu.Lock()
+	s := Stats{
+		HP:         state.hp,
+		HPMax:      state.hpMax,
+		SP:         state.sp,
+		SPMax:      state.spMax,
+		Balance:    state.balance,
+		BalanceMax: state.balanceMax,
+	}
+	stateMu.Unlock()
+	return s
+}
+
+func pluginInputText() string {
+	inputMu.Lock()
+	txt := string(inputText)
+	inputMu.Unlock()
+	return txt
+}
+
+func pluginSetInputText(text string) {
+	inputMu.Lock()
+	inputText = []rune(text)
+	inputActive = true
+	inputMu.Unlock()
 func pluginEquip(id uint16) {
 	items := getInventory()
 	idx := -1
