@@ -2112,6 +2112,28 @@ func makeSettingsWindow() {
 			}
 		}
 	}
+	voiceDD.Action = func() {
+		if !voiceDD.Open {
+			return
+		}
+		if voices, err := listPiperVoices(); err == nil {
+			voiceDD.Options = voices
+			sel := 0
+			for i, v := range voices {
+				if v == gs.ChatTTSVoice {
+					sel = i
+					break
+				}
+			}
+			voiceDD.Selected = sel
+			if gs.ChatTTSVoice != voices[sel] {
+				SettingsLock.Lock()
+				gs.ChatTTSVoice = voices[sel]
+				SettingsLock.Unlock()
+				settingsDirty = true
+			}
+		}
+	}
 	voiceDD.Size = eui.Point{X: leftW, Y: 24}
 	voiceEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventDropdownSelected {
