@@ -80,11 +80,26 @@ var (
 	currentWho int
 )
 
+func disableMusic() {
+	gs.Music = false
+	settingsDirty = true
+	stopAllMusic()
+	clearTuneQueue()
+	updateSoundVolume()
+	if musicMixCB != nil {
+		musicMixCB.Checked = false
+	}
+	if musicMixSlider != nil {
+		musicMixSlider.Disabled = true
+	}
+}
+
 func startTuneWorker() {
 	tuneQueue = make(chan tuneJob, 128)
 	go func() {
 		for job := range tuneQueue {
 			if audioContext == nil {
+				disableMusic()
 				continue
 			}
 			currentMu.Lock()
@@ -96,6 +111,7 @@ func startTuneWorker() {
 					consoleMessage("play tune: " + err.Error())
 					chatMessage("play tune: " + err.Error())
 				}
+				disableMusic()
 			}
 			currentMu.Lock()
 			currentWho = 0
@@ -150,6 +166,7 @@ type parsedTune struct {
 // For example: "3 cde" plays on instrument #3. It returns any playback error.
 func playClanLordTune(tune string) error {
 	if audioContext == nil {
+		disableMusic()
 		return fmt.Errorf("audio disabled")
 	}
 	if blockMusic {
