@@ -227,6 +227,10 @@ func Play(ctx *audio.Context, program int, notes []Note) error {
 		return errors.New("nil audio context")
 	}
 
+	if gs.Mute || !gs.Music || gs.MasterVolume <= 0 || gs.MusicVolume <= 0 {
+		return errors.New("music muted")
+	}
+
 	leftAll, rightAll, err := renderSong(program, notes)
 	if err != nil {
 		return err
