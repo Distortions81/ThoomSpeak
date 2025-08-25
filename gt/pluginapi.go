@@ -84,3 +84,9 @@ func Inventory() []InventoryItem { return nil }
 
 // ToggleEquip toggles the equipped state of an item by ID.
 func ToggleEquip(id uint16) {}
+
+// Equip equips the specified item by ID if it isn't already equipped.
+func Equip(id uint16) {}
+
+// Unequip removes the specified item by ID if it is currently equipped.
+func Unequip(id uint16) {}
