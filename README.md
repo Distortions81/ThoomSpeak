@@ -33,6 +33,9 @@ If you build from source, you'll need Go **1.24+** and OpenGL/X11 dev libs on Li
 ### Optional extras
 - Drop a `background.png` and/or `splash.png` into `data/` for a custom look.
 
+### Text-to-speech voices
+Piper voices are stored as raw `.onnx` models with matching `.onnx.json` configs in `data/piper/voices`. The helper script `scripts/download_piper.sh` downloads these files individually.
+
 ---
 
 ## Power-user tricks

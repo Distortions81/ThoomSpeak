@@ -24,8 +24,14 @@ const defaultUpdateBase = "https://m45sci.xyz/downloads/clanlord"
 const soundFontURL = "https://m45sci.xyz/u/dist/goThoom/soundfont.sf2.gz"
 const soundFontFile = "soundfont.sf2"
 const extraDataBase = "https://m45sci.xyz/u/dist/goThoom/"
-const piperFemaleVoice = "en_US-hfc_female-medium.tar.gz"
-const piperMaleVoice = "en_US-hfc_male-medium.tar.gz"
+const piperVoiceBase = "https://huggingface.co/rhasspy/piper-voices/resolve/main"
+const piperFemaleVoice = "en_US-hfc_female-medium"
+const piperMaleVoice = "en_US-hfc_male-medium"
+
+var piperVoicePaths = map[string]string{
+	piperFemaleVoice: "en/en_US/hfc_female/medium",
+	piperMaleVoice:   "en/en_US/hfc_male/medium",
+}
 
 var updateBase = defaultUpdateBase
 
@@ -453,17 +459,17 @@ func checkDataFiles(clientVer int) (dataFilesStatus, error) {
 	}
 
 	voicesDir := filepath.Join(piperDir, "voices")
-	femVoice := strings.TrimSuffix(piperFemaleVoice, ".tar.gz")
-	femPath := filepath.Join(voicesDir, femVoice, femVoice+".onnx")
+	femPath := filepath.Join(voicesDir, piperFemaleVoice, piperFemaleVoice+".onnx")
 	if _, err := os.Stat(femPath); errors.Is(err, os.ErrNotExist) {
 		status.NeedPiperFem = true
-		status.PiperFemSize = headSize(extraDataBase + piperFemaleVoice)
+		url := fmt.Sprintf("%s/%s/%s.onnx", piperVoiceBase, piperVoicePaths[piperFemaleVoice], piperFemaleVoice)
+		status.PiperFemSize = headSize(url)
 	}
-	maleVoice := strings.TrimSuffix(piperMaleVoice, ".tar.gz")
-	malePath := filepath.Join(voicesDir, maleVoice, maleVoice+".onnx")
+	malePath := filepath.Join(voicesDir, piperMaleVoice, piperMaleVoice+".onnx")
 	if _, err := os.Stat(malePath); errors.Is(err, os.ErrNotExist) {
 		status.NeedPiperMale = true
-		status.PiperMaleSize = headSize(extraDataBase + piperMaleVoice)
+		url := fmt.Sprintf("%s/%s/%s.onnx", piperVoiceBase, piperVoicePaths[piperMaleVoice], piperMaleVoice)
+		status.PiperMaleSize = headSize(url)
 	}
 
 	return status, nil
@@ -567,18 +573,40 @@ func downloadDataFiles(clientVer int, status dataFilesStatus, getSoundfont, getP
 		}
 	}
 	if getFem {
-		arch := filepath.Join(piperDir, piperFemaleVoice)
-		if err := downloadFile(extraDataBase+piperFemaleVoice, arch); err != nil {
-			logError("download %v: %v", piperFemaleVoice, err)
-			return fmt.Errorf("download piper female voice: %w", err)
+		vdir := filepath.Join(piperDir, "voices", piperFemaleVoice)
+		if err := os.MkdirAll(vdir, 0o755); err != nil {
+			logError("create %v: %v", vdir, err)
+			return fmt.Errorf("create piper female voice dir: %w", err)
 		}
+		path := piperVoicePaths[piperFemaleVoice]
+		base := fmt.Sprintf("%s/%s/%s", piperVoiceBase, path, piperFemaleVoice)
+		if err := downloadFile(base+".onnx", filepath.Join(vdir, piperFemaleVoice+".onnx")); err != nil {
+			logError("download %v.onnx: %v", piperFemaleVoice, err)
+			return fmt.Errorf("download piper female voice model: %w", err)
+		}
+		if err := downloadFile(base+".onnx.json", filepath.Join(vdir, piperFemaleVoice+".onnx.json")); err != nil {
+			logError("download %v.onnx.json: %v", piperFemaleVoice, err)
+			return fmt.Errorf("download piper female voice config: %w", err)
+		}
+		_ = downloadFile(fmt.Sprintf("%s/%s/MODEL_CARD", piperVoiceBase, path), filepath.Join(vdir, "MODEL_CARD"))
 	}
 	if getMale {
-		arch := filepath.Join(piperDir, piperMaleVoice)
-		if err := downloadFile(extraDataBase+piperMaleVoice, arch); err != nil {
-			logError("download %v: %v", piperMaleVoice, err)
-			return fmt.Errorf("download piper male voice: %w", err)
+		vdir := filepath.Join(piperDir, "voices", piperMaleVoice)
+		if err := os.MkdirAll(vdir, 0o755); err != nil {
+			logError("create %v: %v", vdir, err)
+			return fmt.Errorf("create piper male voice dir: %w", err)
 		}
+		path := piperVoicePaths[piperMaleVoice]
+		base := fmt.Sprintf("%s/%s/%s", piperVoiceBase, path, piperMaleVoice)
+		if err := downloadFile(base+".onnx", filepath.Join(vdir, piperMaleVoice+".onnx")); err != nil {
+			logError("download %v.onnx: %v", piperMaleVoice, err)
+			return fmt.Errorf("download piper male voice model: %w", err)
+		}
+		if err := downloadFile(base+".onnx.json", filepath.Join(vdir, piperMaleVoice+".onnx.json")); err != nil {
+			logError("download %v.onnx.json: %v", piperMaleVoice, err)
+			return fmt.Errorf("download piper male voice config: %w", err)
+		}
+		_ = downloadFile(fmt.Sprintf("%s/%s/MODEL_CARD", piperVoiceBase, path), filepath.Join(vdir, "MODEL_CARD"))
 	}
 	if getPiper || getFem || getMale {
 		if path, model, cfg, err := preparePiper(dataDirPath); err == nil {
