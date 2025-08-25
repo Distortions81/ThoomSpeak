@@ -776,6 +776,18 @@ func isModifier(k ebiten.Key) bool {
 	return false
 }
 
+func applyHotkeyVars(cmd string) string {
+	if strings.Contains(cmd, "@") {
+		lastClickMu.Lock()
+		name := lastClick.Mobile.Name
+		lastClickMu.Unlock()
+		if name != "" {
+			cmd = strings.ReplaceAll(cmd, "@", name)
+		}
+	}
+	return cmd
+}
+
 func updateHotkeyRecording() {
 	if !recording {
 		return
@@ -842,6 +854,7 @@ func checkHotkeys() {
 						continue
 					}
 					// Show hotkey-triggered command as if it were typed
+					cmd = applyHotkeyVars(cmd)
 					if cmd != "" {
 						consoleMessage("> " + cmd)
 					}
