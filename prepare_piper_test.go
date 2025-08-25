@@ -14,11 +14,11 @@ func TestPreparePiperVoiceArchive(t *testing.T) {
 	dataDir := t.TempDir()
 	piperDir := filepath.Join(dataDir, "piper")
 	binDir := filepath.Join(piperDir, "bin")
-	if err := os.MkdirAll(binDir, 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(binDir, "piper"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	// create dummy piper binary to skip download
-	binPath := filepath.Join(binDir, "piper")
+	// create dummy piper binary inside nested directory to skip download
+	binPath := filepath.Join(binDir, "piper", "piper")
 	if err := os.WriteFile(binPath, []byte(""), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -57,9 +57,12 @@ func TestPreparePiperVoiceArchive(t *testing.T) {
 		t.Fatal(err)
 	}
 	// run preparePiper which should extract and remove tarball
-	_, model, cfg, err := preparePiper(dataDir)
+	path, model, cfg, err := preparePiper(dataDir)
 	if err != nil {
 		t.Fatalf("preparePiper: %v", err)
+	}
+	if path != binPath {
+		t.Fatalf("bin path = %v, want %v", path, binPath)
 	}
 	if _, err := os.Stat(tarPath); !os.IsNotExist(err) {
 		t.Fatalf("archive not removed")
