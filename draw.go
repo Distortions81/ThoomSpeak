@@ -68,6 +68,7 @@ const poseDead = 32
 const maxInterpPixels = 64
 const maxMobileInterpPixels = 64
 const maxPersistImageSize = 256
+const secondBestShiftRatio = 0.4
 
 // sanity limits for parsed counts to avoid excessive allocations or
 // obviously corrupt packets.
@@ -407,15 +408,30 @@ func pictureShift(prev, cur []framePicture, max int) (int, int, []int, bool) {
 	}
 
 	best := [2]int{}
+	second := [2]int{}
 	bestCount := 0
+	secondCount := 0
 	for k, c := range counts {
 		if c > bestCount {
+			second = best
+			secondCount = bestCount
 			best = k
 			bestCount = c
+		} else if c > secondCount {
+			second = k
+			secondCount = c
 		}
 	}
+
+	usedSecond := false
+	if best == ([2]int{}) && secondCount >= int(secondBestShiftRatio*float64(total)) {
+		best = second
+		bestCount = secondCount
+		usedSecond = true
+	}
+
 	//logDebug("pictureShift: counts=%v best=%v count=%d total=%d", counts, best, bestCount, total)
-	if bestCount*2 <= total {
+	if !usedSecond && bestCount*2 <= total {
 		logDebug("pictureShift: no majority best=%d total=%d", bestCount, total)
 		return 0, 0, nil, false
 	}
