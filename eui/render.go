@@ -1050,81 +1050,121 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 			itemColor = style.HoverColor
 		}
 
-		// Prepare value text and measure the largest value label so the
-		// slider track remains consistent length
-		// Use a constant max label width so all sliders have the
-		// same track length regardless of their numeric range.
-		valueText := fmt.Sprintf("%.2f", item.Value)
-		maxLabel := sliderMaxLabel
-		if item.IntOnly {
-			// Pad the integer value so the value field width matches
-			// the float slider which reserves space for two decimal
-			// places.
-			width := len(maxLabel)
-			valueText = fmt.Sprintf("%*d", width, int(item.Value))
-		}
+		if item.Vertical {
+			knobW := item.AuxSize.X * uiScale
+			knobH := item.AuxSize.Y * uiScale
+			trackHeight := maxSize.Y - knobH
+			trackX := offset.X + maxSize.X/2
+			trackTop := offset.Y + knobH/2
+			trackBottom := trackTop + trackHeight
 
-		textSize := (item.FontSize * uiScale) + 2
-		face := itemFace(item, textSize)
-		maxW, _ := text.Measure(maxLabel, face, 0)
-
-		gap := currentStyle.SliderValueGap
-		knobW := item.AuxSize.X * uiScale
-		knobH := item.AuxSize.Y * uiScale
-		trackWidth := maxSize.X - knobW - gap - float32(maxW)
-		showValue := true
-		if trackWidth < knobW {
-			trackWidth = maxSize.X - knobW
-			showValue = false
-			if trackWidth < 0 {
-				trackWidth = 0
+			ratio := 0.0
+			if item.MaxValue > item.MinValue {
+				ratio = float64((item.Value - item.MinValue) / (item.MaxValue - item.MinValue))
 			}
-		}
+			if ratio < 0 {
+				ratio = 0
+			} else if ratio > 1 {
+				ratio = 1
+			}
 
-		trackStart := offset.X + knobW/2
-		trackY := offset.Y + maxSize.Y/2
+			knobCenter := trackBottom - float32(ratio)*trackHeight
+			filledCol := style.SelectedColor
+			strokeLine(subImg, trackX, trackBottom, trackX, knobCenter, 2*uiScale, filledCol, true)
+			strokeLine(subImg, trackX, knobCenter, trackX, trackTop, 2*uiScale, itemColor, true)
+			knobRect := point{X: offset.X + (maxSize.X-knobW)/2, Y: knobCenter - knobH/2}
+			drawRoundRect(subImg, &roundRect{
+				Size:     pointScaleMul(item.AuxSize),
+				Position: knobRect,
+				Fillet:   item.Fillet,
+				Filled:   true,
+				Color:    style.Color,
+			})
+			drawRoundRect(subImg, &roundRect{
+				Size:     pointScaleMul(item.AuxSize),
+				Position: knobRect,
+				Fillet:   item.Fillet,
+				Filled:   false,
+				Border:   1 * uiScale,
+				Color:    style.OutlineColor,
+			})
+		} else {
+			// Prepare value text and measure the largest value label so the
+			// slider track remains consistent length
+			// Use a constant max label width so all sliders have the
+			// same track length regardless of their numeric range.
+			valueText := fmt.Sprintf("%.2f", item.Value)
+			maxLabel := sliderMaxLabel
+			if item.IntOnly {
+				// Pad the integer value so the value field width matches
+				// the float slider which reserves space for two decimal
+				// places.
+				width := len(maxLabel)
+				valueText = fmt.Sprintf("%*d", width, int(item.Value))
+			}
 
-		ratio := 0.0
-		if item.MaxValue > item.MinValue {
-			ratio = float64((item.Value - item.MinValue) / (item.MaxValue - item.MinValue))
-		}
-		if ratio < 0 {
-			ratio = 0
-		} else if ratio > 1 {
-			ratio = 1
-		}
-		knobCenter := trackStart + float32(ratio)*trackWidth
-		filledCol := style.SelectedColor
-		strokeLine(subImg, trackStart, trackY, knobCenter, trackY, 2*uiScale, filledCol, true)
-		strokeLine(subImg, knobCenter, trackY, trackStart+trackWidth, trackY, 2*uiScale, itemColor, true)
-		knobRect := point{X: knobCenter - knobW/2, Y: offset.Y + (maxSize.Y-knobH)/2}
-		drawRoundRect(subImg, &roundRect{
-			Size:     pointScaleMul(item.AuxSize),
-			Position: knobRect,
-			Fillet:   item.Fillet,
-			Filled:   true,
-			Color:    style.Color,
-		})
-		drawRoundRect(subImg, &roundRect{
-			Size:     pointScaleMul(item.AuxSize),
-			Position: knobRect,
-			Fillet:   item.Fillet,
-			Filled:   false,
-			Border:   1 * uiScale,
-			Color:    style.OutlineColor,
-		})
+			textSize := (item.FontSize * uiScale) + 2
+			face := itemFace(item, textSize)
+			maxW, _ := text.Measure(maxLabel, face, 0)
 
-		if showValue {
-			// value text drawn to the right of the slider track
-			loo := text.LayoutOptions{LineSpacing: 1.2, PrimaryAlign: text.AlignStart, SecondaryAlign: text.AlignCenter}
-			tdop := ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
-			tdop.GeoM.Translate(
-				float64(trackStart+trackWidth+gap),
-				float64(offset.Y+(maxSize.Y/2)),
-			)
-			top := &text.DrawOptions{DrawImageOptions: tdop, LayoutOptions: loo}
-			top.ColorScale.ScaleWithColor(style.TextColor)
-			text.Draw(subImg, valueText, face, top)
+			gap := currentStyle.SliderValueGap
+			knobW := item.AuxSize.X * uiScale
+			knobH := item.AuxSize.Y * uiScale
+			trackWidth := maxSize.X - knobW - gap - float32(maxW)
+			showValue := true
+			if trackWidth < knobW {
+				trackWidth = maxSize.X - knobW
+				showValue = false
+				if trackWidth < 0 {
+					trackWidth = 0
+				}
+			}
+
+			trackStart := offset.X + knobW/2
+			trackY := offset.Y + maxSize.Y/2
+
+			ratio := 0.0
+			if item.MaxValue > item.MinValue {
+				ratio = float64((item.Value - item.MinValue) / (item.MaxValue - item.MinValue))
+			}
+			if ratio < 0 {
+				ratio = 0
+			} else if ratio > 1 {
+				ratio = 1
+			}
+			knobCenter := trackStart + float32(ratio)*trackWidth
+			filledCol := style.SelectedColor
+			strokeLine(subImg, trackStart, trackY, knobCenter, trackY, 2*uiScale, filledCol, true)
+			strokeLine(subImg, knobCenter, trackY, trackStart+trackWidth, trackY, 2*uiScale, itemColor, true)
+			knobRect := point{X: knobCenter - knobW/2, Y: offset.Y + (maxSize.Y-knobH)/2}
+			drawRoundRect(subImg, &roundRect{
+				Size:     pointScaleMul(item.AuxSize),
+				Position: knobRect,
+				Fillet:   item.Fillet,
+				Filled:   true,
+				Color:    style.Color,
+			})
+			drawRoundRect(subImg, &roundRect{
+				Size:     pointScaleMul(item.AuxSize),
+				Position: knobRect,
+				Fillet:   item.Fillet,
+				Filled:   false,
+				Border:   1 * uiScale,
+				Color:    style.OutlineColor,
+			})
+
+			if showValue {
+				// value text drawn to the right of the slider track
+				loo := text.LayoutOptions{LineSpacing: 1.2, PrimaryAlign: text.AlignStart, SecondaryAlign: text.AlignCenter}
+				tdop := ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
+				tdop.GeoM.Translate(
+					float64(trackStart+trackWidth+gap),
+					float64(offset.Y+(maxSize.Y/2)),
+				)
+				top := &text.DrawOptions{DrawImageOptions: tdop, LayoutOptions: loo}
+				top.ColorScale.ScaleWithColor(style.TextColor)
+				text.Draw(subImg, valueText, face, top)
+			}
 		}
 
 	} else if item.ItemType == ITEM_DROPDOWN {

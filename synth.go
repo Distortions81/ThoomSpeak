@@ -40,10 +40,10 @@ type Note struct {
 
 // synthesizer abstracts the subset of meltysynth.Synthesizer used by Play.
 type synthesizer interface {
-    ProcessMidiMessage(channel int32, command int32, data1, data2 int32)
-    NoteOn(channel, key, vel int32)
-    NoteOff(channel, key int32)
-    Render(left, right []float32)
+	ProcessMidiMessage(channel int32, command int32, data1, data2 int32)
+	NoteOn(channel, key, vel int32)
+	NoteOff(channel, key int32)
+	Render(left, right []float32)
 }
 
 var (
@@ -188,11 +188,11 @@ func safeRender(s synthesizer, left, right []float32) (err error) {
 // mixPCM normalizes the provided samples and returns interleaved 16-bit PCM
 // data suitable for audio playback.
 func mixPCM(leftAll, rightAll []float32) []byte {
-    // Normalize to avoid clipping and boost quiet audio
-    var peak float32
-    for i := range leftAll {
-        if v := float32(math.Abs(float64(leftAll[i]))); v > peak {
-            peak = v
+	// Normalize to avoid clipping and boost quiet audio
+	var peak float32
+	for i := range leftAll {
+		if v := float32(math.Abs(float64(leftAll[i]))); v > peak {
+			peak = v
 		}
 		if v := float32(math.Abs(float64(rightAll[i]))); v > peak {
 			peak = v
@@ -215,7 +215,7 @@ func mixPCM(leftAll, rightAll []float32) []byte {
 		binary.LittleEndian.PutUint16(pcm[4*i:], uint16(l))
 		binary.LittleEndian.PutUint16(pcm[4*i+2:], uint16(r))
 	}
-    return pcm
+	return pcm
 }
 
 // Play renders the provided notes using the given SoundFont, mixes the entire
@@ -223,22 +223,22 @@ func mixPCM(leftAll, rightAll []float32) []byte {
 // blocks until playback has finished.
 func Play(ctx *audio.Context, program int, notes []Note) error {
 
-    if ctx == nil {
-        return errors.New("nil audio context")
-    }
+	if ctx == nil {
+		return errors.New("nil audio context")
+	}
 
-    leftAll, rightAll, err := renderSong(program, notes)
-    if err != nil {
-        return err
-    }
+	leftAll, rightAll, err := renderSong(program, notes)
+	if err != nil {
+		return err
+	}
 
-    pcm := mixPCM(leftAll, rightAll)
+	pcm := mixPCM(leftAll, rightAll)
 	if dumpMusic {
 		dumpPCMAsWAV(pcm)
 	}
 	player := ctx.NewPlayerFromBytes(pcm)
 
-	vol := gs.MusicVolume
+	vol := gs.MasterVolume * gs.MusicVolume
 	if gs.Mute {
 		vol = 0
 	}

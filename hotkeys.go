@@ -341,7 +341,7 @@ func wrapHotkeyInputs() {
 		return
 	}
 	ui := eui.UIScale()
-	fs := 12
+	fs := float32(12)
 	if len(hotkeyCmdInputs) > 0 {
 		fs = hotkeyCmdInputs[0].FontSize
 	}
@@ -355,7 +355,7 @@ func wrapHotkeyInputs() {
 	metrics := goFace.Metrics()
 	linePx := math.Ceil(metrics.HAscent + metrics.HDescent + 2)
 	rowUnits := float32(linePx) / ui
-	padPx := float64(6 * ui)
+	padPx := float64(6) * float64(ui)
 
 	resize := func(it *eui.ItemData) {
 		if it == nil {

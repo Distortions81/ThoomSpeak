@@ -189,7 +189,7 @@ func playSound(ids []uint16) {
 		wg.Wait()
 
 		p := audioContext.NewPlayerFromBytes(out)
-		vol := gs.Volume
+		vol := gs.MasterVolume * gs.Volume
 		if gs.Mute {
 			vol = 0
 		}
@@ -223,9 +223,9 @@ func initSoundContext() {
 }
 
 func updateSoundVolume() {
-	gameVol := gs.Volume
-	ttsVol := gs.ChatTTSVolume
-	musicVol := gs.MusicVolume
+	gameVol := gs.MasterVolume * gs.Volume
+	ttsVol := gs.MasterVolume * gs.ChatTTSVolume
+	musicVol := gs.MasterVolume * gs.MusicVolume
 	if gs.Mute {
 		gameVol = 0
 		ttsVol = 0

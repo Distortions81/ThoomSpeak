@@ -142,6 +142,7 @@ type itemData struct {
 	ActiveOutline     bool
 	AuxSize           point
 	AuxSpace          float32
+	Vertical          bool
 
 	TextColor, Color, HoverColor,
 	ClickColor, OutlineColor, DisabledColor, SelectedColor Color
