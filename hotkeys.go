@@ -109,7 +109,7 @@ func loadHotkeys() {
 	}
 
 	// Ensure the default right-click use hotkey exists.
-	def := Hotkey{Name: "Click To Use", Combo: "RightClick", Commands: []HotkeyCommand{{Command: "/use @clicked"}}}
+	def := Hotkey{Name: "Click To Use", Combo: "RightClick", Commands: []HotkeyCommand{{Command: "/use @clicked"}}, Disabled: true}
 	exists := false
 	for _, hk := range newList {
 		if hk.Combo == def.Combo && hk.Plugin == "" {
@@ -607,7 +607,7 @@ func selectHotkeyFunction(fn, plugin string) {
 	if plugin != "" {
 		disp = plugin + "->" + fn
 	}
-	hotkeyFnLabel.Text = "Function: " + disp
+	hotkeyFnLabel.Text = "Plugin Function: " + fn
 	hotkeyEditWin.Refresh()
 }
 
