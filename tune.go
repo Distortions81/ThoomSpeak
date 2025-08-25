@@ -152,7 +152,7 @@ func playClanLordTune(tune string) error {
 	if audioContext == nil {
 		return fmt.Errorf("audio disabled")
 	}
-	if gs.Mute || gs.MasterVolume <= 0 || gs.MusicVolume <= 0 {
+	if gs.Mute || !gs.Music || gs.MasterVolume <= 0 || gs.MusicVolume <= 0 {
 		return fmt.Errorf("music muted")
 	}
 
@@ -725,7 +725,7 @@ func handleMusicParams(mp MusicParams) {
 	}
 	// Ignore play requests while muted, matching classic behavior when sound
 	// is off. Still handled /stop above regardless of mute state.
-	if gs.Mute || gs.MasterVolume <= 0 || gs.MusicVolume <= 0 {
+	if gs.Mute || !gs.Music || gs.MasterVolume <= 0 || gs.MusicVolume <= 0 {
 		return
 	}
 	// Validate basics

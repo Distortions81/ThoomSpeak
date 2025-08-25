@@ -92,11 +92,16 @@ var (
 	noCacheCB       *eui.ItemData
 	potatoCB        *eui.ItemData
 	volumeSlider    *eui.ItemData
+	muteBtn         *eui.ItemData
 	mixerWin        *eui.WindowData
 	masterMixSlider *eui.ItemData
 	gameMixSlider   *eui.ItemData
 	musicMixSlider  *eui.ItemData
 	ttsMixSlider    *eui.ItemData
+	mixMuteBtn      *eui.ItemData
+	gameMixCB       *eui.ItemData
+	musicMixCB      *eui.ItemData
+	ttsMixCB        *eui.ItemData
 )
 
 // lastWhoRequest tracks the last time we requested a backend who list so we
@@ -269,7 +274,7 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 	}
 	row2.AddItem(mixBtn)
 
-        volumeSlider, volumeEvents := eui.NewSlider()
+	volumeSlider, volumeEvents := eui.NewSlider()
 	volumeSlider.MinValue = 0
 	volumeSlider.MaxValue = 1
 	if gs.Mute {
@@ -297,7 +302,8 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 	}
 	row2.AddItem(volumeSlider)
 
-	muteBtn, muteEvents := eui.NewButton()
+	var muteEvents *eui.EventHandler
+	muteBtn, muteEvents = eui.NewButton()
 	muteBtn.Text = "Mute"
 	if gs.Mute {
 		muteBtn.Text = "Unmute"
@@ -314,6 +320,10 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 					masterMixSlider.Value = 0
 					masterMixSlider.Dirty = true
 				}
+				if mixMuteBtn != nil {
+					mixMuteBtn.Text = "Unmute"
+					mixMuteBtn.Dirty = true
+				}
 				stopAllAudioPlayers()
 				clearTuneQueue()
 			} else {
@@ -323,6 +333,10 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 				if masterMixSlider != nil {
 					masterMixSlider.Value = float32(gs.MasterVolume)
 					masterMixSlider.Dirty = true
+				}
+				if mixMuteBtn != nil {
+					mixMuteBtn.Text = "Mute"
+					mixMuteBtn.Dirty = true
 				}
 			}
 			muteBtn.Dirty = true
@@ -359,21 +373,22 @@ func makeMixerWindow() {
 
 	flow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
 
-	makeSlider := func(label string, val float64, cb func(ev eui.UIEvent)) *eui.ItemData {
-		s, h := eui.NewSlider()
-		s.Vertical = true
-		s.MinValue = 0
-		s.MaxValue = 1
-		s.Value = float32(val)
-		s.Size = eui.Point{X: 24, Y: 100}
-		s.AuxSize = eui.Point{X: 16, Y: 8}
-		s.Label = label
-		h.Handle = cb
-		flow.AddItem(s)
-		return s
+	addSpacer := func() {
+		sp, _ := eui.NewText()
+		sp.Text = ""
+		sp.Size = eui.Point{X: 16, Y: 1}
+		flow.AddItem(sp)
 	}
 
-	masterMixSlider = makeSlider("Master", gs.MasterVolume, func(ev eui.UIEvent) {
+	masterMixSlider, h := eui.NewSlider()
+	masterMixSlider.Vertical = true
+	masterMixSlider.MinValue = 0
+	masterMixSlider.MaxValue = 1
+	masterMixSlider.Value = float32(gs.MasterVolume)
+	masterMixSlider.Size = eui.Point{X: 24, Y: 100}
+	masterMixSlider.AuxSize = eui.Point{X: 16, Y: 8}
+	masterMixSlider.Label = "Master"
+	h.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
 			if gs.Mute {
 				ev.Item.Value = 0
@@ -388,31 +403,142 @@ func makeMixerWindow() {
 			settingsDirty = true
 			updateSoundVolume()
 		}
-	})
+	}
+	flow.AddItem(masterMixSlider)
 
-	gameMixSlider = makeSlider("Game", gs.Volume, func(ev eui.UIEvent) {
-		if ev.Type == eui.EventSliderChanged {
-			gs.Volume = float64(ev.Value)
+	addSpacer()
+
+	makeMix := func(val float64, enabled bool, name string, slide func(ev eui.UIEvent), check func(ev eui.UIEvent)) (*eui.ItemData, *eui.ItemData) {
+		col := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL, Size: eui.Point{X: 64, Y: 140}}
+		s, sh := eui.NewSlider()
+		s.Vertical = true
+		s.MinValue = 0
+		s.MaxValue = 1
+		s.Value = float32(val)
+		s.Size = eui.Point{X: 24, Y: 100}
+		s.AuxSize = eui.Point{X: 16, Y: 8}
+		s.Disabled = !enabled
+		sh.Handle = slide
+		col.AddItem(s)
+		cb, cbh := eui.NewCheckbox()
+		cb.Text = name
+		cb.Checked = enabled
+		cb.Size = eui.Point{X: 64, Y: 24}
+		cbh.Handle = check
+		col.AddItem(cb)
+		flow.AddItem(col)
+		return s, cb
+	}
+
+	gameMixSlider, gameMixCB = makeMix(gs.Volume, gs.GameSound, "Game",
+		func(ev eui.UIEvent) {
+			if ev.Type == eui.EventSliderChanged {
+				gs.Volume = float64(ev.Value)
+				settingsDirty = true
+				updateSoundVolume()
+			}
+		},
+		func(ev eui.UIEvent) {
+			if ev.Type == eui.EventCheckboxChanged {
+				gs.GameSound = ev.Checked
+				gameMixSlider.Disabled = !ev.Checked
+				if !ev.Checked {
+					stopAllSounds()
+				}
+				settingsDirty = true
+				updateSoundVolume()
+			}
+		})
+
+	addSpacer()
+
+	musicMixSlider, musicMixCB = makeMix(gs.MusicVolume, gs.Music, "Music",
+		func(ev eui.UIEvent) {
+			if ev.Type == eui.EventSliderChanged {
+				gs.MusicVolume = float64(ev.Value)
+				settingsDirty = true
+				updateSoundVolume()
+			}
+		},
+		func(ev eui.UIEvent) {
+			if ev.Type == eui.EventCheckboxChanged {
+				gs.Music = ev.Checked
+				musicMixSlider.Disabled = !ev.Checked
+				if !ev.Checked {
+					stopAllMusic()
+					clearTuneQueue()
+				}
+				settingsDirty = true
+				updateSoundVolume()
+			}
+		})
+
+	addSpacer()
+
+	ttsMixSlider, ttsMixCB = makeMix(gs.ChatTTSVolume, gs.ChatTTS, "TTS",
+		func(ev eui.UIEvent) {
+			if ev.Type == eui.EventSliderChanged {
+				gs.ChatTTSVolume = float64(ev.Value)
+				settingsDirty = true
+				updateSoundVolume()
+			}
+		},
+		func(ev eui.UIEvent) {
+			if ev.Type == eui.EventCheckboxChanged {
+				gs.ChatTTS = ev.Checked
+				ttsMixSlider.Disabled = !ev.Checked
+				if !ev.Checked {
+					stopAllTTS()
+				}
+				settingsDirty = true
+				updateSoundVolume()
+			}
+		})
+
+	addSpacer()
+
+	var mixMuteEvents *eui.EventHandler
+	mixMuteBtn, mixMuteEvents = eui.NewButton()
+	mixMuteBtn.Text = "Mute"
+	if gs.Mute {
+		mixMuteBtn.Text = "Unmute"
+	}
+	mixMuteBtn.Size = eui.Point{X: 64, Y: 24}
+	mixMuteEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			gs.Mute = !gs.Mute
+			if gs.Mute {
+				mixMuteBtn.Text = "Unmute"
+				volumeSlider.Value = 0
+				if masterMixSlider != nil {
+					masterMixSlider.Value = 0
+					masterMixSlider.Dirty = true
+				}
+				if muteBtn != nil {
+					muteBtn.Text = "Unmute"
+					muteBtn.Dirty = true
+				}
+				stopAllAudioPlayers()
+				clearTuneQueue()
+			} else {
+				mixMuteBtn.Text = "Mute"
+				volumeSlider.Value = float32(gs.MasterVolume)
+				if masterMixSlider != nil {
+					masterMixSlider.Value = float32(gs.MasterVolume)
+					masterMixSlider.Dirty = true
+				}
+				if muteBtn != nil {
+					muteBtn.Text = "Mute"
+					muteBtn.Dirty = true
+				}
+			}
+			mixMuteBtn.Dirty = true
+			volumeSlider.Dirty = true
 			settingsDirty = true
 			updateSoundVolume()
 		}
-	})
-
-	musicMixSlider = makeSlider("Music", gs.MusicVolume, func(ev eui.UIEvent) {
-		if ev.Type == eui.EventSliderChanged {
-			gs.MusicVolume = float64(ev.Value)
-			settingsDirty = true
-			updateSoundVolume()
-		}
-	})
-
-	ttsMixSlider = makeSlider("TTS", gs.ChatTTSVolume, func(ev eui.UIEvent) {
-		if ev.Type == eui.EventSliderChanged {
-			gs.ChatTTSVolume = float64(ev.Value)
-			settingsDirty = true
-			updateSoundVolume()
-		}
-	})
+	}
+	flow.AddItem(mixMuteBtn)
 
 	mixerWin.AddItem(flow)
 }
@@ -1725,92 +1851,6 @@ func makeSettingsWindow() {
 		}
 	}
 	left.AddItem(tsFormatInput)
-
-	gameSlider, gameEvents := eui.NewSlider()
-	gameSlider.MinValue = 0
-	gameSlider.MaxValue = 1
-	gameSlider.Value = float32(gs.Volume)
-	gameSlider.Size = eui.Point{X: leftW, Y: 24}
-	gameSlider.FontSize = 9
-	gameSlider.Label = "Game Volume"
-	gameEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventSliderChanged {
-			SettingsLock.Lock()
-			defer SettingsLock.Unlock()
-
-			gs.Volume = float64(ev.Value)
-			if gameMixSlider != nil {
-				gameMixSlider.Value = ev.Item.Value
-				gameMixSlider.Dirty = true
-			}
-			settingsDirty = true
-			updateSoundVolume()
-		}
-	}
-	left.AddItem(gameSlider)
-
-	musicSlider, musicEvents := eui.NewSlider()
-	musicSlider.MinValue = 0
-	musicSlider.MaxValue = 1
-	musicSlider.Value = float32(gs.MusicVolume)
-	musicSlider.Size = eui.Point{X: leftW, Y: 24}
-	musicSlider.FontSize = 9
-	musicSlider.Label = "Music Volume"
-	musicEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventSliderChanged {
-			SettingsLock.Lock()
-			defer SettingsLock.Unlock()
-
-			gs.MusicVolume = float64(ev.Value)
-			if musicMixSlider != nil {
-				musicMixSlider.Value = ev.Item.Value
-				musicMixSlider.Dirty = true
-			}
-			settingsDirty = true
-			updateSoundVolume()
-		}
-	}
-	left.AddItem(musicSlider)
-
-	chatTTSCB, chatTTSEvents := eui.NewCheckbox()
-	chatTTSCB.Text = "Chat TTS"
-	chatTTSCB.Size = eui.Point{X: leftW - 110, Y: 24}
-	chatTTSCB.Checked = gs.ChatTTS
-	chatTTSEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventCheckboxChanged {
-			SettingsLock.Lock()
-			defer SettingsLock.Unlock()
-
-			gs.ChatTTS = ev.Checked
-			settingsDirty = true
-			if !ev.Checked {
-				stopAllTTS()
-			}
-		}
-	}
-	left.AddItem(chatTTSCB)
-
-	chatTTSSlider, chatTTSSliderEvents := eui.NewSlider()
-	chatTTSSlider.MinValue = 0
-	chatTTSSlider.MaxValue = 1
-	chatTTSSlider.Value = float32(gs.ChatTTSVolume)
-	chatTTSSlider.Size = eui.Point{X: leftW, Y: 24}
-	chatTTSSlider.FontSize = 9
-	chatTTSSlider.Label = "TTS Volume"
-	chatTTSSliderEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventSliderChanged {
-			SettingsLock.Lock()
-			defer SettingsLock.Unlock()
-
-			gs.ChatTTSVolume = float64(ev.Value)
-			if ttsMixSlider != nil {
-				ttsMixSlider.Value = ev.Item.Value
-				ttsMixSlider.Dirty = true
-			}
-			settingsDirty = true
-		}
-	}
-	left.AddItem(chatTTSSlider)
 
 	label, _ = eui.NewText()
 	label.Text = "\nWindow Behavior:"
