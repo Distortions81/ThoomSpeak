@@ -589,7 +589,7 @@ func selectHotkeyFunction(fn, plugin string) {
 		hotkeyFnLabel.FontSize = 12
 		hotkeyCmdSection.Contents = append([]*eui.ItemData{hotkeyFnLabel}, hotkeyCmdSection.Contents...)
 	}
-	hotkeyFnLabel.Text = "Function: " + fn
+	hotkeyFnLabel.Text = "Plugin Function: " + fn
 	hotkeyEditWin.Refresh()
 }
 
