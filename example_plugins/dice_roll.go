@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"regexp"
 	"strconv"
-	"strings"
 
 	"gt"
 )
@@ -23,7 +22,7 @@ func Init() {
 }
 
 func roll(args string) {
-	args = strings.TrimSpace(args)
+	args = gt.Trim(args)
 	if args == "" {
 		gt.Console("usage: /roll NdM, e.g. /roll 2d6")
 		return
@@ -43,9 +42,9 @@ func roll(args string) {
 		return
 	}
 
-	// try to equip a dice item if present
+	// Try to equip a dice item if present so others see it.
 	for _, it := range gt.Inventory() {
-		if strings.Contains(strings.ToLower(it.Name), "dice") {
+		if gt.Includes(gt.Lower(it.Name), "dice") {
 			if !it.Equipped {
 				gt.Equip(it.ID)
 			}
@@ -60,5 +59,5 @@ func roll(args string) {
 		rolls[i] = strconv.Itoa(r)
 		total += r
 	}
-	gt.RunCommand(fmt.Sprintf("/me rolls %s: %s (total %d)", args, strings.Join(rolls, " "), total))
+	gt.RunCommand(fmt.Sprintf("/me rolls %s: %s (total %d)", args, gt.Join(rolls, " "), total))
 }

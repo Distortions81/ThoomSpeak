@@ -3,20 +3,21 @@
 package main
 
 import (
-	"strings"
 	"time"
 
 	"gt"
 )
 
+// PluginName is how the client lists this plugin.
 var PluginName = "Healer Self-Heal"
 
+// Init launches a tiny loop that watches for right clicks on ourselves.
 func Init() {
 	go func() {
 		for {
 			if gt.MouseJustPressed("right") {
 				c := gt.LastClick()
-				if c.OnMobile && strings.EqualFold(c.Mobile.Name, gt.PlayerName()) {
+				if c.OnMobile && gt.IgnoreCase(c.Mobile.Name, gt.PlayerName()) {
 					equipMoonstone()
 					gt.RunCommand("/use 10")
 				}
@@ -26,9 +27,10 @@ func Init() {
 	}()
 }
 
+// equipMoonstone equips the moonstone if it isn't already in hand.
 func equipMoonstone() {
 	for _, it := range gt.Inventory() {
-		if strings.EqualFold(it.Name, "moonstone") {
+		if gt.IgnoreCase(it.Name, "moonstone") {
 			if !it.Equipped {
 				gt.Equip(it.ID)
 			}

@@ -4,8 +4,10 @@ package main
 
 import "gt"
 
+// PluginName identifies this tutorial plugin.
 var PluginName = "rankdecoder"
 
+// rankMessages maps trainer phrases to their numerical rank ranges.
 var rankMessages = map[string]string{
 	"You have much to learn.":                           "0-9",
 	"You feel you have much to learn.":                  "0-9",
@@ -67,9 +69,9 @@ var rankMessages = map[string]string{
 
 func Init() {
 	gt.RegisterChatHandler(func(msg string) {
-		for r, rank := range rankMessages {
-			if gt.EndsWith(msg, rank) {
-				gt.ShowNotification("Rank " + r)
+		for phrase, rank := range rankMessages {
+			if gt.Includes(msg, phrase) {
+				gt.ShowNotification("Rank " + rank)
 				break
 			}
 		}

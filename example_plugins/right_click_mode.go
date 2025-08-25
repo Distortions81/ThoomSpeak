@@ -3,12 +3,12 @@
 package main
 
 import (
-	"strings"
 	"time"
 
 	"gt"
 )
 
+// PluginName identifies this plugin in the UI.
 var PluginName = "Right Click Mode"
 
 var (
@@ -124,7 +124,7 @@ func healer(name string) {
 		rightClick = "pull"
 		rightClickState()
 	case "set":
-		if strings.EqualFold(name, gt.PlayerName()) {
+		if gt.IgnoreCase(name, gt.PlayerName()) {
 			target = "/pet"
 		} else {
 			target = name
@@ -139,7 +139,7 @@ func healer(name string) {
 
 func ensureEquipped(name string) {
 	for _, it := range gt.Inventory() {
-		if strings.EqualFold(it.Name, name) {
+		if gt.IgnoreCase(it.Name, name) {
 			if !it.Equipped {
 				gt.Equip(it.ID)
 			}
@@ -151,8 +151,8 @@ func ensureEquipped(name string) {
 func isHealer() bool {
 	me := gt.PlayerName()
 	for _, p := range gt.Players() {
-		if strings.EqualFold(p.Name, me) {
-			return strings.EqualFold(p.Class, "healer")
+		if gt.IgnoreCase(p.Name, me) {
+			return gt.IgnoreCase(p.Class, "healer")
 		}
 	}
 	return false

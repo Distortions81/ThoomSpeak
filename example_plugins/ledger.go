@@ -3,12 +3,12 @@
 package main
 
 import (
-	"strings"
 	"time"
 
 	"gt"
 )
 
+// PluginName identifies this plugin.
 var PluginName = "Ledger Actions"
 
 var fighters = []string{
@@ -41,14 +41,14 @@ func Init() {
 func ledgerFind(args string) {
 	gt.Logf("ledger plugin, find trainers")
 	gt.RunCommand("/equip trainingledger")
-	fields := strings.Fields(args)
+	fields := gt.Words(args)
 	for i := 0; i < 3 && i < len(fields); i++ {
 		gt.Logf("word %d - %s", i, fields[i])
 	}
 	playerName := gt.PlayerName()
 	category := ""
 	if len(fields) > 0 {
-		category = strings.ToLower(fields[0])
+		category = gt.Lower(fields[0])
 	}
 	if len(fields) > 1 {
 		playerName = fields[1]
@@ -79,7 +79,7 @@ func ledgerFind(args string) {
 func ledgerLanguage(args string) {
 	gt.Logf("ledger plugin, judge language")
 	gt.RunCommand("/equip trainingledger")
-	fields := strings.Fields(args)
+	fields := gt.Words(args)
 	if len(fields) == 0 {
 		return
 	}

@@ -2,11 +2,7 @@
 
 package main
 
-import (
-	"strings"
-
-	"gt"
-)
+import "gt"
 
 // PluginName identifies this plugin in the UI.
 var PluginName = "Weapon Cycle"
@@ -19,6 +15,7 @@ func Init() {
 	gt.AddHotkey("F3", "/cycleweapon")
 }
 
+// cycleWeapon equips the next item in cycleItems.
 func cycleWeapon() {
 	inv := gt.Inventory()
 	current := ""
@@ -30,13 +27,13 @@ func cycleWeapon() {
 	}
 	next := cycleItems[0]
 	for i, name := range cycleItems {
-		if strings.EqualFold(current, name) {
+		if gt.IgnoreCase(current, name) {
 			next = cycleItems[(i+1)%len(cycleItems)]
 			break
 		}
 	}
 	for _, it := range inv {
-		if strings.EqualFold(it.Name, next) {
+		if gt.IgnoreCase(it.Name, next) {
 			gt.Equip(it.ID)
 			return
 		}
