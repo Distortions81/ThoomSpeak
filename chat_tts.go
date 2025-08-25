@@ -196,6 +196,18 @@ func preparePiper(dataDir string) (string, string, string, error) {
 	_ = os.Chmod(binPath, 0o755)
 
 	voicesDir := filepath.Join(piperDir, "voices")
+	// Automatically extract any voice archives placed in the voices directory.
+	if archives, _ := filepath.Glob(filepath.Join(voicesDir, "*.tar.gz")); len(archives) > 0 {
+		if err := os.MkdirAll(voicesDir, 0o755); err != nil {
+			return "", "", "", err
+		}
+		for _, arch := range archives {
+			if err := extractArchive(arch, voicesDir); err != nil {
+				return "", "", "", err
+			}
+			_ = os.Remove(arch)
+		}
+	}
 	voice := "en_US-hfc_female-medium"
 
 	model := filepath.Join(voicesDir, voice, voice+".onnx")
