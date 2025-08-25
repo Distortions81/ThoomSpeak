@@ -77,7 +77,7 @@ func exportsForPlugin(owner string) interp.Exports {
 	return ex
 }
 
-//go:embed example_plugins/example_ponder.go example_plugins/default_macros.go example_plugins/README.txt
+//go:embed example_plugins/example_ponder.go example_plugins/default_macros.go example_plugins/healer_selfheal.go example_plugins/README.txt
 var pluginExamples embed.FS
 
 func userPluginsDir() string {
@@ -109,6 +109,7 @@ func ensureDefaultPlugins() {
 	files := []string{
 		"plugins/example_ponder.go",
 		"plugins/default_macros.go",
+		"plugins/healer_selfheal.go",
 		"plugins/README.txt",
 	}
 	for _, src := range files {

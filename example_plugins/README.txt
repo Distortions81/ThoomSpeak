@@ -7,7 +7,7 @@ under the import path "gt".
 
 Getting Started
 ---------------
-- Copy or edit the example_ponder.go or default_macros.go files to get started.
+- Copy or edit the example_ponder.go, default_macros.go, or healer_selfheal.go files to get started.
 - Each plugin must define an `Init()` function. The client discovers and calls
   this function after loading the script.
 - Each plugin must define a unique `PluginName` string. Plugins with duplicate
