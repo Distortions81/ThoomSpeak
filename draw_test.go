@@ -51,10 +51,10 @@ func TestPictureOnEdge(t *testing.T) {
 		want bool
 	}{
 		{"inside", framePicture{PictID: 1, H: 0, V: 0}, 10, 10, false},
-		{"left edge", framePicture{PictID: 1, H: int16(-fieldCenterX + halfW), V: 0}, 10, 10, true},
-		{"right edge", framePicture{PictID: 1, H: int16(fieldCenterX - halfW), V: 0}, 10, 10, true},
-		{"top edge", framePicture{PictID: 1, H: 0, V: int16(-fieldCenterY + halfH)}, 10, 10, true},
-		{"bottom edge", framePicture{PictID: 1, H: 0, V: int16(fieldCenterY - halfH)}, 10, 10, true},
+		{"left 80% off", framePicture{PictID: 1, H: int16(-fieldCenterX - 8 + halfW), V: 0}, 10, 10, true},
+		{"left 60% off", framePicture{PictID: 1, H: int16(-fieldCenterX - 6 + halfW), V: 0}, 10, 10, false},
+		{"corner 80% off", framePicture{PictID: 1, H: int16(-fieldCenterX - 8 + halfW), V: int16(-fieldCenterY - 8 + halfH)}, 10, 10, true},
+		{"corner 50% off", framePicture{PictID: 1, H: int16(-fieldCenterX - 3 + halfW), V: int16(-fieldCenterY - 3 + halfH)}, 10, 10, false},
 		{"outside", framePicture{PictID: 1, H: int16(fieldCenterX + halfW + 1), V: 0}, 10, 10, false},
 		{"spanning middle", framePicture{PictID: 1, H: 0, V: 0}, gameAreaSizeX * 2, gameAreaSizeY * 2, false},
 		{"wide edge big", framePicture{PictID: 1, H: int16(-fieldCenterX + 150), V: 0}, 300, 10, false},
