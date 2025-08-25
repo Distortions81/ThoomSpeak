@@ -546,11 +546,11 @@ func pluginSource(owner string) string {
 	path := pluginPaths[owner]
 	pluginMu.RUnlock()
 	if path == "" {
-		return ""
+		return "plugin source not found"
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return ""
+		return fmt.Sprintf("error reading %s: %v", path, err)
 	}
 	return string(data)
 }
