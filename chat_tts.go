@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
+	"net/http"
+	"net/url"
 	"os"
-	"path/filepath"
 	"sync"
 	"time"
 
@@ -31,21 +33,39 @@ func stopAllTTS() {
 }
 
 func fetchTTS(text string) (io.ReadCloser, error) {
-	fileName := fmt.Sprintf("chat_%d", time.Now().UnixNano())
-
 	if err := os.MkdirAll(chatSpeech.Folder, 0o755); err != nil {
 		return nil, fmt.Errorf("create audio dir: %w", err)
 	}
 
-	r, err := chatSpeech.CreateSpeechBuff(text, fileName)
+	// Build request to Google Translate TTS endpoint.
+	q := url.QueryEscape(text)
+	ttsURL := fmt.Sprintf("https://translate.googleapis.com/translate_tts?ie=UTF-8&client=tw-ob&tl=%s&q=%s", chatSpeech.Language, q)
+	req, err := http.NewRequest(http.MethodGet, ttsURL, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create speech: %w", err)
+		return nil, fmt.Errorf("tts request: %w", err)
+	}
+	// Set a User-Agent so the request is not rejected.
+	req.Header.Set("User-Agent", "Mozilla/5.0")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("tts fetch: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		io.Copy(io.Discard, resp.Body)
+		return nil, fmt.Errorf("tts fetch: %s", resp.Status)
 	}
 
-	// Remove the temporary file written by CreateSpeechBuff.
-	_ = os.Remove(filepath.Join(chatSpeech.Folder, fileName+".mp3"))
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("tts read: %w", err)
+	}
+	if len(data) == 0 {
+		return nil, fmt.Errorf("tts: empty response")
+	}
 
-	return io.NopCloser(r), nil
+	return io.NopCloser(bytes.NewReader(data)), nil
 }
 
 func speakChatMessage(msg string) {
