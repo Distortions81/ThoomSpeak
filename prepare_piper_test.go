@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -71,5 +72,65 @@ func TestPreparePiperVoiceArchive(t *testing.T) {
 	}
 	if _, err := os.Stat(cfg); err != nil {
 		t.Fatalf("config missing: %v", err)
+	}
+}
+
+// Test that preparePiper locates the piper binary inside a nested directory
+// created by the archive.
+func TestPreparePiperNestedDir(t *testing.T) {
+	if runtime.GOOS != "linux" || runtime.GOARCH != "amd64" {
+		t.Skip("test only runs on linux/amd64")
+	}
+	dataDir := t.TempDir()
+	piperDir := filepath.Join(dataDir, "piper")
+	voicesDir := filepath.Join(piperDir, "voices")
+	if err := os.MkdirAll(voicesDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	vdir := filepath.Join(voicesDir, piperFemaleVoice)
+	if err := os.MkdirAll(vdir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(vdir, piperFemaleVoice+".onnx"), []byte(""), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(vdir, piperFemaleVoice+".onnx.json"), []byte("{}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	archPath := filepath.Join(piperDir, "piper_linux_x86_64.tar.gz")
+	if err := os.MkdirAll(piperDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	f, err := os.Create(archPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gz := gzip.NewWriter(f)
+	tw := tar.NewWriter(gz)
+	if err := tw.WriteHeader(&tar.Header{Name: "piper/", Mode: 0o755, Typeflag: tar.TypeDir}); err != nil {
+		t.Fatal(err)
+	}
+	if err := tw.WriteHeader(&tar.Header{Name: "piper/piper", Mode: 0o755, Size: 0}); err != nil {
+		t.Fatal(err)
+	}
+	if err := tw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := gz.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatal(err)
+	}
+	binPath, _, _, err := preparePiper(dataDir)
+	if err != nil {
+		t.Fatalf("preparePiper: %v", err)
+	}
+	fi, err := os.Stat(binPath)
+	if err != nil {
+		t.Fatalf("binary missing: %v", err)
+	}
+	if fi.IsDir() {
+		t.Fatalf("expected binary file, got directory: %s", binPath)
 	}
 }

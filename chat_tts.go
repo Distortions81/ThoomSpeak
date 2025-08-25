@@ -214,7 +214,13 @@ func preparePiper(dataDir string) (string, string, string, error) {
 		}
 	}
 	if info, err := os.Stat(binPath); err == nil && info.IsDir() {
-		binPath = filepath.Join(binPath, binName)
+		alt := filepath.Join(binPath, binName)
+		if _, err := os.Stat(alt); err == nil {
+			binPath = alt
+		}
+	}
+	if _, err := os.Stat(binPath); err != nil {
+		return "", "", "", fmt.Errorf("piper binary missing: %w", err)
 	}
 	_ = os.Chmod(binPath, 0o755)
 
