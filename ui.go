@@ -275,6 +275,19 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 	}
 	row2.AddItem(mixBtn)
 
+	stopBtn, stopEvents := eui.NewButton()
+	stopBtn.Text = "Stop Plugins"
+	stopBtn.Size = eui.Point{X: buttonWidth, Y: buttonHeight}
+	stopBtn.FontSize = toolFontSize
+	stopBtn.Color = eui.ColorDarkRed
+	stopBtn.HoverColor = eui.ColorRed
+	stopEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			stopAllPlugins()
+		}
+	}
+	row2.AddItem(stopBtn)
+
 	// Removed toolbar volume slider and mute button (use Mixer instead)
 
 	recordStatus, _ = eui.NewText()
@@ -1772,6 +1785,21 @@ func makeSettingsWindow() {
 		}
 	}
 	left.AddItem(notifBtn)
+
+	pluginKillCB, pluginKillEvents := eui.NewCheckbox()
+	pluginKillCB.Text = "Auto-kill spammy plugins"
+	pluginKillCB.Size = eui.Point{X: leftW, Y: 24}
+	pluginKillCB.Checked = gs.PluginSpamKill
+	pluginKillCB.Tooltip = "Stop plugins that send too many lines"
+	pluginKillEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			SettingsLock.Lock()
+			gs.PluginSpamKill = ev.Checked
+			SettingsLock.Unlock()
+			settingsDirty = true
+		}
+	}
+	left.AddItem(pluginKillCB)
 
 	label, _ = eui.NewText()
 	label.Text = "\nChat & Audio:"

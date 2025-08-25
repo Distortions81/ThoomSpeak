@@ -777,12 +777,21 @@ func isModifier(k ebiten.Key) bool {
 }
 
 func applyHotkeyVars(cmd string) string {
-	if strings.Contains(cmd, "@") {
+	if strings.Contains(cmd, "@clicked") || strings.Contains(cmd, "@hovered") || strings.Contains(cmd, "@") {
 		lastClickMu.Lock()
-		name := lastClick.Mobile.Name
+		clickedName := lastClick.Mobile.Name
 		lastClickMu.Unlock()
-		if name != "" {
-			cmd = strings.ReplaceAll(cmd, "@", name)
+
+		lastHoverMu.Lock()
+		hoveredName := lastHover.Mobile.Name
+		lastHoverMu.Unlock()
+
+		if clickedName != "" {
+			cmd = strings.ReplaceAll(cmd, "@clicked", clickedName)
+			cmd = strings.ReplaceAll(cmd, "@", clickedName)
+		}
+		if hoveredName != "" {
+			cmd = strings.ReplaceAll(cmd, "@hovered", hoveredName)
 		}
 	}
 	return cmd
@@ -822,9 +831,10 @@ func checkHotkeys() {
 						name := strings.ToLower(strings.TrimSpace(c.Function))
 						pluginMu.RLock()
 						fnMap := pluginFuncs[c.Plugin]
+						disabled := pluginDisabled[c.Plugin]
 						fn, ok := fnMap[name]
 						pluginMu.RUnlock()
-						if ok && fn != nil {
+						if !disabled && ok && fn != nil {
 							consoleMessage("> [plugin] " + name)
 							go fn()
 						} else {
@@ -837,7 +847,10 @@ func checkHotkeys() {
 						pluginMu.RLock()
 						var fn PluginFunc
 						var found bool
-						for _, m := range pluginFuncs {
+						for owner, m := range pluginFuncs {
+							if pluginDisabled[owner] {
+								continue
+							}
 							if f, ok := m[name]; ok {
 								fn = f
 								found = true

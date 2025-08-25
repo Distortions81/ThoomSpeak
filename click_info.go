@@ -21,11 +21,14 @@ type ClickInfo struct {
 var (
 	lastClick   ClickInfo
 	lastClickMu sync.Mutex
+
+	lastHover   ClickInfo
+	lastHoverMu sync.Mutex
 )
 
-// handleWorldClick records a click in the game world and captures
-// information about any mobile under the cursor.
-func handleWorldClick(x, y int16) {
+// worldInfoAt returns information about the world location including any
+// mobile under the provided coordinates.
+func worldInfoAt(x, y int16) ClickInfo {
 	info := ClickInfo{X: x, Y: y}
 	stateMu.Lock()
 	for _, m := range state.liveMobs {
@@ -47,7 +50,22 @@ func handleWorldClick(x, y int16) {
 		}
 	}
 	stateMu.Unlock()
+	return info
+}
+
+// handleWorldClick records a click in the game world and captures
+// information about any mobile under the cursor.
+func handleWorldClick(x, y int16) {
+	info := worldInfoAt(x, y)
 	lastClickMu.Lock()
 	lastClick = info
 	lastClickMu.Unlock()
+}
+
+// updateWorldHover updates the last hovered world location and mobile.
+func updateWorldHover(x, y int16) {
+	info := worldInfoAt(x, y)
+	lastHoverMu.Lock()
+	lastHover = info
+	lastHoverMu.Unlock()
 }

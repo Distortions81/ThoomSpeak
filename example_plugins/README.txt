@@ -7,7 +7,7 @@ under the import path "gt".
 
 Getting Started
 ---------------
-- Copy or edit the example_ponder.go file to customize hotkeys.
+- Copy or edit the example_ponder.go or default_macros.go files to get started.
 - Each plugin must define an `Init()` function. The client discovers and calls
   this function after loading the script.
 - Each plugin must define a unique `PluginName` string. Plugins with duplicate
@@ -63,6 +63,8 @@ API
   Returns a slice of known players with basic info (name, race, etc.).
 - gt.RegisterChatHandler(func(msg string))
   Registers a callback invoked for each incoming chat message.
+- gt.RegisterInputHandler(func(text string) string)
+  Invoked just before text from the input bar is sent; return the text to send.
 - gt.RegisterPlayerHandler(func(p gt.Player))
   Registers a callback invoked whenever player info changes.
 - gt.Inventory()

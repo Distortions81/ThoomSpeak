@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/traefik/yaegi/interp"
 	"github.com/traefik/yaegi/stdlib"
@@ -24,10 +25,6 @@ var basePluginExports = interp.Exports{
 		"Logf":                  reflect.ValueOf(pluginLogf),
 		"Console":               reflect.ValueOf(pluginConsole),
 		"ShowNotification":      reflect.ValueOf(pluginShowNotification),
-		"RegisterCommand":       reflect.ValueOf(pluginRegisterCommand),
-		"RegisterFunc":          reflect.ValueOf(pluginRegisterFunc),
-		"RunCommand":            reflect.ValueOf(pluginRunCommand),
-		"EnqueueCommand":        reflect.ValueOf(pluginEnqueueCommand),
 		"ClientVersion":         reflect.ValueOf(&clientVersion).Elem(),
 		"PlayerName":            reflect.ValueOf(pluginPlayerName),
 		"Players":               reflect.ValueOf(pluginPlayers),
@@ -38,6 +35,7 @@ var basePluginExports = interp.Exports{
 		"Equip":                 reflect.ValueOf(pluginEquip),
 		"Unequip":               reflect.ValueOf(pluginUnequip),
 		"PlaySound":             reflect.ValueOf(pluginPlaySound),
+		"RegisterInputHandler":  reflect.ValueOf(pluginRegisterInputHandler),
 		"RegisterChatHandler":   reflect.ValueOf(pluginRegisterChatHandler),
 		"InputText":             reflect.ValueOf(pluginInputText),
 		"SetInputText":          reflect.ValueOf(pluginSetInputText),
@@ -69,12 +67,17 @@ func exportsForPlugin(owner string) interp.Exports {
 		m["RegisterFunc"] = reflect.ValueOf(func(name string, fn PluginFunc) { pluginRegisterFunc(owner, name, fn) })
 		m["Hotkeys"] = reflect.ValueOf(func() []Hotkey { return pluginHotkeys(owner) })
 		m["RemoveHotkey"] = reflect.ValueOf(func(combo string) { pluginRemoveHotkey(owner, combo) })
+		m["RegisterCommand"] = reflect.ValueOf(func(name string, handler PluginCommandHandler) {
+			pluginRegisterCommand(owner, name, handler)
+		})
+		m["RunCommand"] = reflect.ValueOf(func(cmd string) { pluginRunCommand(owner, cmd) })
+		m["EnqueueCommand"] = reflect.ValueOf(func(cmd string) { pluginEnqueueCommand(owner, cmd) })
 		ex[pkg] = m
 	}
 	return ex
 }
 
-//go:embed example_plugins/example_ponder.go example_plugins/README.txt
+//go:embed example_plugins/example_ponder.go example_plugins/default_macros.go example_plugins/README.txt
 var pluginExamples embed.FS
 
 func userPluginsDir() string {
@@ -105,6 +108,7 @@ func ensureDefaultPlugins() {
 	// Write example plugin files
 	files := []string{
 		"plugins/example_ponder.go",
+		"plugins/default_macros.go",
 		"plugins/README.txt",
 	}
 	for _, src := range files {
@@ -137,6 +141,9 @@ func pluginShowNotification(msg string) {
 }
 
 func pluginAddHotkey(owner, combo, command string) {
+	if pluginDisabled[owner] {
+		return
+	}
 	hk := Hotkey{Name: command, Combo: combo, Commands: []HotkeyCommand{{Command: command}}, Plugin: owner}
 	hotkeysMu.Lock()
 	for _, existing := range hotkeys {
@@ -161,6 +168,9 @@ func pluginAddHotkey(owner, combo, command string) {
 // pluginAddHotkeyFunc registers a hotkey that invokes a named plugin function
 // registered via RegisterFunc.
 func pluginAddHotkeyFunc(owner, combo, funcName string) {
+	if pluginDisabled[owner] {
+		return
+	}
 	hk := Hotkey{Name: funcName, Combo: combo, Commands: []HotkeyCommand{{Function: funcName, Plugin: owner}}, Plugin: owner}
 	hotkeysMu.Lock()
 	for _, existing := range hotkeys {
@@ -192,20 +202,29 @@ var (
 	pluginMu           sync.RWMutex
 	pluginNames        = map[string]bool{}
 	pluginDisplayNames = map[string]string{}
+  pluginDisabled      = map[string]bool{}
 	chatHandlers       []func(string)
 	chatHandlersMu     sync.RWMutex
+	inputHandlers      []func(string) string
+	inputHandlersMu    sync.RWMutex
+	pluginCommandOwners = map[string]string{}
+  pluginSendHistory   = map[string][]time.Time{}
 )
 
 // pluginRegisterCommand lets plugins handle a local slash command like
 // "/example". The name should be without the leading slash and will be
 // matched case-insensitively.
-func pluginRegisterCommand(name string, handler PluginCommandHandler) {
+func pluginRegisterCommand(owner, name string, handler PluginCommandHandler) {
 	if name == "" || handler == nil {
+		return
+	}
+	if pluginDisabled[owner] {
 		return
 	}
 	key := strings.ToLower(strings.TrimPrefix(name, "/"))
 	pluginMu.Lock()
 	pluginCommands[key] = handler
+	pluginCommandOwners[key] = owner
 	pluginMu.Unlock()
 	consoleMessage("[plugin] command registered: /" + key)
 	log.Printf("[plugin] command registered: /%s", key)
@@ -215,6 +234,9 @@ func pluginRegisterCommand(name string, handler PluginCommandHandler) {
 // hotkeys using AddHotkeyFunc or a command string "plugin:<name>".
 func pluginRegisterFunc(owner, name string, fn PluginFunc) {
 	if name == "" || fn == nil {
+		return
+	}
+	if pluginDisabled[owner] {
 		return
 	}
 	key := strings.ToLower(name)
@@ -233,7 +255,13 @@ func pluginRegisterFunc(owner, name string, fn PluginFunc) {
 }
 
 // pluginRunCommand echoes and enqueues a command for immediate sending.
-func pluginRunCommand(cmd string) {
+func pluginRunCommand(owner, cmd string) {
+	if pluginDisabled[owner] {
+		return
+	}
+	if recordPluginSend(owner) {
+		return
+	}
 	cmd = strings.TrimSpace(cmd)
 	if cmd == "" {
 		return
@@ -244,12 +272,84 @@ func pluginRunCommand(cmd string) {
 }
 
 // pluginEnqueueCommand enqueues a command to be sent on the next tick without echoing.
-func pluginEnqueueCommand(cmd string) {
+func pluginEnqueueCommand(owner, cmd string) {
+	if pluginDisabled[owner] {
+		return
+	}
+	if recordPluginSend(owner) {
+		return
+	}
 	cmd = strings.TrimSpace(cmd)
 	if cmd == "" {
 		return
 	}
 	enqueueCommand(cmd)
+}
+
+func recordPluginSend(owner string) bool {
+	if !gs.PluginSpamKill {
+		return false
+	}
+	now := time.Now()
+	cutoff := now.Add(-5 * time.Second)
+	pluginMu.Lock()
+	times := pluginSendHistory[owner]
+	n := 0
+	for _, t := range times {
+		if t.After(cutoff) {
+			times[n] = t
+			n++
+		}
+	}
+	times = times[:n]
+	times = append(times, now)
+	pluginSendHistory[owner] = times
+	count := len(times)
+	pluginMu.Unlock()
+	if count > 30 {
+		disablePlugin(owner, "sent too many lines")
+		return true
+	}
+	return false
+}
+
+func disablePlugin(owner, reason string) {
+	pluginMu.Lock()
+	pluginDisabled[owner] = true
+	pluginMu.Unlock()
+	for _, hk := range pluginHotkeys(owner) {
+		pluginRemoveHotkey(owner, hk.Combo)
+	}
+	pluginMu.Lock()
+	for cmd, o := range pluginCommandOwners {
+		if o == owner {
+			delete(pluginCommands, cmd)
+			delete(pluginCommandOwners, cmd)
+		}
+	}
+	delete(pluginFuncs, owner)
+	delete(pluginSendHistory, owner)
+	disp := pluginDisplayNames[owner]
+	pluginMu.Unlock()
+	if disp == "" {
+		disp = owner
+	}
+	consoleMessage("[plugin:" + disp + "] stopped: " + reason)
+}
+
+func stopAllPlugins() {
+	pluginMu.RLock()
+	owners := make([]string, 0, len(pluginFuncs))
+	for o := range pluginFuncs {
+		owners = append(owners, o)
+	}
+	pluginMu.RUnlock()
+	for _, o := range owners {
+		disablePlugin(o, "stopped by user")
+	}
+	commandQueue = nil
+	pendingCommand = ""
+	consoleMessage("[plugin] all plugins stopped")
 }
 
 func pluginPlayerName() string {
@@ -346,6 +446,15 @@ func pluginUnequip(id uint16) {
 	equipInventoryItem(id, -1, false)
 }
 
+func pluginRegisterInputHandler(fn func(string) string) {
+	if fn == nil {
+		return
+	}
+	inputHandlersMu.Lock()
+	inputHandlers = append(inputHandlers, fn)
+	inputHandlersMu.Unlock()
+}
+
 func pluginRegisterChatHandler(fn func(string)) {
 	if fn == nil {
 		return
@@ -362,6 +471,18 @@ func pluginRegisterPlayerHandler(fn func(Player)) {
 	playerHandlersMu.Lock()
 	playerHandlers = append(playerHandlers, fn)
 	playerHandlersMu.Unlock()
+}
+
+func runInputHandlers(txt string) string {
+	inputHandlersMu.RLock()
+	handlers := append([]func(string) string{}, inputHandlers...)
+	inputHandlersMu.RUnlock()
+	for _, h := range handlers {
+		if h != nil {
+			txt = h(txt)
+		}
+	}
+	return txt
 }
 
 func pluginPlaySound(ids []uint16) {

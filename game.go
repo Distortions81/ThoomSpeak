@@ -539,6 +539,13 @@ func (g *Game) Update() error {
 	eui.Update() //We really need this to return eaten clicks
 	updateNotifications()
 	updateThinkMessages()
+
+	mx, my := ebiten.CursorPosition()
+	origX, origY, worldScale := worldDrawInfo()
+	hx := int16(float64(mx-origX)/worldScale - float64(fieldCenterX))
+	hy := int16(float64(my-origY)/worldScale - float64(fieldCenterY))
+	updateWorldHover(hx, hy)
+
 	updateHotkeyRecording()
 	checkHotkeys()
 
@@ -653,7 +660,9 @@ func (g *Game) Update() error {
 			}
 		}
 		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
-			txt := strings.TrimSpace(string(inputText))
+			txt := string(inputText)
+			txt = runInputHandlers(txt)
+			txt = strings.TrimSpace(txt)
 			if txt != "" {
 				if strings.HasPrefix(txt, "/play ") {
 					tune := strings.TrimSpace(txt[len("/play "):])
@@ -682,8 +691,11 @@ func (g *Game) Update() error {
 							args = parts[1]
 						}
 						if handler, ok := pluginCommands[name]; ok && handler != nil {
-							consoleMessage("> " + txt)
-							go handler(args)
+							owner := pluginCommandOwners[name]
+							if !pluginDisabled[owner] {
+								consoleMessage("> " + txt)
+								go handler(args)
+							}
 						} else {
 							pendingCommand = txt
 						}

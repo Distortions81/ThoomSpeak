@@ -283,13 +283,24 @@ func TestHotkeyEditorWrapsAndResizes(t *testing.T) {
 	hotkeyEditWin.Close()
 }
 
-// Test that @ in commands expands to the last clicked mobile name.
+// Test that @clicked in commands expands to the last clicked mobile name.
 func TestApplyHotkeyVars(t *testing.T) {
 	lastClickMu.Lock()
 	lastClick = ClickInfo{OnMobile: true, Mobile: Mobile{Name: "Target"}}
 	lastClickMu.Unlock()
-	got := applyHotkeyVars("/use @")
+	got := applyHotkeyVars("/use @clicked")
 	if got != "/use Target" {
 		t.Fatalf("got %q, want %q", got, "/use Target")
+	}
+}
+
+// Test that @hovered in commands expands to the currently hovered mobile name.
+func TestApplyHotkeyVarsHovered(t *testing.T) {
+	lastHoverMu.Lock()
+	lastHover = ClickInfo{OnMobile: true, Mobile: Mobile{Name: "Hover"}}
+	lastHoverMu.Unlock()
+	got := applyHotkeyVars("/inspect @hovered")
+	if got != "/inspect Hover" {
+		t.Fatalf("got %q, want %q", got, "/inspect Hover")
 	}
 }
