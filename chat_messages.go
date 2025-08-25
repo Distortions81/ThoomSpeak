@@ -58,13 +58,7 @@ func isSelfChatMessage(msg string) bool {
 		return true
 	}
 	if strings.HasPrefix(m, name+" ") {
-		rest := m[len(name)+1:]
-		verbs := []string{"says", "whispers", "yells", "thinks", "ponders"}
-		for _, v := range verbs {
-			if strings.HasPrefix(rest, v) {
-				return true
-			}
-		}
+		return true
 	}
 	return false
 }
