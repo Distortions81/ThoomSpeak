@@ -28,17 +28,6 @@ var pluginExports = interp.Exports{
 		"EnqueueCommand":  reflect.ValueOf(pluginEnqueueCommand),
 		"ClientVersion":   reflect.ValueOf(&clientVersion).Elem(),
 	},
-	// Module-qualified path alternative: import "gothoom/gt"
-	"gothoom/gt/gt": {
-		"Logf":            reflect.ValueOf(pluginLogf),
-		"AddHotkey":       reflect.ValueOf(pluginAddHotkey),
-		"AddHotkeyFunc":   reflect.ValueOf(pluginAddHotkeyFunc),
-		"RegisterCommand": reflect.ValueOf(pluginRegisterCommand),
-		"RegisterFunc":    reflect.ValueOf(pluginRegisterFunc),
-		"RunCommand":      reflect.ValueOf(pluginRunCommand),
-		"EnqueueCommand":  reflect.ValueOf(pluginEnqueueCommand),
-		"ClientVersion":   reflect.ValueOf(&clientVersion).Elem(),
-	},
 }
 
 //go:embed embedded_plugins/*
