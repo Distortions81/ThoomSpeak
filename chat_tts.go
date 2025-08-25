@@ -14,7 +14,6 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2/audio"
@@ -456,7 +455,7 @@ func synthesizeWithPiper(text string) ([]byte, error) {
 		cmd.Dir = dir
 		cmd.Stdin = strings.NewReader(text)
 		cmd.Stderr = &stderr
-		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+		cmd.SysProcAttr = windowsSysProcAttr()
 		if err := cmd.Run(); err != nil {
 			if os.IsPermission(err) {
 				if info, statErr := os.Stat(piperPath); statErr == nil {
@@ -480,7 +479,7 @@ func synthesizeWithPiper(text string) ([]byte, error) {
 	cmd.Stdout = &out
 	cmd.Stderr = &stderr
 	if runtime.GOOS == "windows" {
-		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+		cmd.SysProcAttr = windowsSysProcAttr()
 	}
 	if err := cmd.Run(); err != nil {
 		if os.IsPermission(err) {
