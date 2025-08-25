@@ -184,6 +184,11 @@ func preparePiper(dataDir string) (string, string, string, error) {
 	binPath := filepath.Join(binDir, binName)
 	if _, err := os.Stat(binPath); err != nil {
 		archivePath := filepath.Join(piperDir, archiveName)
+		if _, err := os.Stat(archivePath); err != nil {
+			if err := downloadFile(extraDataBase+archiveName, archivePath); err != nil {
+				return "", "", "", err
+			}
+		}
 		if err := extractArchive(archivePath, binDir); err != nil {
 			return "", "", "", err
 		}
@@ -192,6 +197,7 @@ func preparePiper(dataDir string) (string, string, string, error) {
 
 	voicesDir := filepath.Join(piperDir, "voices")
 	voice := "en_US-hfc_female-medium"
+
 	model := filepath.Join(voicesDir, voice, voice+".onnx")
 	cfg := filepath.Join(voicesDir, voice, voice+".onnx.json")
 	if _, err := os.Stat(model); err != nil {
