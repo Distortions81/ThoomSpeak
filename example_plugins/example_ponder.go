@@ -8,6 +8,7 @@ package main
 import (
 	"fmt"     // used for building strings like "HP 10/10"
 	"strings" // simple helpers for splitting and matching text
+	"time"    // used for simple delays between poses
 
 	"gt" // the small API exposed by the client
 )
@@ -43,9 +44,13 @@ func Init() {
 	gt.RegisterCommand("rad", handleRad)
 }
 
-// Dance sends a fun emote and plays a short sound.
+// Dance cycles through a few pose commands and plays a short sound.
 func Dance() {
-	gt.RunCommand("/me dances")
+	poses := []string{"celebrate", "leanleft", "leanright", "celebrate"}
+	for _, p := range poses {
+		gt.RunCommand("/pose " + p)
+		time.Sleep(250 * time.Millisecond)
+	}
 	gt.PlaySound([]uint16{315})
 }
 
