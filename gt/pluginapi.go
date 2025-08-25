@@ -132,3 +132,6 @@ func Equip(id uint16) {}
 
 // Unequip removes the specified item by ID if it is currently equipped.
 func Unequip(id uint16) {}
+
+// PlaySound plays the sounds referenced by the provided IDs.
+func PlaySound(ids []uint16) {}
