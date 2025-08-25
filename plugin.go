@@ -35,11 +35,14 @@ var pluginExports = interp.Exports{
 		"Inventory":           reflect.ValueOf(pluginInventory),
 		"InventoryItem":       reflect.ValueOf((*InventoryItem)(nil)),
 		"ToggleEquip":         reflect.ValueOf(pluginToggleEquip),
+		"Equip":               reflect.ValueOf(pluginEquip),
+		"Unequip":             reflect.ValueOf(pluginUnequip),
 		"RegisterChatHandler": reflect.ValueOf(pluginRegisterChatHandler),
 		"InputText":           reflect.ValueOf(pluginInputText),
 		"SetInputText":        reflect.ValueOf(pluginSetInputText),
 		"PlayerStats":         reflect.ValueOf(pluginPlayerStats),
 		"Stats":               reflect.ValueOf((*Stats)(nil)),
+    "RegisterPlayerHandler": reflect.ValueOf(pluginRegisterPlayerHandler),
 	},
 }
 
@@ -239,6 +242,45 @@ func pluginSetInputText(text string) {
 	inputText = []rune(text)
 	inputActive = true
 	inputMu.Unlock()
+func pluginEquip(id uint16) {
+	items := getInventory()
+	idx := -1
+	for _, it := range items {
+		if it.ID != id {
+			continue
+		}
+		if it.Equipped {
+			return
+		}
+		if idx < 0 {
+			idx = it.IDIndex
+		}
+	}
+	if idx < 0 {
+		return
+	}
+	if idx >= 0 {
+		pendingCommand = fmt.Sprintf("/equip %d %d", id, idx+1)
+	} else {
+		pendingCommand = fmt.Sprintf("/equip %d", id)
+	}
+	equipInventoryItem(id, idx, true)
+}
+
+func pluginUnequip(id uint16) {
+	items := getInventory()
+	equipped := false
+	for _, it := range items {
+		if it.ID == id && it.Equipped {
+			equipped = true
+			break
+		}
+	}
+	if !equipped {
+		return
+	}
+	pendingCommand = fmt.Sprintf("/unequip %d", id)
+	equipInventoryItem(id, -1, false)
 }
 
 func pluginRegisterChatHandler(fn func(string)) {
@@ -248,6 +290,15 @@ func pluginRegisterChatHandler(fn func(string)) {
 	chatHandlersMu.Lock()
 	chatHandlers = append(chatHandlers, fn)
 	chatHandlersMu.Unlock()
+}
+
+func pluginRegisterPlayerHandler(fn func(Player)) {
+	if fn == nil {
+		return
+	}
+	playerHandlersMu.Lock()
+	playerHandlers = append(playerHandlers, fn)
+	playerHandlersMu.Unlock()
 }
 
 func loadPlugins() {

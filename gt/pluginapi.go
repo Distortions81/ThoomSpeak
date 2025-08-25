@@ -67,6 +67,8 @@ func Players() []Player { return nil }
 // RegisterChatHandler registers a callback for incoming chat messages.
 func RegisterChatHandler(fn func(msg string)) {}
 
+// RegisterPlayerHandler registers a callback for player info updates.
+func RegisterPlayerHandler(fn func(Player)) {}
 // InventoryItem mirrors the client's inventory item structure.
 type InventoryItem struct {
 	ID       uint16
@@ -98,3 +100,8 @@ type Stats struct {
 
 // PlayerStats returns the player's current stat values.
 func PlayerStats() Stats { return Stats{} }
+// Equip equips the specified item by ID if it isn't already equipped.
+func Equip(id uint16) {}
+
+// Unequip removes the specified item by ID if it is currently equipped.
+func Unequip(id uint16) {}

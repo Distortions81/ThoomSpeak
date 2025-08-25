@@ -35,6 +35,7 @@ func parseWhoText(raw []byte, s string) bool {
 		p.LastSeen = time.Now()
 		p.Offline = false
 		playersMu.Unlock()
+		notifyPlayerHandlers(*p)
 	}
 	playersDirty = true
 	return true
@@ -48,16 +49,17 @@ func parseShareText(raw []byte, s string) bool {
 		strings.HasPrefix(s, "You are no longer sharing experiences with anyone."):
 		// Clear sharees
 		playersMu.Lock()
-		changed := make([]string, 0, len(players))
+		changed := make([]Player, 0, len(players))
 		for _, p := range players {
 			if p.Sharee {
 				p.Sharee = false
-				changed = append(changed, p.Name)
+				changed = append(changed, *p)
 			}
 		}
 		playersMu.Unlock()
-		for _, n := range changed {
-			killNameTagCacheFor(n)
+		for _, pl := range changed {
+			killNameTagCacheFor(pl.Name)
+			notifyPlayerHandlers(pl)
 		}
 		playersDirty = true
 		return true
@@ -68,16 +70,17 @@ func parseShareText(raw []byte, s string) bool {
 		if off >= 0 {
 			names := parseNames(raw[off:])
 			playersMu.Lock()
-			changed := make([]string, 0, len(names))
+			changed := make([]Player, 0, len(names))
 			for _, name := range names {
 				if p, ok := players[name]; ok && p.Sharee {
 					p.Sharee = false
-					changed = append(changed, name)
+					changed = append(changed, *p)
 				}
 			}
 			playersMu.Unlock()
-			for _, n := range changed {
-				killNameTagCacheFor(n)
+			for _, pl := range changed {
+				killNameTagCacheFor(pl.Name)
+				notifyPlayerHandlers(pl)
 			}
 			playersDirty = true
 		}
@@ -86,30 +89,32 @@ func parseShareText(raw []byte, s string) bool {
 		// Self -> sharees
 		// Clear any existing sharees first
 		playersMu.Lock()
-		changed := make([]string, 0, len(players))
+		cleared := make([]Player, 0, len(players))
 		for _, p := range players {
 			if p.Sharee {
 				p.Sharee = false
-				changed = append(changed, p.Name)
+				cleared = append(cleared, *p)
 			}
 		}
 		playersMu.Unlock()
-		for _, n := range changed {
-			killNameTagCacheFor(n)
+		for _, pl := range cleared {
+			killNameTagCacheFor(pl.Name)
+			notifyPlayerHandlers(pl)
 		}
 		off := bytes.Index(raw, []byte{0xC2, 'p', 'n'})
 		if off >= 0 {
 			names := parseNames(raw[off:])
-			changed = changed[:0]
+			added := make([]Player, 0, len(names))
 			for _, name := range names {
 				p := getPlayer(name)
 				if !p.Sharee {
 					p.Sharee = true
-					changed = append(changed, name)
+					added = append(added, *p)
 				}
 			}
-			for _, n := range changed {
-				killNameTagCacheFor(n)
+			for _, pl := range added {
+				killNameTagCacheFor(pl.Name)
+				notifyPlayerHandlers(pl)
 			}
 			playersDirty = true
 		}
@@ -117,16 +122,17 @@ func parseShareText(raw []byte, s string) bool {
 	case playerName != "" && (strings.HasPrefix(s, playerName+" is sharing experiences with ") || strings.HasPrefix(s, playerName+" begins sharing experiences with ")):
 		// Hero (you) sharing others in third-person form
 		playersMu.Lock()
-		changed := make([]string, 0, len(players))
+		cleared := make([]Player, 0, len(players))
 		for _, p := range players {
 			if p.Sharee {
 				p.Sharee = false
-				changed = append(changed, p.Name)
+				cleared = append(cleared, *p)
 			}
 		}
 		playersMu.Unlock()
-		for _, n := range changed {
-			killNameTagCacheFor(n)
+		for _, pl := range cleared {
+			killNameTagCacheFor(pl.Name)
+			notifyPlayerHandlers(pl)
 		}
 		phrase := playerName + " is sharing experiences with "
 		rest := strings.TrimPrefix(s, phrase)
@@ -138,7 +144,7 @@ func parseShareText(raw []byte, s string) bool {
 		rest = strings.ReplaceAll(rest, " and ", ",")
 		parts := strings.Split(rest, ",")
 		playersMu.Lock()
-		changed = changed[:0]
+		added := make([]Player, 0, len(parts))
 		for _, name := range parts {
 			name = strings.TrimSpace(name)
 			if name == "" || strings.EqualFold(name, playerName) {
@@ -151,12 +157,13 @@ func parseShareText(raw []byte, s string) bool {
 			}
 			if !p.Sharee {
 				p.Sharee = true
-				changed = append(changed, name)
+				added = append(added, *p)
 			}
 		}
 		playersMu.Unlock()
-		for _, n := range changed {
-			killNameTagCacheFor(n)
+		for _, pl := range added {
+			killNameTagCacheFor(pl.Name)
+			notifyPlayerHandlers(pl)
 		}
 		playersDirty = true
 		return true
@@ -168,7 +175,7 @@ func parseShareText(raw []byte, s string) bool {
 		rest = strings.ReplaceAll(rest, " and ", ",")
 		parts := strings.Split(rest, ",")
 		playersMu.Lock()
-		changed := make([]string, 0, len(parts))
+		changed := make([]Player, 0, len(parts))
 		for _, name := range parts {
 			name = strings.TrimSpace(name)
 			if name == "" || strings.EqualFold(name, playerName) {
@@ -176,12 +183,13 @@ func parseShareText(raw []byte, s string) bool {
 			}
 			if p, ok := players[name]; ok && p.Sharee {
 				p.Sharee = false
-				changed = append(changed, name)
+				changed = append(changed, *p)
 			}
 		}
 		playersMu.Unlock()
-		for _, n := range changed {
-			killNameTagCacheFor(n)
+		for _, pl := range changed {
+			killNameTagCacheFor(pl.Name)
+			notifyPlayerHandlers(pl)
 		}
 		playersDirty = true
 		return true
@@ -192,9 +200,11 @@ func parseShareText(raw []byte, s string) bool {
 			playersMu.Lock()
 			changed := !p.Sharing
 			p.Sharing = true
+			playerCopy := *p
 			playersMu.Unlock()
 			if changed {
 				killNameTagCacheFor(name)
+				notifyPlayerHandlers(playerCopy)
 			}
 			playersDirty = true
 			showNotification(name + " is sharing with you")
@@ -205,15 +215,18 @@ func parseShareText(raw []byte, s string) bool {
 		if name != "" {
 			playersMu.Lock()
 			changed := false
+			var playerCopy Player
 			if p, ok := players[name]; ok {
 				if p.Sharing {
 					p.Sharing = false
 					changed = true
+					playerCopy = *p
 				}
 			}
 			playersMu.Unlock()
 			if changed {
 				killNameTagCacheFor(name)
+				notifyPlayerHandlers(playerCopy)
 			}
 			playersDirty = true
 		}
@@ -224,17 +237,22 @@ func parseShareText(raw []byte, s string) bool {
 		if off >= 0 {
 			names := parseNames(raw[off:])
 			playersMu.Lock()
-			changed := make([]string, 0, len(names))
+			changed := make([]Player, 0, len(names))
 			for _, name := range names {
-				p := getPlayer(name)
+				p, ok := players[name]
+				if !ok {
+					p = &Player{Name: name}
+					players[name] = p
+				}
 				if !p.Sharing {
 					p.Sharing = true
-					changed = append(changed, name)
+					changed = append(changed, *p)
 				}
 			}
 			playersMu.Unlock()
-			for _, n := range changed {
-				killNameTagCacheFor(n)
+			for _, pl := range changed {
+				killNameTagCacheFor(pl.Name)
+				notifyPlayerHandlers(pl)
 			}
 			playersDirty = true
 		}
@@ -265,8 +283,10 @@ func parseFallenText(raw []byte, s string) bool {
 		p.Dead = true
 		p.KillerName = killer
 		p.FellWhere = where
+		playerCopy := *p
 		playersMu.Unlock()
 		playersDirty = true
+		notifyPlayerHandlers(playerCopy)
 		if gs.NotifyFallen {
 			showNotification(name + " has fallen")
 		}
@@ -288,9 +308,14 @@ func parseFallenText(raw []byte, s string) bool {
 			p.Dead = false
 			p.FellWhere = ""
 			p.KillerName = ""
+			playerCopy := *p
+			playersMu.Unlock()
+			playersDirty = true
+			notifyPlayerHandlers(playerCopy)
+		} else {
+			playersMu.Unlock()
+			playersDirty = true
 		}
-		playersMu.Unlock()
-		playersDirty = true
 		if gs.NotifyNotFallen {
 			showNotification(name + " is no longer fallen")
 		}
@@ -311,14 +336,21 @@ func parsePresenceText(raw []byte, s string) bool {
 	// Login-like phrases
 	if strings.Contains(lower, "has logged on") || strings.Contains(lower, "has entered the lands") || strings.Contains(lower, "has joined the world") || strings.Contains(lower, "has arrived") {
 		var friend bool
+		var playerCopy Player
+		changed := false
 		playersMu.Lock()
 		if p, ok := players[name]; ok {
 			p.LastSeen = time.Now()
 			p.Offline = false
 			friend = p.Friend
+			playerCopy = *p
+			changed = true
 		}
 		playersMu.Unlock()
 		playersDirty = true
+		if changed {
+			notifyPlayerHandlers(playerCopy)
+		}
 		if friend && gs.NotifyFriendOnline {
 			showNotification(name + " is online")
 		}
@@ -329,9 +361,14 @@ func parsePresenceText(raw []byte, s string) bool {
 		playersMu.Lock()
 		if p, ok := players[name]; ok {
 			p.Offline = true
+			playerCopy := *p
+			playersMu.Unlock()
+			playersDirty = true
+			notifyPlayerHandlers(playerCopy)
+		} else {
+			playersMu.Unlock()
+			playersDirty = true
 		}
-		playersMu.Unlock()
-		playersDirty = true
 		return true
 	}
 	return false
@@ -382,9 +419,11 @@ func parseBardText(raw []byte, s string) bool {
 			p.Bard = ph.bard
 			p.LastSeen = time.Now()
 			p.Offline = false
+			playerCopy := *p
 			playersMu.Unlock()
 			playersDirty = true
 			playersPersistDirty = true
+			notifyPlayerHandlers(playerCopy)
 			return false
 		}
 	}
