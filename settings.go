@@ -68,7 +68,7 @@ var gsdef settings = settings{
 	ShowFPS:              true,
 	UIScale:              1.0,
 	MasterVolume:         0.25,
-	Volume:               1.0,
+	GameVolume:           0.5,
 	MusicVolume:          1.0,
 	Music:                true,
 	GameSound:            true,
@@ -77,7 +77,7 @@ var gsdef settings = settings{
 	MaxNightLevel:        100,
 	ChatTTS:              true,
 	ChatTTSVolume:        1.0,
-	ChatTTSSpeed:         1.0,
+	ChatTTSSpeed:         1.5,
 	ChatTTSVoice:         "en_US-hfc_female-medium",
 	Notifications:        true,
 	NotifyFallen:         true,
@@ -150,7 +150,7 @@ type settings struct {
 	Fullscreen           bool
 	AlwaysOnTop          bool
 	MasterVolume         float64
-	Volume               float64
+	GameVolume           float64
 	MusicVolume          float64
 	Music                bool
 	GameSound            bool
