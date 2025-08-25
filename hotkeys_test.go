@@ -347,3 +347,17 @@ func TestApplyHotkeyVarsNoHovered(t *testing.T) {
 		t.Fatalf("got %q, ok %v", got, ok)
 	}
 }
+
+// Test that hotkey equip commands skip already equipped items.
+func TestHotkeyEquipAlreadyEquipped(t *testing.T) {
+	resetInventory()
+	addInventoryItem(100, -1, "Sword", true)
+	consoleLog = messageLog{max: maxMessages}
+	if !hotkeyEquipAlreadyEquipped("/equip 100") {
+		t.Fatalf("expected command to be skipped")
+	}
+	msgs := getConsoleMessages()
+	if len(msgs) == 0 || msgs[len(msgs)-1] != "Sword already equipped, skipping" {
+		t.Fatalf("unexpected console messages %v", msgs)
+	}
+}
