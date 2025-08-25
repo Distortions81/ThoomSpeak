@@ -35,6 +35,8 @@ file or network access.
 
 API
 ---
+- gt.Console(msg)
+  Writes a message to the in-client console.
 - gt.AddHotkey(combo, command)
   Registers a hotkey combo (e.g., "Digit1", "Shift-A", "Mouse Middle") that
   runs a slash-command like "/ponder hello world".
@@ -49,6 +51,12 @@ API
   Echoes to the console and queues a command to send immediately to the server.
 - gt.EnqueueCommand(cmd)
   Queues a command silently for the next tick.
+- gt.PlayerName()
+  Returns the name of the currently logged-in character.
+- gt.Players()
+  Returns a slice of known players with basic info (name, race, etc.).
+- gt.RegisterChatHandler(func(msg string))
+  Registers a callback invoked for each incoming chat message.
 
 Notes
 -----

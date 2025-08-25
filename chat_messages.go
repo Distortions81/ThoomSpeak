@@ -27,6 +27,13 @@ func chatMessage(msg string) {
 			consoleMessage("Chat TTS is disabled. Enable it in settings to hear messages.")
 		})
 	}
+
+	chatHandlersMu.RLock()
+	handlers := append([]func(string){}, chatHandlers...)
+	chatHandlersMu.RUnlock()
+	for _, h := range handlers {
+		go h(msg)
+	}
 }
 
 func getChatMessages() []string {

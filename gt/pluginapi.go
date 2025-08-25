@@ -7,11 +7,16 @@
 // runtime; these no-op stubs are never called by the compiled client.
 package gt
 
+import "time"
+
 // ClientVersion mirrors the client version value exported to plugins.
 var ClientVersion int
 
 // Logf is a no-op printf-style logger for editor/linter happiness.
 func Logf(format string, args ...interface{}) {}
+
+// Console writes a message to the in-client console.
+func Console(msg string) {}
 
 // AddHotkey binds a key combo to a slash command.
 func AddHotkey(combo, command string) {}
@@ -30,3 +35,34 @@ func RunCommand(cmd string) {}
 
 // EnqueueCommand queues a command for the next tick without echoing.
 func EnqueueCommand(cmd string) {}
+
+// PlayerName returns the current player's name.
+func PlayerName() string { return "" }
+
+// Player mirrors the player's state exposed to plugins.
+type Player struct {
+	Name       string
+	Race       string
+	Gender     string
+	Class      string
+	Clan       string
+	PictID     uint16
+	Colors     []byte
+	IsNPC      bool
+	Sharee     bool
+	Sharing    bool
+	GMLevel    int
+	Friend     bool
+	Dead       bool
+	FellWhere  string
+	KillerName string
+	Bard       bool
+	LastSeen   time.Time
+	Offline    bool
+}
+
+// Players returns the list of known players.
+func Players() []Player { return nil }
+
+// RegisterChatHandler registers a callback for incoming chat messages.
+func RegisterChatHandler(fn func(msg string)) {}
