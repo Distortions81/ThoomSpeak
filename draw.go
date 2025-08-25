@@ -344,6 +344,11 @@ func pictureShift(prev, cur []framePicture, max int) (int, int, []int, bool) {
 			}
 		}
 		if matched {
+			if bestDx == 0 && bestDy == 0 {
+				// Ignore pictures that didn't move between frames to avoid static
+				// images dominating the shift calculation (e.g., a giant background).
+				continue
+			}
 			pixels, ok := pixelCache[p.PictID]
 			if !ok {
 				pixels = nonTransparentPixels(p.PictID)
