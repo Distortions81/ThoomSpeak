@@ -152,6 +152,9 @@ func playClanLordTune(tune string) error {
 	if audioContext == nil {
 		return fmt.Errorf("audio disabled")
 	}
+	if blockMusic {
+		return fmt.Errorf("music blocked")
+	}
 	if gs.Mute || !gs.Music || gs.MasterVolume <= 0 || gs.MusicVolume <= 0 {
 		return fmt.Errorf("music muted")
 	}
@@ -721,6 +724,9 @@ func handleMusicParams(mp MusicParams) {
 			stopAllMusic()
 			clearTuneQueue()
 		}
+		return
+	}
+	if blockMusic {
 		return
 	}
 	// Ignore play requests while muted, matching classic behavior when sound
