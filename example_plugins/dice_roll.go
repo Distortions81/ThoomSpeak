@@ -8,7 +8,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	"gt"
 )
@@ -20,7 +19,6 @@ var diceRE = regexp.MustCompile(`(?i)^([0-9]*)d([0-9]+)$`)
 
 // Init registers the /roll command.
 func Init() {
-	rand.Seed(time.Now().UnixNano())
 	gt.RegisterCommand("roll", roll)
 }
 
