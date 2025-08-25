@@ -713,6 +713,19 @@ func detectCombo() string {
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonMiddle) {
 		return comboFromMouse(ebiten.MouseButtonMiddle)
 	}
+	wx, wy := ebiten.Wheel()
+	if wy > 0 {
+		return comboFromWheel("WheelUp")
+	}
+	if wy < 0 {
+		return comboFromWheel("WheelDown")
+	}
+	if wx > 0 {
+		return comboFromWheel("WheelRight")
+	}
+	if wx < 0 {
+		return comboFromWheel("WheelLeft")
+	}
 	for _, k := range inpututil.AppendJustPressedKeys(nil) {
 		if isModifier(k) {
 			continue
@@ -732,6 +745,12 @@ func comboFromMouse(b ebiten.MouseButton) string {
 	mods := currentMods()
 	name := mouseButtonName(b)
 	mods = append(mods, name)
+	return strings.Join(mods, "-")
+}
+
+func comboFromWheel(dir string) string {
+	mods := currentMods()
+	mods = append(mods, dir)
 	return strings.Join(mods, "-")
 }
 

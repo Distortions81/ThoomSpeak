@@ -40,7 +40,7 @@ API
 - gt.Console(msg)
   Writes a message to the in-client console.
 - gt.AddHotkey(combo, command)
-  Registers a hotkey combo (e.g., "Digit1", "Shift-A", "Mouse Middle") that
+  Registers a hotkey combo (e.g., "Digit1", "Shift-A", "Mouse Middle", "WheelUp") that
   runs a slash-command like "/ponder hello world".
 - gt.AddHotkeyFunc(combo, funcName)
   Binds a hotkey to a named plugin function registered via RegisterFunc.
@@ -71,6 +71,8 @@ API
   Returns a slice of inventory items with ID, name, equipped state and quantity.
 - gt.ToggleEquip(id)
   Toggles the equipped state of the first matching item by ID.
+- gt.MouseWheel()
+  Returns the scroll wheel delta since the last frame as (dx, dy).
 
 
 Notes
