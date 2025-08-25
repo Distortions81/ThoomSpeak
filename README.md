@@ -61,28 +61,28 @@ goThoom can load optional plugins at startup using [yaegi](https://github.com/tr
 Place `.go` files inside the `plugins/` directory. Each plugin is evaluated and may
 define an `Init()` function that runs after client initialization.
 
-Plugins only see a small, approved API exposed through the `pluginapi` package:
+Plugins only see a small, approved API exposed through the `gt` package:
 
 ```go
-import "pluginapi"
+import "gt"
 
 func Init() {
-    pluginapi.Logf("plugin active")
-    pluginapi.AddHotkey("ctrl+h", "/hello")
-    _ = pluginapi.ClientVersion
+    gt.Logf("plugin active")
+    gt.AddHotkey("ctrl+h", "/hello")
+    _ = gt.ClientVersion
 }
 ```
 
 Currently exposed symbols:
 
-- `pluginapi.Logf(format, ...any)` – write to the client log
-- `pluginapi.AddHotkey(combo, command)` – bind a hotkey to a slash command
-- `pluginapi.AddHotkeyFunc(combo, funcName)` – bind a hotkey to a plugin function
-- `pluginapi.RegisterCommand(name, func(args string))` – handle a local slash command
-- `pluginapi.RegisterFunc(name, func())` – register a callable plugin function
-- `pluginapi.RunCommand(cmd)` – echo and send a command immediately
-- `pluginapi.EnqueueCommand(cmd)` – queue a command silently for the next tick
-- `pluginapi.ClientVersion` – current client version (read/write)
+- `gt.Logf(format, ...any)` – write to the client log
+- `gt.AddHotkey(combo, command)` – bind a hotkey to a slash command
+- `gt.AddHotkeyFunc(combo, funcName)` – bind a hotkey to a plugin function
+- `gt.RegisterCommand(name, func(args string))` – handle a local slash command
+- `gt.RegisterFunc(name, func())` – register a callable plugin function
+- `gt.RunCommand(cmd)` – echo and send a command immediately
+- `gt.EnqueueCommand(cmd)` – queue a command silently for the next tick
+- `gt.ClientVersion` – current client version (read/write)
 
 All plugin code runs in the same process but is sandboxed to this approved list of
 functions and variables.

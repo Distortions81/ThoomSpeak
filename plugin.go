@@ -1,13 +1,13 @@
 package main
 
 import (
-    "embed"
-    "log"
-    "os"
-    "path/filepath"
-    "reflect"
-    "strings"
-    "sync"
+	"embed"
+	"log"
+	"os"
+	"path/filepath"
+	"reflect"
+	"strings"
+	"sync"
 
 	"github.com/traefik/yaegi/interp"
 	"github.com/traefik/yaegi/stdlib"
@@ -16,29 +16,29 @@ import (
 // Expose the plugin API under both a short and a module-qualified path so
 // Yaegi can resolve imports regardless of how the script refers to it.
 var pluginExports = interp.Exports{
-	// Short path used by simple plugin scripts: import "pluginapi"
+	// Short path used by simple plugin scripts: import "gt"
 	// Yaegi expects keys as "importPath/pkgName".
-    "pluginapi/pluginapi": {
-        "Logf":            reflect.ValueOf(pluginLogf),
-        "AddHotkey":       reflect.ValueOf(pluginAddHotkey),
-        "AddHotkeyFunc":   reflect.ValueOf(pluginAddHotkeyFunc),
-        "RegisterCommand": reflect.ValueOf(pluginRegisterCommand),
-        "RegisterFunc":    reflect.ValueOf(pluginRegisterFunc),
-        "RunCommand":      reflect.ValueOf(pluginRunCommand),
-        "EnqueueCommand":  reflect.ValueOf(pluginEnqueueCommand),
-        "ClientVersion":   reflect.ValueOf(&clientVersion).Elem(),
-    },
-	// Module-qualified path alternative: import "gothoom/pluginapi"
-    "gothoom/pluginapi/pluginapi": {
-        "Logf":            reflect.ValueOf(pluginLogf),
-        "AddHotkey":       reflect.ValueOf(pluginAddHotkey),
-        "AddHotkeyFunc":   reflect.ValueOf(pluginAddHotkeyFunc),
-        "RegisterCommand": reflect.ValueOf(pluginRegisterCommand),
-        "RegisterFunc":    reflect.ValueOf(pluginRegisterFunc),
-        "RunCommand":      reflect.ValueOf(pluginRunCommand),
-        "EnqueueCommand":  reflect.ValueOf(pluginEnqueueCommand),
-        "ClientVersion":   reflect.ValueOf(&clientVersion).Elem(),
-    },
+	"gt/gt": {
+		"Logf":            reflect.ValueOf(pluginLogf),
+		"AddHotkey":       reflect.ValueOf(pluginAddHotkey),
+		"AddHotkeyFunc":   reflect.ValueOf(pluginAddHotkeyFunc),
+		"RegisterCommand": reflect.ValueOf(pluginRegisterCommand),
+		"RegisterFunc":    reflect.ValueOf(pluginRegisterFunc),
+		"RunCommand":      reflect.ValueOf(pluginRunCommand),
+		"EnqueueCommand":  reflect.ValueOf(pluginEnqueueCommand),
+		"ClientVersion":   reflect.ValueOf(&clientVersion).Elem(),
+	},
+	// Module-qualified path alternative: import "gothoom/gt"
+	"gothoom/gt/gt": {
+		"Logf":            reflect.ValueOf(pluginLogf),
+		"AddHotkey":       reflect.ValueOf(pluginAddHotkey),
+		"AddHotkeyFunc":   reflect.ValueOf(pluginAddHotkeyFunc),
+		"RegisterCommand": reflect.ValueOf(pluginRegisterCommand),
+		"RegisterFunc":    reflect.ValueOf(pluginRegisterFunc),
+		"RunCommand":      reflect.ValueOf(pluginRunCommand),
+		"EnqueueCommand":  reflect.ValueOf(pluginEnqueueCommand),
+		"ClientVersion":   reflect.ValueOf(&clientVersion).Elem(),
+	},
 }
 
 //go:embed embedded_plugins/*
@@ -94,29 +94,29 @@ func pluginLogf(format string, args ...interface{}) {
 }
 
 func pluginAddHotkey(combo, command string) {
-    hk := Hotkey{Combo: combo, Commands: []HotkeyCommand{{Command: command}}}
-    hotkeysMu.Lock()
-    hotkeys = append(hotkeys, hk)
-    hotkeysMu.Unlock()
-    refreshHotkeysList()
-    saveHotkeys()
-    msg := "[plugin] hotkey added: " + combo + " -> " + command
-    consoleMessage(msg)
-    log.Printf(msg)
+	hk := Hotkey{Combo: combo, Commands: []HotkeyCommand{{Command: command}}}
+	hotkeysMu.Lock()
+	hotkeys = append(hotkeys, hk)
+	hotkeysMu.Unlock()
+	refreshHotkeysList()
+	saveHotkeys()
+	msg := "[plugin] hotkey added: " + combo + " -> " + command
+	consoleMessage(msg)
+	log.Printf(msg)
 }
 
 // pluginAddHotkeyFunc registers a hotkey that invokes a named plugin function
 // registered via RegisterFunc.
 func pluginAddHotkeyFunc(combo, funcName string) {
-    hk := Hotkey{Combo: combo, Commands: []HotkeyCommand{{Command: "plugin:" + funcName}}}
-    hotkeysMu.Lock()
-    hotkeys = append(hotkeys, hk)
-    hotkeysMu.Unlock()
-    refreshHotkeysList()
-    saveHotkeys()
-    msg := "[plugin] hotkey added: " + combo + " -> plugin:" + funcName
-    consoleMessage(msg)
-    log.Printf(msg)
+	hk := Hotkey{Combo: combo, Commands: []HotkeyCommand{{Command: "plugin:" + funcName}}}
+	hotkeysMu.Lock()
+	hotkeys = append(hotkeys, hk)
+	hotkeysMu.Unlock()
+	refreshHotkeysList()
+	saveHotkeys()
+	msg := "[plugin] hotkey added: " + combo + " -> plugin:" + funcName
+	consoleMessage(msg)
+	log.Printf(msg)
 }
 
 // Plugin command and function registries.
@@ -124,58 +124,58 @@ type PluginCommandHandler func(args string)
 type PluginFunc func()
 
 var (
-    pluginCommands = map[string]PluginCommandHandler{}
-    pluginFuncs    = map[string]PluginFunc{}
-    pluginMu       sync.RWMutex
+	pluginCommands = map[string]PluginCommandHandler{}
+	pluginFuncs    = map[string]PluginFunc{}
+	pluginMu       sync.RWMutex
 )
 
 // pluginRegisterCommand lets plugins handle a local slash command like
 // "/example". The name should be without the leading slash and will be
 // matched case-insensitively.
 func pluginRegisterCommand(name string, handler PluginCommandHandler) {
-    if name == "" || handler == nil {
-        return
-    }
-    key := strings.ToLower(strings.TrimPrefix(name, "/"))
-    pluginMu.Lock()
-    pluginCommands[key] = handler
-    pluginMu.Unlock()
-    consoleMessage("[plugin] command registered: /" + key)
-    log.Printf("[plugin] command registered: /%s", key)
+	if name == "" || handler == nil {
+		return
+	}
+	key := strings.ToLower(strings.TrimPrefix(name, "/"))
+	pluginMu.Lock()
+	pluginCommands[key] = handler
+	pluginMu.Unlock()
+	consoleMessage("[plugin] command registered: /" + key)
+	log.Printf("[plugin] command registered: /%s", key)
 }
 
 // pluginRegisterFunc registers a named function that can be called from
 // hotkeys using the special command string "plugin:<name>".
 func pluginRegisterFunc(name string, fn PluginFunc) {
-    if name == "" || fn == nil {
-        return
-    }
-    key := strings.ToLower(name)
-    pluginMu.Lock()
-    pluginFuncs[key] = fn
-    pluginMu.Unlock()
-    consoleMessage("[plugin] function registered: " + key)
-    log.Printf("[plugin] function registered: %s", key)
+	if name == "" || fn == nil {
+		return
+	}
+	key := strings.ToLower(name)
+	pluginMu.Lock()
+	pluginFuncs[key] = fn
+	pluginMu.Unlock()
+	consoleMessage("[plugin] function registered: " + key)
+	log.Printf("[plugin] function registered: %s", key)
 }
 
 // pluginRunCommand echoes and enqueues a command for immediate sending.
 func pluginRunCommand(cmd string) {
-    cmd = strings.TrimSpace(cmd)
-    if cmd == "" {
-        return
-    }
-    consoleMessage("> " + cmd)
-    enqueueCommand(cmd)
-    nextCommand()
+	cmd = strings.TrimSpace(cmd)
+	if cmd == "" {
+		return
+	}
+	consoleMessage("> " + cmd)
+	enqueueCommand(cmd)
+	nextCommand()
 }
 
 // pluginEnqueueCommand enqueues a command to be sent on the next tick without echoing.
 func pluginEnqueueCommand(cmd string) {
-    cmd = strings.TrimSpace(cmd)
-    if cmd == "" {
-        return
-    }
-    enqueueCommand(cmd)
+	cmd = strings.TrimSpace(cmd)
+	if cmd == "" {
+		return
+	}
+	enqueueCommand(cmd)
 }
 
 func loadPlugins() {
@@ -186,19 +186,19 @@ func loadPlugins() {
 		userPluginsDir(), // per-user/app data directory
 		"plugins",        // legacy: relative to current working directory
 	}
-    // Build restricted stdlib symbol map
-    allowedPkgs := []string{
-        // "fmt/fmt",
-        // "strings/strings",
-    }
-    restricted := interp.Exports{}
-    for _, key := range allowedPkgs {
-        if syms, ok := stdlib.Symbols[key]; ok {
-            restricted[key] = syms
-        }
-    }
+	// Build restricted stdlib symbol map
+	allowedPkgs := []string{
+		// "fmt/fmt",
+		// "strings/strings",
+	}
+	restricted := interp.Exports{}
+	for _, key := range allowedPkgs {
+		if syms, ok := stdlib.Symbols[key]; ok {
+			restricted[key] = syms
+		}
+	}
 
-    for _, dir := range pluginDirs {
+	for _, dir := range pluginDirs {
 		entries, err := os.ReadDir(dir)
 		if err != nil {
 			if !os.IsNotExist(err) {
@@ -216,12 +216,12 @@ func loadPlugins() {
 				log.Printf("read plugin %s: %v", path, err)
 				continue
 			}
-            i := interp.New(interp.Options{})
-            // IMPORTANT: only allow a restricted subset of stdlib (possibly empty)
-            if len(restricted) > 0 {
-                i.Use(restricted)
-            }
-            i.Use(pluginExports)
+			i := interp.New(interp.Options{})
+			// IMPORTANT: only allow a restricted subset of stdlib (possibly empty)
+			if len(restricted) > 0 {
+				i.Use(restricted)
+			}
+			i.Use(pluginExports)
 			if _, err := i.Eval(string(src)); err != nil {
 				log.Printf("plugin %s: %v", e.Name(), err)
 				consoleMessage("[plugin] load error for " + path + ": " + err.Error())

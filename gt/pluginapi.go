@@ -1,11 +1,11 @@
-// Package pluginapi provides a tiny, editor-only stub for the
+// Package gt provides a tiny, editor-only stub for the
 // interpreted plugin API exposed by the client at runtime via Yaegi.
 //
 // This package exists solely to satisfy linters and IDEs for files in
-// the plugins/ directory (e.g., healer.go) that do `import "pluginapi"`.
+// the plugins/ directory (e.g., healer.go) that do `import "gt"`.
 // The real implementations are injected into the Yaegi interpreter at
 // runtime; these no-op stubs are never called by the compiled client.
-package pluginapi
+package gt
 
 // ClientVersion mirrors the client version value exported to plugins.
 var ClientVersion int

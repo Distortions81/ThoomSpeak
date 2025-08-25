@@ -3,7 +3,7 @@ goThoom Plugins
 
 This folder contains example plugin scripts for goThoom. Plugins are plain
 Go files interpreted at runtime using Yaegi. The client exposes a small API
-under the import path "pluginapi".
+under the import path "gt".
 
 Getting Started
 ---------------
@@ -13,25 +13,25 @@ Getting Started
 
 Imports
 -------
-- Plugins can import only `pluginapi` by default. System packages like `os`,
+- Plugins can import only `gt` by default. System packages like `os`,
   `io`, `net`, etc. are not available from the interpreter to prevent file or
   network access.
 
 API
 ---
-- pluginapi.AddHotkey(combo, command)
+- gt.AddHotkey(combo, command)
   Registers a hotkey combo (e.g., "Digit1", "Shift-A", "Mouse Middle") that
   runs a slash-command like "/ponder hello world".
-- pluginapi.AddHotkeyFunc(combo, funcName)
+- gt.AddHotkeyFunc(combo, funcName)
   Binds a hotkey to a named plugin function registered via RegisterFunc.
-- pluginapi.RegisterCommand(name, func(args string))
+- gt.RegisterCommand(name, func(args string))
   Handles a local slash command like "/name" and receives the rest as args.
-- pluginapi.RegisterFunc(name, func())
+- gt.RegisterFunc(name, func())
   Registers a callable function invokable from hotkeys via AddHotkeyFunc or by
   using a hotkey command string "plugin:name".
-- pluginapi.RunCommand(cmd)
+- gt.RunCommand(cmd)
   Echoes to the console and queues a command to send immediately to the server.
-- pluginapi.EnqueueCommand(cmd)
+- gt.EnqueueCommand(cmd)
   Queues a command silently for the next tick.
 
 Notes
