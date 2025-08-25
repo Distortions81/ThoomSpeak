@@ -217,6 +217,9 @@ func pluginLogf(format string, args ...interface{}) {
 
 func pluginConsole(msg string) {
 	consoleMessage(msg)
+	if gs.pluginOutputDebug {
+		chatMessage(msg)
+	}
 }
 
 func pluginShowNotification(msg string) {
