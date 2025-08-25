@@ -100,6 +100,46 @@ func userPluginsDir() string {
 	return filepath.Join(dataDirPath, "plugins")
 }
 
+// ensureExamplePlugins creates the example_plugins directory next to the
+// executable and populates it with the embedded example plugin files if it is
+// missing.
+func ensureExamplePlugins() {
+	exe, err := os.Executable()
+	if err != nil {
+		return
+	}
+	dir := filepath.Join(filepath.Dir(exe), "example_plugins")
+	if _, err := os.Stat(dir); err == nil {
+		return
+	} else if !os.IsNotExist(err) {
+		log.Printf("check example_plugins dir: %v", err)
+		return
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		log.Printf("create example_plugins dir: %v", err)
+		return
+	}
+	entries, err := pluginExamples.ReadDir("example_plugins")
+	if err != nil {
+		log.Printf("read embedded example plugins: %v", err)
+		return
+	}
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		data, err := pluginExamples.ReadFile(path.Join("example_plugins", e.Name()))
+		if err != nil {
+			log.Printf("read embedded %s: %v", e.Name(), err)
+			continue
+		}
+		dst := filepath.Join(dir, e.Name())
+		if err := os.WriteFile(dst, data, 0o644); err != nil {
+			log.Printf("write %s: %v", dst, err)
+		}
+	}
+}
+
 // ensureDefaultPlugins creates the user plugins directory and populates it
 // with an example plugin when it is empty.
 func ensureDefaultPlugins() {
@@ -688,6 +728,7 @@ func checkPluginMods() {
 }
 
 func loadPlugins() {
+	ensureExamplePlugins()
 	ensureDefaultPlugins()
 
 	pluginDirs := []string{
