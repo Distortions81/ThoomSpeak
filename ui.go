@@ -1951,6 +1951,47 @@ func makeSettingsWindow() {
 	}
 	left.AddItem(consoleTSCB)
 
+	ttsSpeedSlider, ttsSpeedEvents := eui.NewSlider()
+	ttsSpeedSlider.Label = "TTS Speed"
+	ttsSpeedSlider.MinValue = 0.5
+	ttsSpeedSlider.MaxValue = 2.0
+	ttsSpeedSlider.Value = float32(gs.ChatTTSSpeed)
+	ttsSpeedSlider.Size = eui.Point{X: leftW - 10, Y: 24}
+	ttsSpeedEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			SettingsLock.Lock()
+			gs.ChatTTSSpeed = float64(ev.Value)
+			SettingsLock.Unlock()
+			settingsDirty = true
+		}
+	}
+	left.AddItem(ttsSpeedSlider)
+
+	voiceDD, voiceEvents := eui.NewDropdown()
+	voiceDD.Label = "TTS Voice"
+	if voices, err := listPiperVoices(); err == nil {
+		voiceDD.Options = voices
+		for i, v := range voices {
+			if v == gs.ChatTTSVoice {
+				voiceDD.Selected = i
+				break
+			}
+		}
+	}
+	voiceDD.Size = eui.Point{X: leftW, Y: 24}
+	voiceEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventDropdownSelected {
+			SettingsLock.Lock()
+			gs.ChatTTSVoice = voiceDD.Options[ev.Index]
+			SettingsLock.Unlock()
+			settingsDirty = true
+			piperModel = ""
+			piperConfig = ""
+			stopAllTTS()
+		}
+	}
+	left.AddItem(voiceDD)
+
 	tsFormatInput, tsFormatEvents := eui.NewInput()
 	tsFormatInput.Label = "Timestamp format"
 	tsFormatInput.Text = gs.TimestampFormat
