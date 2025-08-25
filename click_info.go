@@ -11,7 +11,7 @@ type Mobile struct {
 	Colors uint8
 }
 
-// ClickInfo describes the last left-click in the game world.
+// ClickInfo describes the last click in the game world.
 type ClickInfo struct {
 	X, Y     int16
 	OnMobile bool
@@ -23,7 +23,7 @@ var (
 	lastClickMu sync.Mutex
 )
 
-// handleWorldClick records a left-click in the game world and captures
+// handleWorldClick records a click in the game world and captures
 // information about any mobile under the cursor.
 func handleWorldClick(x, y int16) {
 	info := ClickInfo{X: x, Y: y}

@@ -87,6 +87,9 @@ Currently exposed symbols:
 - `gt.EnqueueCommand(cmd)` – queue a command silently for the next tick
 - `gt.ClientVersion` – current client version (read/write)
 
+Hotkey command strings may include `@`, which expands to the name of the last
+right-clicked mobile.
+
 All plugin code runs in the same process but is sandboxed to this approved list of
 functions and variables.
 

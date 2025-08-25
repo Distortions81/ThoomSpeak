@@ -763,6 +763,7 @@ func (g *Game) Update() error {
 	baseY := int16(float64(my-origY)/worldScale - float64(fieldCenterY))
 	heldTime := inpututil.MouseButtonPressDuration(ebiten.MouseButtonLeft)
 	click := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
+	rightClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
 
 	if click && pointInUI(mx, my) {
 		uiMouseDown = true
@@ -776,6 +777,9 @@ func (g *Game) Update() error {
 		}
 	}
 	if click && !uiMouseDown {
+		handleWorldClick(baseX, baseY)
+	}
+	if rightClick && !pointInUI(mx, my) {
 		handleWorldClick(baseX, baseY)
 	}
 

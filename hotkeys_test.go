@@ -282,3 +282,14 @@ func TestHotkeyEditorWrapsAndResizes(t *testing.T) {
 	}
 	hotkeyEditWin.Close()
 }
+
+// Test that @ in commands expands to the last clicked mobile name.
+func TestApplyHotkeyVars(t *testing.T) {
+	lastClickMu.Lock()
+	lastClick = ClickInfo{OnMobile: true, Mobile: Mobile{Name: "Target"}}
+	lastClickMu.Unlock()
+	got := applyHotkeyVars("/use @")
+	if got != "/use Target" {
+		t.Fatalf("got %q, want %q", got, "/use Target")
+	}
+}
