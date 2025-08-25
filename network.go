@@ -132,6 +132,7 @@ func sendPlayerInput(connection net.Conn, mouseX, mouseY int16, mouseDown bool) 
 		flags = kPIMDownField
 	}
 
+	nextCommand()
 	// Before reading the pending command, give background queues
 	// a chance to schedule maintenance commands.
 	if pendingCommand == "" {
@@ -155,6 +156,7 @@ func sendPlayerInput(connection net.Conn, mouseX, mouseY int16, mouseDown bool) 
 		// Record last-command frame for who throttling.
 		whoLastCommandFrame = ackFrame
 		pendingCommand = ""
+		nextCommand()
 	}
 	commandNum++
 	logDebug("player input ack=%d resend=%d cmd=%d mouse=%d,%d flags=%#x", ackFrame, resendFrame, commandNum-1, mouseX, mouseY, flags)
