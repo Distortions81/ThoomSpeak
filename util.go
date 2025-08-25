@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"time"
 
 	"golang.org/x/crypto/twofish"
 	"golang.org/x/text/encoding/charmap"
@@ -132,6 +133,9 @@ var resendFrame int32
 var lastAckFrame int32
 var numFrames int
 var lostFrames int
+var frameBuckets [5]int
+var lostBuckets [5]int
+var bucketTimes [5]int64
 var commandNum uint32 = 1
 var pendingCommand string
 var commandQueue []string
@@ -155,6 +159,14 @@ func nextCommand() {
 // It returns the number of frames missing between the previous and
 // current acknowledgement numbers.
 func updateFrameCounters(newFrame int32) int {
+	now := time.Now().Unix()
+	idx := int(now % 5)
+	if bucketTimes[idx] != now {
+		frameBuckets[idx] = 0
+		lostBuckets[idx] = 0
+		bucketTimes[idx] = now
+	}
+	frameBuckets[idx]++
 	numFrames++
 	dropped := 0
 	if lastAckFrame != 0 {
@@ -162,10 +174,28 @@ func updateFrameCounters(newFrame int32) int {
 		if lost > 0 {
 			lostFrames += lost
 			dropped = lost
+			frameBuckets[idx] += lost
+			lostBuckets[idx] += lost
 		}
 	}
 	lastAckFrame = newFrame
 	return dropped
+}
+
+func droppedPercent() float64 {
+	now := time.Now().Unix()
+	total := 0
+	lost := 0
+	for i := 0; i < 5; i++ {
+		if now-bucketTimes[i] < 5 {
+			total += frameBuckets[i]
+			lost += lostBuckets[i]
+		}
+	}
+	if total == 0 {
+		return 0
+	}
+	return float64(lost) * 100 / float64(total)
 }
 
 const (

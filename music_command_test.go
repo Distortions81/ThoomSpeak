@@ -33,8 +33,8 @@ func TestParseMusicCommandFromMovie(t *testing.T) {
 	}
 	var msg []byte
 	for _, f := range frames {
-		if idx := bytes.Index(f, []byte("/music/")); idx >= 0 {
-			msg = f[idx:]
+		if idx := bytes.Index(f.data, []byte("/music/")); idx >= 0 {
+			msg = f.data[idx:]
 			if j := bytes.IndexByte(msg, 0); j >= 0 {
 				msg = msg[:j]
 			}

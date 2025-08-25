@@ -652,10 +652,10 @@ func (g *Game) Update() error {
 				changedInput = true
 			}
 		}
-        if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
-            txt := strings.TrimSpace(string(inputText))
-            if txt != "" {
-                if strings.HasPrefix(txt, "/play ") {
+		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
+			txt := strings.TrimSpace(string(inputText))
+			if txt != "" {
+				if strings.HasPrefix(txt, "/play ") {
 					tune := strings.TrimSpace(txt[len("/play "):])
 					if musicDebug {
 						msg := "/play " + tune
@@ -672,29 +672,29 @@ func (g *Game) Update() error {
 							}
 						}
 					}()
-                } else {
-                    // Try plugin-registered commands first
-                    if strings.HasPrefix(txt, "/") {
-                        parts := strings.SplitN(strings.TrimPrefix(txt, "/"), " ", 2)
-                        name := strings.ToLower(parts[0])
-                        args := ""
-                        if len(parts) > 1 {
-                            args = parts[1]
-                        }
-                        if handler, ok := pluginCommands[name]; ok && handler != nil {
-                            consoleMessage("> " + txt)
-                            go handler(args)
-                        } else {
-                            pendingCommand = txt
-                        }
-                    } else {
-                        pendingCommand = txt
-                    }
-                    //consoleMessage("> " + txt)
-                }
-                inputHistory = append(inputHistory, txt)
-            }
-            inputActive = false
+				} else {
+					// Try plugin-registered commands first
+					if strings.HasPrefix(txt, "/") {
+						parts := strings.SplitN(strings.TrimPrefix(txt, "/"), " ", 2)
+						name := strings.ToLower(parts[0])
+						args := ""
+						if len(parts) > 1 {
+							args = parts[1]
+						}
+						if handler, ok := pluginCommands[name]; ok && handler != nil {
+							consoleMessage("> " + txt)
+							go handler(args)
+						} else {
+							pendingCommand = txt
+						}
+					} else {
+						pendingCommand = txt
+					}
+					//consoleMessage("> " + txt)
+				}
+				inputHistory = append(inputHistory, txt)
+			}
+			inputActive = false
 			inputText = inputText[:0]
 			historyPos = len(inputHistory)
 			changedInput = true
@@ -1788,7 +1788,8 @@ func drawServerFPS(screen *ebiten.Image, ox, oy int, fps float64) {
 
 		lat := netLatency
 		jit := netJitter
-		msg := fmt.Sprintf("FPS: %0.2f Server: %0.2f Ping: %-3v ms Jit: %-3v ms", ebiten.ActualFPS(), fps, lat.Milliseconds(), jit.Milliseconds())
+		drop := droppedPercent()
+		msg := fmt.Sprintf("FPS: %0.2f Server: %0.2f Drop: %0.1f%% Ping: %-3v ms Jit: %-3v ms", ebiten.ActualFPS(), fps, drop, lat.Milliseconds(), jit.Milliseconds())
 		w, h := text.Measure(msg, mainFont, 0)
 
 		if fpsImage == nil || fpsHeight != h {

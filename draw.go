@@ -616,7 +616,12 @@ func parseDrawState(data []byte, buildCache bool) error {
 	ackCmd := data[0]
 	ackFrame = int32(binary.BigEndian.Uint32(data[1:5]))
 	resendFrame = int32(binary.BigEndian.Uint32(data[5:9]))
-	dropped := updateFrameCounters(ackFrame)
+	dropped := 0
+	if movieMode {
+		dropped = movieDropped
+	} else {
+		dropped = updateFrameCounters(ackFrame)
+	}
 	extra := dropped
 	if extra > 2 {
 		extra = 2

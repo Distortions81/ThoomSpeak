@@ -17,6 +17,7 @@ var (
 	playingMovie  bool
 	movieMode     bool
 	movieWin      *eui.WindowData
+	movieDropped  int
 )
 
 // movieCheckpoint captures the draw state after processing a frame. idx
@@ -33,7 +34,7 @@ const checkpointInterval = 300
 
 // moviePlayer manages clMov playback with basic controls.
 type moviePlayer struct {
-	frames  [][]byte
+	frames  []movieFrame
 	fps     int
 	baseFPS int
 	cur     int // number of frames processed
@@ -50,7 +51,7 @@ type moviePlayer struct {
 	playButton *eui.ItemData
 }
 
-func newMoviePlayer(frames [][]byte, fps int, cancel context.CancelFunc) *moviePlayer {
+func newMoviePlayer(frames []movieFrame, fps int, cancel context.CancelFunc) *moviePlayer {
 	setInterpFPS(fps)
 	serverFPS = float64(fps)
 	frameInterval = time.Second / time.Duration(fps)
@@ -344,15 +345,16 @@ func (p *moviePlayer) step() {
 		return
 	}
 	m := p.frames[p.cur]
-	if len(m) >= 2 && binary.BigEndian.Uint16(m[:2]) == 2 {
-		handleDrawState(m, true)
+	movieDropped = updateFrameCounters(m.index)
+	if len(m.data) >= 2 && binary.BigEndian.Uint16(m.data[:2]) == 2 {
+		handleDrawState(m.data, true)
 	} else {
 		// Advance the logical frame counter even when this movie frame
 		// does not contain a draw-state update so time-based effects
 		// (e.g., bubble expiration) progress correctly during playback.
 		frameCounter++
 	}
-	maybeDecodeMessage(m)
+	maybeDecodeMessage(m.data)
 	p.cur++
 	if p.cur%checkpointInterval == 0 {
 		stateMu.Lock()
@@ -482,15 +484,16 @@ func (p *moviePlayer) seek(idx int) {
 
 	for i := cp.idx; i < idx; i++ {
 		m := p.frames[i]
-		if len(m) >= 2 && binary.BigEndian.Uint16(m[:2]) == 2 {
+		movieDropped = updateFrameCounters(m.index)
+		if len(m.data) >= 2 && binary.BigEndian.Uint16(m.data[:2]) == 2 {
 			// Skip render cache preparation for intermediate frames.
-			handleDrawState(m, i == idx-1)
+			handleDrawState(m.data, i == idx-1)
 		} else {
 			// Keep timeline consistent during scrubbing when frames
 			// without draw-state are encountered.
 			frameCounter++
 		}
-		maybeDecodeMessage(m)
+		maybeDecodeMessage(m.data)
 		if frameCounter%checkpointInterval == 0 {
 			last := p.checkpoints[len(p.checkpoints)-1]
 			if last.idx != frameCounter {
