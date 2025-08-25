@@ -66,7 +66,7 @@ func playSound(ids []uint16) {
 		}
 		//logDebug("playSound %v called", ids)
 		if blockSound {
-			logDebug("playSound blocked by blockSound")
+			//logDebug("playSound blocked by blockSound")
 			return
 		}
 		if audioContext == nil {
