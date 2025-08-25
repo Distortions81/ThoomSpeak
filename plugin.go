@@ -178,9 +178,13 @@ func loadPlugins() {
 	// Build restricted stdlib symbol map containing safe stdlib packages
 	allowedPkgs := []string{
 		"bytes/bytes",
+		"encoding/json/json",
+		"errors/errors",
 		"fmt/fmt",
+		"math/big/big",
 		"math/math",
 		"math/rand",
+		"regexp/regexp",
 		"sort/sort",
 		"strconv/strconv",
 		"strings/strings",

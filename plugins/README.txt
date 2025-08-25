@@ -17,9 +17,13 @@ The interpreter allows only the following packages:
 
 - `gt` (client API)
 - `bytes`
+- `encoding/json`
+- `errors`
 - `fmt`
 - `math`
+- `math/big`
 - `math/rand`
+- `regexp`
 - `sort`
 - `strconv`
 - `strings`
