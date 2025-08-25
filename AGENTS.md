@@ -3,6 +3,7 @@
 This repo includes a minimal Go client under `gothoom/`. To build or run the Go program you need Go version 1.24 or later.
 Do not increment JSON versions in GT_Players.json or settings.json or characters.json. They will be done manually if needed.
 Any functions or variables or types exposed to the plugins need to also be put empty stubs into gt so the linters do not complain for users.
+Building and testing may not be needed for small changes, maybe just vetting and linting can be enough. Use your best judgement!
 
 ## Installing dependencies
 
