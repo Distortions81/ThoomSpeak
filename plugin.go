@@ -17,23 +17,27 @@ import (
 var pluginExports = interp.Exports{
 	// Short path used by simple plugin scripts: import "pluginapi"
 	// Yaegi expects keys as "importPath/pkgName".
-	"pluginapi/pluginapi": {
-		"Logf":            reflect.ValueOf(pluginLogf),
-		"AddHotkey":       reflect.ValueOf(pluginAddHotkey),
-		"AddHotkeyFunc":   reflect.ValueOf(pluginAddHotkeyFunc),
-		"RegisterCommand": reflect.ValueOf(pluginRegisterCommand),
-		"RegisterFunc":    reflect.ValueOf(pluginRegisterFunc),
-		"ClientVersion":   reflect.ValueOf(&clientVersion).Elem(),
-	},
+    "pluginapi/pluginapi": {
+        "Logf":            reflect.ValueOf(pluginLogf),
+        "AddHotkey":       reflect.ValueOf(pluginAddHotkey),
+        "AddHotkeyFunc":   reflect.ValueOf(pluginAddHotkeyFunc),
+        "RegisterCommand": reflect.ValueOf(pluginRegisterCommand),
+        "RegisterFunc":    reflect.ValueOf(pluginRegisterFunc),
+        "RunCommand":      reflect.ValueOf(pluginRunCommand),
+        "EnqueueCommand":  reflect.ValueOf(pluginEnqueueCommand),
+        "ClientVersion":   reflect.ValueOf(&clientVersion).Elem(),
+    },
 	// Module-qualified path alternative: import "gothoom/pluginapi"
-	"gothoom/pluginapi/pluginapi": {
-		"Logf":            reflect.ValueOf(pluginLogf),
-		"AddHotkey":       reflect.ValueOf(pluginAddHotkey),
-		"AddHotkeyFunc":   reflect.ValueOf(pluginAddHotkeyFunc),
-		"RegisterCommand": reflect.ValueOf(pluginRegisterCommand),
-		"RegisterFunc":    reflect.ValueOf(pluginRegisterFunc),
-		"ClientVersion":   reflect.ValueOf(&clientVersion).Elem(),
-	},
+    "gothoom/pluginapi/pluginapi": {
+        "Logf":            reflect.ValueOf(pluginLogf),
+        "AddHotkey":       reflect.ValueOf(pluginAddHotkey),
+        "AddHotkeyFunc":   reflect.ValueOf(pluginAddHotkeyFunc),
+        "RegisterCommand": reflect.ValueOf(pluginRegisterCommand),
+        "RegisterFunc":    reflect.ValueOf(pluginRegisterFunc),
+        "RunCommand":      reflect.ValueOf(pluginRunCommand),
+        "EnqueueCommand":  reflect.ValueOf(pluginEnqueueCommand),
+        "ClientVersion":   reflect.ValueOf(&clientVersion).Elem(),
+    },
 }
 
 //go:embed embedded_plugins/*
@@ -135,13 +139,33 @@ func pluginRegisterCommand(name string, handler PluginCommandHandler) {
 // pluginRegisterFunc registers a named function that can be called from
 // hotkeys using the special command string "plugin:<name>".
 func pluginRegisterFunc(name string, fn PluginFunc) {
-	if name == "" || fn == nil {
-		return
-	}
-	key := strings.ToLower(name)
-	pluginFuncs[key] = fn
-	consoleMessage("[plugin] function registered: " + key)
-	log.Printf("[plugin] function registered: %s", key)
+    if name == "" || fn == nil {
+        return
+    }
+    key := strings.ToLower(name)
+    pluginFuncs[key] = fn
+    consoleMessage("[plugin] function registered: " + key)
+    log.Printf("[plugin] function registered: %s", key)
+}
+
+// pluginRunCommand echoes and enqueues a command for immediate sending.
+func pluginRunCommand(cmd string) {
+    cmd = strings.TrimSpace(cmd)
+    if cmd == "" {
+        return
+    }
+    consoleMessage("> " + cmd)
+    enqueueCommand(cmd)
+    nextCommand()
+}
+
+// pluginEnqueueCommand enqueues a command to be sent on the next tick without echoing.
+func pluginEnqueueCommand(cmd string) {
+    cmd = strings.TrimSpace(cmd)
+    if cmd == "" {
+        return
+    }
+    enqueueCommand(cmd)
 }
 
 func loadPlugins() {

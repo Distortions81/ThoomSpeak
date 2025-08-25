@@ -416,7 +416,7 @@ func makeMixerWindow() {
 	mainLbl, _ := eui.NewText()
 	mainLbl.Text = "Main"
 	mainLbl.Size = eui.Point{X: 64, Y: 24}
-	mainLbl.FontSize = 9
+	mainLbl.FontSize = 12
 	mainCol.AddItem(mainLbl)
 	flow.AddItem(mainCol)
 
