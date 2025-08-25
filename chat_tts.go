@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -21,7 +22,12 @@ var (
 	ttsPlayers   = make(map[*audio.Player]struct{})
 	ttsPlayersMu sync.Mutex
 	chatSpeech   = htgotts.Speech{Folder: "audio", Language: voices.English}
+	chatTTSQueue = make(chan string, 16)
 )
+
+func init() {
+	go chatTTSWorker()
+}
 
 func stopAllTTS() {
 	ttsPlayersMu.Lock()
@@ -68,6 +74,73 @@ func fetchTTS(text string) (io.ReadCloser, error) {
 	return io.NopCloser(bytes.NewReader(data)), nil
 }
 
+func chatTTSWorker() {
+	for msg := range chatTTSQueue {
+		msgs := []string{msg}
+		timer := time.NewTimer(200 * time.Millisecond)
+	collect:
+		for {
+			select {
+			case m := <-chatTTSQueue:
+				msgs = append(msgs, m)
+			case <-timer.C:
+				break collect
+			}
+		}
+		timer.Stop()
+		go playChatTTS(strings.Join(msgs, ". "))
+	}
+}
+
+func playChatTTS(text string) {
+	if audioContext == nil || blockTTS || gs.Mute {
+		return
+	}
+	rc, err := fetchTTS(text)
+	if err != nil {
+		logError("chat tts: %v", err)
+		return
+	}
+	defer rc.Close()
+
+	stream, err := mp3.DecodeWithSampleRate(44100, rc)
+	if err != nil {
+		logError("chat tts decode: %v", err)
+		return
+	}
+	if closer, ok := any(stream).(io.Closer); ok {
+		defer closer.Close()
+	}
+
+	chatTTSMu.Lock()
+	defer chatTTSMu.Unlock()
+
+	p, err := audioContext.NewPlayer(stream)
+	if err != nil {
+		logError("chat tts player: %v", err)
+		return
+	}
+
+	ttsPlayersMu.Lock()
+	ttsPlayers[p] = struct{}{}
+	ttsPlayersMu.Unlock()
+
+	vol := gs.MasterVolume * gs.ChatTTSVolume
+	if gs.Mute {
+		vol = 0
+	}
+	p.SetVolume(vol)
+	p.Play()
+	for p.IsPlaying() {
+		time.Sleep(100 * time.Millisecond)
+	}
+	_ = p.Close()
+
+	ttsPlayersMu.Lock()
+	delete(ttsPlayers, p)
+	ttsPlayersMu.Unlock()
+}
+
 func speakChatMessage(msg string) {
 	if audioContext == nil || blockTTS || gs.Mute {
 		if audioContext == nil {
@@ -81,49 +154,9 @@ func speakChatMessage(msg string) {
 		}
 		return
 	}
-	go func(text string) {
-		rc, err := fetchTTS(text)
-		if err != nil {
-			logError("chat tts: %v", err)
-			return
-		}
-		defer rc.Close()
-
-		stream, err := mp3.DecodeWithSampleRate(44100, rc)
-		if err != nil {
-			logError("chat tts decode: %v", err)
-			return
-		}
-		if closer, ok := any(stream).(io.Closer); ok {
-			defer closer.Close()
-		}
-
-		chatTTSMu.Lock()
-		defer chatTTSMu.Unlock()
-
-		p, err := audioContext.NewPlayer(stream)
-		if err != nil {
-			logError("chat tts player: %v", err)
-			return
-		}
-
-		ttsPlayersMu.Lock()
-		ttsPlayers[p] = struct{}{}
-		ttsPlayersMu.Unlock()
-
-		vol := gs.MasterVolume * gs.ChatTTSVolume
-		if gs.Mute {
-			vol = 0
-		}
-		p.SetVolume(vol)
-		p.Play()
-		for p.IsPlaying() {
-			time.Sleep(100 * time.Millisecond)
-		}
-		_ = p.Close()
-
-		ttsPlayersMu.Lock()
-		delete(ttsPlayers, p)
-		ttsPlayersMu.Unlock()
-	}(msg)
+	select {
+	case chatTTSQueue <- msg:
+	default:
+		logDebug("chat tts: queue full, dropping message")
+	}
 }
