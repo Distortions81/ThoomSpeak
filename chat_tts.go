@@ -213,6 +213,9 @@ func preparePiper(dataDir string) (string, string, string, error) {
 			return "", "", "", err
 		}
 	}
+	if info, err := os.Stat(binPath); err == nil && info.IsDir() {
+		binPath = filepath.Join(binPath, binName)
+	}
 	_ = os.Chmod(binPath, 0o755)
 
 	voicesDir := filepath.Join(piperDir, "voices")
