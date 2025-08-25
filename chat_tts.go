@@ -14,6 +14,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2/audio"
@@ -202,8 +203,24 @@ func preparePiper(dataDir string) (string, string, string, error) {
 		return "", "", "", fmt.Errorf("unsupported OS %s", runtime.GOOS)
 	}
 
-	binPath := filepath.Join(binDir, binName)
-	if _, err := os.Stat(binPath); err != nil {
+	findBin := func() (string, error) {
+		candidates := []string{
+			filepath.Join(binDir, binName),
+			filepath.Join(binDir, "piper", binName),
+		}
+		if runtime.GOOS == "windows" {
+			candidates = append(candidates, filepath.Join(binDir, "piper", "piper"))
+		}
+		for _, p := range candidates {
+			if info, err := os.Stat(p); err == nil && !info.IsDir() {
+				return p, nil
+			}
+		}
+		return "", os.ErrNotExist
+	}
+
+	binPath, err := findBin()
+	if err != nil {
 		archivePath := filepath.Join(piperDir, archiveName)
 		if _, err := os.Stat(archivePath); err != nil {
 			if err := downloadFile(extraDataBase+archiveName, archivePath); err != nil {
@@ -213,15 +230,9 @@ func preparePiper(dataDir string) (string, string, string, error) {
 		if err := extractArchive(archivePath, binDir); err != nil {
 			return "", "", "", err
 		}
-	}
-	if info, err := os.Stat(binPath); err == nil && info.IsDir() {
-		alt := filepath.Join(binPath, binName)
-		if _, err := os.Stat(alt); err == nil {
-			binPath = alt
+		if binPath, err = findBin(); err != nil {
+			return "", "", "", fmt.Errorf("piper binary missing: %w", err)
 		}
-	}
-	if _, err := os.Stat(binPath); err != nil {
-		return "", "", "", fmt.Errorf("piper binary missing: %w", err)
 	}
 	_ = os.Chmod(binPath, 0o755)
 
@@ -445,6 +456,7 @@ func synthesizeWithPiper(text string) ([]byte, error) {
 		cmd.Dir = dir
 		cmd.Stdin = strings.NewReader(text)
 		cmd.Stderr = &stderr
+		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 		if err := cmd.Run(); err != nil {
 			if os.IsPermission(err) {
 				if info, statErr := os.Stat(piperPath); statErr == nil {
@@ -467,6 +479,9 @@ func synthesizeWithPiper(text string) ([]byte, error) {
 	cmd.Stdin = strings.NewReader(text)
 	cmd.Stdout = &out
 	cmd.Stderr = &stderr
+	if runtime.GOOS == "windows" {
+		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	}
 	if err := cmd.Run(); err != nil {
 		if os.IsPermission(err) {
 			if info, statErr := os.Stat(piperPath); statErr == nil {

@@ -18,7 +18,11 @@ func TestPreparePiperVoiceArchive(t *testing.T) {
 		t.Fatal(err)
 	}
 	// create dummy piper binary inside nested directory to skip download
-	binPath := filepath.Join(binDir, "piper", "piper")
+	binName := "piper"
+	if runtime.GOOS == "windows" {
+		binName = "piper.exe"
+	}
+	binPath := filepath.Join(binDir, "piper", binName)
 	if err := os.WriteFile(binPath, []byte(""), 0o755); err != nil {
 		t.Fatal(err)
 	}
