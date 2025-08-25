@@ -175,19 +175,19 @@ func loadPlugins() {
 		userPluginsDir(), // per-user/app data directory
 		"plugins",        // legacy: relative to current working directory
 	}
-	// Build restricted stdlib symbol map
-	allowedPkgs := []string{
-		// "fmt/fmt",
-		// "strings/strings",
-	}
-	restricted := interp.Exports{}
-	for _, key := range allowedPkgs {
-		if syms, ok := stdlib.Symbols[key]; ok {
-			restricted[key] = syms
-		}
-	}
+    // Build restricted stdlib symbol map
+    allowedPkgs := []string{
+        "fmt/fmt",
+        "strings/strings",
+    }
+    restricted := interp.Exports{}
+    for _, key := range allowedPkgs {
+        if syms, ok := stdlib.Symbols[key]; ok {
+            restricted[key] = syms
+        }
+    }
 
-	for _, dir := range pluginDirs {
+    for _, dir := range pluginDirs {
 		entries, err := os.ReadDir(dir)
 		if err != nil {
 			if !os.IsNotExist(err) {
