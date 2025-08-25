@@ -327,7 +327,6 @@ func enablePlugin(owner string) {
 	}
 	loadPluginSource(owner, name, path, src, restrictedStdlib())
 	refreshPluginsWindow()
-	refreshPluginInfoWindow(owner)
 }
 
 func recordPluginSend(owner string) bool {
@@ -384,7 +383,6 @@ func disablePlugin(owner, reason string) {
 	}
 	consoleMessage("[plugin:" + disp + "] stopped: " + reason)
 	refreshPluginsWindow()
-	refreshPluginInfoWindow(owner)
 }
 
 func stopAllPlugins() {

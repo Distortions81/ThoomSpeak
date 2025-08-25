@@ -12,11 +12,13 @@ require (
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/remeh/sizedwaitgroup v1.0.0
 	github.com/sinshu/go-meltysynth v0.0.0-20230205031334-05d311382fc4
+	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/sqweek/dialog v0.0.0-20240226140203-065105509627
 	github.com/thiagokokada/dark-mode-go v0.0.1
 	github.com/traefik/yaegi v0.16.1
 	golang.design/x/clipboard v0.7.1
 	golang.org/x/crypto v0.41.0
+	golang.org/x/image v0.30.0
 	golang.org/x/text v0.28.0
 	golang.org/x/time v0.12.0
 )
@@ -31,7 +33,6 @@ require (
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/jezek/xgb v1.1.1 // indirect
 	golang.org/x/exp/shiny v0.0.0-20250606033433-dcc06ee1d476 // indirect
-	golang.org/x/image v0.30.0 // indirect
 	golang.org/x/mobile v0.0.0-20250606033058-a2a15c67f36f // indirect
 	golang.org/x/net v0.43.0 // indirect
 	golang.org/x/sync v0.16.0 // indirect

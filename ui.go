@@ -19,6 +19,7 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/hajimehoshi/ebiten/v2"
+	open "github.com/skratchdot/open-golang/open"
 	"github.com/sqweek/dialog"
 
 	"gothoom/climg"
@@ -59,7 +60,6 @@ var addCharPassInput *eui.ItemData
 var windowsWin *eui.WindowData
 var pluginsWin *eui.WindowData
 var pluginsList *eui.ItemData
-var pluginInfoWins = map[string]*eui.WindowData{}
 
 // Checkboxes in the Windows window so we can update their state live
 var windowsPlayersCB *eui.ItemData
@@ -351,6 +351,16 @@ func makePluginsWindow() {
 	}
 	root.AddItem(refreshBtn)
 
+	openBtn, oh := eui.NewButton()
+	openBtn.Text = "Open plugins folder"
+	openBtn.Size = eui.Point{X: 160, Y: 24}
+	oh.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			open.Run(userPluginsDir())
+		}
+	}
+	root.AddItem(openBtn)
+
 	pluginsWin.AddWindow(false)
 	refreshPluginsWindow()
 }
@@ -393,16 +403,6 @@ func refreshPluginsWindow() {
 		}
 		row.AddItem(cb)
 
-		viewBtn, vh := eui.NewButton()
-		viewBtn.Text = "View"
-		viewBtn.Size = eui.Point{X: 48, Y: 24}
-		vh.Handle = func(ev eui.UIEvent) {
-			if ev.Type == eui.EventClick {
-				showPluginInfo(owner)
-			}
-		}
-		row.AddItem(viewBtn)
-
 		reloadBtn, rh := eui.NewButton()
 		reloadBtn.Text = "Reload"
 		reloadBtn.Size = eui.Point{X: 48, Y: 24}
@@ -424,118 +424,6 @@ func refreshPluginsWindow() {
 	if pluginsWin != nil {
 		pluginsWin.Refresh()
 	}
-}
-
-func showPluginInfo(owner string) {
-	pluginMu.RLock()
-	name := pluginDisplayNames[owner]
-	pluginMu.RUnlock()
-	if name == "" {
-		name = owner
-	}
-
-	win := eui.NewWindow()
-	win.Title = name
-	win.Closable = true
-	win.Resizable = true
-	win.AutoSize = true
-	win.Movable = true
-	win.SetZone(eui.HZoneCenterLeft, eui.VZoneMiddleTop)
-
-	win.AddItem(buildPluginInfoFlow(owner))
-	win.AddWindow(false)
-	win.MarkOpen()
-
-	pluginInfoWins[owner] = win
-	win.OnClose = func() { delete(pluginInfoWins, owner) }
-}
-
-func buildPluginInfoFlow(owner string) *eui.ItemData {
-	cmds := pluginCommandsFor(owner)
-	hks := pluginHotkeys(owner)
-	src := pluginSource(owner)
-
-	sort.Strings(cmds)
-	sort.Slice(hks, func(i, j int) bool { return strings.ToLower(hks[i].Combo) < strings.ToLower(hks[j].Combo) })
-
-	flow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
-
-	if len(cmds) > 0 {
-		header, _ := eui.NewText()
-		header.Text = "Commands:"
-		flow.AddItem(header)
-		for _, c := range cmds {
-			line, _ := eui.NewText()
-			line.Text = "/" + c
-			flow.AddItem(line)
-		}
-	}
-
-	if len(hks) > 0 {
-		header, _ := eui.NewText()
-		header.Text = "Key Inputs:"
-		flow.AddItem(header)
-		for _, hk := range hks {
-			target := ""
-			if len(hk.Commands) > 0 {
-				target = hk.Commands[0].Command
-			}
-			line, _ := eui.NewText()
-			if target != "" {
-				line.Text = hk.Combo + " -> " + target
-			} else {
-				line.Text = hk.Combo
-			}
-			flow.AddItem(line)
-		}
-	}
-
-	if src != "" {
-		header, _ := eui.NewText()
-		header.Text = "Source:"
-		flow.AddItem(header)
-
-		t, _ := eui.NewText()
-		t.Text = src
-		t.Size = eui.Point{X: 600, Y: 400}
-		t.FontSize = 12
-		t.Scrollable = true
-		t.Filled = true
-		t.Face = &text.GoTextFace{Source: monoFaceSource, Size: float64(t.FontSize*eui.UIScale() + 2)}
-		flow.AddItem(t)
-
-		saveBtn, saveEvents := eui.NewButton()
-		saveBtn.Text = "Save"
-		saveBtn.Size = eui.Point{X: 48, Y: 24}
-		saveEvents.Handle = func(ev eui.UIEvent) {
-			if ev.Type == eui.EventClick {
-				pluginMu.RLock()
-				path := pluginPaths[owner]
-				pluginMu.RUnlock()
-				if path == "" {
-					return
-				}
-				if err := os.WriteFile(path, []byte(t.Text), 0o644); err != nil {
-					consoleMessage("[plugin] save error: " + err.Error())
-				} else {
-					consoleMessage("[plugin] saved " + path)
-				}
-			}
-		}
-		flow.AddItem(saveBtn)
-	}
-
-	return flow
-}
-
-func refreshPluginInfoWindow(owner string) {
-	win := pluginInfoWins[owner]
-	if win == nil {
-		return
-	}
-	win.Contents = win.Contents[:0]
-	win.AddItem(buildPluginInfoFlow(owner))
-	win.Refresh()
 }
 
 func makeMixerWindow() {
