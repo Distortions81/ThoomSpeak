@@ -57,6 +57,10 @@ API
   Returns a slice of known players with basic info (name, race, etc.).
 - gt.RegisterChatHandler(func(msg string))
   Registers a callback invoked for each incoming chat message.
+- gt.Inventory()
+  Returns a slice of inventory items with ID, name, equipped state and quantity.
+- gt.ToggleEquip(id)
+  Toggles the equipped state of the first matching item by ID.
 
 Notes
 -----

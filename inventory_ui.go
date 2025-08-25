@@ -65,7 +65,7 @@ func updateInventoryWindow() {
 	// whether any instance of a given ID is equipped.
 	items := getInventory()
 	counts := make(map[uint16]int)
-	first := make(map[uint16]inventoryItem)
+	first := make(map[uint16]InventoryItem)
 	anyEquipped := make(map[uint16]bool)
 	order := make([]uint16, 0, len(items))
 	for _, it := range items {
