@@ -450,17 +450,22 @@ func finishHotkeyEdit(save bool) {
 				cmds = append(cmds, HotkeyCommand{Command: cmd})
 			}
 		}
-		if combo != "" && name != "" && len(cmds) > 0 {
+		if combo != "" && len(cmds) > 0 {
 			hk := Hotkey{Name: name, Combo: combo, Commands: cmds}
 			hotkeysMu.Lock()
 			if editingHotkey >= 0 && editingHotkey < len(hotkeys) {
 				hotkeys[editingHotkey] = hk
-			} else {
+				hotkeysMu.Unlock()
+				saveHotkeys()
+				refreshHotkeysList()
+			} else if name != "" {
 				hotkeys = append(hotkeys, hk)
+				hotkeysMu.Unlock()
+				saveHotkeys()
+				refreshHotkeysList()
+			} else {
+				hotkeysMu.Unlock()
 			}
-			hotkeysMu.Unlock()
-			saveHotkeys()
-			refreshHotkeysList()
 		}
 	}
 	if hotkeyEditWin != nil {

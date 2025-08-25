@@ -76,6 +76,23 @@ func TestHotkeyCommandInput(t *testing.T) {
 	}
 }
 
+// Test that editing a hotkey with no name still saves changes.
+func TestHotkeyEditWithoutName(t *testing.T) {
+	hotkeys = []Hotkey{{Combo: "Ctrl-A", Commands: []HotkeyCommand{{Command: "say hi"}}}}
+	dir := t.TempDir()
+	origDir := dataDirPath
+	dataDirPath = dir
+	defer func() { dataDirPath = origDir }()
+
+	openHotkeyEditor(0)
+	hotkeyCmdInputs[0].Text = "say bye"
+	finishHotkeyEdit(true)
+
+	if len(hotkeys) != 1 || hotkeys[0].Commands[0].Command != "say bye" {
+		t.Fatalf("hotkey not updated without name: %+v", hotkeys)
+	}
+}
+
 // Test that a hotkey without a name is not saved.
 func TestHotkeyRequiresName(t *testing.T) {
 	hotkeys = nil
