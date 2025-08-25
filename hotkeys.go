@@ -777,12 +777,21 @@ func isModifier(k ebiten.Key) bool {
 }
 
 func applyHotkeyVars(cmd string) string {
-	if strings.Contains(cmd, "@") {
+	if strings.Contains(cmd, "@clicked") || strings.Contains(cmd, "@hovered") || strings.Contains(cmd, "@") {
 		lastClickMu.Lock()
-		name := lastClick.Mobile.Name
+		clickedName := lastClick.Mobile.Name
 		lastClickMu.Unlock()
-		if name != "" {
-			cmd = strings.ReplaceAll(cmd, "@", name)
+
+		lastHoverMu.Lock()
+		hoveredName := lastHover.Mobile.Name
+		lastHoverMu.Unlock()
+
+		if clickedName != "" {
+			cmd = strings.ReplaceAll(cmd, "@clicked", clickedName)
+			cmd = strings.ReplaceAll(cmd, "@", clickedName)
+		}
+		if hoveredName != "" {
+			cmd = strings.ReplaceAll(cmd, "@hovered", hoveredName)
 		}
 	}
 	return cmd

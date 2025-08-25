@@ -539,6 +539,13 @@ func (g *Game) Update() error {
 	eui.Update() //We really need this to return eaten clicks
 	updateNotifications()
 	updateThinkMessages()
+
+	mx, my := ebiten.CursorPosition()
+	origX, origY, worldScale := worldDrawInfo()
+	hx := int16(float64(mx-origX)/worldScale - float64(fieldCenterX))
+	hy := int16(float64(my-origY)/worldScale - float64(fieldCenterY))
+	updateWorldHover(hx, hy)
+
 	updateHotkeyRecording()
 	checkHotkeys()
 
