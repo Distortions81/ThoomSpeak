@@ -92,7 +92,7 @@ Common API calls:
 - `gt.SetInputText(txt)` and `gt.InputText()` – set or read the chat input box.
 - Simple text helpers: `gt.Lower`, `gt.Upper`, `gt.IgnoreCase`, `gt.StartsWith`,
   `gt.EndsWith`, `gt.Includes`, `gt.Trim`, `gt.TrimStart`, `gt.TrimEnd`,
-  `gt.Words`, `gt.Join`.
+  `gt.Words`, `gt.Join`, `gt.Replace`, `gt.Split`.
 
 Plugin Tutorials
 ----------------
