@@ -205,6 +205,8 @@ func nonTransparentPixels(id uint16) int {
 // pictureOnEdge reports whether the picture overlaps the visible game field and
 // whether its bounding box touches or extends past the field boundaries.
 // Pictures entirely outside the field are not considered to be on the edge.
+// It returns true only when one or two edges are crossed and at least 70%
+// of the picture lies outside the field.
 func pictureOnEdge(p framePicture) bool {
 	if !pictureVisible(p) {
 		return false
@@ -227,11 +229,52 @@ func pictureOnEdge(p framePicture) bool {
 	edgeRight := right >= fieldCenterX
 	edgeTop := top <= -fieldCenterY
 	edgeBottom := bottom >= fieldCenterY
-	if (edgeLeft || edgeRight || edgeTop || edgeBottom) &&
-		!(edgeLeft && edgeRight) && !(edgeTop && edgeBottom) {
-		return true
+
+	edgeCount := 0
+	if edgeLeft {
+		edgeCount++
 	}
-	return false
+	if edgeRight {
+		edgeCount++
+	}
+	if edgeTop {
+		edgeCount++
+	}
+	if edgeBottom {
+		edgeCount++
+	}
+	if edgeCount == 0 || edgeCount > 2 {
+		return false
+	}
+
+	interLeft := left
+	if interLeft < -fieldCenterX {
+		interLeft = -fieldCenterX
+	}
+	interRight := right
+	if interRight > fieldCenterX {
+		interRight = fieldCenterX
+	}
+	interTop := top
+	if interTop < -fieldCenterY {
+		interTop = -fieldCenterY
+	}
+	interBottom := bottom
+	if interBottom > fieldCenterY {
+		interBottom = fieldCenterY
+	}
+	visibleW := interRight - interLeft
+	visibleH := interBottom - interTop
+	if visibleW <= 0 || visibleH <= 0 {
+		return false
+	}
+	totalArea := w * h
+	visibleArea := visibleW * visibleH
+	offArea := totalArea - visibleArea
+	if offArea*10 < totalArea*7 {
+		return false
+	}
+	return true
 }
 
 // pictureVisible reports whether the picture overlaps the visible field.
