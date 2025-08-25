@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // Character holds a saved character name and password hash. The hash is stored
@@ -26,6 +27,7 @@ var characters []Character
 const (
 	charsFilePath = "characters.json"
 	hashKey       = "3k6XsAgldtz1vRw3e9WpfUtXQdKQO4P7a7dxmda4KTNpEJWu0lk08QEcJTbeqisH"
+	agratisPrefix = "Agratis "
 )
 
 type charactersFile struct {
@@ -44,27 +46,32 @@ func loadCharacters() {
 		return
 	}
 	if charList.Version >= 1 {
-		characters = charList.Characters
-		for i := range characters {
-			characters[i].passHash = unscrambleHash(characters[i].Name, characters[i].Key)
-			if charList.Version >= 2 && characters[i].ColorsHex != "" {
-				if b, ok := decodeHex(characters[i].ColorsHex); ok && len(b) > 0 {
+		var filtered []Character
+		for _, c := range charList.Characters {
+			if strings.HasPrefix(c.Name, agratisPrefix) {
+				continue
+			}
+			c.passHash = unscrambleHash(c.Name, c.Key)
+			if charList.Version >= 2 && c.ColorsHex != "" {
+				if b, ok := decodeHex(c.ColorsHex); ok && len(b) > 0 {
 					cnt := int(b[0])
 					if cnt > 0 && 1+cnt <= len(b) {
-						characters[i].Colors = append(characters[i].Colors[:0], b[1:1+cnt]...)
+						c.Colors = append(c.Colors[:0], b[1:1+cnt]...)
 					} else {
-						characters[i].Colors = append(characters[i].Colors[:0], b...)
+						c.Colors = append(c.Colors[:0], b...)
 					}
 				}
 			}
+			filtered = append(filtered, c)
 		}
+		characters = filtered
 	}
 }
 
 func saveCharacters() {
 	var persisted []Character
 	for i := range characters {
-		if characters[i].DontRemember {
+		if characters[i].DontRemember || strings.HasPrefix(characters[i].Name, agratisPrefix) {
 			continue
 		}
 		characters[i].Key = scrambleHash(characters[i].Name, characters[i].passHash)
