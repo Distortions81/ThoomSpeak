@@ -274,18 +274,18 @@ func parseThinkText(raw []byte, text string) (name string, target thinkTarget, m
 	return
 }
 
-func decodeBubble(data []byte) (verb, text, name, lang string, code uint8, target thinkTarget) {
+func decodeBubble(data []byte) (verb, text, name, lang string, code uint8, bubbleType int, target thinkTarget) {
 	if len(data) < 2 {
-		return "", "", "", "", kBubbleCodeKnown, thinkNone
+		return "", "", "", "", kBubbleCodeKnown, kBubbleNormal, thinkNone
 	}
 	typ := int(data[1])
-	bubbleType := typ & kBubbleTypeMask
+	bubbleType = typ & kBubbleTypeMask
 	p := 2
 	code = kBubbleCodeKnown
 	langIdx := -1
 	if typ&kBubbleNotCommon != 0 {
 		if len(data) < p+1 {
-			return "", "", "", "", kBubbleCodeKnown, thinkNone
+			return "", "", "", "", kBubbleCodeKnown, bubbleType, thinkNone
 		}
 		b := data[p]
 		langIdx = int(b & kBubbleLanguageMask)
@@ -297,12 +297,12 @@ func decodeBubble(data []byte) (verb, text, name, lang string, code uint8, targe
 	}
 	if typ&kBubbleFar != 0 {
 		if len(data) < p+4 {
-			return "", "", "", lang, code, thinkNone
+			return "", "", "", lang, code, bubbleType, thinkNone
 		}
 		p += 4
 	}
 	if len(data) <= p {
-		return "", "", "", lang, code, thinkNone
+		return "", "", "", lang, code, bubbleType, thinkNone
 	}
 	raw := data[p:]
 	msgData := stripBEPPTags(raw)
@@ -331,7 +331,7 @@ func decodeBubble(data []byte) (verb, text, name, lang string, code uint8, targe
 		text = ""
 	}
 	if text == "" && code == kBubbleCodeKnown {
-		return "", "", "", lang, code, thinkNone
+		return "", "", "", lang, code, bubbleType, thinkNone
 	}
 	switch bubbleType {
 	case kBubbleNormal:
@@ -362,7 +362,7 @@ func decodeBubble(data []byte) (verb, text, name, lang string, code uint8, targe
 	default:
 		// unknown bubble types return no verb
 	}
-	return verb, text, name, lang, code, target
+	return verb, text, name, lang, code, bubbleType, target
 }
 
 // decodeMessage extracts printable text from a raw server message. It operates
@@ -380,7 +380,7 @@ func decodeMessage(m []byte) string {
 			}
 			return ""
 		}
-		if _, s, _, _, _, _ := decodeBubble(data); s != "" {
+		if _, s, _, _, _, _, _ := decodeBubble(data); s != "" {
 			return s
 		}
 		if i := bytes.IndexByte(data, 0); i >= 0 {
@@ -410,11 +410,15 @@ func handleInfoText(data []byte) {
 			}
 			continue
 		}
-		if _, txt, _, _, _, _ := decodeBubble(line); txt != "" {
-			if gs.MessagesToConsole {
-				consoleMessage(txt)
+		if _, txt, _, _, _, bubbleType, _ := decodeBubble(line); txt != "" {
+			if isChatBubble(bubbleType) {
+				if gs.MessagesToConsole {
+					consoleMessage(txt)
+				} else {
+					chatMessage(txt)
+				}
 			} else {
-				chatMessage(txt)
+				consoleMessage(txt)
 			}
 			continue
 		}
