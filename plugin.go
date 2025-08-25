@@ -32,6 +32,9 @@ var pluginExports = interp.Exports{
 		"PlayerName":          reflect.ValueOf(pluginPlayerName),
 		"Players":             reflect.ValueOf(pluginPlayers),
 		"Player":              reflect.ValueOf((*Player)(nil)),
+		"Inventory":           reflect.ValueOf(pluginInventory),
+		"InventoryItem":       reflect.ValueOf((*InventoryItem)(nil)),
+		"ToggleEquip":         reflect.ValueOf(pluginToggleEquip),
 		"RegisterChatHandler": reflect.ValueOf(pluginRegisterChatHandler),
 	},
 }
@@ -190,6 +193,14 @@ func pluginPlayers() []Player {
 	out := make([]Player, len(ps))
 	copy(out, ps)
 	return out
+}
+
+func pluginInventory() []InventoryItem {
+	return getInventory()
+}
+
+func pluginToggleEquip(id uint16) {
+	toggleInventoryEquip(id)
 }
 
 func pluginRegisterChatHandler(fn func(string)) {
