@@ -91,7 +91,7 @@ func pluginAddHotkey(combo, command string) {
 	saveHotkeys()
 	msg := "[plugin] hotkey added: " + combo + " -> " + command
 	consoleMessage(msg)
-	log.Printf(msg)
+	log.Print(msg)
 }
 
 // pluginAddHotkeyFunc registers a hotkey that invokes a named plugin function
@@ -105,7 +105,7 @@ func pluginAddHotkeyFunc(combo, funcName string) {
 	saveHotkeys()
 	msg := "[plugin] hotkey added: " + combo + " -> plugin:" + funcName
 	consoleMessage(msg)
-	log.Printf(msg)
+	log.Print(msg)
 }
 
 // Plugin command and function registries.
@@ -175,19 +175,26 @@ func loadPlugins() {
 		userPluginsDir(), // per-user/app data directory
 		"plugins",        // legacy: relative to current working directory
 	}
-    // Build restricted stdlib symbol map
-    allowedPkgs := []string{
-        "fmt/fmt",
-        "strings/strings",
-    }
-    restricted := interp.Exports{}
-    for _, key := range allowedPkgs {
-        if syms, ok := stdlib.Symbols[key]; ok {
-            restricted[key] = syms
-        }
-    }
+	// Build restricted stdlib symbol map containing safe stdlib packages
+	allowedPkgs := []string{
+		"bytes/bytes",
+		"fmt/fmt",
+		"math/math",
+		"math/rand",
+		"sort/sort",
+		"strconv/strconv",
+		"strings/strings",
+		"time/time",
+		"unicode/utf8",
+	}
+	restricted := interp.Exports{}
+	for _, key := range allowedPkgs {
+		if syms, ok := stdlib.Symbols[key]; ok {
+			restricted[key] = syms
+		}
+	}
 
-    for _, dir := range pluginDirs {
+	for _, dir := range pluginDirs {
 		entries, err := os.ReadDir(dir)
 		if err != nil {
 			if !os.IsNotExist(err) {
