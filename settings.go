@@ -83,6 +83,7 @@ var gsdef settings = settings{
 	NotifyShares:         true,
 	NotifyFriendOnline:   true,
 	NotificationDuration: 6,
+	PluginSpamKill:       true,
 	TimestampFormat:      "3:04PM",
 	LastUpdateCheck:      time.Time{},
 	NotifiedVersion:      0,
@@ -164,6 +165,7 @@ type settings struct {
 	NotifyShares         bool
 	NotifyFriendOnline   bool
 	NotificationDuration float64
+	PluginSpamKill       bool
 	ChatTimestamps       bool
 	ConsoleTimestamps    bool
 	TimestampFormat      string

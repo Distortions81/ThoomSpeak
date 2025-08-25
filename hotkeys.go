@@ -810,9 +810,10 @@ func checkHotkeys() {
 						name := strings.ToLower(strings.TrimSpace(c.Function))
 						pluginMu.RLock()
 						fnMap := pluginFuncs[c.Plugin]
+						disabled := pluginDisabled[c.Plugin]
 						fn, ok := fnMap[name]
 						pluginMu.RUnlock()
-						if ok && fn != nil {
+						if !disabled && ok && fn != nil {
 							consoleMessage("> [plugin] " + name)
 							go fn()
 						} else {
@@ -825,7 +826,10 @@ func checkHotkeys() {
 						pluginMu.RLock()
 						var fn PluginFunc
 						var found bool
-						for _, m := range pluginFuncs {
+						for owner, m := range pluginFuncs {
+							if pluginDisabled[owner] {
+								continue
+							}
 							if f, ok := m[name]; ok {
 								fn = f
 								found = true

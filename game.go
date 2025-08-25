@@ -684,8 +684,11 @@ func (g *Game) Update() error {
 							args = parts[1]
 						}
 						if handler, ok := pluginCommands[name]; ok && handler != nil {
-							consoleMessage("> " + txt)
-							go handler(args)
+							owner := pluginCommandOwners[name]
+							if !pluginDisabled[owner] {
+								consoleMessage("> " + txt)
+								go handler(args)
+							}
 						} else {
 							pendingCommand = txt
 						}
