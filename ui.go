@@ -628,6 +628,10 @@ func makeMixerWindow() {
 						status = s
 						if status.NeedSoundfont {
 							disableMusic()
+							if downloadWin != nil {
+								downloadWin.Close()
+								downloadWin = nil
+							}
 							makeDownloadsWindow()
 							if downloadWin != nil {
 								downloadWin.MarkOpen()
@@ -662,6 +666,10 @@ func makeMixerWindow() {
 						status = s
 						if status.NeedPiper || status.NeedPiperFem || status.NeedPiperMale {
 							disableTTS()
+							if downloadWin != nil {
+								downloadWin.Close()
+								downloadWin = nil
+							}
 							makeDownloadsWindow()
 							if downloadWin != nil {
 								downloadWin.MarkOpen()
