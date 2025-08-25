@@ -275,7 +275,7 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 	}
 	row2.AddItem(mixBtn)
 
-    // Removed toolbar volume slider and mute button (use Mixer instead)
+	// Removed toolbar volume slider and mute button (use Mixer instead)
 
 	recordStatus, _ = eui.NewText()
 	recordStatus.Text = ""

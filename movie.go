@@ -21,7 +21,12 @@ var gameFrame int
 
 var movieRevision int32
 
-func parseMovie(path string, clientVersion int) ([][]byte, error) {
+type movieFrame struct {
+	data  []byte
+	index int32
+}
+
+func parseMovie(path string, clientVersion int) ([]movieFrame, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -59,7 +64,8 @@ func parseMovie(path string, clientVersion int) ([][]byte, error) {
 
 	pos := headerLen
 	sign := []byte{0xde, 0xad, 0xbe, 0xef}
-	frames := [][]byte{}
+	frames := []movieFrame{}
+	var lastFrame int32 = -1
 	for pos+12 <= len(data) {
 		if binary.BigEndian.Uint32(data[pos:pos+4]) != movieSignature {
 			idx := bytes.Index(data[pos:], sign)
@@ -69,7 +75,11 @@ func parseMovie(path string, clientVersion int) ([][]byte, error) {
 			pos += idx
 			continue
 		}
-		//frame := binary.BigEndian.Uint32(data[pos+4 : pos+8])
+		frame := int32(binary.BigEndian.Uint32(data[pos+4 : pos+8]))
+		if lastFrame >= 0 && frame != lastFrame+1 {
+			logDebug("movie frame gap: %d -> %d", lastFrame, frame)
+		}
+		lastFrame = frame
 		size := int(binary.BigEndian.Uint16(data[pos+8 : pos+10]))
 		flags := binary.BigEndian.Uint16(data[pos+10 : pos+12])
 		//logDebug("frame %d index=%d size=%d flags=0x%x", frameNum, frame, size, flags)
@@ -123,7 +133,7 @@ func parseMovie(path string, clientVersion int) ([][]byte, error) {
 			if pos+size > len(data) {
 				break
 			}
-			frames = append(frames, append([]byte(nil), data[pos:pos+size]...))
+			frames = append(frames, movieFrame{data: append([]byte(nil), data[pos:pos+size]...), index: frame})
 			pos += size
 		} else {
 			idx := bytes.Index(data[pos:], sign)

@@ -201,10 +201,10 @@ func main() {
 	<-ctx.Done()
 }
 
-func extractMoviePlayerName(frames [][]byte) string {
+func extractMoviePlayerName(frames []movieFrame) string {
 	for _, m := range frames {
-		if len(m) >= 2 && binary.BigEndian.Uint16(m[:2]) == 2 {
-			data := append([]byte(nil), m[2:]...)
+		if len(m.data) >= 2 && binary.BigEndian.Uint16(m.data[:2]) == 2 {
+			data := append([]byte(nil), m.data[2:]...)
 			if n := playerFromDrawState(data); n != "" {
 				return n
 			}
@@ -216,8 +216,8 @@ func extractMoviePlayerName(frames [][]byte) string {
 	}
 
 	for _, m := range frames {
-		if len(m) >= 2 && binary.BigEndian.Uint16(m[:2]) == 2 {
-			data := append([]byte(nil), m[2:]...)
+		if len(m.data) >= 2 && binary.BigEndian.Uint16(m.data[:2]) == 2 {
+			data := append([]byte(nil), m.data[2:]...)
 			if n := firstDescriptorName(data); n != "" {
 				return n
 			}
