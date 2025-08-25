@@ -665,6 +665,33 @@ func clearExpiredClicks(list []*itemData) {
 }
 
 func (item *itemData) setSliderValue(mpos point) {
+	if item.Vertical {
+		knobH := item.AuxSize.Y * uiScale
+		height := item.DrawRect.Y1 - item.DrawRect.Y0 - knobH
+		if height <= 0 {
+			return
+		}
+		start := item.DrawRect.Y0 + knobH/2
+		end := start + height
+		val := end - mpos.Y
+		if val < 0 {
+			val = 0
+		}
+		if val > height {
+			val = height
+		}
+		ratio := val / height
+		item.Value = item.MinValue + ratio*(item.MaxValue-item.MinValue)
+		if item.IntOnly {
+			item.Value = float32(int(item.Value + 0.5))
+		}
+		item.markDirty()
+		if item.Handler != nil {
+			item.Handler.Emit(UIEvent{Item: item, Type: EventSliderChanged, Value: item.Value})
+		}
+		return
+	}
+
 	// Determine the width of the slider track accounting for the
 	// displayed value text to the right of the knob.
 	// Measure against a consistent label width so sliders with

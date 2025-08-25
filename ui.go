@@ -91,6 +91,12 @@ var (
 	precacheImageCB *eui.ItemData
 	noCacheCB       *eui.ItemData
 	potatoCB        *eui.ItemData
+	volumeSlider    *eui.ItemData
+	mixerWin        *eui.WindowData
+	masterMixSlider *eui.ItemData
+	gameMixSlider   *eui.ItemData
+	musicMixSlider  *eui.ItemData
+	ttsMixSlider    *eui.ItemData
 )
 
 // lastWhoRequest tracks the last time we requested a backend who list so we
@@ -161,6 +167,7 @@ func initUI() {
 	makeInventoryWindow()
 	makePlayersWindow()
 	makeHotkeysWindow()
+	makeMixerWindow()
 	makeToolbar()
 
 	// Load any persisted players data (e.g., from prior sessions) so
@@ -196,6 +203,17 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 	}
 	row1.AddItem(winBtn)
 
+	hotBtn, hotEvents := eui.NewButton()
+	hotBtn.Text = "Hotkeys"
+	hotBtn.Size = eui.Point{X: buttonWidth, Y: buttonHeight}
+	hotBtn.FontSize = toolFontSize
+	hotEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			hotkeysWin.ToggleNear(ev.Item)
+		}
+	}
+	row1.AddItem(hotBtn)
+
 	btn, setEvents := eui.NewButton()
 	btn.Text = "Settings"
 	btn.Size = eui.Point{X: buttonWidth, Y: buttonHeight}
@@ -217,17 +235,6 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 		}
 	}
 	row1.AddItem(helpBtn)
-
-	hotBtn, hotEvents := eui.NewButton()
-	hotBtn.Text = "Hotkeys"
-	hotBtn.Size = eui.Point{X: buttonWidth, Y: buttonHeight}
-	hotBtn.FontSize = toolFontSize
-	hotEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventClick {
-			hotkeysWin.ToggleNear(ev.Item)
-		}
-	}
-	row1.AddItem(hotBtn)
 
 	shotBtn, shotEvents := eui.NewButton()
 	shotBtn.Text = "Snapshot"
@@ -251,13 +258,24 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 	}
 	row1.AddItem(exitSessBtn)
 
-	volumeSlider, volumeEvents := eui.NewSlider()
+	mixBtn, mixEvents := eui.NewButton()
+	mixBtn.Text = "Mixer"
+	mixBtn.Size = eui.Point{X: 64, Y: buttonHeight}
+	mixBtn.FontSize = 12
+	mixEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			mixerWin.ToggleNear(ev.Item)
+		}
+	}
+	row2.AddItem(mixBtn)
+
+        volumeSlider, volumeEvents := eui.NewSlider()
 	volumeSlider.MinValue = 0
 	volumeSlider.MaxValue = 1
 	if gs.Mute {
 		volumeSlider.Value = 0
 	} else {
-		volumeSlider.Value = float32(gs.Volume)
+		volumeSlider.Value = float32(gs.MasterVolume)
 	}
 	volumeSlider.Size = eui.Point{X: 150, Y: buttonHeight}
 	volumeSlider.FontSize = 9
@@ -268,7 +286,11 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 				ev.Item.Dirty = true
 				return
 			}
-			gs.Volume = float64(ev.Value)
+			gs.MasterVolume = float64(ev.Value)
+			if masterMixSlider != nil {
+				masterMixSlider.Value = ev.Item.Value
+				masterMixSlider.Dirty = true
+			}
 			settingsDirty = true
 			updateSoundVolume()
 		}
@@ -288,12 +310,20 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 			if gs.Mute {
 				muteBtn.Text = "Unmute"
 				volumeSlider.Value = 0
+				if masterMixSlider != nil {
+					masterMixSlider.Value = 0
+					masterMixSlider.Dirty = true
+				}
 				stopAllAudioPlayers()
 				clearTuneQueue()
 			} else {
 				muteBtn.Text = "Mute"
 				muteBtn.Tooltip = "Mutes, and ends Music or TTS"
-				volumeSlider.Value = float32(gs.Volume)
+				volumeSlider.Value = float32(gs.MasterVolume)
+				if masterMixSlider != nil {
+					masterMixSlider.Value = float32(gs.MasterVolume)
+					masterMixSlider.Dirty = true
+				}
 			}
 			muteBtn.Dirty = true
 			volumeSlider.Dirty = true
@@ -314,6 +344,77 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 	menu.AddItem(row2)
 
 	return menu
+}
+
+func makeMixerWindow() {
+	if mixerWin != nil {
+		return
+	}
+	mixerWin = eui.NewWindow()
+	mixerWin.Title = "Mixer"
+	mixerWin.Closable = true
+	mixerWin.Resizable = false
+	mixerWin.AutoSize = true
+	mixerWin.Movable = true
+
+	flow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
+
+	makeSlider := func(label string, val float64, cb func(ev eui.UIEvent)) *eui.ItemData {
+		s, h := eui.NewSlider()
+		s.Vertical = true
+		s.MinValue = 0
+		s.MaxValue = 1
+		s.Value = float32(val)
+		s.Size = eui.Point{X: 24, Y: 100}
+		s.AuxSize = eui.Point{X: 16, Y: 8}
+		s.Label = label
+		h.Handle = cb
+		flow.AddItem(s)
+		return s
+	}
+
+	masterMixSlider = makeSlider("Master", gs.MasterVolume, func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			if gs.Mute {
+				ev.Item.Value = 0
+				ev.Item.Dirty = true
+				return
+			}
+			gs.MasterVolume = float64(ev.Value)
+			if volumeSlider != nil {
+				volumeSlider.Value = ev.Item.Value
+				volumeSlider.Dirty = true
+			}
+			settingsDirty = true
+			updateSoundVolume()
+		}
+	})
+
+	gameMixSlider = makeSlider("Game", gs.Volume, func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			gs.Volume = float64(ev.Value)
+			settingsDirty = true
+			updateSoundVolume()
+		}
+	})
+
+	musicMixSlider = makeSlider("Music", gs.MusicVolume, func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			gs.MusicVolume = float64(ev.Value)
+			settingsDirty = true
+			updateSoundVolume()
+		}
+	})
+
+	ttsMixSlider = makeSlider("TTS", gs.ChatTTSVolume, func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			gs.ChatTTSVolume = float64(ev.Value)
+			settingsDirty = true
+			updateSoundVolume()
+		}
+	})
+
+	mixerWin.AddItem(flow)
 }
 
 func makeToolbar() {
@@ -1638,6 +1739,10 @@ func makeSettingsWindow() {
 			defer SettingsLock.Unlock()
 
 			gs.Volume = float64(ev.Value)
+			if gameMixSlider != nil {
+				gameMixSlider.Value = ev.Item.Value
+				gameMixSlider.Dirty = true
+			}
 			settingsDirty = true
 			updateSoundVolume()
 		}
@@ -1657,6 +1762,10 @@ func makeSettingsWindow() {
 			defer SettingsLock.Unlock()
 
 			gs.MusicVolume = float64(ev.Value)
+			if musicMixSlider != nil {
+				musicMixSlider.Value = ev.Item.Value
+				musicMixSlider.Dirty = true
+			}
 			settingsDirty = true
 			updateSoundVolume()
 		}
@@ -1694,6 +1803,10 @@ func makeSettingsWindow() {
 			defer SettingsLock.Unlock()
 
 			gs.ChatTTSVolume = float64(ev.Value)
+			if ttsMixSlider != nil {
+				ttsMixSlider.Value = ev.Item.Value
+				ttsMixSlider.Dirty = true
+			}
 			settingsDirty = true
 		}
 	}

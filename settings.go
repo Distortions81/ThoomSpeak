@@ -67,7 +67,8 @@ var gsdef settings = settings{
 	DenoiseAmount:        0.2,
 	ShowFPS:              true,
 	UIScale:              1.0,
-	Volume:               0.25,
+	MasterVolume:         0.25,
+	Volume:               1.0,
 	MusicVolume:          1.0,
 	GameScale:            2,
 	BarPlacement:         BarPlacementBottom,
@@ -141,6 +142,7 @@ type settings struct {
 	UIScale              float64
 	Fullscreen           bool
 	AlwaysOnTop          bool
+	MasterVolume         float64
 	Volume               float64
 	MusicVolume          float64
 	Mute                 bool
