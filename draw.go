@@ -1247,8 +1247,16 @@ func parseDrawState(data []byte, buildCache bool) error {
 				}
 				stateMu.Unlock()
 			}
+			skipRender := false
+			if name != "" {
+				playersMu.RLock()
+				if p, ok := players[name]; ok && (p.Blocked || p.Ignored) {
+					skipRender = true
+				}
+				playersMu.RUnlock()
+			}
 			showBubble := gs.SpeechBubbles && txt != "" && !blockBubbles && verb != "thinks"
-			if showBubble {
+			if showBubble && !skipRender {
 				typeOK := true
 				switch bubbleType {
 				case kBubbleNormal:
@@ -1283,7 +1291,7 @@ func parseDrawState(data []byte, buildCache bool) error {
 				}
 				showBubble = typeOK && originOK
 			}
-			if showBubble {
+			if showBubble && !skipRender {
 				words := len(strings.Fields(txt))
 				if words < 1 {
 					words = 1
@@ -1330,7 +1338,9 @@ func parseDrawState(data []byte, buildCache bool) error {
 						default:
 							msg = fmt.Sprintf("%v thinks, %v", bubbleName, txt)
 						}
-						showThinkMessage(msg)
+						if !skipRender {
+							showThinkMessage(msg)
+						}
 					} else if typ&kBubbleNotCommon != 0 {
 						langWord := lang
 						lw := strings.ToLower(langWord)
