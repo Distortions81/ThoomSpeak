@@ -30,7 +30,7 @@ var pluginExports = interp.Exports{
 	},
 }
 
-//go:embed plugins/example_ponder.go plugins/README.txt
+//go:embed example_plugins/example_ponder.go example_plugins/README.txt
 var pluginExamples embed.FS
 
 func userPluginsDir() string {
