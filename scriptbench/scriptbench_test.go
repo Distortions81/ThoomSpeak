@@ -7,7 +7,8 @@ import (
 	"github.com/traefik/yaegi/stdlib"
 )
 
-func nativeSum() int {
+// compiledSum is the baseline compiled implementation.
+func compiledSum() int {
 	total := 0
 	for i := 0; i < 1000; i++ {
 		total += i
@@ -15,13 +16,16 @@ func nativeSum() int {
 	return total
 }
 
-func BenchmarkNativeSum(b *testing.B) {
+// BenchmarkCompiledSum measures performance of compiled Go code.
+func BenchmarkCompiledSum(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		_ = nativeSum()
+		_ = compiledSum()
 	}
 }
 
-func BenchmarkInterpretedSum(b *testing.B) {
+// BenchmarkYaegiSum measures performance of the same code executed via the
+// Yaegi interpreter.
+func BenchmarkYaegiSum(b *testing.B) {
 	const src = `
 package main
 
