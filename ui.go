@@ -19,6 +19,7 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/pkg/browser"
 	"github.com/sqweek/dialog"
 
 	"gothoom/climg"
@@ -356,6 +357,7 @@ func refreshPluginsWindow() {
 		return strings.ToLower(list[i].name) < strings.ToLower(list[j].name)
 	})
 	for _, e := range list {
+		row := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
 		cb, events := eui.NewCheckbox()
 		cb.Text = e.name
 		cb.Size = eui.Point{X: 128, Y: 24}
@@ -372,7 +374,25 @@ func refreshPluginsWindow() {
 				}
 			}
 		}
-		pluginsList.AddItem(cb)
+		row.AddItem(cb)
+
+		viewBtn, viewEv := eui.NewButton()
+		viewBtn.Text = "View"
+		viewBtn.Size = eui.Point{X: 48, Y: 24}
+		viewEv.Handle = func(ev eui.UIEvent) {
+			if ev.Type == eui.EventClick {
+				pluginMu.RLock()
+				path := pluginPaths[owner]
+				pluginMu.RUnlock()
+				if path != "" {
+					_ = browser.OpenFile(filepath.Dir(path))
+					_ = browser.OpenFile(path)
+				}
+			}
+		}
+		row.AddItem(viewBtn)
+
+		pluginsList.AddItem(row)
 	}
 	if pluginsWin != nil {
 		pluginsWin.Refresh()
