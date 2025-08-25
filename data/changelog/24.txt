@@ -1,16 +1,15 @@
-Music is working decently and could use testing ⁠bards-field
-Added animated ponder bubbles, growl and yell bubbles that look more like the CL ones.
 Added local AI based TTS, as google blocks any client making a lot of TTS requests.
 Display packet loss in addition to jitter
 Improved motion smoothing algorithm.
-TTS and music disable checkboxes in mixer now work properly, and auto-disable if the needed files are not available or not functioning.
-Music no longer plays while seeking in a clMov.
-Slowly adding hotkey and scripting support.
-Non-chat messages no longer end up in the chat window or in tts.
-Motion smoothing attempts to work around dropped frames/packets when it can
+TTS and music disable checkboxes in mixer now work properly, and auto-disable if the needed files are not available or not functioning. 
+Music no longer plays while seeking in a clMov. 
+Non-chat messages no longer end up in the chat window or in tts. 
+Motion smoothing attempts to work around dropped frames/packets when it can 
 Fixed 'black pixels' and some other rare odd visual sprite errors due to color palette oversights.
 Tweaked yell/growl appearance and animation.
 Added audio mixer window.
 Added confirm remove character dialog.
 Added avatars and profession icons to login screen
-Cleaned up login window.
+Cleaned up login window. 
+Added TTS speed and voice selector.
+Added basic hotkey and plugin system (see example_plugins and data/plugins)
