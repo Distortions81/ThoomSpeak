@@ -186,7 +186,19 @@ func loadPlugins() {
 		userPluginsDir(), // per-user/app data directory
 		"plugins",        // legacy: relative to current working directory
 	}
-	for _, dir := range pluginDirs {
+    // Build restricted stdlib symbol map
+    allowedPkgs := []string{
+        // "fmt/fmt",
+        // "strings/strings",
+    }
+    restricted := interp.Exports{}
+    for _, key := range allowedPkgs {
+        if syms, ok := stdlib.Symbols[key]; ok {
+            restricted[key] = syms
+        }
+    }
+
+    for _, dir := range pluginDirs {
 		entries, err := os.ReadDir(dir)
 		if err != nil {
 			if !os.IsNotExist(err) {
@@ -204,9 +216,12 @@ func loadPlugins() {
 				log.Printf("read plugin %s: %v", path, err)
 				continue
 			}
-			i := interp.New(interp.Options{})
-			i.Use(stdlib.Symbols)
-			i.Use(pluginExports)
+            i := interp.New(interp.Options{})
+            // IMPORTANT: only allow a restricted subset of stdlib (possibly empty)
+            if len(restricted) > 0 {
+                i.Use(restricted)
+            }
+            i.Use(pluginExports)
 			if _, err := i.Eval(string(src)); err != nil {
 				log.Printf("plugin %s: %v", e.Name(), err)
 				consoleMessage("[plugin] load error for " + path + ": " + err.Error())

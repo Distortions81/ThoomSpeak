@@ -11,6 +11,12 @@ Getting Started
 - Each plugin must define an `Init()` function. The client discovers and calls
   this function after loading the script.
 
+Imports
+-------
+- Plugins can import only `pluginapi` by default. System packages like `os`,
+  `io`, `net`, etc. are not available from the interpreter to prevent file or
+  network access.
+
 API
 ---
 - pluginapi.AddHotkey(combo, command)
