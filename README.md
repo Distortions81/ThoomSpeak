@@ -76,7 +76,12 @@ func Init() {
 Currently exposed symbols:
 
 - `pluginapi.Logf(format, ...any)` – write to the client log
-- `pluginapi.AddHotkey(combo, command)` – register a global hotkey
+- `pluginapi.AddHotkey(combo, command)` – bind a hotkey to a slash command
+- `pluginapi.AddHotkeyFunc(combo, funcName)` – bind a hotkey to a plugin function
+- `pluginapi.RegisterCommand(name, func(args string))` – handle a local slash command
+- `pluginapi.RegisterFunc(name, func())` – register a callable plugin function
+- `pluginapi.RunCommand(cmd)` – echo and send a command immediately
+- `pluginapi.EnqueueCommand(cmd)` – queue a command silently for the next tick
 - `pluginapi.ClientVersion` – current client version (read/write)
 
 All plugin code runs in the same process but is sandboxed to this approved list of
