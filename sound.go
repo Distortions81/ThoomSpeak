@@ -394,7 +394,7 @@ func loadSound(id uint16) []byte {
 			if pcm == nil {
 				logDebug("loadSound(%d) cached as missing", id)
 			} else {
-				logDebug("loadSound(%d) cache hit (%d bytes)", id, len(pcm))
+				//logDebug("loadSound(%d) cache hit (%d bytes)", id, len(pcm))
 			}
 			return pcm
 		}
