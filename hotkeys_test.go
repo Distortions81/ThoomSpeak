@@ -96,6 +96,26 @@ func TestHotkeyFunctionWithoutCommand(t *testing.T) {
 	}
 }
 
+// Test that selecting a function without clicking add saves the hotkey.
+func TestHotkeyFunctionSelectionSaves(t *testing.T) {
+	hotkeys = nil
+	openHotkeyEditor(-1)
+	hotkeyComboText.Text = "Ctrl-H"
+	selectHotkeyFunction("ponder", "")
+	finishHotkeyEdit(true)
+
+	if len(hotkeys) != 1 {
+		t.Fatalf("hotkey not saved")
+	}
+	cmd := hotkeys[0].Commands[0]
+	if cmd.Command != "" || cmd.Function != "ponder" {
+		t.Fatalf("unexpected hotkey command: %+v", cmd)
+	}
+	if hotkeyEditWin != nil {
+		hotkeyEditWin.Close()
+	}
+}
+
 // Test that a hotkey with an empty command saves correctly.
 func TestHotkeyEmptyCommandSaved(t *testing.T) {
 	hotkeys = nil

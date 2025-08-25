@@ -52,6 +52,7 @@ var (
 	hotkeyCmdSection *eui.ItemData
 	hotkeyCmdInputs  []*eui.ItemData
 	hotkeyCmdFuncs   []hotkeyFuncRef
+	hotkeyFnLabel    *eui.ItemData
 	editingHotkey    int = -1
 
 	recording     bool
@@ -418,6 +419,7 @@ func openHotkeyEditor(idx int) {
 				fnSel = ""
 				fnSelKey = ""
 			}
+			selectHotkeyFunction(fnSel, fnSelKey)
 		}
 	}
 	fnRow.AddItem(fnDD)
@@ -497,6 +499,9 @@ func addHotkeyCommand(cmd, fn, plugin string) {
 		fnLabel.Size = eui.Point{X: hotkeyEditWin.Size.X - 40, Y: 20}
 		fnLabel.FontSize = 12
 		hotkeyCmdSection.AddItem(fnLabel)
+		if len(hotkeyCmdInputs) == 0 {
+			hotkeyFnLabel = fnLabel
+		}
 	}
 	cmdLabel, _ := eui.NewText()
 	cmdLabel.Text = "Command:"
@@ -521,6 +526,37 @@ func addHotkeyCommand(cmd, fn, plugin string) {
 
 	hotkeyEditWin.Refresh()
 	wrapHotkeyInputs()
+}
+
+// selectHotkeyFunction applies a function selection to the first blank
+// hotkey command slot. It updates the stored function reference and shows a
+// label in the editor so users don't need to press the add button for the
+// initial function choice.
+func selectHotkeyFunction(fn, plugin string) {
+	if hotkeyCmdSection == nil {
+		return
+	}
+	// Only apply to a single empty command slot.
+	if len(hotkeyCmdInputs) != 1 || hotkeyCmdInputs[0].Text != "" {
+		return
+	}
+	hotkeyCmdFuncs[0] = hotkeyFuncRef{Name: fn, Plugin: plugin}
+	if fn == "" {
+		if hotkeyFnLabel != nil {
+			hotkeyCmdSection.Contents = hotkeyCmdSection.Contents[1:]
+			hotkeyFnLabel = nil
+			hotkeyEditWin.Refresh()
+		}
+		return
+	}
+	if hotkeyFnLabel == nil {
+		hotkeyFnLabel, _ = eui.NewText()
+		hotkeyFnLabel.Size = eui.Point{X: hotkeyEditWin.Size.X - 40, Y: 20}
+		hotkeyFnLabel.FontSize = 12
+		hotkeyCmdSection.Contents = append([]*eui.ItemData{hotkeyFnLabel}, hotkeyCmdSection.Contents...)
+	}
+	hotkeyFnLabel.Text = "Function: " + fn
+	hotkeyEditWin.Refresh()
 }
 
 func wrapHotkeyInputs() {
