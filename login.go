@@ -13,6 +13,8 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"github.com/pkg/browser"
 )
 
 var (
@@ -379,20 +381,10 @@ func login(ctx context.Context, clientVersion int) error {
 		}
 
 		if result == -30972 || result == -30973 {
-			logDebug("server requested update, downloading...")
-			newVer, err := autoUpdate(resp, dataDirPath)
-			if err != nil {
-				tcpConn.Close()
-				udpConn.Close()
-				return fmt.Errorf("auto update: %w", err)
-			}
-			if s, err := checkDataFiles(newVer); err == nil {
-				status = s
-			}
-			logDebug("update complete, reconnecting...")
+			browser.OpenURL("https://github.com/Distortions81/goThoom/releases")
 			tcpConn.Close()
 			udpConn.Close()
-			continue
+			return fmt.Errorf("client out of date; please download the latest release")
 		}
 
 		if result != 0 {
