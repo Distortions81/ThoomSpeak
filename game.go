@@ -550,9 +550,6 @@ func (g *Game) Update() error {
 	hy := int16(float64(my-origY)/worldScale - float64(fieldCenterY))
 	updateWorldHover(hx, hy)
 
-	updateHotkeyRecording()
-	checkHotkeys()
-
 	if debugWin != nil && debugWin.IsOpen() {
 		if time.Since(lastDebugStatsUpdate) >= time.Second {
 			updateDebugStats()
@@ -819,6 +816,9 @@ func (g *Game) Update() error {
 	inputMu.Lock()
 	latestInput = inputState{mouseX: x, mouseY: y, mouseDown: walk}
 	inputMu.Unlock()
+
+	updateHotkeyRecording()
+	checkHotkeys()
 
 	return nil
 }
