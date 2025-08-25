@@ -268,7 +268,7 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 			takeScreenshot()
 		}
 	}
-	row1.AddItem(shotBtn)
+	row2.AddItem(shotBtn)
 
 	exitSessBtn, exitSessEv := eui.NewButton()
 	exitSessBtn.Text = "Exit"
@@ -279,7 +279,7 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 			confirmExitSession()
 		}
 	}
-	row1.AddItem(exitSessBtn)
+	row2.AddItem(exitSessBtn)
 
 	mixBtn, mixEvents := eui.NewButton()
 	mixBtn.Text = "Mixer"
@@ -703,7 +703,8 @@ func makeToolbar() {
 	hudWin.Title = "Toolbar"
 	hudWin.Closable = false
 	hudWin.Resizable = false
-	hudWin.AutoSize = true
+	hudWin.AutoSize = false
+	hudWin.Size = eui.Point{X: 450, Y: 75}
 	hudWin.Movable = true
 	hudWin.NoScroll = true
 	hudWin.SetZone(eui.HZoneLeft, eui.VZoneTop)
