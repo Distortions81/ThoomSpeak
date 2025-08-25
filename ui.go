@@ -275,78 +275,7 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 	}
 	row2.AddItem(mixBtn)
 
-	volumeSlider, volumeEvents := eui.NewSlider()
-	volumeSlider.MinValue = 0
-	volumeSlider.MaxValue = 1
-	if gs.Mute {
-		volumeSlider.Value = 0
-	} else {
-		volumeSlider.Value = float32(gs.MasterVolume)
-	}
-	volumeSlider.Size = eui.Point{X: 150, Y: buttonHeight}
-	volumeSlider.FontSize = 9
-	volumeEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventSliderChanged {
-			if gs.Mute {
-				ev.Item.Value = 0
-				ev.Item.Dirty = true
-				return
-			}
-			gs.MasterVolume = float64(ev.Value)
-			if masterMixSlider != nil {
-				masterMixSlider.Value = ev.Item.Value
-				masterMixSlider.Dirty = true
-			}
-			settingsDirty = true
-			updateSoundVolume()
-		}
-	}
-	row2.AddItem(volumeSlider)
-
-	var muteEvents *eui.EventHandler
-	muteBtn, muteEvents = eui.NewButton()
-	muteBtn.Text = "Mute"
-	if gs.Mute {
-		muteBtn.Text = "Unmute"
-	}
-	muteBtn.Size = eui.Point{X: 64, Y: buttonHeight}
-	muteBtn.FontSize = 12
-	muteEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventClick {
-			gs.Mute = !gs.Mute
-			if gs.Mute {
-				muteBtn.Text = "Unmute"
-				volumeSlider.Value = 0
-				if masterMixSlider != nil {
-					masterMixSlider.Value = 0
-					masterMixSlider.Dirty = true
-				}
-				if mixMuteBtn != nil {
-					mixMuteBtn.Text = "Unmute"
-					mixMuteBtn.Dirty = true
-				}
-				stopAllAudioPlayers()
-				clearTuneQueue()
-			} else {
-				muteBtn.Text = "Mute"
-				muteBtn.Tooltip = "Mutes, and ends Music or TTS"
-				volumeSlider.Value = float32(gs.MasterVolume)
-				if masterMixSlider != nil {
-					masterMixSlider.Value = float32(gs.MasterVolume)
-					masterMixSlider.Dirty = true
-				}
-				if mixMuteBtn != nil {
-					mixMuteBtn.Text = "Mute"
-					mixMuteBtn.Dirty = true
-				}
-			}
-			muteBtn.Dirty = true
-			volumeSlider.Dirty = true
-			settingsDirty = true
-			updateSoundVolume()
-		}
-	}
-	row2.AddItem(muteBtn)
+    // Removed toolbar volume slider and mute button (use Mixer instead)
 
 	recordStatus, _ = eui.NewText()
 	recordStatus.Text = ""

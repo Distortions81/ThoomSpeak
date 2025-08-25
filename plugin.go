@@ -1,12 +1,13 @@
 package main
 
 import (
-	"embed"
-	"log"
-	"os"
-	"path/filepath"
-	"reflect"
-	"strings"
+    "embed"
+    "log"
+    "os"
+    "path/filepath"
+    "reflect"
+    "strings"
+    "sync"
 
 	"github.com/traefik/yaegi/interp"
 	"github.com/traefik/yaegi/stdlib"
@@ -93,25 +94,29 @@ func pluginLogf(format string, args ...interface{}) {
 }
 
 func pluginAddHotkey(combo, command string) {
-	hk := Hotkey{Combo: combo, Commands: []HotkeyCommand{{Command: command}}}
-	hotkeys = append(hotkeys, hk)
-	refreshHotkeysList()
-	saveHotkeys()
-	msg := "[plugin] hotkey added: " + combo + " -> " + command
-	consoleMessage(msg)
-	log.Printf(msg)
+    hk := Hotkey{Combo: combo, Commands: []HotkeyCommand{{Command: command}}}
+    hotkeysMu.Lock()
+    hotkeys = append(hotkeys, hk)
+    hotkeysMu.Unlock()
+    refreshHotkeysList()
+    saveHotkeys()
+    msg := "[plugin] hotkey added: " + combo + " -> " + command
+    consoleMessage(msg)
+    log.Printf(msg)
 }
 
 // pluginAddHotkeyFunc registers a hotkey that invokes a named plugin function
 // registered via RegisterFunc.
 func pluginAddHotkeyFunc(combo, funcName string) {
-	hk := Hotkey{Combo: combo, Commands: []HotkeyCommand{{Command: "plugin:" + funcName}}}
-	hotkeys = append(hotkeys, hk)
-	refreshHotkeysList()
-	saveHotkeys()
-	msg := "[plugin] hotkey added: " + combo + " -> plugin:" + funcName
-	consoleMessage(msg)
-	log.Printf(msg)
+    hk := Hotkey{Combo: combo, Commands: []HotkeyCommand{{Command: "plugin:" + funcName}}}
+    hotkeysMu.Lock()
+    hotkeys = append(hotkeys, hk)
+    hotkeysMu.Unlock()
+    refreshHotkeysList()
+    saveHotkeys()
+    msg := "[plugin] hotkey added: " + combo + " -> plugin:" + funcName
+    consoleMessage(msg)
+    log.Printf(msg)
 }
 
 // Plugin command and function registries.
@@ -119,21 +124,24 @@ type PluginCommandHandler func(args string)
 type PluginFunc func()
 
 var (
-	pluginCommands = map[string]PluginCommandHandler{}
-	pluginFuncs    = map[string]PluginFunc{}
+    pluginCommands = map[string]PluginCommandHandler{}
+    pluginFuncs    = map[string]PluginFunc{}
+    pluginMu       sync.RWMutex
 )
 
 // pluginRegisterCommand lets plugins handle a local slash command like
 // "/example". The name should be without the leading slash and will be
 // matched case-insensitively.
 func pluginRegisterCommand(name string, handler PluginCommandHandler) {
-	if name == "" || handler == nil {
-		return
-	}
-	key := strings.ToLower(strings.TrimPrefix(name, "/"))
-	pluginCommands[key] = handler
-	consoleMessage("[plugin] command registered: /" + key)
-	log.Printf("[plugin] command registered: /%s", key)
+    if name == "" || handler == nil {
+        return
+    }
+    key := strings.ToLower(strings.TrimPrefix(name, "/"))
+    pluginMu.Lock()
+    pluginCommands[key] = handler
+    pluginMu.Unlock()
+    consoleMessage("[plugin] command registered: /" + key)
+    log.Printf("[plugin] command registered: /%s", key)
 }
 
 // pluginRegisterFunc registers a named function that can be called from
@@ -143,7 +151,9 @@ func pluginRegisterFunc(name string, fn PluginFunc) {
         return
     }
     key := strings.ToLower(name)
+    pluginMu.Lock()
     pluginFuncs[key] = fn
+    pluginMu.Unlock()
     consoleMessage("[plugin] function registered: " + key)
     log.Printf("[plugin] function registered: %s", key)
 }
