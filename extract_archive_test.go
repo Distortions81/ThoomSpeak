@@ -18,7 +18,7 @@ func createTar(entries []tar.Header, contents [][]byte) ([]byte, error) {
 		if err := tw.WriteHeader(&hdr); err != nil {
 			return nil, err
 		}
-		if hdr.Typeflag == tar.TypeReg && len(contents) > i {
+		if (hdr.Typeflag == tar.TypeReg || hdr.Typeflag == 0) && len(contents) > i {
 			if _, err := tw.Write(contents[i]); err != nil {
 				return nil, err
 			}

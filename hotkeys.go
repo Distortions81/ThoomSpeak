@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -16,6 +17,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	text "github.com/hajimehoshi/ebiten/v2/text/v2"
+	"golang.org/x/image/font/gofont/goregular"
 )
 
 const hotkeysFile = "global-hotkeys.json"
@@ -531,12 +533,15 @@ func wrapHotkeyInputs() {
 		fs = hotkeyCmdInputs[0].FontSize
 	}
 	facePx := float64(fs * ui)
-	var goFace *text.GoTextFace
-	if src := eui.FontSource(); src != nil {
-		goFace = &text.GoTextFace{Source: src, Size: facePx}
-	} else {
-		goFace = &text.GoTextFace{Size: facePx}
+	src := eui.FontSource()
+	if src == nil {
+		if s, err := text.NewGoTextFaceSource(bytes.NewReader(goregular.TTF)); err == nil {
+			src = s
+		} else {
+			return
+		}
 	}
+	goFace := &text.GoTextFace{Source: src, Size: facePx}
 	metrics := goFace.Metrics()
 	linePx := math.Ceil(metrics.HAscent + metrics.HDescent + 2)
 	rowUnits := float32(linePx) / ui
