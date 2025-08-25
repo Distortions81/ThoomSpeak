@@ -34,12 +34,18 @@ declare -A VOICES=(
 
 for name in "${!VOICES[@]}"; do
   path="${VOICES[$name]}"
-  vdir="$VOICE_DIR/$name"
-  mkdir -p "$vdir"
+  tmp="$VOICE_DIR/$name.tar.gz"
   echo "Downloading voice $name..."
-  curl -L "$VOICE_BASE/$path/$name.onnx" -o "$vdir/$name.onnx"
-  curl -L "$VOICE_BASE/$path/$name.onnx.json" -o "$vdir/$name.onnx.json"
-  curl -L "$VOICE_BASE/$path/MODEL_CARD" -o "$vdir/MODEL_CARD"
+  if curl -fL "$VOICE_BASE/$path/$name.tar.gz" -o "$tmp"; then
+    tar -xzf "$tmp" -C "$VOICE_DIR"
+    rm -f "$tmp"
+  else
+    vdir="$VOICE_DIR/$name"
+    mkdir -p "$vdir"
+    curl -L "$VOICE_BASE/$path/$name.onnx" -o "$vdir/$name.onnx"
+    curl -L "$VOICE_BASE/$path/$name.onnx.json" -o "$vdir/$name.onnx.json"
+    curl -L "$VOICE_BASE/$path/MODEL_CARD" -o "$vdir/MODEL_CARD"
+  fi
 done
 
 echo "Piper binaries downloaded to $PIPER_DIR and voices to $VOICE_DIR"
