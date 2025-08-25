@@ -206,6 +206,18 @@ func preparePiper(dataDir string) (string, string, string, error) {
 }
 
 func extractArchive(src, dst string) error {
+	clean := func(base, name string) (string, error) {
+		target := filepath.Join(base, name)
+		target = filepath.Clean(target)
+		rel, err := filepath.Rel(base, target)
+		if err != nil {
+			return "", err
+		}
+		if rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+			return "", fmt.Errorf("invalid path: %s", name)
+		}
+		return target, nil
+	}
 	if strings.HasSuffix(src, ".tar.gz") {
 		f, err := os.Open(src)
 		if err != nil {
@@ -226,7 +238,10 @@ func extractArchive(src, dst string) error {
 			if err != nil {
 				return err
 			}
-			target := filepath.Join(dst, hdr.Name)
+			target, err := clean(dst, hdr.Name)
+			if err != nil {
+				return err
+			}
 			switch hdr.Typeflag {
 			case tar.TypeDir:
 				if err := os.MkdirAll(target, os.FileMode(hdr.Mode)); err != nil {
@@ -234,6 +249,9 @@ func extractArchive(src, dst string) error {
 				}
 				continue
 			case tar.TypeSymlink:
+				if _, err := clean(dst, filepath.Join(filepath.Dir(hdr.Name), hdr.Linkname)); err != nil {
+					return err
+				}
 				if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 					return err
 				}
@@ -265,18 +283,40 @@ func extractArchive(src, dst string) error {
 		}
 		defer zr.Close()
 		for _, f := range zr.File {
-			target := filepath.Join(dst, f.Name)
+			target, err := clean(dst, f.Name)
+			if err != nil {
+				return err
+			}
 			if f.FileInfo().IsDir() {
 				if err := os.MkdirAll(target, 0o755); err != nil {
 					return err
 				}
 				continue
 			}
-			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
-				return err
-			}
 			rc, err := f.Open()
 			if err != nil {
+				return err
+			}
+			if f.Mode()&os.ModeSymlink != 0 {
+				linkBytes, err := io.ReadAll(rc)
+				rc.Close()
+				if err != nil {
+					return err
+				}
+				link := string(linkBytes)
+				if _, err := clean(dst, filepath.Join(filepath.Dir(f.Name), link)); err != nil {
+					return err
+				}
+				if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+					return err
+				}
+				if err := os.Symlink(link, target); err != nil {
+					return err
+				}
+				continue
+			}
+			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+				rc.Close()
 				return err
 			}
 			out, err := os.Create(target)
