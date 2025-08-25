@@ -356,6 +356,7 @@ func refreshPluginsWindow() {
 		return strings.ToLower(list[i].name) < strings.ToLower(list[j].name)
 	})
 	for _, e := range list {
+		row := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
 		cb, events := eui.NewCheckbox()
 		cb.Text = e.name
 		cb.Size = eui.Point{X: 128, Y: 24}
@@ -372,11 +373,107 @@ func refreshPluginsWindow() {
 				}
 			}
 		}
-		pluginsList.AddItem(cb)
+		row.AddItem(cb)
+
+		viewBtn, vh := eui.NewButton()
+		viewBtn.Text = "View"
+		viewBtn.Size = eui.Point{X: 48, Y: 24}
+		vh.Handle = func(ev eui.UIEvent) {
+			if ev.Type == eui.EventClick {
+				showPluginInfo(owner)
+			}
+		}
+		row.AddItem(viewBtn)
+
+		pluginsList.AddItem(row)
 	}
 	if pluginsWin != nil {
 		pluginsWin.Refresh()
 	}
+}
+
+func showPluginInfo(owner string) {
+	cmds := pluginCommandsFor(owner)
+	funcs := pluginFunctionsFor(owner)
+	hks := pluginHotkeys(owner)
+	src := pluginSource(owner)
+
+	sort.Strings(cmds)
+	sort.Strings(funcs)
+	sort.Slice(hks, func(i, j int) bool { return strings.ToLower(hks[i].Combo) < strings.ToLower(hks[j].Combo) })
+
+	pluginMu.RLock()
+	name := pluginDisplayNames[owner]
+	pluginMu.RUnlock()
+	if name == "" {
+		name = owner
+	}
+
+	win := eui.NewWindow()
+	win.Title = name
+	win.Closable = true
+	win.Resizable = true
+	win.AutoSize = true
+	win.Movable = true
+	win.SetZone(eui.HZoneCenterLeft, eui.VZoneMiddleTop)
+
+	flow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
+	win.AddItem(flow)
+
+	if len(cmds) > 0 {
+		header, _ := eui.NewText()
+		header.Text = "Commands:"
+		flow.AddItem(header)
+		for _, c := range cmds {
+			line, _ := eui.NewText()
+			line.Text = "/" + c
+			flow.AddItem(line)
+		}
+	}
+
+	if len(funcs) > 0 {
+		header, _ := eui.NewText()
+		header.Text = "Functions:"
+		flow.AddItem(header)
+		for _, f := range funcs {
+			line, _ := eui.NewText()
+			line.Text = f
+			flow.AddItem(line)
+		}
+	}
+
+	if len(hks) > 0 {
+		header, _ := eui.NewText()
+		header.Text = "Hotkeys:"
+		flow.AddItem(header)
+		for _, hk := range hks {
+			target := hk.Name
+			if len(hk.Commands) > 0 {
+				cmd := hk.Commands[0]
+				if cmd.Command != "" {
+					target = cmd.Command
+				} else if cmd.Function != "" {
+					target = "plugin:" + cmd.Function
+				}
+			}
+			line, _ := eui.NewText()
+			line.Text = hk.Combo + " -> " + target
+			flow.AddItem(line)
+		}
+	}
+
+	if src != "" {
+		header, _ := eui.NewText()
+		header.Text = "Source:"
+		flow.AddItem(header)
+		t, _ := eui.NewText()
+		t.Text = src
+		t.Size = eui.Point{X: 600, Y: 400}
+		t.FontSize = 12
+		flow.AddItem(t)
+	}
+
+	win.AddWindow(false)
 }
 
 func makeMixerWindow() {

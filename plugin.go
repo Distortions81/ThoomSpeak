@@ -580,6 +580,42 @@ func pluginPlaySound(ids []uint16) {
 	playSound(ids)
 }
 
+func pluginCommandsFor(owner string) []string {
+	pluginMu.RLock()
+	defer pluginMu.RUnlock()
+	var list []string
+	for cmd, o := range pluginCommandOwners {
+		if o == owner {
+			list = append(list, cmd)
+		}
+	}
+	return list
+}
+
+func pluginFunctionsFor(owner string) []string {
+	pluginMu.RLock()
+	defer pluginMu.RUnlock()
+	var list []string
+	for fn := range pluginFuncs[owner] {
+		list = append(list, fn)
+	}
+	return list
+}
+
+func pluginSource(owner string) string {
+	pluginMu.RLock()
+	path := pluginPaths[owner]
+	pluginMu.RUnlock()
+	if path == "" {
+		return ""
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+	return string(data)
+}
+
 func loadPlugins() {
 	ensureDefaultPlugins()
 
