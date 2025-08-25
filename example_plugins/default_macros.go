@@ -4,8 +4,10 @@ package main
 
 import "gt"
 
+// PluginName is shown in the client's list of plugins.
 var PluginName = "Default Macros"
 
+// Init registers a bunch of handy shortcuts for common commands.
 func Init() {
 	gt.AddMacros(map[string]string{
 		"??": "/help ",

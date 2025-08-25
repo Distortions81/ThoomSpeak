@@ -4,8 +4,11 @@ package main
 
 import "gt"
 
+// PluginName is displayed in the plugin list.
 var PluginName = "Creature Aliases"
 
+// Init registers a bunch of chat shortcuts so typing
+// "abo" automatically expands to the full creature name.
 func Init() {
 	gt.AddMacros(map[string]string{
 		"abo":   "Abominable Snow Yorilla",

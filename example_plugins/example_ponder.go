@@ -6,9 +6,8 @@ package main
 // user's plugin folder the first time the game runs so new users can edit it.
 
 import (
-	"fmt"     // used for building strings like "HP 10/10"
-	"strings" // simple helpers for splitting and matching text
-	"time"    // used for simple delays between poses
+	"fmt"  // used for building strings like "HP 10/10"
+	"time" // used for simple delays between poses
 
 	"gt" // the small API exposed by the client
 )
@@ -24,7 +23,7 @@ func Init() {
 
 	// Watch chat. If someone types our name we show a popup.
 	gt.RegisterChatHandler(func(msg string) {
-		if strings.Contains(strings.ToLower(msg), strings.ToLower(gt.PlayerName())) {
+		if gt.Includes(gt.Lower(msg), gt.Lower(gt.PlayerName())) {
 			gt.ShowNotification("Someone said your name!")
 		}
 	})
@@ -58,7 +57,7 @@ func Dance() {
 // args is everything after "/rad".
 func handleRad(args string) {
 	// Split the text into words.
-	fields := strings.Fields(args)
+	fields := gt.Words(args)
 	// If no words were given, show help text.
 	if len(fields) == 0 {
 		gt.Console("/rad [notify|stats|players|input <t>|equip <n>|unequip <n>|toggle <n>|hotkeys|rmhotkey <c>|click|frame|keys|say <t>|gear|has <n>|echoinput]")
@@ -80,18 +79,18 @@ func handleRad(args string) {
 		for _, p := range ps {
 			names = append(names, p.Name)
 		}
-		gt.Console("players: " + strings.Join(names, ", "))
+		gt.Console("players: " + gt.Join(names, ", "))
 	case "input":
 		// Set the chat box text.
-		gt.SetInputText(strings.Join(fields[1:], " "))
+		gt.SetInputText(gt.Join(fields[1:], " "))
 	case "echoinput":
 		// Print whatever is in the chat box right now.
 		gt.Console("input: " + gt.InputText())
 	case "equip":
 		// Equip an item by name.
-		name := strings.Join(fields[1:], " ")
+		name := gt.Join(fields[1:], " ")
 		for _, it := range gt.Inventory() {
-			if strings.EqualFold(it.Name, name) {
+			if gt.IgnoreCase(it.Name, name) {
 				gt.Equip(it.ID)
 				return
 			}
@@ -99,9 +98,9 @@ func handleRad(args string) {
 		gt.Console("item not found")
 	case "unequip":
 		// Unequip an item by name.
-		name := strings.Join(fields[1:], " ")
+		name := gt.Join(fields[1:], " ")
 		for _, it := range gt.Inventory() {
-			if strings.EqualFold(it.Name, name) {
+			if gt.IgnoreCase(it.Name, name) {
 				gt.Unequip(it.ID)
 				return
 			}
@@ -109,9 +108,9 @@ func handleRad(args string) {
 		gt.Console("item not equipped")
 	case "toggle":
 		// Toggle equip state for an item.
-		name := strings.Join(fields[1:], " ")
+		name := gt.Join(fields[1:], " ")
 		for _, it := range gt.Inventory() {
-			if strings.EqualFold(it.Name, name) {
+			if gt.IgnoreCase(it.Name, name) {
 				gt.ToggleEquip(it.ID)
 				return
 			}
@@ -124,19 +123,13 @@ func handleRad(args string) {
 			if hk.Disabled {
 				continue
 			}
-		outer:
 			for _, cmd := range hk.Commands {
-				if cmd.Plugin == "" {
-					continue
-				}
 				if cmd.Command != "" {
 					gt.Console(fmt.Sprintf("%s -> %s", hk.Combo, cmd.Command))
-				} else if cmd.Function != "" {
-					gt.Console(fmt.Sprintf("%s -> func %s", hk.Combo, cmd.Function))
-				}
-				count++
-				if count >= 15 {
-					break outer
+					count++
+					if count >= 15 {
+						break
+					}
 				}
 			}
 			if count >= 15 {
@@ -164,7 +157,7 @@ func handleRad(args string) {
 		gt.Console(fmt.Sprintf("space=%v just=%v mouse0=%v", gt.KeyPressed("space"), gt.KeyJustPressed("space"), gt.MousePressed("mouse0")))
 	case "say":
 		// Send a /say command with the rest of the text.
-		msg := strings.Join(fields[1:], " ")
+		msg := gt.Join(fields[1:], " ")
 		gt.EnqueueCommand("/say " + msg)
 	case "gear":
 		// List names of currently equipped items.
@@ -172,10 +165,10 @@ func handleRad(args string) {
 		for _, it := range gt.EquippedItems() {
 			names = append(names, it.Name)
 		}
-		gt.Console("equipped: " + strings.Join(names, ", "))
+		gt.Console("equipped: " + gt.Join(names, ", "))
 	case "has":
 		// Tell us if we have a specific item.
-		name := strings.Join(fields[1:], " ")
+		name := gt.Join(fields[1:], " ")
 		gt.Console(fmt.Sprintf("have %s: %v", name, gt.HasItem(name)))
 	case "dance":
 		// Run the dance action.

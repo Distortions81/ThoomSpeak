@@ -4,10 +4,12 @@ package main
 
 import "gt"
 
+// PluginName is shown in the plugin list.
 var PluginName = "Quick Reply"
 
-var lastThinker string
+var lastThinker string // remembers who last thought to us
 
+// Init watches chat for "thinks to you" messages and adds /r.
 func Init() {
 	gt.RegisterChatHandler(func(msg string) {
 		lower := gt.Lower(msg)

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"gt"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -19,6 +18,7 @@ var (
 )
 
 func Init() {
+	// Toggle counting with /cw.
 	gt.RegisterCommand("cw", func(args string) {
 		clRunning = !clRunning
 		if clRunning {
@@ -29,11 +29,15 @@ func Init() {
 			gt.Console("Coin Lord stopped")
 		}
 	})
+
+	// Reset the totals with /cwnew.
 	gt.RegisterCommand("cwnew", func(args string) {
 		clStart = time.Now()
 		clTotal = 0
 		gt.Console("Coin data reset")
 	})
+
+	// Show current totals with /cwdata or Shift+C.
 	gt.RegisterCommand("cwdata", func(args string) {
 		hours := time.Since(clStart).Hours()
 		rate := 0.0
@@ -46,14 +50,15 @@ func Init() {
 	gt.AddHotkey("Shift-C", "/cwdata")
 }
 
+// clHandle watches chat for messages like "You get 3 coins" and tallies them.
 func clHandle(msg string) {
 	if !clRunning {
 		return
 	}
-	if !strings.HasPrefix(msg, "You get ") || !strings.Contains(msg, " coin") {
+	if !gt.StartsWith(msg, "You get ") || !gt.Includes(msg, " coin") {
 		return
 	}
-	fields := strings.Fields(msg)
+	fields := gt.Words(msg)
 	if len(fields) < 3 {
 		return
 	}

@@ -4,10 +4,10 @@ package main
 
 import (
 	"gt"
-	"strings"
 	"time"
 )
 
+// PluginName identifies this plugin.
 var PluginName = "sharecads"
 
 var (
@@ -15,6 +15,7 @@ var (
 	scShare = map[string]time.Time{}
 )
 
+// Init toggles the feature with /shcads or Shift+S.
 func Init() {
 	gt.RegisterCommand("shcads", func(args string) {
 		scOn = !scOn
@@ -28,15 +29,16 @@ func Init() {
 	gt.AddHotkey("Shift-S", "/shcads")
 }
 
+// handleSharecads watches for healing energy messages and shares back once.
 func handleSharecads(msg string) {
 	if !scOn {
 		return
 	}
 	const prefix = "You sense healing energy from "
-	if !strings.HasPrefix(msg, prefix) {
+	if !gt.StartsWith(msg, prefix) {
 		return
 	}
-	name := strings.TrimSuffix(strings.TrimPrefix(msg, prefix), ".")
+	name := gt.TrimEnd(gt.TrimStart(msg, prefix), ".")
 	now := time.Now()
 	if t, ok := scShare[name]; ok && now.Sub(t) < 3*time.Second {
 		return

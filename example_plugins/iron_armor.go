@@ -3,16 +3,17 @@
 package main
 
 import (
-	"strings"
 	"time"
 
 	"gt"
 )
 
+// PluginName identifies the plugin.
 var PluginName = "Iron Armor Manager"
 
 var armorCondition string
 
+// Init wires up commands, hotkeys, and a chat watcher for examine results.
 func Init() {
 	gt.RegisterCommand("ironarmortoggle", func(args string) { ironArmorToggler() })
 	gt.RegisterCommand("examinearmor", func(args string) { examineArmor() })
@@ -25,7 +26,7 @@ func Init() {
 
 func hasEquipped(name string) bool {
 	for _, it := range gt.EquippedItems() {
-		if strings.EqualFold(it.Name, name) {
+		if gt.IgnoreCase(it.Name, name) {
 			return true
 		}
 	}
@@ -80,13 +81,13 @@ func examineArmor() {
 }
 
 func armorLabeler(slot string) {
-	lower := strings.ToLower(armorCondition)
+	lower := gt.Lower(armorCondition)
 	switch {
-	case strings.Contains(lower, "perfect"):
+	case gt.Includes(lower, "perfect"):
 		gt.RunCommand("/name " + slot + " (perfect)")
-	case strings.Contains(lower, "good"):
+	case gt.Includes(lower, "good"):
 		gt.RunCommand("/name " + slot + " (good)")
-	case strings.Contains(lower, "look"):
+	case gt.Includes(lower, "look"):
 		gt.RunCommand("/name " + slot + " (worn)")
 	}
 }
