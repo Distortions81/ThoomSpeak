@@ -77,7 +77,7 @@ var gsdef settings = settings{
 	MaxNightLevel:        100,
 	ChatTTS:              true,
 	ChatTTSVolume:        1.0,
-	ChatTTSSpeed:         1.0,
+	ChatTTSSpeed:         1.5,
 	ChatTTSVoice:         "en_US-hfc_female-medium",
 	Notifications:        true,
 	NotifyFallen:         true,
