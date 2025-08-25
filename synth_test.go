@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hajimehoshi/ebiten/v2/audio"
 	meltysynth "github.com/sinshu/go-meltysynth/meltysynth"
 )
 
@@ -142,5 +143,18 @@ func TestPCMBufferDuration(t *testing.T) {
 	}
 	if diff > sampleRate/20 {
 		t.Fatalf("pcm length = %d samples, want ~%d", got, want)
+	}
+}
+
+func TestPlayMuted(t *testing.T) {
+	ctx := &audio.Context{}
+	orig := gs
+	gs.Mute = false
+	gs.Music = false
+	gs.MasterVolume = 1
+	gs.MusicVolume = 1
+	t.Cleanup(func() { gs = orig })
+	if err := Play(ctx, 0, nil); err == nil || err.Error() != "music muted" {
+		t.Fatalf("expected music muted error, got %v", err)
 	}
 }
