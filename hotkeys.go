@@ -109,7 +109,7 @@ func loadHotkeys() {
 	}
 
 	// Ensure the default right-click use hotkey exists.
-	def := Hotkey{Name: "Click To Use", Combo: "RightClick", Commands: []HotkeyCommand{{Command: "/use @clicked"}}}
+	def := Hotkey{Name: "Click To Use", Combo: "RightClick", Commands: []HotkeyCommand{{Command: "/use @clicked"}}, Disabled: true}
 	exists := false
 	for _, hk := range newList {
 		if hk.Combo == def.Combo && hk.Plugin == "" {
