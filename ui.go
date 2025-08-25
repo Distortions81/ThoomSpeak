@@ -3537,6 +3537,18 @@ func makeDebugWindow() {
 	}
 	debugFlow.AddItem(pictIDCB)
 
+	pluginOutCB, pluginOutEvents := eui.NewCheckbox()
+	pluginOutCB.Text = "Always show plugin output"
+	pluginOutCB.Size = eui.Point{X: width, Y: 24}
+	pluginOutCB.Checked = gs.pluginOutputDebug
+	pluginOutEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			gs.pluginOutputDebug = ev.Checked
+			settingsDirty = true
+		}
+	}
+	debugFlow.AddItem(pluginOutCB)
+
 	smoothinCB, smoothinEvents := eui.NewCheckbox()
 	smoothinCB.Text = "Tint moving objects red"
 	smoothinCB.Size = eui.Point{X: width, Y: 24}

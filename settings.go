@@ -195,6 +195,7 @@ type settings struct {
 	smoothingDebug      bool
 	pictAgainDebug      bool
 	pictIDDebug         bool
+	pluginOutputDebug   bool
 	hideMoving          bool
 	hideMobiles         bool
 	vsync               bool
