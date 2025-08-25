@@ -107,6 +107,8 @@ var (
 	ttsMixCB        *eui.ItemData
 )
 
+var ttsTestPhrase = "The quick brown fox jumps over the lazy dog"
+
 // lastWhoRequest tracks the last time we requested a backend who list so we
 // can avoid spamming the server when the Players window is toggled rapidly.
 var lastWhoRequest time.Time
@@ -1991,6 +1993,28 @@ func makeSettingsWindow() {
 		}
 	}
 	left.AddItem(voiceDD)
+
+	ttsTestInput, ttsTestEvents := eui.NewInput()
+	ttsTestInput.Label = "TTS Test Phrase"
+	ttsTestInput.Text = ttsTestPhrase
+	ttsTestInput.TextPtr = &ttsTestPhrase
+	ttsTestInput.Size = eui.Point{X: leftW, Y: 24}
+	ttsTestEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventInputChanged {
+			ttsTestPhrase = ev.Text
+		}
+	}
+	left.AddItem(ttsTestInput)
+
+	ttsTestBtn, ttsTestBtnEvents := eui.NewButton()
+	ttsTestBtn.Text = "Test TTS"
+	ttsTestBtn.Size = eui.Point{X: leftW, Y: 24}
+	ttsTestBtnEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			go playChatTTS(ttsTestPhrase)
+		}
+	}
+	left.AddItem(ttsTestBtn)
 
 	tsFormatInput, tsFormatEvents := eui.NewInput()
 	tsFormatInput.Label = "Timestamp format"
