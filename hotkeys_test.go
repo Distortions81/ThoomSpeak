@@ -76,6 +76,21 @@ func TestHotkeyCommandInput(t *testing.T) {
 	}
 }
 
+// Test that a hotkey without a name is not saved.
+func TestHotkeyRequiresName(t *testing.T) {
+	hotkeys = nil
+	openHotkeyEditor(-1)
+	hotkeyComboText.Text = "Ctrl-C"
+	hotkeyCmdInputs[0].Text = "say hi"
+	finishHotkeyEdit(true)
+	if len(hotkeys) != 0 {
+		t.Fatalf("hotkey saved without name")
+	}
+	if hotkeyEditWin != nil {
+		hotkeyEditWin.Close()
+	}
+}
+
 // Test that loading hotkeys from disk refreshes the hotkeys window list.
 func TestLoadHotkeysShowsEntriesInWindow(t *testing.T) {
 	hotkeys = nil
@@ -111,6 +126,13 @@ func TestLoadHotkeysShowsEntriesInWindow(t *testing.T) {
 
 	if len(hotkeysList.Contents) != 1 {
 		t.Fatalf("hotkeys list not refreshed: %d", len(hotkeysList.Contents))
+	}
+	row := hotkeysList.Contents[0]
+	if row == nil || len(row.Contents) == 0 {
+		t.Fatalf("hotkey row malformed")
+	}
+	if got := row.Contents[0].Text; got != "Bye : Ctrl-B -> say bye" {
+		t.Fatalf("unexpected hotkey text: %q", got)
 	}
 }
 

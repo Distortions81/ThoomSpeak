@@ -83,7 +83,7 @@ func pluginLogf(format string, args ...interface{}) {
 }
 
 func pluginAddHotkey(combo, command string) {
-	hk := Hotkey{Combo: combo, Commands: []HotkeyCommand{{Command: command}}}
+	hk := Hotkey{Name: command, Combo: combo, Commands: []HotkeyCommand{{Command: command}}}
 	hotkeysMu.Lock()
 	hotkeys = append(hotkeys, hk)
 	hotkeysMu.Unlock()
@@ -97,7 +97,7 @@ func pluginAddHotkey(combo, command string) {
 // pluginAddHotkeyFunc registers a hotkey that invokes a named plugin function
 // registered via RegisterFunc.
 func pluginAddHotkeyFunc(combo, funcName string) {
-	hk := Hotkey{Combo: combo, Commands: []HotkeyCommand{{Command: "plugin:" + funcName}}}
+	hk := Hotkey{Name: funcName, Combo: combo, Commands: []HotkeyCommand{{Command: "plugin:" + funcName}}}
 	hotkeysMu.Lock()
 	hotkeys = append(hotkeys, hk)
 	hotkeysMu.Unlock()
