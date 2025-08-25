@@ -166,6 +166,11 @@ func makeHotkeysWindow() {
 	flow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL, Fixed: true}
 	hotkeysWin.AddItem(flow)
 
+	help := &eui.ItemData{ItemType: eui.ITEM_TEXT, Text: "@/@clicked -> last clicked, @hovered -> last hovered", Fixed: true}
+	help.Size = eui.Point{X: hotkeysWin.Size.X, Y: 20}
+	help.FontSize = 10
+	flow.AddItem(help)
+
 	btnRow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL, Fixed: true}
 	addBtn, addEvents := eui.NewButton()
 	addBtn.Text = "+"
