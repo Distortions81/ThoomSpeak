@@ -64,6 +64,8 @@ var basePluginExports = interp.Exports{
 		"TrimEnd":               reflect.ValueOf(pluginTrimEnd),
 		"Words":                 reflect.ValueOf(pluginWords),
 		"Join":                  reflect.ValueOf(pluginJoin),
+		"Replace":               reflect.ValueOf(pluginReplace),
+		"Split":                 reflect.ValueOf(pluginSplit),
 	},
 }
 
