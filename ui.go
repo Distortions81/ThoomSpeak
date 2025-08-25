@@ -3768,8 +3768,13 @@ func makeWindowsWindow() {
 	chatBoxEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventCheckboxChanged {
 			if ev.Checked {
-				chatWin.MarkOpenNear(ev.Item)
-			} else {
+				if chatWin == nil {
+					_ = makeChatWindow()
+				}
+				if chatWin != nil {
+					chatWin.MarkOpenNear(ev.Item)
+				}
+			} else if chatWin != nil {
 				chatWin.Close()
 			}
 		}
