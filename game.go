@@ -308,10 +308,8 @@ func prepareRenderCacheLocked() {
 }
 
 // bubble stores temporary chat bubble information. Bubbles expire after a
-// fixed number of game update frames from when they were created — no FPS
-// correction or wall-clock timing is applied to keep playback simple.
-const bubbleLifeFrames = (1000 / framems) * 4 // ~4s
-
+// number of frames determined when they are created. No FPS correction or
+// wall-clock timing is applied to keep playback simple.
 type bubble struct {
 	Index        uint8
 	H, V         int16
@@ -320,6 +318,7 @@ type bubble struct {
 	Text         string
 	Type         int
 	CreatedFrame int
+	LifeFrames   int
 }
 
 // drawSnapshot is a read-only copy of the current draw state.
@@ -397,7 +396,7 @@ func captureDrawSnapshot() drawSnapshot {
 		curFrame := frameCounter
 		kept := state.bubbles[:0]
 		for _, b := range state.bubbles {
-			if (curFrame - b.CreatedFrame) < bubbleLifeFrames {
+			if (curFrame - b.CreatedFrame) < b.LifeFrames {
 				if !b.Far {
 					if m, ok := state.mobiles[b.Index]; ok {
 						b.H, b.V = m.H, m.V

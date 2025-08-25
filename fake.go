@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"strings"
 	"time"
 )
 
@@ -52,7 +53,15 @@ func runFakeMode(ctx context.Context) {
 
 		// Helper to append a bubble and show corresponding chat message.
 		emitBubble := func(idx uint8, typ int, name, verb, txt string) {
-			b := bubble{Index: idx, Text: txt, Type: typ, CreatedFrame: frameCounter}
+			words := len(strings.Fields(txt))
+			if words < 1 {
+				words = 1
+			}
+			life := int(gs.BubbleLife * float64(words) * float64(1000/framems))
+			if life < 1 {
+				life = 1
+			}
+			b := bubble{Index: idx, Text: txt, Type: typ, CreatedFrame: frameCounter, LifeFrames: life}
 			switch typ & kBubbleTypeMask {
 			case kBubbleRealAction, kBubblePlayerAction, kBubbleNarrate:
 				b.NoArrow = true
@@ -108,7 +117,12 @@ func runFakeMode(ctx context.Context) {
 			case 11: // Monster growls
 				emitBubble(1, kBubbleMonster, p2, "growls", "Grrr!")
 			case 12: // Off-screen bubble
-				b := bubble{Index: 1, H: int16(fieldCenterX + 10), V: 0, Far: true, Text: "Over here!", Type: kBubbleNormal, CreatedFrame: frameCounter}
+				words := len(strings.Fields("Over here!"))
+				life := int(gs.BubbleLife * float64(words) * float64(1000/framems))
+				if life < 1 {
+					life = 1
+				}
+				b := bubble{Index: 1, H: int16(fieldCenterX + 10), V: 0, Far: true, Text: "Over here!", Type: kBubbleNormal, CreatedFrame: frameCounter, LifeFrames: life}
 				stateMu.Lock()
 				state.bubbles = append(state.bubbles, b)
 				stateMu.Unlock()

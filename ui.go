@@ -2471,6 +2471,20 @@ func makeSettingsWindow() {
 	}
 	center.AddItem(bubbleOpSlider)
 
+	bubbleLifeSlider, bubbleLifeEvents := eui.NewSlider()
+	bubbleLifeSlider.Label = "Bubble Life (s/word)"
+	bubbleLifeSlider.MinValue = 0.5
+	bubbleLifeSlider.MaxValue = 5
+	bubbleLifeSlider.Value = float32(gs.BubbleLife)
+	bubbleLifeSlider.Size = eui.Point{X: centerW - 10, Y: 24}
+	bubbleLifeEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			gs.BubbleLife = float64(ev.Value)
+			settingsDirty = true
+		}
+	}
+	center.AddItem(bubbleLifeSlider)
+
 	label, _ = eui.NewText()
 	label.Text = "\nQuality Options:"
 	label.FontSize = 15

@@ -1284,7 +1284,15 @@ func parseDrawState(data []byte, buildCache bool) error {
 				showBubble = typeOK && originOK
 			}
 			if showBubble {
-				b := bubble{Index: idx, Text: txt, Type: typ, CreatedFrame: frameCounter}
+				words := len(strings.Fields(txt))
+				if words < 1 {
+					words = 1
+				}
+				life := int(gs.BubbleLife * float64(words) * float64(1000/framems))
+				if life < 1 {
+					life = 1
+				}
+				b := bubble{Index: idx, Text: txt, Type: typ, CreatedFrame: frameCounter, LifeFrames: life}
 				switch bubbleType {
 				case kBubbleRealAction, kBubblePlayerAction, kBubbleNarrate:
 					b.NoArrow = true
