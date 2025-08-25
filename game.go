@@ -653,7 +653,9 @@ func (g *Game) Update() error {
 			}
 		}
 		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
-			txt := strings.TrimSpace(string(inputText))
+			txt := string(inputText)
+			txt = runInputHandlers(txt)
+			txt = strings.TrimSpace(txt)
 			if txt != "" {
 				if strings.HasPrefix(txt, "/play ") {
 					tune := strings.TrimSpace(txt[len("/play "):])
