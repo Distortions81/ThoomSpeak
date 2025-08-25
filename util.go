@@ -134,8 +134,22 @@ var numFrames int
 var lostFrames int
 var commandNum uint32 = 1
 var pendingCommand string
+var commandQueue []string
 var playerName string
 var playerIndex uint8 = 0xff
+
+func enqueueCommand(cmd string) {
+	if cmd != "" {
+		commandQueue = append(commandQueue, cmd)
+	}
+}
+
+func nextCommand() {
+	if pendingCommand == "" && len(commandQueue) > 0 {
+		pendingCommand = commandQueue[0]
+		commandQueue = commandQueue[1:]
+	}
+}
 
 // updateFrameCounters tracks frame statistics and detects dropped frames.
 // It returns the number of frames missing between the previous and
