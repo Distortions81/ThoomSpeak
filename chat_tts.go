@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 	"sync"
 	"time"
 
-	ttsspeech "github.com/go-tts/tts/pkg/speech"
 	"github.com/hajimehoshi/ebiten/v2/audio"
 	"github.com/hajimehoshi/ebiten/v2/audio/mp3"
 )
@@ -24,6 +28,25 @@ func stopAllTTS() {
 	}
 }
 
+func fetchTTS(ctx context.Context, text, lang string) (io.ReadCloser, error) {
+	u := fmt.Sprintf("http://translate.google.com/translate_tts?ie=UTF-8&textlen=%d&client=tw-ob&q=%s&tl=%s", len(text), url.QueryEscape(text), lang)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query google: %w", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		defer resp.Body.Close()
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("failed to query google: response status %d: %s", resp.StatusCode, string(body))
+	}
+	return resp.Body, nil
+}
+
 func speakChatMessage(msg string) {
 	if audioContext == nil || blockTTS || gs.Mute {
 		if audioContext == nil {
@@ -38,10 +61,10 @@ func speakChatMessage(msg string) {
 		return
 	}
 	go func(text string) {
-		chatTTSMu.Lock()
-		defer chatTTSMu.Unlock()
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
 
-		rc, err := ttsspeech.FromText(text, "en")
+		rc, err := fetchTTS(ctx, text, "en")
 		if err != nil {
 			logError("chat tts: %v", err)
 			return
@@ -53,6 +76,9 @@ func speakChatMessage(msg string) {
 			logError("chat tts decode: %v", err)
 			return
 		}
+
+		chatTTSMu.Lock()
+		defer chatTTSMu.Unlock()
 
 		p, err := audioContext.NewPlayer(stream)
 		if err != nil {
