@@ -196,23 +196,16 @@ func preparePiper(dataDir string) (string, string, string, error) {
 	_ = os.Chmod(binPath, 0o755)
 
 	voicesDir := filepath.Join(piperDir, "voices")
-	voices := []string{piperFemaleVoice, piperMaleVoice}
-	for _, arch := range voices {
-		v := strings.TrimSuffix(arch, ".tar.gz")
-		modelPath := filepath.Join(voicesDir, v, v+".onnx")
-		if _, err := os.Stat(modelPath); err != nil {
-			archive := filepath.Join(piperDir, arch)
-			if _, err := os.Stat(archive); err != nil {
-				if err := downloadFile(extraDataBase+arch, archive); err != nil {
-					return "", "", "", err
-				}
-			}
-			_ = extractArchive(archive, voicesDir)
-		}
-	}
-	voice := strings.TrimSuffix(piperFemaleVoice, ".tar.gz")
+	voice := "en_US-hfc_female-medium"
+
 	model := filepath.Join(voicesDir, voice, voice+".onnx")
 	cfg := filepath.Join(voicesDir, voice, voice+".onnx.json")
+	if _, err := os.Stat(model); err != nil {
+		return "", "", "", fmt.Errorf("missing piper voice model: %w", err)
+	}
+	if _, err := os.Stat(cfg); err != nil {
+		return "", "", "", fmt.Errorf("missing piper voice config: %w", err)
+	}
 	return binPath, model, cfg, nil
 }
 
