@@ -1,21 +1,20 @@
 Movement
 --------
-- Left-click to walk toward the cursor. When "Click-to-Toggle Walk" is enabled, a single click sets a walk target.
-- Or, move using WASD or arrow keys. Hold Shift to run.
+- Left-click to walk toward the cursor. With "Click-to-Toggle Walk" on, one click sets a target.
+- You can also move with WASD or the arrow keys. Hold Shift to run.
 
 Communication
 -------------
-- Press Enter to start typing. Enter again sends the message.
-- Press Esc to cancel typing. Up/Down browse previous messages.
-
+- Press Enter to start typing and Enter again to send.
+- Press Esc to cancel. Use Up or Down to browse previous messages.
 
 UI Navigation
 -------------
-- Use the Windows button to set windows open or closed.
-- Mouse wheel scrolls lists and text windows.
+- Use the Windows button to open or close windows.
+- Scroll the mouse wheel to move through lists and text windows.
 
 Extras
------
-- Want a custom background image? Save it as background.png in the data directory.
-- Want a custom splash image (game window image while not logged in) put your own splash.png in the data directory.
-- Want to test music? download soundfont and use /play <instrument number> <music>
+------
+- Put `background.png` or `splash.png` in the data folder to change the look.
+- To try music, add a soundfont and use `/play <instrument> <notes>`.
+
