@@ -184,6 +184,11 @@ func preparePiper(dataDir string) (string, string, string, error) {
 	binPath := filepath.Join(binDir, binName)
 	if _, err := os.Stat(binPath); err != nil {
 		archivePath := filepath.Join(piperDir, archiveName)
+		if _, err := os.Stat(archivePath); err != nil {
+			if err := downloadFile(extraDataBase+archiveName, archivePath); err != nil {
+				return "", "", "", err
+			}
+		}
 		if err := extractArchive(archivePath, binDir); err != nil {
 			return "", "", "", err
 		}
@@ -191,15 +196,21 @@ func preparePiper(dataDir string) (string, string, string, error) {
 	_ = os.Chmod(binPath, 0o755)
 
 	voicesDir := filepath.Join(piperDir, "voices")
-	voices := []string{"en_US-hfc_female-medium", "en_US-hfc_male-medium"}
-	for _, v := range voices {
+	voices := []string{piperFemaleVoice, piperMaleVoice}
+	for _, arch := range voices {
+		v := strings.TrimSuffix(arch, ".tar.gz")
 		modelPath := filepath.Join(voicesDir, v, v+".onnx")
 		if _, err := os.Stat(modelPath); err != nil {
-			archive := filepath.Join(piperDir, v+".tar.gz")
+			archive := filepath.Join(piperDir, arch)
+			if _, err := os.Stat(archive); err != nil {
+				if err := downloadFile(extraDataBase+arch, archive); err != nil {
+					return "", "", "", err
+				}
+			}
 			_ = extractArchive(archive, voicesDir)
 		}
 	}
-	voice := "en_US-hfc_female-medium"
+	voice := strings.TrimSuffix(piperFemaleVoice, ".tar.gz")
 	model := filepath.Join(voicesDir, voice, voice+".onnx")
 	cfg := filepath.Join(voicesDir, voice, voice+".onnx.json")
 	return binPath, model, cfg, nil
