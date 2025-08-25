@@ -3,7 +3,7 @@ goThoom Plugins
 
 This folder contains example plugin scripts for goThoom. Plugins are plain
 Go files interpreted at runtime using Yaegi. The client exposes a small API
-under the import path "pluginapi".
+under the import path "gt".
 
 Getting Started
 ---------------
@@ -13,7 +13,7 @@ Getting Started
 
 API
 ---
-- pluginapi.AddHotkey(combo, command)
+- gt.AddHotkey(combo, command)
   Registers a hotkey combo (e.g., "Digit1", "Shift-A", "Mouse Middle") that
   runs a slash-command like "/ponder hello world".
 
