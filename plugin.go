@@ -53,6 +53,17 @@ var basePluginExports = interp.Exports{
 		"EquippedItems":         reflect.ValueOf(pluginEquippedItems),
 		"HasItem":               reflect.ValueOf(pluginHasItem),
 		"FrameNumber":           reflect.ValueOf(pluginFrameNumber),
+		"IgnoreCase":            reflect.ValueOf(pluginIgnoreCase),
+		"StartsWith":            reflect.ValueOf(pluginStartsWith),
+		"EndsWith":              reflect.ValueOf(pluginEndsWith),
+		"Includes":              reflect.ValueOf(pluginIncludes),
+		"Lower":                 reflect.ValueOf(pluginLower),
+		"Upper":                 reflect.ValueOf(pluginUpper),
+		"Trim":                  reflect.ValueOf(pluginTrim),
+		"TrimStart":             reflect.ValueOf(pluginTrimStart),
+		"TrimEnd":               reflect.ValueOf(pluginTrimEnd),
+		"Words":                 reflect.ValueOf(pluginWords),
+		"Join":                  reflect.ValueOf(pluginJoin),
 	},
 }
 
@@ -69,6 +80,9 @@ func exportsForPlugin(owner string) interp.Exports {
 		m["RegisterCommand"] = reflect.ValueOf(func(name string, handler PluginCommandHandler) {
 			pluginRegisterCommand(owner, name, handler)
 		})
+		m["AddMacro"] = reflect.ValueOf(func(short, full string) { pluginAddMacro(owner, short, full) })
+		m["AddMacros"] = reflect.ValueOf(func(macros map[string]string) { pluginAddMacros(owner, macros) })
+		m["AutoReply"] = reflect.ValueOf(func(trigger, cmd string) { pluginAutoReply(owner, trigger, cmd) })
 		m["RunCommand"] = reflect.ValueOf(func(cmd string) { pluginRunCommand(owner, cmd) })
 		m["EnqueueCommand"] = reflect.ValueOf(func(cmd string) { pluginEnqueueCommand(owner, cmd) })
 		ex[pkg] = m
