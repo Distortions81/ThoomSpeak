@@ -23,7 +23,5 @@ music_*.wav
 data/*.gz
 data/global-hotkeys.json
 
-data/piper-bin-jenny/
-data/piper-bin-linux/
-data/piper-bin-windows/
-data/piper-voice-jenny/
+data/piper
+data/plugins
