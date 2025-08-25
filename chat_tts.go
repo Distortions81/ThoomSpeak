@@ -14,7 +14,6 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2/audio"
@@ -257,6 +256,11 @@ func preparePiper(dataDir string) (string, string, string, error) {
 	model := filepath.Join(voicesDir, voice, voice+".onnx")
 	cfg := filepath.Join(voicesDir, voice, voice+".onnx.json")
 	if _, err := os.Stat(model); err != nil {
+		// Try voice files directly in voicesDir
+		model = filepath.Join(voicesDir, voice+".onnx")
+		cfg = filepath.Join(voicesDir, voice+".onnx.json")
+	}
+	if _, err := os.Stat(model); err != nil {
 		return "", "", "", fmt.Errorf("missing piper voice model: %w", err)
 	}
 	if _, err := os.Stat(cfg); err != nil {
@@ -271,21 +275,31 @@ func listPiperVoices() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	voices := []string{}
+	voiceSet := map[string]struct{}{}
 	for _, e := range entries {
-		if !e.IsDir() {
-			continue
-		}
 		name := e.Name()
-		model := filepath.Join(voicesDir, name, name+".onnx")
-		cfg := filepath.Join(voicesDir, name, name+".onnx.json")
-		if _, err := os.Stat(model); err != nil {
-			continue
+		if e.IsDir() {
+			model := filepath.Join(voicesDir, name, name+".onnx")
+			cfg := filepath.Join(voicesDir, name, name+".onnx.json")
+			if _, err := os.Stat(model); err != nil {
+				continue
+			}
+			if _, err := os.Stat(cfg); err != nil {
+				continue
+			}
+			voiceSet[name] = struct{}{}
+		} else if strings.HasSuffix(name, ".onnx") {
+			base := strings.TrimSuffix(name, ".onnx")
+			cfg := filepath.Join(voicesDir, base+".onnx.json")
+			if _, err := os.Stat(cfg); err != nil {
+				continue
+			}
+			voiceSet[base] = struct{}{}
 		}
-		if _, err := os.Stat(cfg); err != nil {
-			continue
-		}
-		voices = append(voices, name)
+	}
+	voices := make([]string, 0, len(voiceSet))
+	for v := range voiceSet {
+		voices = append(voices, v)
 	}
 	sort.Strings(voices)
 	return voices, nil
@@ -456,7 +470,9 @@ func synthesizeWithPiper(text string) ([]byte, error) {
 		cmd.Dir = dir
 		cmd.Stdin = strings.NewReader(text)
 		cmd.Stderr = &stderr
-		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+		if attr := piperSysProcAttr(); attr != nil {
+			cmd.SysProcAttr = attr
+		}
 		if err := cmd.Run(); err != nil {
 			if os.IsPermission(err) {
 				if info, statErr := os.Stat(piperPath); statErr == nil {
@@ -479,8 +495,8 @@ func synthesizeWithPiper(text string) ([]byte, error) {
 	cmd.Stdin = strings.NewReader(text)
 	cmd.Stdout = &out
 	cmd.Stderr = &stderr
-	if runtime.GOOS == "windows" {
-		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	if attr := piperSysProcAttr(); attr != nil {
+		cmd.SysProcAttr = attr
 	}
 	if err := cmd.Run(); err != nil {
 		if os.IsPermission(err) {
