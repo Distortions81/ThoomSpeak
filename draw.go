@@ -1187,7 +1187,7 @@ func parseDrawState(data []byte, buildCache bool) error {
 			return fmt.Errorf("bubble=%d off=%d len=%d", i, off, len(stateData))
 		}
 		bubbleData := stateData[:p+end+1]
-		if verb, txt, bubbleName, lang, code, target := decodeBubble(bubbleData); txt != "" || code != kBubbleCodeKnown {
+		if verb, txt, bubbleName, lang, code, bubbleType, target := decodeBubble(bubbleData); txt != "" || code != kBubbleCodeKnown {
 			name := bubbleName
 			if target == thinkNone {
 				if bubbleName == ThinkUnknownName {
@@ -1221,7 +1221,6 @@ func parseDrawState(data []byte, buildCache bool) error {
 				}
 				stateMu.Unlock()
 			}
-			bubbleType := typ & kBubbleTypeMask
 			showBubble := gs.SpeechBubbles && txt != "" && !blockBubbles && verb != "thinks"
 			if showBubble {
 				typeOK := true
@@ -1344,7 +1343,7 @@ func parseDrawState(data []byte, buildCache bool) error {
 					}
 				}
 			}
-			if gs.MessagesToConsole {
+			if gs.MessagesToConsole || !isChatBubble(bubbleType) {
 				consoleMessage(msg)
 			} else {
 				chatMessage(msg)

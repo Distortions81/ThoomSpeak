@@ -1,9 +1,9 @@
 package main
 
 import (
-    "bytes"
-    "log"
-    "strings"
+	"bytes"
+	"log"
+	"strings"
 
 	"golang.org/x/text/encoding/charmap"
 )
@@ -132,25 +132,27 @@ BEPP tag reference (two-letter codes following the 0xC2 prefix):
 | yk  | you killed          |
 */
 func decodeBEPP(data []byte) string {
-    if len(data) < 3 || data[0] != 0xC2 {
-        return ""
-    }
-    prefix := string(data[1:3])
-    // Keep a raw copy (without NUL terminator) for backend parsing.
-    raw := data[3:]
-    if i := bytes.IndexByte(raw, 0); i >= 0 {
-        raw = raw[:i]
-    }
-    // For displayable text, strip BEPP tags and non-printables.
-    cleaned := stripBEPPTags(append([]byte(nil), raw...))
-    text := strings.TrimSpace(decodeMacRoman(cleaned))
+	if len(data) < 3 || data[0] != 0xC2 {
+		return ""
+	}
+	prefix := string(data[1:3])
+	// Keep a raw copy (without NUL terminator) for backend parsing.
+	raw := data[3:]
+	if i := bytes.IndexByte(raw, 0); i >= 0 {
+		raw = raw[:i]
+	}
+	// For displayable text, strip BEPP tags and non-printables.
+	cleaned := stripBEPPTags(append([]byte(nil), raw...))
+	text := strings.TrimSpace(decodeMacRoman(cleaned))
 
-    if dumpBEPPTags {
-        // Log the tag and a truncated form of the text for empirical analysis.
-        t := text
-        if len(t) > 120 { t = t[:120] + "..." }
-        log.Printf("BEPP %s: %q", prefix, t)
-    }
+	if dumpBEPPTags {
+		// Log the tag and a truncated form of the text for empirical analysis.
+		t := text
+		if len(t) > 120 {
+			t = t[:120] + "..."
+		}
+		log.Printf("BEPP %s: %q", prefix, t)
+	}
 	if text == "" && prefix != "be" && prefix != "mu" { // backend commands or music may have no printable text
 		return ""
 	}
@@ -270,18 +272,18 @@ func parseThinkText(raw []byte, text string) (name string, target thinkTarget, m
 	return
 }
 
-func decodeBubble(data []byte) (verb, text, name, lang string, code uint8, target thinkTarget) {
+func decodeBubble(data []byte) (verb, text, name, lang string, code uint8, bubbleType int, target thinkTarget) {
 	if len(data) < 2 {
-		return "", "", "", "", kBubbleCodeKnown, thinkNone
+		return "", "", "", "", kBubbleCodeKnown, kBubbleNormal, thinkNone
 	}
 	typ := int(data[1])
-	bubbleType := typ & kBubbleTypeMask
+	bubbleType = typ & kBubbleTypeMask
 	p := 2
 	code = kBubbleCodeKnown
 	langIdx := -1
 	if typ&kBubbleNotCommon != 0 {
 		if len(data) < p+1 {
-			return "", "", "", "", kBubbleCodeKnown, thinkNone
+			return "", "", "", "", kBubbleCodeKnown, bubbleType, thinkNone
 		}
 		b := data[p]
 		langIdx = int(b & kBubbleLanguageMask)
@@ -293,12 +295,12 @@ func decodeBubble(data []byte) (verb, text, name, lang string, code uint8, targe
 	}
 	if typ&kBubbleFar != 0 {
 		if len(data) < p+4 {
-			return "", "", "", lang, code, thinkNone
+			return "", "", "", lang, code, bubbleType, thinkNone
 		}
 		p += 4
 	}
 	if len(data) <= p {
-		return "", "", "", lang, code, thinkNone
+		return "", "", "", lang, code, bubbleType, thinkNone
 	}
 	raw := data[p:]
 	msgData := stripBEPPTags(raw)
@@ -327,7 +329,7 @@ func decodeBubble(data []byte) (verb, text, name, lang string, code uint8, targe
 		text = ""
 	}
 	if text == "" && code == kBubbleCodeKnown {
-		return "", "", "", lang, code, thinkNone
+		return "", "", "", lang, code, bubbleType, thinkNone
 	}
 	switch bubbleType {
 	case kBubbleNormal:
@@ -358,7 +360,7 @@ func decodeBubble(data []byte) (verb, text, name, lang string, code uint8, targe
 	default:
 		// unknown bubble types return no verb
 	}
-	return verb, text, name, lang, code, target
+	return verb, text, name, lang, code, bubbleType, target
 }
 
 // decodeMessage extracts printable text from a raw server message. It operates
@@ -376,7 +378,7 @@ func decodeMessage(m []byte) string {
 			}
 			return ""
 		}
-		if _, s, _, _, _, _ := decodeBubble(data); s != "" {
+		if _, s, _, _, _, _, _ := decodeBubble(data); s != "" {
 			return s
 		}
 		if i := bytes.IndexByte(data, 0); i >= 0 {
@@ -396,40 +398,44 @@ func decodeMessage(m []byte) string {
 }
 
 func handleInfoText(data []byte) {
-    for _, line := range bytes.Split(data, []byte{'\r'}) {
-        if len(line) == 0 {
-            continue
-        }
-        if line[0] == 0xC2 {
-            if txt := decodeBEPP(line); txt != "" {
-                consoleMessage(txt)
-            }
-            continue
-        }
-        if _, txt, _, _, _, _ := decodeBubble(line); txt != "" {
-            if gs.MessagesToConsole {
-                consoleMessage(txt)
-            } else {
-                chatMessage(txt)
-            }
-            continue
-        }
-        s := strings.TrimSpace(decodeMacRoman(stripBEPPTags(line)))
-        if s == "" {
-            continue
-        }
-        // Empirical: classic client handles server-sent info-text music commands
-        // like "/music/..." here. Accept only this canonical prefix from
-        // info-text (not bubbles), and otherwise avoid parsing plain text.
-        if strings.HasPrefix(s, "/music/") {
-            if parseMusicCommand(s, line) {
-                continue
-            }
-        }
-        // Ignore other command-like lines.
-        if strings.HasPrefix(s, "/") {
-            continue
-        }
-        consoleMessage(s)
-    }
+	for _, line := range bytes.Split(data, []byte{'\r'}) {
+		if len(line) == 0 {
+			continue
+		}
+		if line[0] == 0xC2 {
+			if txt := decodeBEPP(line); txt != "" {
+				consoleMessage(txt)
+			}
+			continue
+		}
+		if _, txt, _, _, _, bubbleType, _ := decodeBubble(line); txt != "" {
+			if isChatBubble(bubbleType) {
+				if gs.MessagesToConsole {
+					consoleMessage(txt)
+				} else {
+					chatMessage(txt)
+				}
+			} else {
+				consoleMessage(txt)
+			}
+			continue
+		}
+		s := strings.TrimSpace(decodeMacRoman(stripBEPPTags(line)))
+		if s == "" {
+			continue
+		}
+		// Empirical: classic client handles server-sent info-text music commands
+		// like "/music/..." here. Accept only this canonical prefix from
+		// info-text (not bubbles), and otherwise avoid parsing plain text.
+		if strings.HasPrefix(s, "/music/") {
+			if parseMusicCommand(s, line) {
+				continue
+			}
+		}
+		// Ignore other command-like lines.
+		if strings.HasPrefix(s, "/") {
+			continue
+		}
+		consoleMessage(s)
+	}
 }

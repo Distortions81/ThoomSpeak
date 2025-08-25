@@ -216,6 +216,10 @@ const (
 	kBubbleFar       = 0x80
 )
 
+func isChatBubble(t int) bool {
+	return t == kBubbleNormal || t == kBubbleWhisper || t == kBubbleYell
+}
+
 // bubble languages and codes from Public_cl.h
 const (
 	kBubbleHalfling = iota
