@@ -562,10 +562,10 @@ func makeMixerWindow() {
 		return s, cb
 	}
 
-	gameMixSlider, gameMixCB = makeMix(gs.Volume, gs.GameSound, "Game",
+	gameMixSlider, gameMixCB = makeMix(gs.GameVolume, gs.GameSound, "Game",
 		func(ev eui.UIEvent) {
 			if ev.Type == eui.EventSliderChanged {
-				gs.Volume = float64(ev.Value)
+				gs.GameVolume = float64(ev.Value)
 				settingsDirty = true
 				updateSoundVolume()
 			}
