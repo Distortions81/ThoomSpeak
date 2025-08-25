@@ -5,10 +5,11 @@ go 1.24.3
 require github.com/hajimehoshi/ebiten/v2 v2.8.8
 
 require (
+	github.com/amitybell/piper-voice-jenny v0.0.0-20231030195502-2afb5ebf3c45
 	github.com/dustin/go-humanize v1.0.1
+	github.com/fresh-cut/piper v0.0.0-20240327030424-ba336170f45f
 	github.com/google/gopacket v1.1.19
 	github.com/hako/durafmt v0.0.0-20210608085754-5c1018a4e16b
-	github.com/hegedustibor/htgo-tts v0.0.0-20240912200108-467b3e535435
 	github.com/hugolgst/rich-go v0.0.0-20240715122152-74618cc1ace2
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/remeh/sizedwaitgroup v1.0.0
@@ -24,15 +25,18 @@ require (
 
 require (
 	github.com/TheTitanrain/w32 v0.0.0-20200114052255-2654d97dbd3d // indirect
+	github.com/adrg/xdg v0.4.0 // indirect
+	github.com/amitybell/piper-asset v0.0.0-20231030194325-d36a29e3b1fd // indirect
+	github.com/amitybell/piper-bin-linux v0.0.0-20231118093037-92b3de178ad8 // indirect
+	github.com/amitybell/piper-bin-windows v0.0.0-20231118093113-cc2cef2f6b74 // indirect
 	github.com/ebitengine/gomobile v0.0.0-20250329061421-6d0a8e981e4c // indirect
 	github.com/ebitengine/hideconsole v1.0.0 // indirect
 	github.com/ebitengine/oto/v3 v3.3.3 // indirect
 	github.com/ebitengine/purego v0.8.4 // indirect
 	github.com/go-text/typesetting v0.3.0 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
-	github.com/hajimehoshi/go-mp3 v0.3.4 // indirect
-	github.com/hajimehoshi/oto/v2 v2.3.1 // indirect
 	github.com/jezek/xgb v1.1.1 // indirect
+	github.com/klauspost/compress v1.17.3 // indirect
 	golang.org/x/exp/shiny v0.0.0-20250606033433-dcc06ee1d476 // indirect
 	golang.org/x/image v0.30.0 // indirect
 	golang.org/x/mobile v0.0.0-20250606033058-a2a15c67f36f // indirect
