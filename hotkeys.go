@@ -551,20 +551,25 @@ func checkHotkeys() {
 	if combo := detectCombo(); combo != "" {
 		for _, hk := range hotkeys {
 			if hk.Combo == combo {
-				for _, c := range hk.Commands {
-					cmd := strings.TrimSpace(c.Command)
-					if strings.HasPrefix(strings.ToLower(cmd), "plugin:") {
-						name := strings.ToLower(strings.TrimSpace(strings.TrimPrefix(cmd, "plugin:")))
-						if fn, ok := pluginFuncs[name]; ok && fn != nil {
-							go fn()
-							consoleMessage("[plugin] called function: " + name)
-						} else {
-							consoleMessage("[plugin] function not found: " + name)
-						}
-						continue
-					}
-					enqueueCommand(cmd)
-				}
+                for _, c := range hk.Commands {
+                    cmd := strings.TrimSpace(c.Command)
+                    if strings.HasPrefix(strings.ToLower(cmd), "plugin:") {
+                        name := strings.ToLower(strings.TrimSpace(strings.TrimPrefix(cmd, "plugin:")))
+                        if fn, ok := pluginFuncs[name]; ok && fn != nil {
+                            // Surface plugin invocation as console input for visibility
+                            consoleMessage("> [plugin] " + name)
+                            go fn()
+                        } else {
+                            consoleMessage("[plugin] function not found: " + name)
+                        }
+                        continue
+                    }
+                    // Show hotkey-triggered command as if it were typed
+                    if cmd != "" {
+                        consoleMessage("> " + cmd)
+                    }
+                    enqueueCommand(cmd)
+                }
 				nextCommand()
 				break
 			}

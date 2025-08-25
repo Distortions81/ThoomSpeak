@@ -16,3 +16,5 @@ func Logf(format string, args ...interface{}) {}
 // AddHotkey is a no-op stub matching the runtime API signature.
 func AddHotkey(combo, command string) {}
 
+func RegisterCommand(command string, handler func(args string)) {}
+func RegisterFunc(command string, handler func())               {}

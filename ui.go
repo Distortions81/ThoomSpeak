@@ -372,55 +372,56 @@ func makeMixerWindow() {
 	mixerWin.AutoSize = true
 	mixerWin.Movable = true
 
-    flow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
+	flow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
 
-    addSpacer := func() {
-        sp, _ := eui.NewText()
-        sp.Text = ""
-        sp.Size = eui.Point{X: 16, Y: 1}
-        flow.AddItem(sp)
-    }
-    addBigSpacer := func() {
-        sp, _ := eui.NewText()
-        sp.Text = ""
-        sp.Size = eui.Point{X: 28, Y: 1}
-        flow.AddItem(sp)
-    }
+	addSpacer := func() {
+		sp, _ := eui.NewText()
+		sp.Text = ""
+		sp.Size = eui.Point{X: 16, Y: 1}
+		flow.AddItem(sp)
+	}
+	addBigSpacer := func() {
+		sp, _ := eui.NewText()
+		sp.Text = ""
+		sp.Size = eui.Point{X: 28, Y: 1}
+		flow.AddItem(sp)
+	}
 
-    // Main/master volume column to match other channel columns
-    mainCol := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL, Size: eui.Point{X: 64, Y: 140}}
-    masterMixSlider, h := eui.NewSlider()
-    masterMixSlider.Vertical = true
-    masterMixSlider.MinValue = 0
-    masterMixSlider.MaxValue = 1
-    masterMixSlider.Value = float32(gs.MasterVolume)
-    masterMixSlider.Size = eui.Point{X: 24, Y: 100}
-    masterMixSlider.AuxSize = eui.Point{X: 16, Y: 8}
-    h.Handle = func(ev eui.UIEvent) {
-        if ev.Type == eui.EventSliderChanged {
-            if gs.Mute {
-                ev.Item.Value = 0
-                ev.Item.Dirty = true
-                return
-            }
-            gs.MasterVolume = float64(ev.Value)
-            if volumeSlider != nil {
-                volumeSlider.Value = ev.Item.Value
-                volumeSlider.Dirty = true
-            }
-            settingsDirty = true
-            updateSoundVolume()
-        }
-    }
-    mainCol.AddItem(masterMixSlider)
-    mainLbl, _ := eui.NewText()
-    mainLbl.Text = "Main"
-    mainLbl.Size = eui.Point{X: 64, Y: 24}
-    mainCol.AddItem(mainLbl)
-    flow.AddItem(mainCol)
+	// Main/master volume column to match other channel columns
+	mainCol := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL, Size: eui.Point{X: 64, Y: 140}}
+	masterMixSlider, h := eui.NewSlider()
+	masterMixSlider.Vertical = true
+	masterMixSlider.MinValue = 0
+	masterMixSlider.MaxValue = 1
+	masterMixSlider.Value = float32(gs.MasterVolume)
+	masterMixSlider.Size = eui.Point{X: 24, Y: 100}
+	masterMixSlider.AuxSize = eui.Point{X: 16, Y: 8}
+	h.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			if gs.Mute {
+				ev.Item.Value = 0
+				ev.Item.Dirty = true
+				return
+			}
+			gs.MasterVolume = float64(ev.Value)
+			if volumeSlider != nil {
+				volumeSlider.Value = ev.Item.Value
+				volumeSlider.Dirty = true
+			}
+			settingsDirty = true
+			updateSoundVolume()
+		}
+	}
+	mainCol.AddItem(masterMixSlider)
+	mainLbl, _ := eui.NewText()
+	mainLbl.Text = "Main"
+	mainLbl.Size = eui.Point{X: 64, Y: 24}
+	mainLbl.FontSize = 9
+	mainCol.AddItem(mainLbl)
+	flow.AddItem(mainCol)
 
-    // Add a slightly larger gap before sub-channel sliders for clarity
-    addBigSpacer()
+	// Add a slightly larger gap before sub-channel sliders for clarity
+	addBigSpacer()
 
 	makeMix := func(val float64, enabled bool, name string, slide func(ev eui.UIEvent), check func(ev eui.UIEvent)) (*eui.ItemData, *eui.ItemData) {
 		col := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL, Size: eui.Point{X: 64, Y: 140}}
