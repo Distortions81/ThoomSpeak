@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -22,6 +23,9 @@ import (
 const defaultUpdateBase = "https://m45sci.xyz/downloads/clanlord"
 const soundFontURL = "https://m45sci.xyz/u/dist/goThoom/soundfont.sf2.gz"
 const soundFontFile = "soundfont.sf2"
+const extraDataBase = "https://m45sci.xyz/u/dist/goThoom/"
+const piperFemaleVoice = "en_US-hfc_female-medium.tar.gz"
+const piperMaleVoice = "en_US-hfc_male-medium.tar.gz"
 
 var updateBase = defaultUpdateBase
 
@@ -127,6 +131,95 @@ var downloadGZ = func(url, dest string) error {
 		return err
 	}
 	// Ensure a final 100% progress update when size is known.
+	if downloadProgress != nil && pc.size > 0 {
+		downloadProgress(pc.name, pc.size, pc.size)
+	}
+	consoleMessage("Download complete.")
+	if downloadStatus != nil {
+		downloadStatus(fmt.Sprintf("Download complete: %s", filepath.Base(dest)))
+	}
+	if err := os.Rename(tmp, dest); err != nil {
+		logError("rename %v to %v: %v", tmp, dest, err)
+		return err
+	}
+	removeTmp = false
+	return nil
+}
+
+var downloadFile = func(url, dest string) error {
+	consoleMessage(fmt.Sprintf("Downloading: %v...", url))
+	if downloadStatus != nil {
+		downloadStatus(fmt.Sprintf("Connecting to %s...", url))
+	}
+
+	req, err := http.NewRequestWithContext(downloadCtx, http.MethodGet, url, nil)
+	if err != nil {
+		if downloadStatus != nil {
+			downloadStatus(fmt.Sprintf("Error creating request: %v", err))
+		}
+		return err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		logError("GET %v: %v", url, err)
+		if downloadStatus != nil {
+			downloadStatus(fmt.Sprintf("Error connecting: %v", err))
+		}
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		err := fmt.Errorf("GET %v: %v", url, resp.Status)
+		logError("download %v: %v", url, err)
+		if downloadStatus != nil {
+			downloadStatus(fmt.Sprintf("HTTP error: %v", resp.Status))
+		}
+		return err
+	}
+	if downloadStatus != nil {
+		host := resp.Request.URL.Host
+		humanTotal := "unknown"
+		if resp.ContentLength > 0 {
+			humanTotal = humanize.Bytes(uint64(resp.ContentLength))
+		}
+		downloadStatus(fmt.Sprintf("Connected to %s — starting download (%s)", host, humanTotal))
+	}
+
+	pc := &progCounter{name: filepath.Base(dest), size: resp.ContentLength}
+	if downloadProgress != nil {
+		downloadProgress(pc.name, 0, pc.size)
+	}
+	body := io.TeeReader(resp.Body, pc)
+	tmp := dest + ".tmp"
+	f, err := os.Create(tmp)
+	if err != nil {
+		logError("create %v: %v", tmp, err)
+		if downloadStatus != nil {
+			downloadStatus(fmt.Sprintf("Error: %v", err))
+		}
+		return err
+	}
+	removeTmp := true
+	defer func() {
+		if removeTmp {
+			os.Remove(tmp)
+		}
+	}()
+	if _, err := io.Copy(f, body); err != nil {
+		f.Close()
+		logError("copy %v: %v", tmp, err)
+		if downloadStatus != nil {
+			downloadStatus(fmt.Sprintf("Error: %v", err))
+		}
+		return err
+	}
+	if err := f.Close(); err != nil {
+		logError("close %v: %v", tmp, err)
+		if downloadStatus != nil {
+			downloadStatus(fmt.Sprintf("Error: %v", err))
+		}
+		return err
+	}
 	if downloadProgress != nil && pc.size > 0 {
 		downloadProgress(pc.name, pc.size, pc.size)
 	}
@@ -260,8 +353,14 @@ type dataFilesStatus struct {
 	NeedImages    bool
 	NeedSounds    bool
 	NeedSoundfont bool
+	NeedPiper     bool
+	NeedPiperFem  bool
+	NeedPiperMale bool
 	Files         []fileInfo
 	SoundfontSize int64
+	PiperSize     int64
+	PiperFemSize  int64
+	PiperMaleSize int64
 	Version       int
 	ImageVersion  int
 	SoundVersion  int
@@ -319,10 +418,58 @@ func checkDataFiles(clientVer int) (dataFilesStatus, error) {
 		status.SoundfontSize = headSize(soundFontURL)
 	}
 
+	piperDir := filepath.Join(dataDirPath, "piper")
+	binDir := filepath.Join(piperDir, "bin")
+	var archiveName, binName string
+	switch runtime.GOOS {
+	case "linux":
+		binName = "piper"
+		switch runtime.GOARCH {
+		case "amd64":
+			archiveName = "piper_linux_x86_64.tar.gz"
+		case "arm64":
+			archiveName = "piper_linux_aarch64.tar.gz"
+		case "arm":
+			archiveName = "piper_linux_armv7l.tar.gz"
+		}
+	case "darwin":
+		binName = "piper"
+		switch runtime.GOARCH {
+		case "amd64":
+			archiveName = "piper_macos_x64.tar.gz"
+		case "arm64":
+			archiveName = "piper_macos_aarch64.tar.gz"
+		}
+	case "windows":
+		binName = "piper.exe"
+		archiveName = "piper_windows_amd64.zip"
+	}
+	binPath := filepath.Join(binDir, binName)
+	if _, err := os.Stat(binPath); err != nil {
+		if _, err := os.Stat(filepath.Join(piperDir, archiveName)); errors.Is(err, os.ErrNotExist) {
+			status.NeedPiper = true
+			status.PiperSize = headSize(extraDataBase + archiveName)
+		}
+	}
+
+	voicesDir := filepath.Join(piperDir, "voices")
+	femVoice := strings.TrimSuffix(piperFemaleVoice, ".tar.gz")
+	femPath := filepath.Join(voicesDir, femVoice, femVoice+".onnx")
+	if _, err := os.Stat(femPath); errors.Is(err, os.ErrNotExist) {
+		status.NeedPiperFem = true
+		status.PiperFemSize = headSize(extraDataBase + piperFemaleVoice)
+	}
+	maleVoice := strings.TrimSuffix(piperMaleVoice, ".tar.gz")
+	malePath := filepath.Join(voicesDir, maleVoice, maleVoice+".onnx")
+	if _, err := os.Stat(malePath); errors.Is(err, os.ErrNotExist) {
+		status.NeedPiperMale = true
+		status.PiperMaleSize = headSize(extraDataBase + piperMaleVoice)
+	}
+
 	return status, nil
 }
 
-func downloadDataFiles(clientVer int, status dataFilesStatus, getSoundfont bool) error {
+func downloadDataFiles(clientVer int, status dataFilesStatus, getSoundfont, getPiper, getFem, getMale bool) error {
 	if err := os.MkdirAll(dataDirPath, 0755); err != nil {
 		logError("create %v: %v", dataDirPath, err)
 		return err
@@ -380,6 +527,64 @@ func downloadDataFiles(clientVer int, status dataFilesStatus, getSoundfont bool)
 		if err := downloadGZ(soundFontURL, sfPath); err != nil {
 			logError("download %v: %v", soundFontURL, err)
 			return fmt.Errorf("download soundfont: %w", err)
+		}
+	}
+	piperDir := filepath.Join(dataDirPath, "piper")
+	if getPiper || getFem || getMale {
+		if err := os.MkdirAll(piperDir, 0o755); err != nil {
+			logError("create %v: %v", piperDir, err)
+			return err
+		}
+	}
+	if getPiper {
+		var archiveName string
+		switch runtime.GOOS {
+		case "linux":
+			switch runtime.GOARCH {
+			case "amd64":
+				archiveName = "piper_linux_x86_64.tar.gz"
+			case "arm64":
+				archiveName = "piper_linux_aarch64.tar.gz"
+			case "arm":
+				archiveName = "piper_linux_armv7l.tar.gz"
+			}
+		case "darwin":
+			switch runtime.GOARCH {
+			case "amd64":
+				archiveName = "piper_macos_x64.tar.gz"
+			case "arm64":
+				archiveName = "piper_macos_aarch64.tar.gz"
+			}
+		case "windows":
+			archiveName = "piper_windows_amd64.zip"
+		}
+		if archiveName != "" {
+			archPath := filepath.Join(piperDir, archiveName)
+			if err := downloadFile(extraDataBase+archiveName, archPath); err != nil {
+				logError("download %v: %v", archiveName, err)
+				return fmt.Errorf("download piper: %w", err)
+			}
+		}
+	}
+	if getFem {
+		arch := filepath.Join(piperDir, piperFemaleVoice)
+		if err := downloadFile(extraDataBase+piperFemaleVoice, arch); err != nil {
+			logError("download %v: %v", piperFemaleVoice, err)
+			return fmt.Errorf("download piper female voice: %w", err)
+		}
+	}
+	if getMale {
+		arch := filepath.Join(piperDir, piperMaleVoice)
+		if err := downloadFile(extraDataBase+piperMaleVoice, arch); err != nil {
+			logError("download %v: %v", piperMaleVoice, err)
+			return fmt.Errorf("download piper male voice: %w", err)
+		}
+	}
+	if getPiper || getFem || getMale {
+		if path, model, cfg, err := preparePiper(dataDirPath); err == nil {
+			piperPath, piperModel, piperConfig = path, model, cfg
+		} else {
+			logError("prepare piper: %v", err)
 		}
 	}
 	return nil
