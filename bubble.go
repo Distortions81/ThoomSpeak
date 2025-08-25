@@ -488,6 +488,9 @@ func drawMonsterSpikes(screen *ebiten.Image, left, top, right, bottom, radius, s
 	if bottomGapStart < startX {
 		bottomGapStart = startX
 	}
+	if bottomGapEnd < bottomGapStart {
+		bottomGapEnd = bottomGapStart
+	}
 	if bottomGapEnd > endX {
 		bottomGapEnd = endX
 	}
@@ -624,7 +627,7 @@ func drawPonderWaves(screen *ebiten.Image, left, top, right, bottom int, col col
 
 	// top edge
 	for x := float32(left) + corner; x <= float32(right)-corner; x += step {
-		offset := float32(math.Sin(phase+float64(x)*0.1)) * r * 0.3
+		offset := float32(math.Sin(phase+float64(x-float32(left))*0.1)) * r * 0.3
 		draw(x, float32(top)+offset)
 	}
 	// top-right corner
@@ -638,7 +641,7 @@ func drawPonderWaves(screen *ebiten.Image, left, top, right, bottom int, col col
 	}
 	// right edge
 	for y := float32(top) + corner; y <= float32(bottom)-corner; y += step {
-		offset := float32(math.Sin(phase+float64(y)*0.1)) * r * 0.3
+		offset := float32(math.Sin(phase+float64(y-float32(top))*0.1)) * r * 0.3
 		draw(float32(right)+offset, y)
 	}
 	// bottom-right corner
@@ -652,7 +655,7 @@ func drawPonderWaves(screen *ebiten.Image, left, top, right, bottom int, col col
 	}
 	// bottom edge
 	for x := float32(right) - corner; x >= float32(left)+corner; x -= step {
-		offset := float32(math.Sin(phase+float64(x)*0.1)) * r * 0.3
+		offset := float32(math.Sin(phase+float64(x-float32(left))*0.1)) * r * 0.3
 		draw(x, float32(bottom)+offset)
 	}
 	// bottom-left corner
@@ -666,7 +669,7 @@ func drawPonderWaves(screen *ebiten.Image, left, top, right, bottom int, col col
 	}
 	// left edge
 	for y := float32(bottom) - corner; y >= float32(top)+corner; y -= step {
-		offset := float32(math.Sin(phase+float64(y)*0.1)) * r * 0.3
+		offset := float32(math.Sin(phase+float64(y-float32(top))*0.1)) * r * 0.3
 		draw(float32(left)+offset, y)
 	}
 	// top-left corner
