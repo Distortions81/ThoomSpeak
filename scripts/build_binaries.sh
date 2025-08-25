@@ -132,6 +132,44 @@ MSG
 
 # Ensure zip is available for packaging on Ubuntu systems
 ensure_cmd zip
+ensure_cmd unzip unzip
+
+package_piper() {
+  local goos="$1" goarch="$2" dest="$3"
+  local archive="" bin=""
+  case "$goos:$goarch" in
+    linux:amd64)
+      archive="data/piper/piper_linux_x86_64.tar.gz"
+      bin="piper"
+      ;;
+    windows:amd64)
+      archive="data/piper/piper_windows_amd64.zip"
+      bin="piper.exe"
+      ;;
+    darwin:amd64)
+      archive="data/piper/piper_macos_x64.tar.gz"
+      bin="piper"
+      ;;
+    darwin:arm64)
+      archive="data/piper/piper_macos_aarch64.tar.gz"
+      bin="piper"
+      ;;
+    *)
+      return
+      ;;
+  esac
+
+  if [ -f "$archive" ]; then
+    mkdir -p "$dest"
+    if [[ "$archive" == *.zip ]]; then
+      unzip -j "$archive" "$bin" -d "$dest" >/dev/null
+    else
+      tar -xzf "$archive" -C "$dest" "$bin"
+    fi
+  else
+    echo "Warning: missing piper archive $archive" >&2
+  fi
+}
 
 for platform in "${platforms[@]}"; do
   IFS=":" read -r GOOS GOARCH <<<"$platform"
@@ -251,20 +289,28 @@ EOF
     else
       echo "codesign tool not found; skipping macOS signing." >&2
     fi
-
-    echo "Zipping ${APP_NAME}.app..."
-    (
-      cd "$OUTPUT_DIR"
-      zip -q -r "$ZIP_NAME" "${APP_NAME}.app"
-      rm -rf "${APP_NAME}.app" "${BIN_NAME}"
-    )
-  else
-    echo "Zipping ${BIN_NAME}..."
-    (
-      cd "$OUTPUT_DIR"
-      zip -q -m "$ZIP_NAME" "$BIN_NAME"
-    )
+    rm "${OUTPUT_DIR}/${BIN_NAME}"
   fi
+
+  PKG_DIR="${OUTPUT_DIR}/goThoom"
+  rm -rf "$PKG_DIR"
+  mkdir -p "$PKG_DIR"
+
+  if [ "$GOOS" = "darwin" ]; then
+    mv "$APP_DIR" "$PKG_DIR/"
+  else
+    mv "${OUTPUT_DIR}/${BIN_NAME}" "$PKG_DIR/"
+  fi
+
+  cp -r data "$PKG_DIR/"
+  package_piper "$GOOS" "$GOARCH" "$PKG_DIR/data/piper"
+  find "$PKG_DIR/data/piper" -name 'piper_*' -type f -delete || true
+
+  (
+    cd "$OUTPUT_DIR"
+    zip -q -r "$ZIP_NAME" "goThoom"
+    rm -rf "goThoom"
+  )
 done
 
 echo "Binaries and zip files are located in ${OUTPUT_DIR}/"
