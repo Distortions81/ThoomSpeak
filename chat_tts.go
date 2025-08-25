@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"sync"
 	"time"
 
@@ -52,6 +53,9 @@ func speakChatMessage(msg string) {
 		if err != nil {
 			logError("chat tts decode: %v", err)
 			return
+		}
+		if closer, ok := any(stream).(io.Closer); ok {
+			defer closer.Close()
 		}
 
 		p, err := audioContext.NewPlayer(stream)
