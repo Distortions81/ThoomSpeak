@@ -132,44 +132,6 @@ MSG
 
 # Ensure zip is available for packaging on Ubuntu systems
 ensure_cmd zip
-ensure_cmd unzip unzip
-
-package_piper() {
-  local goos="$1" goarch="$2" dest="$3"
-  local archive="" bin=""
-  case "$goos:$goarch" in
-    linux:amd64)
-      archive="data/piper/piper_linux_x86_64.tar.gz"
-      bin="piper"
-      ;;
-    windows:amd64)
-      archive="data/piper/piper_windows_amd64.zip"
-      bin="piper.exe"
-      ;;
-    darwin:amd64)
-      archive="data/piper/piper_macos_x64.tar.gz"
-      bin="piper"
-      ;;
-    darwin:arm64)
-      archive="data/piper/piper_macos_aarch64.tar.gz"
-      bin="piper"
-      ;;
-    *)
-      return
-      ;;
-  esac
-
-  if [ -f "$archive" ]; then
-    mkdir -p "$dest"
-    if [[ "$archive" == *.zip ]]; then
-      unzip -j "$archive" "$bin" -d "$dest" >/dev/null
-    else
-      tar -xzf "$archive" -C "$dest" "$bin"
-    fi
-  else
-    echo "Warning: missing piper archive $archive" >&2
-  fi
-}
 
 for platform in "${platforms[@]}"; do
   IFS=":" read -r GOOS GOARCH <<<"$platform"
@@ -301,11 +263,6 @@ EOF
   else
     mv "${OUTPUT_DIR}/${BIN_NAME}" "$PKG_DIR/"
   fi
-
-  cp -r data "$PKG_DIR/"
-  package_piper "$GOOS" "$GOARCH" "$PKG_DIR/data/piper"
-  find "$PKG_DIR/data/piper" -name 'piper_*' -type f -delete || true
-
   (
     cd "$OUTPUT_DIR"
     zip -q -r "$ZIP_NAME" "goThoom"
