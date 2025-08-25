@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -53,6 +54,7 @@ func exportsForPlugin(owner string) interp.Exports {
 		}
 		m["AddHotkey"] = reflect.ValueOf(func(combo, command string) { pluginAddHotkey(owner, combo, command) })
 		m["AddHotkeyFunc"] = reflect.ValueOf(func(combo, funcName string) { pluginAddHotkeyFunc(owner, combo, funcName) })
+		m["RegisterFunc"] = reflect.ValueOf(func(name string, fn PluginFunc) { pluginRegisterFunc(owner, name, fn) })
 		m["Hotkeys"] = reflect.ValueOf(func() []Hotkey { return pluginHotkeys(owner) })
 		m["RemoveHotkey"] = reflect.ValueOf(func(combo string) { pluginRemoveHotkey(owner, combo) })
 		ex[pkg] = m
@@ -131,7 +133,11 @@ func pluginAddHotkey(owner, combo, command string) {
 	hotkeysMu.Unlock()
 	refreshHotkeysList()
 	saveHotkeys()
-	msg := fmt.Sprintf("[plugin:%s] hotkey added: %s -> %s", owner, combo, command)
+	name := pluginDisplayNames[owner]
+	if name == "" {
+		name = owner
+	}
+	msg := fmt.Sprintf("[plugin:%s] hotkey added: %s -> %s", name, combo, command)
 	consoleMessage(msg)
 	log.Print(msg)
 }
@@ -139,7 +145,7 @@ func pluginAddHotkey(owner, combo, command string) {
 // pluginAddHotkeyFunc registers a hotkey that invokes a named plugin function
 // registered via RegisterFunc.
 func pluginAddHotkeyFunc(owner, combo, funcName string) {
-	hk := Hotkey{Name: funcName, Combo: combo, Commands: []HotkeyCommand{{Function: funcName}}, Plugin: owner}
+	hk := Hotkey{Name: funcName, Combo: combo, Commands: []HotkeyCommand{{Function: funcName, Plugin: owner}}, Plugin: owner}
 	hotkeysMu.Lock()
 	for _, existing := range hotkeys {
 		if existing.Plugin == owner && existing.Combo == combo {
@@ -151,7 +157,11 @@ func pluginAddHotkeyFunc(owner, combo, funcName string) {
 	hotkeysMu.Unlock()
 	refreshHotkeysList()
 	saveHotkeys()
-	msg := fmt.Sprintf("[plugin:%s] hotkey added: %s -> plugin:%s", owner, combo, funcName)
+	name := pluginDisplayNames[owner]
+	if name == "" {
+		name = owner
+	}
+	msg := fmt.Sprintf("[plugin:%s] hotkey added: %s -> plugin:%s", name, combo, funcName)
 	consoleMessage(msg)
 	log.Print(msg)
 }
@@ -161,11 +171,13 @@ type PluginCommandHandler func(args string)
 type PluginFunc func()
 
 var (
-	pluginCommands = map[string]PluginCommandHandler{}
-	pluginFuncs    = map[string]PluginFunc{}
-	pluginMu       sync.RWMutex
-	chatHandlers   []func(string)
-	chatHandlersMu sync.RWMutex
+	pluginCommands     = map[string]PluginCommandHandler{}
+	pluginFuncs        = map[string]map[string]PluginFunc{}
+	pluginMu           sync.RWMutex
+	pluginNames        = map[string]bool{}
+	pluginDisplayNames = map[string]string{}
+	chatHandlers       []func(string)
+	chatHandlersMu     sync.RWMutex
 )
 
 // pluginRegisterCommand lets plugins handle a local slash command like
@@ -185,16 +197,23 @@ func pluginRegisterCommand(name string, handler PluginCommandHandler) {
 
 // pluginRegisterFunc registers a named function that can be called from
 // hotkeys using AddHotkeyFunc or a command string "plugin:<name>".
-func pluginRegisterFunc(name string, fn PluginFunc) {
+func pluginRegisterFunc(owner, name string, fn PluginFunc) {
 	if name == "" || fn == nil {
 		return
 	}
 	key := strings.ToLower(name)
 	pluginMu.Lock()
-	pluginFuncs[key] = fn
+	if pluginFuncs[owner] == nil {
+		pluginFuncs[owner] = map[string]PluginFunc{}
+	}
+	pluginFuncs[owner][key] = fn
 	pluginMu.Unlock()
-	consoleMessage("[plugin] function registered: " + key)
-	log.Printf("[plugin] function registered: %s", key)
+	disp := pluginDisplayNames[owner]
+	if disp == "" {
+		disp = owner
+	}
+	consoleMessage("[plugin:" + disp + "] function registered: " + key)
+	log.Printf("[plugin] function registered: %s (%s)", key, owner)
 }
 
 // pluginRunCommand echoes and enqueues a command for immediate sending.
@@ -360,6 +379,7 @@ func loadPlugins() {
 		}
 	}
 
+	nameRE := regexp.MustCompile(`(?m)^\s*(?:var|const)\s+PluginName\s*=\s*"([^"]+)"`)
 	for _, dir := range pluginDirs {
 		entries, err := os.ReadDir(dir)
 		if err != nil {
@@ -378,12 +398,32 @@ func loadPlugins() {
 				log.Printf("read plugin %s: %v", path, err)
 				continue
 			}
+			match := nameRE.FindSubmatch(src)
+			if len(match) < 2 {
+				log.Printf("plugin %s missing PluginName", path)
+				consoleMessage("[plugin] missing name: " + path)
+				continue
+			}
+			name := strings.TrimSpace(string(match[1]))
+			if name == "" {
+				log.Printf("plugin %s empty PluginName", path)
+				consoleMessage("[plugin] empty name: " + path)
+				continue
+			}
+			lower := strings.ToLower(name)
+			if pluginNames[lower] {
+				log.Printf("plugin %s duplicate name %s", path, name)
+				consoleMessage("[plugin] duplicate name: " + name)
+				continue
+			}
+			pluginNames[lower] = true
+			base := strings.TrimSuffix(e.Name(), ".go")
+			owner := name + "_" + base
+			pluginDisplayNames[owner] = name
 			i := interp.New(interp.Options{})
-			// IMPORTANT: only allow a restricted subset of stdlib (possibly empty)
 			if len(restricted) > 0 {
 				i.Use(restricted)
 			}
-			owner := strings.TrimSuffix(e.Name(), ".go")
 			i.Use(exportsForPlugin(owner))
 			if _, err := i.Eval(string(src)); err != nil {
 				log.Printf("plugin %s: %v", e.Name(), err)
@@ -396,7 +436,7 @@ func loadPlugins() {
 				}
 			}
 			log.Printf("loaded plugin %s", path)
-			consoleMessage("[plugin] loaded: " + path)
+			consoleMessage("[plugin] loaded: " + name)
 		}
 	}
 }

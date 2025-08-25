@@ -10,6 +10,8 @@ Getting Started
 - Copy or edit the example_ponder.go file to customize hotkeys.
 - Each plugin must define an `Init()` function. The client discovers and calls
   this function after loading the script.
+- Each plugin must define a unique `PluginName` string. Plugins with duplicate
+  names will be ignored.
 
 Imports
 -------

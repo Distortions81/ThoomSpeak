@@ -81,7 +81,7 @@ func TestHotkeyFunctionWithoutCommand(t *testing.T) {
 	hotkeys = nil
 	openHotkeyEditor(-1)
 	hotkeyComboText.Text = "Ctrl-F"
-	addHotkeyCommand("", "ponder")
+	addHotkeyCommand("", "ponder", "")
 	finishHotkeyEdit(true)
 
 	if len(hotkeys) != 1 {
