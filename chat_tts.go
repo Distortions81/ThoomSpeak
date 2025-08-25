@@ -43,6 +43,19 @@ func stopAllTTS() {
 	}
 }
 
+func disableTTS() {
+	gs.ChatTTS = false
+	settingsDirty = true
+	stopAllTTS()
+	updateSoundVolume()
+	if ttsMixCB != nil {
+		ttsMixCB.Checked = false
+	}
+	if ttsMixSlider != nil {
+		ttsMixSlider.Disabled = true
+	}
+}
+
 func chatTTSWorker() {
 	for msg := range chatTTSQueue {
 		msgs := []string{msg}
@@ -80,17 +93,20 @@ func playChatTTS(text string) {
 	}
 	if !ensurePiper() {
 		logError("chat tts: piper not initialized")
+		disableTTS()
 		return
 	}
 
 	wavData, err := synthesizeWithPiper(text)
 	if err != nil {
 		logError("chat tts synthesize: %v", err)
+		disableTTS()
 		return
 	}
 	stream, err := wav.DecodeWithSampleRate(audioContext.SampleRate(), bytes.NewReader(wavData))
 	if err != nil {
 		logError("chat tts decode: %v", err)
+		disableTTS()
 		return
 	}
 
@@ -100,6 +116,7 @@ func playChatTTS(text string) {
 	p, err := audioContext.NewPlayer(stream)
 	if err != nil {
 		logError("chat tts player: %v", err)
+		disableTTS()
 		return
 	}
 
