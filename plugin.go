@@ -44,6 +44,16 @@ var basePluginExports = interp.Exports{
 		"PlayerStats":           reflect.ValueOf(pluginPlayerStats),
 		"Stats":                 reflect.ValueOf((*Stats)(nil)),
 		"RegisterPlayerHandler": reflect.ValueOf(pluginRegisterPlayerHandler),
+		"KeyPressed":            reflect.ValueOf(pluginKeyPressed),
+		"KeyJustPressed":        reflect.ValueOf(pluginKeyJustPressed),
+		"MousePressed":          reflect.ValueOf(pluginMousePressed),
+		"MouseJustPressed":      reflect.ValueOf(pluginMouseJustPressed),
+		"LastClick":             reflect.ValueOf(pluginLastClick),
+		"ClickInfo":             reflect.ValueOf((*ClickInfo)(nil)),
+		"Mobile":                reflect.ValueOf((*Mobile)(nil)),
+		"EquippedItems":         reflect.ValueOf(pluginEquippedItems),
+		"HasItem":               reflect.ValueOf(pluginHasItem),
+		"FrameNumber":           reflect.ValueOf(pluginFrameNumber),
 	},
 }
 

@@ -135,3 +135,43 @@ func Unequip(id uint16) {}
 
 // PlaySound plays the sounds referenced by the provided IDs.
 func PlaySound(ids []uint16) {}
+
+// KeyPressed reports whether the given key is currently pressed.
+func KeyPressed(name string) bool { return false }
+
+// KeyJustPressed reports whether the given key was pressed this frame.
+func KeyJustPressed(name string) bool { return false }
+
+// MousePressed reports whether the given mouse button is pressed.
+func MousePressed(name string) bool { return false }
+
+// MouseJustPressed reports whether the given mouse button was pressed this frame.
+func MouseJustPressed(name string) bool { return false }
+
+// Mobile contains basic info about a clicked mobile.
+type Mobile struct {
+	Index  uint8
+	Name   string
+	H, V   int16
+	PictID uint16
+	Colors uint8
+}
+
+// ClickInfo describes the last click in the game world.
+type ClickInfo struct {
+	X, Y     int16
+	OnMobile bool
+	Mobile   Mobile
+}
+
+// LastClick returns information about the last left-click in the world.
+func LastClick() ClickInfo { return ClickInfo{} }
+
+// EquippedItems returns the items currently equipped.
+func EquippedItems() []InventoryItem { return nil }
+
+// HasItem reports whether an inventory item with the given name exists.
+func HasItem(name string) bool { return false }
+
+// FrameNumber returns the current frame counter.
+func FrameNumber() int { return 0 }
