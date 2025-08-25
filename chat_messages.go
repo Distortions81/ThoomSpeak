@@ -1,6 +1,9 @@
 package main
 
-import "sync"
+import (
+	"strings"
+	"sync"
+)
 
 const (
 	maxChatMessages = 1000
@@ -20,7 +23,7 @@ func chatMessage(msg string) {
 
 	updateChatWindow()
 
-	if gs.ChatTTS && !blockTTS {
+	if gs.ChatTTS && !blockTTS && !isSelfChatMessage(msg) {
 		speakChatMessage(msg)
 	} else if !gs.ChatTTS {
 		chatTTSDisabledOnce.Do(func() {
@@ -42,4 +45,26 @@ func getChatMessages() []string {
 		format = "3:04PM"
 	}
 	return chatLog.Entries(format, gs.ChatTimestamps)
+}
+
+func isSelfChatMessage(msg string) bool {
+	if playerName == "" {
+		return false
+	}
+	m := strings.ToLower(strings.TrimSpace(msg))
+	name := strings.ToLower(playerName)
+
+	if strings.HasPrefix(m, "("+name+" ") {
+		return true
+	}
+	if strings.HasPrefix(m, name+" ") {
+		rest := m[len(name)+1:]
+		verbs := []string{"says", "whispers", "yells", "thinks", "ponders"}
+		for _, v := range verbs {
+			if strings.HasPrefix(rest, v) {
+				return true
+			}
+		}
+	}
+	return false
 }
