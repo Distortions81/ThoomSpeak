@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -19,14 +20,19 @@ var pluginExports = interp.Exports{
 	// Short path used by simple plugin scripts: import "gt"
 	// Yaegi expects keys as "importPath/pkgName".
 	"gt/gt": {
-		"Logf":            reflect.ValueOf(pluginLogf),
-		"AddHotkey":       reflect.ValueOf(pluginAddHotkey),
-		"AddHotkeyFunc":   reflect.ValueOf(pluginAddHotkeyFunc),
-		"RegisterCommand": reflect.ValueOf(pluginRegisterCommand),
-		"RegisterFunc":    reflect.ValueOf(pluginRegisterFunc),
-		"RunCommand":      reflect.ValueOf(pluginRunCommand),
-		"EnqueueCommand":  reflect.ValueOf(pluginEnqueueCommand),
-		"ClientVersion":   reflect.ValueOf(&clientVersion).Elem(),
+		"Logf":                reflect.ValueOf(pluginLogf),
+		"Console":             reflect.ValueOf(pluginConsole),
+		"AddHotkey":           reflect.ValueOf(pluginAddHotkey),
+		"AddHotkeyFunc":       reflect.ValueOf(pluginAddHotkeyFunc),
+		"RegisterCommand":     reflect.ValueOf(pluginRegisterCommand),
+		"RegisterFunc":        reflect.ValueOf(pluginRegisterFunc),
+		"RunCommand":          reflect.ValueOf(pluginRunCommand),
+		"EnqueueCommand":      reflect.ValueOf(pluginEnqueueCommand),
+		"ClientVersion":       reflect.ValueOf(&clientVersion).Elem(),
+		"PlayerName":          reflect.ValueOf(pluginPlayerName),
+		"Players":             reflect.ValueOf(pluginPlayers),
+		"Player":              reflect.TypeOf(Player{}),
+		"RegisterChatHandler": reflect.ValueOf(pluginRegisterChatHandler),
 	},
 }
 
@@ -79,7 +85,13 @@ func ensureDefaultPlugins() {
 }
 
 func pluginLogf(format string, args ...interface{}) {
-	log.Printf("[plugin] "+format, args...)
+	msg := fmt.Sprintf("[plugin] "+format, args...)
+	pluginConsole(msg)
+	log.Print(msg)
+}
+
+func pluginConsole(msg string) {
+	consoleMessage(msg)
 }
 
 func pluginAddHotkey(combo, command string) {
@@ -116,6 +128,8 @@ var (
 	pluginCommands = map[string]PluginCommandHandler{}
 	pluginFuncs    = map[string]PluginFunc{}
 	pluginMu       sync.RWMutex
+	chatHandlers   []func(string)
+	chatHandlersMu sync.RWMutex
 )
 
 // pluginRegisterCommand lets plugins handle a local slash command like
@@ -165,6 +179,26 @@ func pluginEnqueueCommand(cmd string) {
 		return
 	}
 	enqueueCommand(cmd)
+}
+
+func pluginPlayerName() string {
+	return playerName
+}
+
+func pluginPlayers() []Player {
+	ps := getPlayers()
+	out := make([]Player, len(ps))
+	copy(out, ps)
+	return out
+}
+
+func pluginRegisterChatHandler(fn func(string)) {
+	if fn == nil {
+		return
+	}
+	chatHandlersMu.Lock()
+	chatHandlers = append(chatHandlers, fn)
+	chatHandlersMu.Unlock()
 }
 
 func loadPlugins() {
