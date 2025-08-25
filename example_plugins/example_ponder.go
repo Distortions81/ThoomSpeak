@@ -4,6 +4,8 @@ import (
 	"gt"
 )
 
+var PluginName = "Example"
+
 // Highly recommend vscodium or vscode with the official golang plugin!
 func Wave() {
 	gt.RunCommand("/ponder hello world")

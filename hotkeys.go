@@ -23,6 +23,7 @@ const hotkeysFile = "global-hotkeys.json"
 type HotkeyCommand struct {
 	Command  string `json:"command,omitempty"`
 	Function string `json:"function,omitempty"`
+	Plugin   string `json:"plugin,omitempty"`
 }
 
 type Hotkey struct {
@@ -31,6 +32,11 @@ type Hotkey struct {
 	Commands []HotkeyCommand `json:"commands"`
 	Plugin   string          `json:"plugin,omitempty"`
 	Disabled bool            `json:"disabled,omitempty"`
+}
+
+type hotkeyFuncRef struct {
+	Name   string
+	Plugin string
 }
 
 var (
@@ -43,7 +49,7 @@ var (
 	hotkeyNameInput  *eui.ItemData
 	hotkeyCmdSection *eui.ItemData
 	hotkeyCmdInputs  []*eui.ItemData
-	hotkeyCmdFuncs   []string
+	hotkeyCmdFuncs   []hotkeyFuncRef
 	editingHotkey    int = -1
 
 	recording     bool
@@ -266,7 +272,11 @@ func refreshHotkeysList() {
 		if hk.Name != "" {
 			text = hk.Name + " : " + hk.Combo
 		}
-		lbl := &eui.ItemData{ItemType: eui.ITEM_TEXT, Text: hk.Plugin + " -> " + text, Fixed: true}
+		disp := pluginDisplayNames[hk.Plugin]
+		if disp == "" {
+			disp = hk.Plugin
+		}
+		lbl := &eui.ItemData{ItemType: eui.ITEM_TEXT, Text: disp + " -> " + text, Fixed: true}
 		lbl.Size = eui.Point{X: 200, Y: 20}
 		row.AddItem(lbl)
 		hotkeysList.AddItem(row)
@@ -370,7 +380,7 @@ func openHotkeyEditor(idx int) {
 	addCmdRow.FontSize = 14
 	addCmdEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
-			addHotkeyCommand("", "")
+			addHotkeyCommand("", "", "")
 		}
 	}
 	flow.AddItem(addCmdRow)
@@ -385,12 +395,27 @@ func openHotkeyEditor(idx int) {
 
 	fnDD, fnDDEvents := eui.NewDropdown()
 	fnDD.Size = eui.Point{X: hotkeyEditWin.Size.X - 120, Y: 20}
-	fnOpts := pluginFunctionNames()
+	infos := pluginFunctionInfos()
+	fnOpts := make([]string, len(infos))
+	fnKeys := make([]string, len(infos))
+	for i, inf := range infos {
+		fnOpts[i] = inf.Name
+		fnKeys[i] = inf.Plugin
+	}
 	fnDD.Options = append([]string{"none"}, fnOpts...)
 	fnDD.Selected = 0
+	fnSel := ""
+	fnSelKey := ""
 	fnDDEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventDropdownSelected {
-			// no-op; selection used when Add clicked
+			fnDD.Selected = ev.Index
+			if ev.Index > 0 && ev.Index <= len(fnOpts) {
+				fnSel = fnOpts[ev.Index-1]
+				fnSelKey = fnKeys[ev.Index-1]
+			} else {
+				fnSel = ""
+				fnSelKey = ""
+			}
 		}
 	}
 	fnRow.AddItem(fnDD)
@@ -402,11 +427,10 @@ func openHotkeyEditor(idx int) {
 	addFnBtn.Disabled = len(fnOpts) == 0
 	addFnEv.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
-			sel := fnDD.Selected
-			if sel <= 0 || sel >= len(fnDD.Options) {
+			if fnSel == "" {
 				return
 			}
-			addHotkeyCommand("", fnDD.Options[sel])
+			addHotkeyCommand("", fnSel, fnSelKey)
 		}
 	}
 	fnRow.AddItem(addFnBtn)
@@ -446,14 +470,14 @@ func openHotkeyEditor(idx int) {
 		hotkeyNameInput.Text = hk.Name
 		if len(hk.Commands) > 0 {
 			for _, c := range hk.Commands {
-				addHotkeyCommand(c.Command, c.Function)
+				addHotkeyCommand(c.Command, c.Function, c.Plugin)
 			}
 		} else {
-			addHotkeyCommand("", "")
+			addHotkeyCommand("", "", "")
 		}
 	} else {
 		hotkeysMu.RUnlock()
-		addHotkeyCommand("", "")
+		addHotkeyCommand("", "", "")
 	}
 
 	hotkeyEditWin.AddWindow(true)
@@ -461,7 +485,7 @@ func openHotkeyEditor(idx int) {
 	wrapHotkeyInputs()
 }
 
-func addHotkeyCommand(cmd, fn string) {
+func addHotkeyCommand(cmd, fn, plugin string) {
 	if hotkeyCmdSection == nil {
 		return
 	}
@@ -491,7 +515,7 @@ func addHotkeyCommand(cmd, fn string) {
 	}
 	hotkeyCmdSection.AddItem(cmdInput)
 	hotkeyCmdInputs = append(hotkeyCmdInputs, cmdInput)
-	hotkeyCmdFuncs = append(hotkeyCmdFuncs, fn)
+	hotkeyCmdFuncs = append(hotkeyCmdFuncs, hotkeyFuncRef{Name: fn, Plugin: plugin})
 
 	hotkeyEditWin.Refresh()
 	wrapHotkeyInputs()
@@ -557,12 +581,14 @@ func finishHotkeyEdit(save bool) {
 			if i < len(hotkeyCmdInputs) {
 				cmd = strings.ReplaceAll(hotkeyCmdInputs[i].Text, "\n", " ")
 			}
-			fn := ""
+			fnName := ""
+			fnPlugin := ""
 			if i < len(hotkeyCmdFuncs) {
-				fn = hotkeyCmdFuncs[i]
+				fnName = hotkeyCmdFuncs[i].Name
+				fnPlugin = hotkeyCmdFuncs[i].Plugin
 			}
-			if cmd != "" || fn != "" {
-				cmds = append(cmds, HotkeyCommand{Command: cmd, Function: fn})
+			if cmd != "" || fnName != "" {
+				cmds = append(cmds, HotkeyCommand{Command: cmd, Function: fnName, Plugin: fnPlugin})
 			}
 		}
 		if combo != "" && len(cmds) > 0 {
@@ -742,7 +768,8 @@ func checkHotkeys() {
 					if c.Function != "" {
 						name := strings.ToLower(strings.TrimSpace(c.Function))
 						pluginMu.RLock()
-						fn, ok := pluginFuncs[name]
+						fnMap := pluginFuncs[c.Plugin]
+						fn, ok := fnMap[name]
 						pluginMu.RUnlock()
 						if ok && fn != nil {
 							consoleMessage("> [plugin] " + name)
@@ -755,9 +782,17 @@ func checkHotkeys() {
 					if strings.HasPrefix(strings.ToLower(cmd), "plugin:") {
 						name := strings.ToLower(strings.TrimSpace(strings.TrimPrefix(cmd, "plugin:")))
 						pluginMu.RLock()
-						fn, ok := pluginFuncs[name]
+						var fn PluginFunc
+						var found bool
+						for _, m := range pluginFuncs {
+							if f, ok := m[name]; ok {
+								fn = f
+								found = true
+								break
+							}
+						}
 						pluginMu.RUnlock()
-						if ok && fn != nil {
+						if found && fn != nil {
 							consoleMessage("> [plugin] " + name)
 							go fn()
 						} else {
@@ -778,14 +813,26 @@ func checkHotkeys() {
 	}
 }
 
-// pluginFunctionNames returns a sorted snapshot of registered plugin function names.
-func pluginFunctionNames() []string {
+type pluginFuncInfo struct {
+	Name   string
+	Plugin string
+}
+
+// pluginFunctionInfos returns a snapshot of registered plugin functions with their owning plugin.
+func pluginFunctionInfos() []pluginFuncInfo {
 	pluginMu.RLock()
-	names := make([]string, 0, len(pluginFuncs))
-	for k := range pluginFuncs {
-		names = append(names, k)
+	var infos []pluginFuncInfo
+	for owner, funcs := range pluginFuncs {
+		for name := range funcs {
+			infos = append(infos, pluginFuncInfo{Name: name, Plugin: owner})
+		}
 	}
 	pluginMu.RUnlock()
-	sort.Strings(names)
-	return names
+	sort.Slice(infos, func(i, j int) bool {
+		if infos[i].Name == infos[j].Name {
+			return infos[i].Plugin < infos[j].Plugin
+		}
+		return infos[i].Name < infos[j].Name
+	})
+	return infos
 }

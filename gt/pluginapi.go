@@ -28,6 +28,7 @@ func AddHotkeyFunc(combo, funcName string) {}
 type HotkeyCommand struct {
 	Command  string
 	Function string
+	Plugin   string
 }
 
 // Hotkey represents a single key binding and its metadata.
@@ -90,6 +91,7 @@ func RegisterChatHandler(fn func(msg string)) {}
 
 // RegisterPlayerHandler registers a callback for player info updates.
 func RegisterPlayerHandler(fn func(Player)) {}
+
 // InventoryItem mirrors the client's inventory item structure.
 type InventoryItem struct {
 	ID       uint16
@@ -121,6 +123,7 @@ type Stats struct {
 
 // PlayerStats returns the player's current stat values.
 func PlayerStats() Stats { return Stats{} }
+
 // Equip equips the specified item by ID if it isn't already equipped.
 func Equip(id uint16) {}
 
