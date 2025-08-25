@@ -196,7 +196,10 @@ func preparePiper(dataDir string) (string, string, string, error) {
 		modelPath := filepath.Join(voicesDir, v, v+".onnx")
 		if _, err := os.Stat(modelPath); err != nil {
 			archive := filepath.Join(piperDir, v+".tar.gz")
-			_ = extractArchive(archive, voicesDir)
+			if err := extractArchive(archive, voicesDir); err != nil {
+				logError("chat tts extract voice %s: %v", v, err)
+				return "", "", "", err
+			}
 		}
 	}
 	voice := "en_US-hfc_female-medium"
