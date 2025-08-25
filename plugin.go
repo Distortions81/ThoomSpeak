@@ -173,7 +173,7 @@ func pluginAddHotkey(owner, combo, command string) {
 	if pluginDisabled[owner] {
 		return
 	}
-	hk := Hotkey{Name: command, Combo: combo, Commands: []HotkeyCommand{{Command: command}}, Plugin: owner}
+	hk := Hotkey{Name: command, Combo: combo, Commands: []HotkeyCommand{{Command: command}}, Plugin: owner, Disabled: true}
 	hotkeysMu.Lock()
 	for _, existing := range hotkeys {
 		if existing.Plugin == owner && existing.Combo == combo {
@@ -200,7 +200,7 @@ func pluginAddHotkeyFunc(owner, combo, funcName string) {
 	if pluginDisabled[owner] {
 		return
 	}
-	hk := Hotkey{Name: funcName, Combo: combo, Commands: []HotkeyCommand{{Function: funcName, Plugin: owner}}, Plugin: owner}
+	hk := Hotkey{Name: funcName, Combo: combo, Commands: []HotkeyCommand{{Function: funcName, Plugin: owner}}, Plugin: owner, Disabled: true}
 	hotkeysMu.Lock()
 	for _, existing := range hotkeys {
 		if existing.Plugin == owner && existing.Combo == combo {
@@ -587,8 +587,6 @@ func loadPlugins() {
 		userPluginsDir(),
 		"plugins",
 	}
-	restricted := restrictedStdlib()
-
 	nameRE := regexp.MustCompile(`(?m)^\s*(?:var|const)\s+PluginName\s*=\s*"([^"]+)"`)
 	for _, dir := range pluginDirs {
 		entries, err := os.ReadDir(dir)
@@ -632,9 +630,17 @@ func loadPlugins() {
 			pluginMu.Lock()
 			pluginDisplayNames[owner] = name
 			pluginPaths[owner] = path
+			pluginDisabled[owner] = true
 			pluginMu.Unlock()
-			loadPluginSource(owner, name, path, src, restricted)
 		}
 	}
+	hotkeysMu.Lock()
+	for i := range hotkeys {
+		if hotkeys[i].Plugin != "" {
+			hotkeys[i].Disabled = true
+		}
+	}
+	hotkeysMu.Unlock()
+	refreshHotkeysList()
 	refreshPluginsWindow()
 }
