@@ -591,7 +591,7 @@ func finishHotkeyEdit(save bool) {
 				cmds = append(cmds, HotkeyCommand{Command: cmd, Function: fnName, Plugin: fnPlugin})
 			}
 		}
-		if combo != "" && len(cmds) > 0 {
+		if combo != "" {
 			hk := Hotkey{Name: name, Combo: combo, Commands: cmds}
 			hotkeysMu.Lock()
 			if editingHotkey >= 0 && editingHotkey < len(hotkeys) {
