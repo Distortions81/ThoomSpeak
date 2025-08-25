@@ -652,10 +652,10 @@ func (g *Game) Update() error {
 				changedInput = true
 			}
 		}
-		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
-			txt := strings.TrimSpace(string(inputText))
-			if txt != "" {
-				if strings.HasPrefix(txt, "/play ") {
+        if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
+            txt := strings.TrimSpace(string(inputText))
+            if txt != "" {
+                if strings.HasPrefix(txt, "/play ") {
 					tune := strings.TrimSpace(txt[len("/play "):])
 					if musicDebug {
 						msg := "/play " + tune
@@ -672,13 +672,29 @@ func (g *Game) Update() error {
 							}
 						}
 					}()
-				} else {
-					pendingCommand = txt
-					//consoleMessage("> " + txt)
-				}
-				inputHistory = append(inputHistory, txt)
-			}
-			inputActive = false
+                } else {
+                    // Try plugin-registered commands first
+                    if strings.HasPrefix(txt, "/") {
+                        parts := strings.SplitN(strings.TrimPrefix(txt, "/"), " ", 2)
+                        name := strings.ToLower(parts[0])
+                        args := ""
+                        if len(parts) > 1 {
+                            args = parts[1]
+                        }
+                        if handler, ok := pluginCommands[name]; ok && handler != nil {
+                            consoleMessage("> " + txt)
+                            go handler(args)
+                        } else {
+                            pendingCommand = txt
+                        }
+                    } else {
+                        pendingCommand = txt
+                    }
+                    //consoleMessage("> " + txt)
+                }
+                inputHistory = append(inputHistory, txt)
+            }
+            inputActive = false
 			inputText = inputText[:0]
 			historyPos = len(inputHistory)
 			changedInput = true

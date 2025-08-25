@@ -1,15 +1,15 @@
 package main
 
 import (
-	"log"
-	"os"
-	"path/filepath"
-	"reflect"
-	"strings"
+    "log"
+    "os"
+    "path/filepath"
+    "reflect"
+    "strings"
     "embed"
 
-	"github.com/traefik/yaegi/interp"
-	"github.com/traefik/yaegi/stdlib"
+    "github.com/traefik/yaegi/interp"
+    "github.com/traefik/yaegi/stdlib"
 )
 
 // Expose the plugin API under both a short and a module-qualified path so
@@ -20,12 +20,18 @@ var pluginExports = interp.Exports{
     "pluginapi/pluginapi": {
         "Logf":          reflect.ValueOf(pluginLogf),
         "AddHotkey":     reflect.ValueOf(pluginAddHotkey),
+        "AddHotkeyFunc": reflect.ValueOf(pluginAddHotkeyFunc),
+        "RegisterCommand": reflect.ValueOf(pluginRegisterCommand),
+        "RegisterFunc":    reflect.ValueOf(pluginRegisterFunc),
         "ClientVersion": reflect.ValueOf(&clientVersion).Elem(),
     },
     // Module-qualified path alternative: import "gothoom/pluginapi"
     "gothoom/pluginapi/pluginapi": {
         "Logf":          reflect.ValueOf(pluginLogf),
         "AddHotkey":     reflect.ValueOf(pluginAddHotkey),
+        "AddHotkeyFunc": reflect.ValueOf(pluginAddHotkeyFunc),
+        "RegisterCommand": reflect.ValueOf(pluginRegisterCommand),
+        "RegisterFunc":    reflect.ValueOf(pluginRegisterFunc),
         "ClientVersion": reflect.ValueOf(&clientVersion).Elem(),
     },
 }
@@ -90,6 +96,52 @@ func pluginAddHotkey(combo, command string) {
     msg := "[plugin] hotkey added: " + combo + " -> " + command
     consoleMessage(msg)
     log.Printf(msg)
+}
+
+// pluginAddHotkeyFunc registers a hotkey that invokes a named plugin function
+// registered via RegisterFunc.
+func pluginAddHotkeyFunc(combo, funcName string) {
+    hk := Hotkey{Combo: combo, Commands: []HotkeyCommand{{Command: "plugin:" + funcName}}}
+    hotkeys = append(hotkeys, hk)
+    refreshHotkeysList()
+    saveHotkeys()
+    msg := "[plugin] hotkey added: " + combo + " -> plugin:" + funcName
+    consoleMessage(msg)
+    log.Printf(msg)
+}
+
+// Plugin command and function registries.
+type PluginCommandHandler func(args string)
+type PluginFunc func()
+
+var (
+    pluginCommands = map[string]PluginCommandHandler{}
+    pluginFuncs    = map[string]PluginFunc{}
+)
+
+// pluginRegisterCommand lets plugins handle a local slash command like
+// "/example". The name should be without the leading slash and will be
+// matched case-insensitively.
+func pluginRegisterCommand(name string, handler PluginCommandHandler) {
+    if name == "" || handler == nil {
+        return
+    }
+    key := strings.ToLower(strings.TrimPrefix(name, "/"))
+    pluginCommands[key] = handler
+    consoleMessage("[plugin] command registered: /" + key)
+    log.Printf("[plugin] command registered: /%s", key)
+}
+
+// pluginRegisterFunc registers a named function that can be called from
+// hotkeys using the special command string "plugin:<name>".
+func pluginRegisterFunc(name string, fn PluginFunc) {
+    if name == "" || fn == nil {
+        return
+    }
+    key := strings.ToLower(name)
+    pluginFuncs[key] = fn
+    consoleMessage("[plugin] function registered: " + key)
+    log.Printf("[plugin] function registered: %s", key)
 }
 
 func loadPlugins() {

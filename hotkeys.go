@@ -552,7 +552,18 @@ func checkHotkeys() {
 		for _, hk := range hotkeys {
 			if hk.Combo == combo {
 				for _, c := range hk.Commands {
-					enqueueCommand(strings.TrimSpace(c.Command))
+					cmd := strings.TrimSpace(c.Command)
+					if strings.HasPrefix(strings.ToLower(cmd), "plugin:") {
+						name := strings.ToLower(strings.TrimSpace(strings.TrimPrefix(cmd, "plugin:")))
+						if fn, ok := pluginFuncs[name]; ok && fn != nil {
+							go fn()
+							consoleMessage("[plugin] called function: " + name)
+						} else {
+							consoleMessage("[plugin] function not found: " + name)
+						}
+						continue
+					}
+					enqueueCommand(cmd)
 				}
 				nextCommand()
 				break
