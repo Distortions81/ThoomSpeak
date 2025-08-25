@@ -49,7 +49,7 @@ func ensureDefaultPlugins() {
 	hasGo := false
 	if entries, err := os.ReadDir(dir); err == nil {
 		for _, e := range entries {
-			if !e.IsDir() && strings.HasSuffix(e.Name(), ".go") {
+			if !e.IsDir() {
 				hasGo = true
 				break
 			}

@@ -1,9 +1,24 @@
 package main
 
-import "gt"
+import (
+	"gt"
+)
 
-// Init registers a simple hotkey example. Pressing the '1' key
-// (aka Ebiten's "Digit1") will run "/ponder hello world".
+// Highly recommend vscodium or vscode with the official golang plugin!
+func Wave() {
+	gt.RunCommand("/ponder hello world")
+}
+
 func Init() {
-	gt.AddHotkey("Digit1", "/ponder hello world")
+	//This makes the function available in the hotkey editor
+	gt.RegisterFunc("wave", Wave)
+
+	//This registers a slash command '/example'
+	gt.RegisterCommand("example", func(args string) {
+		if args == "" {
+			args = "hello world"
+		}
+		//This enters this command and sends it
+		gt.RunCommand("/ponder " + args)
+	})
 }
