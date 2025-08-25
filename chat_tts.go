@@ -31,11 +31,6 @@ var (
 )
 
 func init() {
-	var err error
-	piperPath, piperModel, piperConfig, err = preparePiper(dataDirPath)
-	if err != nil {
-		logError("chat tts init: %v", err)
-	}
 	go chatTTSWorker()
 }
 
@@ -66,11 +61,24 @@ func chatTTSWorker() {
 	}
 }
 
+func ensurePiper() bool {
+	if piperPath != "" && piperModel != "" {
+		return true
+	}
+	var err error
+	piperPath, piperModel, piperConfig, err = preparePiper(dataDirPath)
+	if err != nil {
+		logError("chat tts init: %v", err)
+		return false
+	}
+	return true
+}
+
 func playChatTTS(text string) {
 	if audioContext == nil || blockTTS || gs.Mute {
 		return
 	}
-	if piperPath == "" {
+	if !ensurePiper() {
 		logError("chat tts: piper not initialized")
 		return
 	}
