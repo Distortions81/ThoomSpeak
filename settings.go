@@ -70,6 +70,8 @@ var gsdef settings = settings{
 	MasterVolume:         0.25,
 	Volume:               1.0,
 	MusicVolume:          1.0,
+	Music:                true,
+	GameSound:            true,
 	GameScale:            2,
 	BarPlacement:         BarPlacementBottom,
 	MaxNightLevel:        100,
@@ -145,6 +147,8 @@ type settings struct {
 	MasterVolume         float64
 	Volume               float64
 	MusicVolume          float64
+	Music                bool
+	GameSound            bool
 	Mute                 bool
 	GameScale            float64
 	BarPlacement         BarPlacement
