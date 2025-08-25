@@ -454,11 +454,34 @@ func showPluginInfo(owner string) {
 		header, _ := eui.NewText()
 		header.Text = "Source:"
 		flow.AddItem(header)
+
 		t, _ := eui.NewText()
 		t.Text = src
 		t.Size = eui.Point{X: 600, Y: 400}
 		t.FontSize = 12
+		t.Scrollable = true
+		t.Filled = true
 		flow.AddItem(t)
+
+		saveBtn, saveEvents := eui.NewButton()
+		saveBtn.Text = "Save"
+		saveBtn.Size = eui.Point{X: 48, Y: 24}
+		saveEvents.Handle = func(ev eui.UIEvent) {
+			if ev.Type == eui.EventClick {
+				pluginMu.RLock()
+				path := pluginPaths[owner]
+				pluginMu.RUnlock()
+				if path == "" {
+					return
+				}
+				if err := os.WriteFile(path, []byte(t.Text), 0o644); err != nil {
+					consoleMessage("[plugin] save error: " + err.Error())
+				} else {
+					consoleMessage("[plugin] saved " + path)
+				}
+			}
+		}
+		flow.AddItem(saveBtn)
 	}
 
 	win.AddWindow(false)
