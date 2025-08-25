@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"context"
 	"fmt"
 	"io"
@@ -75,6 +76,9 @@ func speakChatMessage(msg string) {
 		if err != nil {
 			logError("chat tts decode: %v", err)
 			return
+		}
+		if closer, ok := any(stream).(io.Closer); ok {
+			defer closer.Close()
 		}
 
 		chatTTSMu.Lock()
