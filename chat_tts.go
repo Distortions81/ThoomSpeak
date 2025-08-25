@@ -29,11 +29,14 @@ func stopAllTTS() {
 }
 
 func fetchTTS(ctx context.Context, text, lang string) (io.ReadCloser, error) {
-	u := fmt.Sprintf("http://translate.google.com/translate_tts?ie=UTF-8&textlen=%d&client=tw-ob&q=%s&tl=%s", len(text), url.QueryEscape(text), lang)
+	u := fmt.Sprintf("http://translate.google.com/translate_tts?ie=UTF-8&q=%s&tl=%s&client=tw-ob", url.QueryEscape(text), lang)
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
+
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:39.0) Gecko/20100101 Firefox/39.0")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

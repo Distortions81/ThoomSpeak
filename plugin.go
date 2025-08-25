@@ -11,12 +11,21 @@ import (
 	"github.com/traefik/yaegi/stdlib"
 )
 
+// Expose the plugin API under both a short and a module-qualified path so
+// Yaegi can resolve imports regardless of how the script refers to it.
 var pluginExports = interp.Exports{
-	"pluginapi": {
-		"Logf":          reflect.ValueOf(pluginLogf),
-		"AddHotkey":     reflect.ValueOf(pluginAddHotkey),
-		"ClientVersion": reflect.ValueOf(&clientVersion).Elem(),
-	},
+    // Short path used by simple plugin scripts: import "pluginapi"
+    "pluginapi": {
+        "Logf":          reflect.ValueOf(pluginLogf),
+        "AddHotkey":     reflect.ValueOf(pluginAddHotkey),
+        "ClientVersion": reflect.ValueOf(&clientVersion).Elem(),
+    },
+    // Module-qualified path some Yaegi versions expect: import "gothoom/pluginapi"
+    "gothoom/pluginapi": {
+        "Logf":          reflect.ValueOf(pluginLogf),
+        "AddHotkey":     reflect.ValueOf(pluginAddHotkey),
+        "ClientVersion": reflect.ValueOf(&clientVersion).Elem(),
+    },
 }
 
 func pluginLogf(format string, args ...interface{}) {
