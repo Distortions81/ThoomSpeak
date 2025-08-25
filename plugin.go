@@ -83,10 +83,13 @@ func pluginLogf(format string, args ...interface{}) {
 }
 
 func pluginAddHotkey(combo, command string) {
-	hk := Hotkey{Combo: combo, Commands: []HotkeyCommand{{Command: command}}}
-	hotkeys = append(hotkeys, hk)
-	refreshHotkeysList()
-	saveHotkeys()
+    hk := Hotkey{Combo: combo, Commands: []HotkeyCommand{{Command: command}}}
+    hotkeys = append(hotkeys, hk)
+    refreshHotkeysList()
+    saveHotkeys()
+    msg := "[plugin] hotkey added: " + combo + " -> " + command
+    consoleMessage(msg)
+    log.Printf(msg)
 }
 
 func loadPlugins() {
@@ -120,6 +123,7 @@ func loadPlugins() {
             i.Use(pluginExports)
             if _, err := i.Eval(string(src)); err != nil {
                 log.Printf("plugin %s: %v", e.Name(), err)
+                consoleMessage("[plugin] load error for " + path + ": " + err.Error())
                 continue
             }
             if v, err := i.Eval("Init"); err == nil {
@@ -128,6 +132,7 @@ func loadPlugins() {
                 }
             }
             log.Printf("loaded plugin %s", path)
+            consoleMessage("[plugin] loaded: " + path)
         }
     }
 }
