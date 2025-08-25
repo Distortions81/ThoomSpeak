@@ -292,7 +292,7 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 
 	stopBtn, stopEvents := eui.NewButton()
 	stopBtn.Text = "Stop Plugins"
-	stopBtn.Size = eui.Point{X: buttonWidth, Y: buttonHeight}
+	stopBtn.Size = eui.Point{X: buttonWidth * 2, Y: buttonHeight}
 	stopBtn.FontSize = toolFontSize
 	stopBtn.Color = eui.ColorDarkRed
 	stopBtn.HoverColor = eui.ColorRed
