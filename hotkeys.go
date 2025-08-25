@@ -255,6 +255,7 @@ func refreshHotkeysList() {
 		if !headerAdded {
 			label := &eui.ItemData{ItemType: eui.ITEM_TEXT, Text: "Plugin Hotkeys", Fixed: true}
 			label.Size = eui.Point{X: 480, Y: 20}
+			label.FontSize = 10
 			hotkeysList.AddItem(label)
 			headerAdded = true
 		}
@@ -284,6 +285,7 @@ func refreshHotkeysList() {
 		}
 		lbl := &eui.ItemData{ItemType: eui.ITEM_TEXT, Text: disp + " -> " + text, Fixed: true}
 		lbl.Size = eui.Point{X: 460, Y: 20}
+		lbl.FontSize = 10
 		row.AddItem(lbl)
 		hotkeysList.AddItem(row)
 	}

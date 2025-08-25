@@ -277,3 +277,29 @@ func TestHotkeyEquipAlreadyEquipped(t *testing.T) {
 		t.Fatalf("unexpected console messages %v", msgs)
 	}
 }
+
+// Test that plugin hotkeys are rendered with a valid font size.
+func TestPluginHotkeysFontSize(t *testing.T) {
+	hotkeys = []Hotkey{{Combo: "Ctrl-P", Plugin: "plug", Commands: []HotkeyCommand{{Command: "say hi"}}}}
+	hotkeysWin = nil
+	hotkeysList = nil
+	pluginDisplayNames = map[string]string{"plug": "Plugin"}
+
+	makeHotkeysWindow()
+
+	if len(hotkeysList.Contents) != 2 {
+		t.Fatalf("expected plugin header and row, got %d", len(hotkeysList.Contents))
+	}
+	header := hotkeysList.Contents[0]
+	if header.FontSize == 0 {
+		t.Fatalf("plugin header font size not set")
+	}
+	row := hotkeysList.Contents[1]
+	if len(row.Contents) != 2 {
+		t.Fatalf("plugin row malformed")
+	}
+	lbl := row.Contents[1]
+	if lbl.FontSize == 0 {
+		t.Fatalf("plugin hotkey label font size not set")
+	}
+}
