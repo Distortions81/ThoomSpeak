@@ -24,14 +24,9 @@ func ShowNotification(msg string) {}
 // AddHotkey binds a key combo to a slash command.
 func AddHotkey(combo, command string) {}
 
-// AddHotkeyFunc binds a key combo to a registered plugin function.
-func AddHotkeyFunc(combo, funcName string) {}
-
-// HotkeyCommand mirrors the command or function bound to a hotkey.
+// HotkeyCommand mirrors the command bound to a hotkey.
 type HotkeyCommand struct {
-	Command  string
-	Function string
-	Plugin   string
+	Command string
 }
 
 // Hotkey represents a single key binding and its metadata.
@@ -51,9 +46,6 @@ func RemoveHotkey(combo string) {}
 
 // RegisterCommand handles a local slash command like "/example".
 func RegisterCommand(command string, handler func(args string)) {}
-
-// RegisterFunc registers a callable function invokable via AddHotkeyFunc.
-func RegisterFunc(command string, handler func()) {}
 
 // RunCommand queues a command to send immediately to the server.
 func RunCommand(cmd string) {}

@@ -14,9 +14,9 @@ var savedID uint16
 var lastFrame int
 
 func Init() {
-	gt.RegisterFunc("swapChain", swapChain)
-	gt.AddHotkeyFunc("WheelUp", "swapChain")
-	gt.AddHotkeyFunc("WheelDown", "swapChain")
+	gt.RegisterCommand("swapchain", func(string) { swapChain() })
+	gt.AddHotkey("WheelUp", "/swapchain")
+	gt.AddHotkey("WheelDown", "/swapchain")
 }
 
 func swapChain() {

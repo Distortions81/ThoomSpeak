@@ -42,17 +42,12 @@ API
 - gt.AddHotkey(combo, command)
   Registers a hotkey combo (e.g., "Digit1", "Shift-A", "Mouse Middle", "WheelUp") that
   runs a slash-command like "/ponder hello world".
-- gt.AddHotkeyFunc(combo, funcName)
-  Binds a hotkey to a named plugin function registered via RegisterFunc.
 - gt.Hotkeys()
   Returns the hotkeys registered by the calling plugin.
 - gt.RemoveHotkey(combo)
   Removes a previously registered hotkey owned by the plugin.
 - gt.RegisterCommand(name, func(args string))
   Handles a local slash command like "/name" and receives the rest as args.
-- gt.RegisterFunc(name, func())
-  Registers a callable function invokable from hotkeys via AddHotkeyFunc or by
-  using a hotkey command string "plugin:name".
 - gt.RunCommand(cmd)
   Echoes to the console and queues a command to send immediately to the server.
 - gt.EnqueueCommand(cmd)

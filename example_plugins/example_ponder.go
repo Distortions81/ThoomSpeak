@@ -33,9 +33,8 @@ func Init() {
 		gt.Console("[examples] saw player: " + p.Name)
 	})
 
-	// Register a function named "dance" and let Ctrl+D call it.
-	gt.RegisterFunc("dance", Dance)
-	gt.AddHotkeyFunc("ctrl+d", "dance")
+	// Bind Ctrl+D to call our "dance" subcommand.
+	gt.AddHotkey("ctrl+d", "/rad dance")
 
 	// Bind Ctrl+N to run a slash command immediately.
 	gt.AddHotkey("ctrl+n", "/rad notify")
@@ -164,6 +163,9 @@ func handleRad(args string) {
 		// Tell us if we have a specific item.
 		name := strings.Join(fields[1:], " ")
 		gt.Console(fmt.Sprintf("have %s: %v", name, gt.HasItem(name)))
+	case "dance":
+		// Run the dance action.
+		Dance()
 	default:
 		gt.Console("unknown subcommand")
 	}
