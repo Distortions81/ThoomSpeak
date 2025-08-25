@@ -15,29 +15,38 @@ var (
 )
 
 func (item *itemData) themeStyle() *itemData {
-	if item == nil || item.Theme == nil {
+	if item == nil {
 		return nil
 	}
+
+	th := item.Theme
+	if th == nil {
+		th = currentTheme
+	}
+	if th == nil {
+		return nil
+	}
+
 	switch item.ItemType {
 	case ITEM_BUTTON:
-		return &item.Theme.Button
+		return &th.Button
 	case ITEM_TEXT:
-		return &item.Theme.Text
+		return &th.Text
 	case ITEM_CHECKBOX:
-		return &item.Theme.Checkbox
+		return &th.Checkbox
 	case ITEM_RADIO:
-		return &item.Theme.Radio
+		return &th.Radio
 	case ITEM_INPUT:
-		return &item.Theme.Input
+		return &th.Input
 	case ITEM_SLIDER:
-		return &item.Theme.Slider
+		return &th.Slider
 	case ITEM_DROPDOWN:
-		return &item.Theme.Dropdown
+		return &th.Dropdown
 	case ITEM_PROGRESS:
-		return &item.Theme.Progress
+		return &th.Progress
 	case ITEM_FLOW:
 		if len(item.Tabs) > 0 {
-			return &item.Theme.Tab
+			return &th.Tab
 		}
 	}
 	return nil
