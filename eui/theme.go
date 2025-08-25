@@ -118,6 +118,7 @@ func LoadTheme(name string) error {
 	currentThemeName = name
 	applyStyleToTheme(currentTheme)
 	updateThemeReferences(oldTheme, currentTheme)
+	resetThemeItemColors()
 	markAllDirty()
 	if ac, ok := namedColors["accent"]; ok {
 		accentHue, accentSaturation, accentValue, accentAlpha = rgbaToHSVA(color.RGBA(ac))
@@ -151,6 +152,44 @@ func updateItemThemeTree(items []*itemData, old, new *Theme) {
 		}
 		if len(it.Tabs) > 0 {
 			updateItemThemeTree(it.Tabs, old, new)
+		}
+	}
+}
+
+// resetThemeItemColors updates all items to use colors from the current theme
+// unless they explicitly override them via Force* flags.
+func resetThemeItemColors() {
+	for _, win := range windows {
+		resetItemColorTree(win.Contents)
+	}
+}
+
+// resetItemColorTree walks an item tree and resets color fields based on the
+// theme unless they are explicitly forced.
+func resetItemColorTree(items []*itemData) {
+	for _, it := range items {
+		if style := it.themeStyle(); style != nil {
+			if !it.ForceColor {
+				it.Color = style.Color
+			}
+			if !it.ForceHoverColor {
+				it.HoverColor = style.HoverColor
+			}
+			if !it.ForceClickColor {
+				it.ClickColor = style.ClickColor
+			}
+			if !it.ForceOutlineColor {
+				it.OutlineColor = style.OutlineColor
+			}
+			if !it.ForceTextColor {
+				it.TextColor = style.TextColor
+			}
+		}
+		if len(it.Contents) > 0 {
+			resetItemColorTree(it.Contents)
+		}
+		if len(it.Tabs) > 0 {
+			resetItemColorTree(it.Tabs)
 		}
 	}
 }

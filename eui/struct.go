@@ -146,7 +146,7 @@ type itemData struct {
 
 	TextColor, Color, HoverColor,
 	ClickColor, OutlineColor, DisabledColor, SelectedColor Color
-	ForceTextColor bool
+	ForceTextColor, ForceColor, ForceHoverColor, ForceClickColor, ForceOutlineColor bool
 
 	Action        func()
 	OnColorChange func(Color)
@@ -183,6 +183,35 @@ type itemData struct {
 	// Indeterminate indicates that the widget should render an animated
 	// barber-pole style progress when exact value is unknown.
 	Indeterminate bool
+}
+
+// SetColor assigns the item's base color, marks it as a forced override,
+// and marks the item and its parent window as dirty for redraw.
+func (item *itemData) SetColor(c Color) {
+	item.Color = c
+	item.ForceColor = true
+	item.markDirty()
+}
+
+// SetHoverColor assigns the item's hover color override and flags it for redraw.
+func (item *itemData) SetHoverColor(c Color) {
+	item.HoverColor = c
+	item.ForceHoverColor = true
+	item.markDirty()
+}
+
+// SetClickColor assigns the item's click color override and flags it for redraw.
+func (item *itemData) SetClickColor(c Color) {
+	item.ClickColor = c
+	item.ForceClickColor = true
+	item.markDirty()
+}
+
+// SetOutlineColor assigns the item's outline color override and flags it for redraw.
+func (item *itemData) SetOutlineColor(c Color) {
+	item.OutlineColor = c
+	item.ForceOutlineColor = true
+	item.markDirty()
 }
 
 type roundRect struct {

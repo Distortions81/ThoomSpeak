@@ -565,6 +565,23 @@ func (item *itemData) drawFlows(win *windowData, parent *itemData, offset point,
 	subImg := screen.SubImage(drawRect.getRectangle()).(*ebiten.Image)
 	style := item.themeStyle()
 
+	color := style.Color
+	hoverColor := style.HoverColor
+	clickColor := style.ClickColor
+	outlineColor := style.OutlineColor
+	if item.ForceColor {
+		color = item.Color
+	}
+	if item.ForceHoverColor {
+		hoverColor = item.HoverColor
+	}
+	if item.ForceClickColor {
+		clickColor = item.ClickColor
+	}
+	if item.ForceOutlineColor {
+		outlineColor = item.OutlineColor
+	}
+
 	var activeContents []*itemData
 	drawOffset := pointSub(offset, item.Scroll)
 
@@ -587,15 +604,15 @@ func (item *itemData) drawFlows(win *windowData, parent *itemData, offset point,
 			if w < float32(defaultTabWidth)*uiScale {
 				w = float32(defaultTabWidth) * uiScale
 			}
-			col := style.Color
+			col := color
 			if time.Since(tab.Clicked) < clickFlash {
-				col = style.ClickColor
+				col = clickColor
 			} else if i == item.ActiveTab {
 				if !item.ActiveOutline {
 					col = style.SelectedColor
 				}
 			} else if tab.Hovered {
-				col = style.HoverColor
+				col = hoverColor
 			}
 			if item.Filled {
 				drawTabShape(subImg,
@@ -614,7 +631,7 @@ func (item *itemData) drawFlows(win *windowData, parent *itemData, offset point,
 				strokeTabShape(subImg,
 					point{X: x, Y: offset.Y},
 					point{X: w, Y: tabHeight},
-					style.OutlineColor,
+					outlineColor,
 					item.Fillet*uiScale,
 					item.BorderPad*uiScale,
 					border,
@@ -624,7 +641,7 @@ func (item *itemData) drawFlows(win *windowData, parent *itemData, offset point,
 				strokeTabTop(subImg,
 					point{X: x, Y: offset.Y},
 					point{X: w, Y: tabHeight},
-					style.ClickColor,
+					clickColor,
 					item.Fillet*uiScale,
 					item.BorderPad*uiScale,
 					3*uiScale,
@@ -653,7 +670,7 @@ func (item *itemData) drawFlows(win *windowData, parent *itemData, offset point,
 			item.GetSize().X,
 			item.GetSize().Y-tabHeight,
 			1,
-			style.OutlineColor,
+			outlineColor,
 			false)
 		activeContents = item.Tabs[item.ActiveTab].Contents
 	} else {
@@ -818,6 +835,23 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 	subImg := screen.SubImage(item.DrawRect.getRectangle()).(*ebiten.Image)
 	style := item.themeStyle()
 
+	color := style.Color
+	hoverColor := style.HoverColor
+	clickColor := style.ClickColor
+	outlineColor := style.OutlineColor
+	if item.ForceColor {
+		color = item.Color
+	}
+	if item.ForceHoverColor {
+		hoverColor = item.HoverColor
+	}
+	if item.ForceClickColor {
+		clickColor = item.ClickColor
+	}
+	if item.ForceOutlineColor {
+		outlineColor = item.OutlineColor
+	}
+
 	if item.Label != "" {
 		textSize := (item.FontSize * uiScale) + 2
 		face := itemFace(item, textSize)
@@ -839,13 +873,13 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 	if item.ItemType == ITEM_CHECKBOX {
 
 		bThick := item.Border * uiScale
-		itemColor := style.Color
-		bColor := style.OutlineColor
+		itemColor := color
+		bColor := outlineColor
 		if item.Checked {
-			itemColor = style.ClickColor
-			bColor = style.Color
+			itemColor = clickColor
+			bColor = color
 		} else if item.Hovered {
-			itemColor = style.HoverColor
+			itemColor = hoverColor
 		}
 		auxSize := pointScaleMul(item.AuxSize)
 		if item.Filled {
@@ -896,13 +930,13 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 	} else if item.ItemType == ITEM_RADIO {
 
 		bThick := item.Border * uiScale
-		itemColor := style.Color
-		bColor := style.OutlineColor
+		itemColor := color
+		bColor := outlineColor
 		if item.Checked {
-			itemColor = style.ClickColor
-			bColor = style.OutlineColor
+			itemColor = clickColor
+			bColor = outlineColor
 		} else if item.Hovered {
-			itemColor = style.HoverColor
+			itemColor = hoverColor
 		}
 		auxSize := pointScaleMul(item.AuxSize)
 		if item.Filled {
@@ -958,11 +992,11 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 			sop.GeoM.Translate(float64(offset.X), float64(offset.Y))
 			subImg.DrawImage(item.Image, sop)
 		} else {
-			itemColor := style.Color
+			itemColor := color
 			if time.Since(item.Clicked) < clickFlash {
-				itemColor = style.ClickColor
+				itemColor = clickColor
 			} else if item.Hovered {
-				itemColor = style.HoverColor
+				itemColor = hoverColor
 			}
 			if item.Filled {
 				drawRoundRect(subImg, &roundRect{
@@ -1001,11 +1035,11 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 		//Text
 	} else if item.ItemType == ITEM_INPUT {
 
-		itemColor := style.Color
+		itemColor := color
 		if item.Focused {
-			itemColor = style.ClickColor
+			itemColor = clickColor
 		} else if item.Hovered {
-			itemColor = style.HoverColor
+			itemColor = hoverColor
 		}
 
 		if item.Filled {
@@ -1045,9 +1079,9 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 
 	} else if item.ItemType == ITEM_SLIDER {
 
-		itemColor := style.Color
+		itemColor := color
 		if item.Hovered {
-			itemColor = style.HoverColor
+			itemColor = hoverColor
 		}
 
 		if item.Vertical {
@@ -1078,7 +1112,7 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 				Position: knobRect,
 				Fillet:   item.Fillet,
 				Filled:   true,
-				Color:    style.Color,
+				Color:    color,
 			})
 			drawRoundRect(subImg, &roundRect{
 				Size:     pointScaleMul(item.AuxSize),
@@ -1086,7 +1120,7 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 				Fillet:   item.Fillet,
 				Filled:   false,
 				Border:   1 * uiScale,
-				Color:    style.OutlineColor,
+				Color:    outlineColor,
 			})
 		} else {
 			// Prepare value text and measure the largest value label so the
@@ -1142,7 +1176,7 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 				Position: knobRect,
 				Fillet:   item.Fillet,
 				Filled:   true,
-				Color:    style.Color,
+				Color:    color,
 			})
 			drawRoundRect(subImg, &roundRect{
 				Size:     pointScaleMul(item.AuxSize),
@@ -1150,7 +1184,7 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 				Fillet:   item.Fillet,
 				Filled:   false,
 				Border:   1 * uiScale,
-				Color:    style.OutlineColor,
+				Color:    outlineColor,
 			})
 
 			if showValue {
@@ -1169,11 +1203,11 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 
 	} else if item.ItemType == ITEM_DROPDOWN {
 
-		itemColor := style.Color
+		itemColor := color
 		if item.Open {
 			itemColor = style.SelectedColor
 		} else if item.Hovered {
-			itemColor = style.HoverColor
+			itemColor = hoverColor
 		}
 
 		if item.Filled {
@@ -1268,11 +1302,11 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 		}
 	} else if item.ItemType == ITEM_TEXT {
 
-		itemColor := style.Color
+		itemColor := color
 		if item.Focused {
-			itemColor = style.ClickColor
+			itemColor = clickColor
 		} else if item.Hovered {
-			itemColor = style.HoverColor
+			itemColor = hoverColor
 		}
 
 		if item.Filled {
@@ -1315,7 +1349,7 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 				Position: offset,
 				Fillet:   item.Fillet,
 				Filled:   true,
-				Color:    style.Color,
+				Color:    color,
 			})
 		}
 
@@ -1334,7 +1368,7 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 			// Barber pole: animate diagonal stripes moving to the right
 			stripeW := float32(8) * uiScale
 			offsetAnim := float32((time.Now().UnixNano()/int64(time.Millisecond))%1000) / 1000.0 * stripeW * 2
-			bg := style.HoverColor.ToRGBA()
+			bg := hoverColor.ToRGBA()
 			// Fill base with hover color
 			drawRoundRect(subImg, &roundRect{Size: track, Position: offset, Fillet: item.Fillet, Filled: true, Color: Color(bg)})
 			// Draw stripes
@@ -1362,7 +1396,7 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 			Position: offset,
 			Fillet:   item.Fillet,
 			Filled:   false,
-			Color:    style.OutlineColor,
+			Color:    outlineColor,
 			Border:   item.Border * uiScale,
 		})
 	}
@@ -1484,18 +1518,26 @@ func drawDropdownOptions(item *itemData, offset point, clip rect, screen *ebiten
 	}
 	subImg := screen.SubImage(visibleRect.getRectangle()).(*ebiten.Image)
 	style := item.themeStyle()
+	color := style.Color
+	hoverColor := style.HoverColor
+	if item.ForceColor {
+		color = item.Color
+	}
+	if item.ForceHoverColor {
+		hoverColor = item.HoverColor
+	}
 	drawFilledRect(subImg,
 		visibleRect.X0,
 		visibleRect.Y0,
 		visibleRect.X1-visibleRect.X0,
 		visibleRect.Y1-visibleRect.Y0,
-		style.Color, false)
+		color, false)
 	for i := first; i < first+visible && i < len(item.Options); i++ {
 		y := offY + float32(i-first)*optionH
 		if i == item.Selected || i == item.HoverIndex {
 			col := style.SelectedColor
 			if i == item.HoverIndex && i != item.Selected {
-				col = style.HoverColor
+				col = hoverColor
 			}
 			drawRoundRect(subImg, &roundRect{Size: maxSize, Position: point{X: offset.X, Y: y}, Fillet: item.Fillet, Filled: true, Color: col})
 		}
