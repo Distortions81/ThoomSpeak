@@ -20,27 +20,27 @@ var basePluginExports = interp.Exports{
 	// Short path used by simple plugin scripts: import "gt"
 	// Yaegi expects keys as "importPath/pkgName".
 	"gt/gt": {
-		"Logf":                reflect.ValueOf(pluginLogf),
-		"Console":             reflect.ValueOf(pluginConsole),
-		"RegisterCommand":     reflect.ValueOf(pluginRegisterCommand),
-		"RegisterFunc":        reflect.ValueOf(pluginRegisterFunc),
-		"RunCommand":          reflect.ValueOf(pluginRunCommand),
-		"EnqueueCommand":      reflect.ValueOf(pluginEnqueueCommand),
-		"ClientVersion":       reflect.ValueOf(&clientVersion).Elem(),
-		"PlayerName":          reflect.ValueOf(pluginPlayerName),
-		"Players":             reflect.ValueOf(pluginPlayers),
-		"Player":              reflect.ValueOf((*Player)(nil)),
-		"Inventory":           reflect.ValueOf(pluginInventory),
-		"InventoryItem":       reflect.ValueOf((*InventoryItem)(nil)),
-		"ToggleEquip":         reflect.ValueOf(pluginToggleEquip),
-		"Equip":               reflect.ValueOf(pluginEquip),
-		"Unequip":             reflect.ValueOf(pluginUnequip),
-		"RegisterChatHandler": reflect.ValueOf(pluginRegisterChatHandler),
-		"InputText":           reflect.ValueOf(pluginInputText),
-		"SetInputText":        reflect.ValueOf(pluginSetInputText),
-		"PlayerStats":         reflect.ValueOf(pluginPlayerStats),
-		"Stats":               reflect.ValueOf((*Stats)(nil)),
-    "RegisterPlayerHandler": reflect.ValueOf(pluginRegisterPlayerHandler),
+		"Logf":                  reflect.ValueOf(pluginLogf),
+		"Console":               reflect.ValueOf(pluginConsole),
+		"RegisterCommand":       reflect.ValueOf(pluginRegisterCommand),
+		"RegisterFunc":          reflect.ValueOf(pluginRegisterFunc),
+		"RunCommand":            reflect.ValueOf(pluginRunCommand),
+		"EnqueueCommand":        reflect.ValueOf(pluginEnqueueCommand),
+		"ClientVersion":         reflect.ValueOf(&clientVersion).Elem(),
+		"PlayerName":            reflect.ValueOf(pluginPlayerName),
+		"Players":               reflect.ValueOf(pluginPlayers),
+		"Player":                reflect.ValueOf((*Player)(nil)),
+		"Inventory":             reflect.ValueOf(pluginInventory),
+		"InventoryItem":         reflect.ValueOf((*InventoryItem)(nil)),
+		"ToggleEquip":           reflect.ValueOf(pluginToggleEquip),
+		"Equip":                 reflect.ValueOf(pluginEquip),
+		"Unequip":               reflect.ValueOf(pluginUnequip),
+		"RegisterChatHandler":   reflect.ValueOf(pluginRegisterChatHandler),
+		"InputText":             reflect.ValueOf(pluginInputText),
+		"SetInputText":          reflect.ValueOf(pluginSetInputText),
+		"PlayerStats":           reflect.ValueOf(pluginPlayerStats),
+		"Stats":                 reflect.ValueOf((*Stats)(nil)),
+		"RegisterPlayerHandler": reflect.ValueOf(pluginRegisterPlayerHandler),
 	},
 }
 
@@ -268,6 +268,8 @@ func pluginSetInputText(text string) {
 	inputText = []rune(text)
 	inputActive = true
 	inputMu.Unlock()
+}
+
 func pluginEquip(id uint16) {
 	items := getInventory()
 	idx := -1
