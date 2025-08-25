@@ -347,6 +347,8 @@ func pictureShift(prev, cur []framePicture, max int) (int, int, []int, bool) {
 		return 0, 0, nil, false
 	}
 
+	const maxWeight = 100000
+
 	counts := make(map[[2]int]int)
 	idxMap := make(map[[2]int]map[int]struct{})
 	total := 0
@@ -392,6 +394,9 @@ func pictureShift(prev, cur []framePicture, max int) (int, int, []int, bool) {
 			if !ok {
 				pixels = nonTransparentPixels(p.PictID)
 				pixelCache[p.PictID] = pixels
+			}
+			if pixels > maxWeight {
+				pixels = maxWeight
 			}
 			key := [2]int{bestDx, bestDy}
 			counts[key] += pixels
@@ -442,7 +447,9 @@ func pictureShift(prev, cur []framePicture, max int) (int, int, []int, bool) {
 
 	// Collect candidate background indices for the winning motion.
 	// Filter out tiny sprites so we don't pin small pictures to
-	// the screen background when the camera pans.
+	// the screen background when the camera pans. Pixel weights above
+	// maxWeight (100k) are clamped so a single large background doesn't
+	// dominate motion detection.
 	const minBackgroundPixels = 900
 	idxs := make([]int, 0, len(idxMap[best]))
 	for idx := range idxMap[best] {
@@ -453,6 +460,9 @@ func pictureShift(prev, cur []framePicture, max int) (int, int, []int, bool) {
 				pixels = p
 			} else {
 				pixels = nonTransparentPixels(cur[idx].PictID)
+			}
+			if pixels > maxWeight {
+				pixels = maxWeight
 			}
 			if pixels >= minBackgroundPixels {
 				idxs = append(idxs, idx)

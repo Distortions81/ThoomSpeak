@@ -71,3 +71,36 @@ func TestPictureOnEdge(t *testing.T) {
 		})
 	}
 }
+
+func TestPictureShiftBackgroundCap(t *testing.T) {
+	gs.NoCaching = false
+	pixelCountMu.Lock()
+	origCache := pixelCountCache
+	pixelCountCache = map[uint16]int{
+		1: 1000000,
+		2: 60000,
+		3: 60000,
+	}
+	pixelCountMu.Unlock()
+	defer func() {
+		pixelCountMu.Lock()
+		pixelCountCache = origCache
+		pixelCountMu.Unlock()
+	}()
+
+	prev := []framePicture{
+		{PictID: 1, H: 0, V: 0},
+		{PictID: 2, H: 10, V: 0},
+		{PictID: 3, H: 20, V: 0},
+	}
+	cur := []framePicture{
+		{PictID: 1, H: 0, V: 0},
+		{PictID: 2, H: 15, V: 0},
+		{PictID: 3, H: 25, V: 0},
+	}
+
+	dx, dy, _, ok := pictureShift(prev, cur, 100)
+	if !ok || dx != 5 || dy != 0 {
+		t.Fatalf("pictureShift = (%d,%d) ok=%v, want (5,0) true", dx, dy, ok)
+	}
+}
