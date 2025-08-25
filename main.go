@@ -35,6 +35,7 @@ var (
 	blockSound    bool
 	blockBubbles  bool
 	blockTTS      bool
+	blockMusic    bool
 	dumpMusic     bool
 	imgDump       bool
 	sndDump       bool

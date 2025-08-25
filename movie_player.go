@@ -448,13 +448,16 @@ func (p *moviePlayer) seek(idx int) {
 	// Stop any currently playing sounds so scrubbing is silent.
 	stopAllSounds()
 	stopAllTTS()
+	stopAllMusic()
 	blockSound = true
 	blockBubbles = true
 	blockTTS = true
+	blockMusic = true
 	defer func() {
 		blockSound = false
 		blockBubbles = false
 		blockTTS = false
+		blockMusic = false
 	}()
 
 	if idx < 0 {
