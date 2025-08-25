@@ -462,6 +462,7 @@ func showPluginInfo(owner string) {
 	}
 
 	win.AddWindow(false)
+	win.MarkOpen()
 }
 
 func makeMixerWindow() {
