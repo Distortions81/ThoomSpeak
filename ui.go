@@ -461,6 +461,7 @@ func showPluginInfo(owner string) {
 		t.FontSize = 12
 		t.Scrollable = true
 		t.Filled = true
+		t.Face = &text.GoTextFace{Source: monoFaceSource, Size: float64(t.FontSize*eui.UIScale() + 2)}
 		flow.AddItem(t)
 
 		saveBtn, saveEvents := eui.NewButton()
@@ -1788,7 +1789,7 @@ func updateChangelogWindow() {
 	lines := strings.Split(changelog, "\n")
 	header := fmt.Sprintf("goThoom test %d", appVersion)
 	lines = append([]string{header, ""}, lines...)
-	updateTextWindow(changelogWin, changelogList, nil, lines, 14, "")
+	updateTextWindow(changelogWin, changelogList, nil, lines, 14, "", monoFaceSource)
 	if changelogPrevBtn != nil {
 		changelogPrevBtn.Disabled = changelogVersionIdx <= 0
 		changelogPrevBtn.Dirty = true

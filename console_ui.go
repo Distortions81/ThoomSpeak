@@ -19,7 +19,7 @@ func updateConsoleWindow() {
 	scrollit := messagesFlow.ScrollAtBottom()
 
 	msgs := getConsoleMessages()
-	updateTextWindow(consoleWin, messagesFlow, inputFlow, msgs, gs.ConsoleFontSize, inputMsg)
+	updateTextWindow(consoleWin, messagesFlow, inputFlow, msgs, gs.ConsoleFontSize, inputMsg, nil)
 	if messagesFlow != nil {
 		// Scroll to bottom on new text; clamp occurs on Refresh.
 		if scrollit {

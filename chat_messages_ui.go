@@ -15,7 +15,7 @@ func updateChatWindow() {
 	scrollit := chatList.ScrollAtBottom()
 
 	msgs := getChatMessages()
-	updateTextWindow(chatWin, chatList, nil, msgs, gs.ChatFontSize, "")
+	updateTextWindow(chatWin, chatList, nil, msgs, gs.ChatFontSize, "", nil)
 	if chatList != nil {
 		// Auto-scroll list to bottom on new messages
 		if scrollit {

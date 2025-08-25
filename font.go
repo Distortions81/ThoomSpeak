@@ -21,7 +21,14 @@ var notoSansItalic []byte
 //go:embed data/font/NotoSans-BoldItalic.ttf
 var notoSansBoldItalic []byte
 
-var mainFont, mainFontBold, mainFontItalic, mainFontBoldItalic, bubbleFont text.Face
+//go:embed data/font/NotoSansMono-Regular.ttf
+var notoSansMonoRegular []byte
+
+//go:embed data/font/NotoSansMono-Bold.ttf
+var notoSansMonoBold []byte
+
+var mainFont, mainFontBold, mainFontItalic, mainFontBoldItalic, monoFont, monoFontBold, bubbleFont text.Face
+var monoFaceSource *text.GoTextFaceSource
 var fontGen uint32
 
 func initFont() {
@@ -60,6 +67,25 @@ func initFont() {
 	}
 	mainFontBoldItalic = &text.GoTextFace{
 		Source: boldItalic,
+		Size:   gs.MainFontSize * gs.GameScale,
+	}
+
+	monoRegular, err := text.NewGoTextFaceSource(bytes.NewReader(notoSansMonoRegular))
+	if err != nil {
+		log.Fatalf("failed to parse font: %v", err)
+	}
+	monoFaceSource = monoRegular
+	monoFont = &text.GoTextFace{
+		Source: monoRegular,
+		Size:   gs.MainFontSize * gs.GameScale,
+	}
+
+	monoBold, err := text.NewGoTextFaceSource(bytes.NewReader(notoSansMonoBold))
+	if err != nil {
+		log.Fatalf("failed to parse font: %v", err)
+	}
+	monoFontBold = &text.GoTextFace{
+		Source: monoBold,
 		Size:   gs.MainFontSize * gs.GameScale,
 	}
 
