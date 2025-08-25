@@ -146,8 +146,8 @@ func TestHotkeyFunctionPersisted(t *testing.T) {
 	hotkeys = nil
 	loadHotkeys()
 
-	if len(hotkeys) != 1 {
-		t.Fatalf("hotkey not loaded")
+	if len(hotkeys) != 2 {
+		t.Fatalf("hotkeys not loaded: %d", len(hotkeys))
 	}
 	cmd := hotkeys[0].Commands[0]
 	if cmd.Command != "" || cmd.Function != "ponder" {
@@ -274,7 +274,7 @@ func TestLoadHotkeysShowsEntriesInWindow(t *testing.T) {
 
 	loadHotkeys()
 
-	if len(hotkeysList.Contents) != 1 {
+	if len(hotkeysList.Contents) != 2 {
 		t.Fatalf("hotkeys list not refreshed: %d", len(hotkeysList.Contents))
 	}
 	row := hotkeysList.Contents[0]

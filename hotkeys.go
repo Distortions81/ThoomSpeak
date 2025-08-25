@@ -64,46 +64,62 @@ var (
 func loadHotkeys() {
 	path := filepath.Join(dataDirPath, hotkeysFile)
 	data, err := os.ReadFile(path)
-	if err != nil {
-		return
-	}
-	type hotkeyJSON struct {
-		Combo    string          `json:"combo"`
-		Name     string          `json:"name,omitempty"`
-		Commands []HotkeyCommand `json:"commands"`
-		Command  string          `json:"command"`
-		Text     string          `json:"text,omitempty"`
-		Plugin   string          `json:"plugin,omitempty"`
-		Disabled bool            `json:"disabled,omitempty"`
-	}
-	var raw []hotkeyJSON
-	if err := json.Unmarshal(data, &raw); err != nil {
-		return
-	}
+
 	var newList []Hotkey
-	for _, r := range raw {
-		hk := Hotkey{Combo: r.Combo, Name: r.Name, Plugin: r.Plugin, Disabled: r.Disabled}
-		if len(r.Commands) > 0 {
-			hk.Commands = make([]HotkeyCommand, len(r.Commands))
-			copy(hk.Commands, r.Commands)
-			for i := range hk.Commands {
-				c := &hk.Commands[i]
-				if c.Function == "" && strings.HasPrefix(strings.ToLower(c.Command), "plugin:") {
-					c.Function = strings.TrimSpace(strings.TrimPrefix(c.Command, "plugin:"))
-					c.Command = ""
+	if err == nil {
+		type hotkeyJSON struct {
+			Combo    string          `json:"combo"`
+			Name     string          `json:"name,omitempty"`
+			Commands []HotkeyCommand `json:"commands"`
+			Command  string          `json:"command"`
+			Text     string          `json:"text,omitempty"`
+			Plugin   string          `json:"plugin,omitempty"`
+			Disabled bool            `json:"disabled,omitempty"`
+		}
+		var raw []hotkeyJSON
+		if err := json.Unmarshal(data, &raw); err != nil {
+			return
+		}
+		for _, r := range raw {
+			hk := Hotkey{Combo: r.Combo, Name: r.Name, Plugin: r.Plugin, Disabled: r.Disabled}
+			if len(r.Commands) > 0 {
+				hk.Commands = make([]HotkeyCommand, len(r.Commands))
+				copy(hk.Commands, r.Commands)
+				for i := range hk.Commands {
+					c := &hk.Commands[i]
+					if c.Function == "" && strings.HasPrefix(strings.ToLower(c.Command), "plugin:") {
+						c.Function = strings.TrimSpace(strings.TrimPrefix(c.Command, "plugin:"))
+						c.Command = ""
+					}
+				}
+			} else if r.Command != "" {
+				cmd := strings.TrimSpace(r.Command + " " + r.Text)
+				if strings.HasPrefix(strings.ToLower(cmd), "plugin:") {
+					fn := strings.TrimSpace(strings.TrimPrefix(cmd, "plugin:"))
+					hk.Commands = []HotkeyCommand{{Function: fn}}
+				} else if cmd != "" {
+					hk.Commands = []HotkeyCommand{{Command: cmd}}
 				}
 			}
-		} else if r.Command != "" {
-			cmd := strings.TrimSpace(r.Command + " " + r.Text)
-			if strings.HasPrefix(strings.ToLower(cmd), "plugin:") {
-				fn := strings.TrimSpace(strings.TrimPrefix(cmd, "plugin:"))
-				hk.Commands = []HotkeyCommand{{Function: fn}}
-			} else if cmd != "" {
-				hk.Commands = []HotkeyCommand{{Command: cmd}}
-			}
+			newList = append(newList, hk)
 		}
-		newList = append(newList, hk)
+	} else if !os.IsNotExist(err) {
+		return
 	}
+
+	// Ensure the default right-click use hotkey exists.
+	def := Hotkey{Name: "Click To Use", Combo: "RightClick", Commands: []HotkeyCommand{{Command: "/use @clicked"}}}
+	exists := false
+	for _, hk := range newList {
+		if hk.Combo == def.Combo && hk.Plugin == "" {
+			exists = true
+			break
+		}
+	}
+	if !exists {
+		newList = append(newList, def)
+	}
+
 	hotkeysMu.Lock()
 	hotkeys = newList
 	hotkeysMu.Unlock()
@@ -156,7 +172,7 @@ func makeHotkeysWindow() {
 	}
 	hotkeysWin = eui.NewWindow()
 	hotkeysWin.Title = "Hotkeys"
-	hotkeysWin.Size = eui.Point{X: 260, Y: 300}
+	hotkeysWin.Size = eui.Point{X: 520, Y: 300}
 	hotkeysWin.Closable = true
 	hotkeysWin.Movable = true
 	hotkeysWin.Resizable = true
@@ -210,7 +226,7 @@ func refreshHotkeysList() {
 		}
 		idx := i
 		row := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL, Fixed: true}
-		row.Size = eui.Point{X: 220, Y: 20}
+		row.Size = eui.Point{X: 480, Y: 20}
 		btn, events := eui.NewButton()
 		btnText := hk.Combo
 		if hk.Name != "" {
@@ -227,7 +243,7 @@ func refreshHotkeysList() {
 			btnText += " -> " + text
 		}
 		btn.Text = btnText
-		btn.Size = eui.Point{X: 200, Y: 20}
+		btn.Size = eui.Point{X: 460, Y: 20}
 		btn.FontSize = 10
 		events.Handle = func(ev eui.UIEvent) {
 			if ev.Type == eui.EventClick {
@@ -256,13 +272,13 @@ func refreshHotkeysList() {
 		}
 		if !headerAdded {
 			label := &eui.ItemData{ItemType: eui.ITEM_TEXT, Text: "Plugin Hotkeys", Fixed: true}
-			label.Size = eui.Point{X: 220, Y: 20}
+			label.Size = eui.Point{X: 480, Y: 20}
 			hotkeysList.AddItem(label)
 			headerAdded = true
 		}
 		idx := i
 		row := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL, Fixed: true}
-		row.Size = eui.Point{X: 220, Y: 20}
+		row.Size = eui.Point{X: 480, Y: 20}
 		cb, cbEvents := eui.NewCheckbox()
 		cb.Checked = !hk.Disabled
 		cbEvents.Handle = func(ev eui.UIEvent) {
@@ -285,7 +301,7 @@ func refreshHotkeysList() {
 			disp = hk.Plugin
 		}
 		lbl := &eui.ItemData{ItemType: eui.ITEM_TEXT, Text: disp + " -> " + text, Fixed: true}
-		lbl.Size = eui.Point{X: 200, Y: 20}
+		lbl.Size = eui.Point{X: 460, Y: 20}
 		row.AddItem(lbl)
 		hotkeysList.AddItem(row)
 	}
