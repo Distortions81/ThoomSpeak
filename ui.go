@@ -388,7 +388,7 @@ func makeMixerWindow() {
 	masterMixSlider.Value = float32(gs.MasterVolume)
 	masterMixSlider.Size = eui.Point{X: 24, Y: 100}
 	masterMixSlider.AuxSize = eui.Point{X: 16, Y: 8}
-	masterMixSlider.Label = "Master"
+	masterMixSlider.Label = "Main"
 	h.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
 			if gs.Mute {
