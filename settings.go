@@ -104,32 +104,33 @@ var gsdef settings = settings{
 type settings struct {
 	Version int
 
-	LastCharacter      string
-	ClickToToggle      bool
-	KBWalkSpeed        float64
-	MainFontSize       float64
-	BubbleFontSize     float64
-	ConsoleFontSize    float64
-	ChatFontSize       float64
-	InventoryFontSize  float64
-	PlayersFontSize    float64
-	BubbleOpacity      float64
-	NameBgOpacity      float64
-	BarOpacity         float64
-	SpeechBubbles      bool
-	BubbleNormal       bool
-	BubbleWhisper      bool
-	BubbleYell         bool
-	BubbleThought      bool
-	BubbleRealAction   bool
-	BubbleMonster      bool
-	BubblePlayerAction bool
-	BubblePonder       bool
-	BubbleNarrate      bool
-	BubbleSelf         bool
-	BubbleOtherPlayers bool
-	BubbleMonsters     bool
-	BubbleNarration    bool
+	LastCharacter         string
+	ClickToToggle         bool
+	MiddleClickMoveWindow bool
+	KBWalkSpeed           float64
+	MainFontSize          float64
+	BubbleFontSize        float64
+	ConsoleFontSize       float64
+	ChatFontSize          float64
+	InventoryFontSize     float64
+	PlayersFontSize       float64
+	BubbleOpacity         float64
+	NameBgOpacity         float64
+	BarOpacity            float64
+	SpeechBubbles         bool
+	BubbleNormal          bool
+	BubbleWhisper         bool
+	BubbleYell            bool
+	BubbleThought         bool
+	BubbleRealAction      bool
+	BubbleMonster         bool
+	BubblePlayerAction    bool
+	BubblePonder          bool
+	BubbleNarrate         bool
+	BubbleSelf            bool
+	BubbleOtherPlayers    bool
+	BubbleMonsters        bool
+	BubbleNarration       bool
 
 	MotionSmoothing      bool
 	ObjectPinning        bool
@@ -279,6 +280,7 @@ func applySettings() {
 	updateBubbleVisibility()
 	eui.SetWindowTiling(gs.WindowTiling)
 	eui.SetWindowSnapping(gs.WindowSnapping)
+	eui.SetMiddleClickMove(gs.MiddleClickMoveWindow)
 	eui.SetPotatoMode(gs.PotatoComputer)
 	climg.SetPotatoMode(gs.PotatoComputer)
 	if clImages != nil {

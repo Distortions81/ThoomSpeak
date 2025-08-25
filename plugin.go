@@ -46,6 +46,7 @@ var basePluginExports = interp.Exports{
 		"KeyJustPressed":        reflect.ValueOf(pluginKeyJustPressed),
 		"MousePressed":          reflect.ValueOf(pluginMousePressed),
 		"MouseJustPressed":      reflect.ValueOf(pluginMouseJustPressed),
+		"MouseWheel":            reflect.ValueOf(pluginMouseWheel),
 		"LastClick":             reflect.ValueOf(pluginLastClick),
 		"ClickInfo":             reflect.ValueOf((*ClickInfo)(nil)),
 		"Mobile":                reflect.ValueOf((*Mobile)(nil)),
@@ -77,7 +78,7 @@ func exportsForPlugin(owner string) interp.Exports {
 	return ex
 }
 
-//go:embed example_plugins/example_ponder.go example_plugins/default_macros.go example_plugins/healer_selfheal.go example_plugins/README.txt
+//go:embed example_plugins/example_ponder.go example_plugins/default_macros.go example_plugins/README.txt example_plugins/chain_swap.go example_plugins/healer_selfheal.go
 var pluginExamples embed.FS
 
 func userPluginsDir() string {
@@ -111,6 +112,7 @@ func ensureDefaultPlugins() {
 		"plugins/default_macros.go",
 		"plugins/healer_selfheal.go",
 		"plugins/README.txt",
+		"plugins/chain_swap.go",
 	}
 	for _, src := range files {
 		data, err := pluginExamples.ReadFile(src)

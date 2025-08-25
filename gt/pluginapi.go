@@ -151,6 +151,9 @@ func MousePressed(name string) bool { return false }
 // MouseJustPressed reports whether the given mouse button was pressed this frame.
 func MouseJustPressed(name string) bool { return false }
 
+// MouseWheel returns the scroll wheel delta since the last frame.
+func MouseWheel() (float64, float64) { return 0, 0 }
+
 // Mobile contains basic info about a clicked mobile.
 type Mobile struct {
 	Index  uint8

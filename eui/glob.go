@@ -43,6 +43,9 @@ var (
 	// windowSnapping snaps windows to screen edges or other windows when enabled.
 	windowSnapping bool = true
 
+	// middleClickMove enables moving windows with the middle mouse button when enabled.
+	middleClickMove bool
+
 	whiteImage    = newImage(3, 3)
 	whiteSubImage = whiteImage.SubImage(image.Rect(1, 1, 2, 2)).(*ebiten.Image)
 

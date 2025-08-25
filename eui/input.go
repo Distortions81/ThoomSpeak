@@ -41,7 +41,7 @@ func Update() error {
 	mpos := point{X: float32(mx), Y: float32(my)}
 
 	click := pointerJustPressed()
-	midClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonMiddle)
+	midClick := middleClickMove && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonMiddle)
 	if click || midClick {
 		downPos = mpos
 		downWin = nil
@@ -67,9 +67,13 @@ func Update() error {
 	}
 	clickTime := pointerPressDuration()
 	clickDrag := clickTime > 1
-	midClickTime := inpututil.MouseButtonPressDuration(ebiten.MouseButtonMiddle)
+	midClickTime := 0
+	midPressed := false
+	if middleClickMove {
+		midClickTime = inpututil.MouseButtonPressDuration(ebiten.MouseButtonMiddle)
+		midPressed = ebiten.IsMouseButtonPressed(ebiten.MouseButtonMiddle)
+	}
 	midClickDrag := midClickTime > 1
-	midPressed := ebiten.IsMouseButtonPressed(ebiten.MouseButtonMiddle)
 
 	if !pointerPressed() && !midPressed {
 		if dragPart == PART_BAR && dragWin != nil {
