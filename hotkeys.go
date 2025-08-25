@@ -148,7 +148,10 @@ func refreshHotkeysList() {
 		row := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL, Fixed: true}
 		row.Size = eui.Point{X: 220, Y: 20}
 		btn, events := eui.NewButton()
-		btnText := hk.Name + " : " + hk.Combo
+		btnText := hk.Combo
+		if hk.Name != "" {
+			btnText = hk.Name + " : " + hk.Combo
+		}
 		if len(hk.Commands) > 0 {
 			text := hk.Commands[0].Command
 			if len(hk.Commands) > 1 {
@@ -458,13 +461,11 @@ func finishHotkeyEdit(save bool) {
 				hotkeysMu.Unlock()
 				saveHotkeys()
 				refreshHotkeysList()
-			} else if name != "" {
+			} else {
 				hotkeys = append(hotkeys, hk)
 				hotkeysMu.Unlock()
 				saveHotkeys()
 				refreshHotkeysList()
-			} else {
-				hotkeysMu.Unlock()
 			}
 		}
 	}

@@ -93,18 +93,49 @@ func TestHotkeyEditWithoutName(t *testing.T) {
 	}
 }
 
-// Test that a hotkey without a name is not saved.
-func TestHotkeyRequiresName(t *testing.T) {
+// Test that a hotkey without a name still saves and refreshes.
+func TestHotkeySavedWithoutName(t *testing.T) {
 	hotkeys = nil
 	openHotkeyEditor(-1)
 	hotkeyComboText.Text = "Ctrl-C"
 	hotkeyCmdInputs[0].Text = "say hi"
 	finishHotkeyEdit(true)
-	if len(hotkeys) != 0 {
-		t.Fatalf("hotkey saved without name")
+	if len(hotkeys) != 1 || hotkeys[0].Name != "" {
+		t.Fatalf("hotkey not saved or name unexpectedly set: %+v", hotkeys)
 	}
 	if hotkeyEditWin != nil {
 		hotkeyEditWin.Close()
+	}
+}
+
+// Test that adding a hotkey without a name updates the window list.
+func TestHotkeyListUpdatesForNamelessHotkey(t *testing.T) {
+	hotkeys = nil
+	hotkeysWin = nil
+	hotkeysList = nil
+
+	makeHotkeysWindow()
+	if hotkeysList == nil {
+		t.Fatalf("hotkeys window not initialized")
+	}
+	if len(hotkeysList.Contents) != 0 {
+		t.Fatalf("expected empty list")
+	}
+
+	openHotkeyEditor(-1)
+	hotkeyComboText.Text = "Ctrl-X"
+	hotkeyCmdInputs[0].Text = "say hi"
+	finishHotkeyEdit(true)
+
+	if len(hotkeysList.Contents) != 1 {
+		t.Fatalf("hotkeys list not refreshed: %d", len(hotkeysList.Contents))
+	}
+	row := hotkeysList.Contents[0]
+	if row == nil || len(row.Contents) == 0 {
+		t.Fatalf("hotkey row malformed")
+	}
+	if got := row.Contents[0].Text; got != "Ctrl-X -> say hi" {
+		t.Fatalf("unexpected hotkey text: %q", got)
 	}
 }
 
