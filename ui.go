@@ -2188,8 +2188,8 @@ func makeSettingsWindow() {
 	// Screen size settings in-place (moved from separate window)
 	uiScaleSlider, uiScaleEvents := eui.NewSlider()
 	uiScaleSlider.Label = "UI Scaling"
-	uiScaleSlider.MinValue = 1.0
-	uiScaleSlider.MaxValue = 2.5
+	uiScaleSlider.MinValue = 0.75
+	uiScaleSlider.MaxValue = 4
 	uiScaleSlider.Value = float32(gs.UIScale)
 	pendingUIScale := gs.UIScale
 	uiScaleEvents.Handle = func(ev eui.UIEvent) {
@@ -2199,8 +2199,8 @@ func makeSettingsWindow() {
 	}
 
 	uiScaleApplyBtn, uiScaleApplyEvents := eui.NewButton()
-	uiScaleApplyBtn.Text = "Apply UI Scale"
-	uiScaleApplyBtn.Size = eui.Point{X: 140, Y: 24}
+	uiScaleApplyBtn.Text = "Apply"
+	uiScaleApplyBtn.Size = eui.Point{X: 48, Y: 24}
 	uiScaleApplyEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
 			gs.UIScale = pendingUIScale
