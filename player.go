@@ -9,24 +9,25 @@ import (
 
 // Player holds minimal information extracted from BEP messages and descriptors.
 type Player struct {
-	Name       string
-	Race       string
-	Gender     string
-	Class      string
-	Clan       string
-	PictID     uint16
-	Colors     []byte
-	IsNPC      bool // entry represents an NPC
-	Sharee     bool // we are sharing to this player
-	Sharing    bool // player is sharing to us
-	GMLevel    int  // parsed from be-who; not rendered
-	Friend     bool // marked as friend
-	Blocked    bool // true if player is blocked
-	Ignored    bool // true if player is fully ignored
-	Dead       bool // parsed from obit messages (future)
-	FellWhere  string
-	KillerName string
-	Bard       bool // true if player is in the Bards' Guild
+	Name        string
+	Race        string
+	Gender      string
+	Class       string
+	Clan        string
+	PictID      uint16
+	Colors      []byte
+	IsNPC       bool // entry represents an NPC
+	Sharee      bool // we are sharing to this player
+	Sharing     bool // player is sharing to us
+	GMLevel     int  // parsed from be-who; not rendered
+	Friend      bool // marked as friend
+	FriendLabel int  // label/color (0-7)
+	Blocked     bool // true if player is blocked
+	Ignored     bool // true if player is fully ignored
+	Dead        bool // parsed from obit messages (future)
+	FellWhere   string
+	KillerName  string
+	Bard        bool // true if player is in the Bards' Guild
 	// Presence tracking
 	LastSeen time.Time // last time we observed any activity/info for this player
 	Offline  bool      // explicitly observed as offline/logged off

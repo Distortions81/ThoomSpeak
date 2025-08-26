@@ -18,14 +18,19 @@ func handleBlockCommand(args string) {
 	wasBlocked := p.Blocked
 	if wasBlocked {
 		p.Blocked = false
+		if p.FriendLabel == 6 {
+			p.FriendLabel = 0
+		}
 	} else {
 		p.Blocked = true
 		p.Ignored = false
 		p.Friend = false
+		p.FriendLabel = 6
 	}
 	playerCopy := *p
 	playersMu.Unlock()
 	playersDirty = true
+	killNameTagCacheFor(p.Name)
 	notifyPlayerHandlers(playerCopy)
 	msg := "Blocking " + p.Name + "."
 	if wasBlocked {
@@ -44,14 +49,19 @@ func handleIgnoreCommand(args string) {
 	wasIgnored := p.Ignored
 	if wasIgnored {
 		p.Ignored = false
+		if p.FriendLabel == 7 {
+			p.FriendLabel = 0
+		}
 	} else {
 		p.Ignored = true
 		p.Blocked = false
 		p.Friend = false
+		p.FriendLabel = 7
 	}
 	playerCopy := *p
 	playersMu.Unlock()
 	playersDirty = true
+	killNameTagCacheFor(p.Name)
 	notifyPlayerHandlers(playerCopy)
 	msg := "Ignoring " + p.Name + "."
 	if wasIgnored {
@@ -69,13 +79,15 @@ func handleForgetCommand(args string) {
 	playersMu.Lock()
 	wasBlocked := p.Blocked
 	wasIgnored := p.Ignored
-	wasFriend := p.Friend
+	wasFriend := p.Friend || p.FriendLabel != 0
 	p.Blocked = false
 	p.Ignored = false
 	p.Friend = false
+	p.FriendLabel = 0
 	playerCopy := *p
 	playersMu.Unlock()
 	playersDirty = true
+	killNameTagCacheFor(p.Name)
 	notifyPlayerHandlers(playerCopy)
 	msg := "Forgot " + p.Name + "."
 	switch {

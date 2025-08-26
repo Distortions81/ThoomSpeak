@@ -12,20 +12,21 @@ type persistPlayers struct {
 }
 
 type persistPlayer struct {
-	Name       string `json:"name"`
-	Gender     string `json:"gender"`
-	Class      string `json:"class"`
-	Clan       string `json:"clan"`
-	PictID     uint16 `json:"pict"`
-	Dead       bool   `json:"dead"`
-	GMLevel    int    `json:"gm,omitempty"`
-	Friend     bool   `json:"friend,omitempty"`
-	Blocked    bool   `json:"blocked,omitempty"`
-	Ignored    bool   `json:"ignored,omitempty"`
-	Bard       bool   `json:"bard,omitempty"`
-	ColorsHex  string `json:"colors,omitempty"` // hex of [count][colors...]
-	FellWhere  string `json:"fell_where,omitempty"`
-	KillerName string `json:"killer,omitempty"`
+	Name        string `json:"name"`
+	Gender      string `json:"gender"`
+	Class       string `json:"class"`
+	Clan        string `json:"clan"`
+	PictID      uint16 `json:"pict"`
+	Dead        bool   `json:"dead"`
+	GMLevel     int    `json:"gm,omitempty"`
+	Friend      bool   `json:"friend,omitempty"`
+	FriendLabel int    `json:"friend_label,omitempty"`
+	Blocked     bool   `json:"blocked,omitempty"`
+	Ignored     bool   `json:"ignored,omitempty"`
+	Bard        bool   `json:"bard,omitempty"`
+	ColorsHex   string `json:"colors,omitempty"` // hex of [count][colors...]
+	FellWhere   string `json:"fell_where,omitempty"`
+	KillerName  string `json:"killer,omitempty"`
 }
 
 const PlayersFile = "GT_Players.json"
@@ -73,6 +74,7 @@ func loadPlayersPersist() {
 		pr.Dead = p.Dead
 		pr.GMLevel = p.GMLevel
 		pr.Friend = p.Friend
+		pr.FriendLabel = p.FriendLabel
 		pr.Blocked = p.Blocked
 		pr.Ignored = p.Ignored
 		pr.Bard = p.Bard
@@ -115,20 +117,21 @@ func savePlayersPersist() {
 			hex = encodeHex(buf)
 		}
 		list = append(list, persistPlayer{
-			Name:       p.Name,
-			Gender:     p.Gender,
-			Class:      p.Class,
-			Clan:       p.Clan,
-			PictID:     p.PictID,
-			Dead:       p.Dead,
-			GMLevel:    p.GMLevel,
-			Friend:     p.Friend,
-			Blocked:    p.Blocked,
-			Ignored:    p.Ignored,
-			Bard:       p.Bard,
-			ColorsHex:  hex,
-			FellWhere:  p.FellWhere,
-			KillerName: p.KillerName,
+			Name:        p.Name,
+			Gender:      p.Gender,
+			Class:       p.Class,
+			Clan:        p.Clan,
+			PictID:      p.PictID,
+			Dead:        p.Dead,
+			GMLevel:     p.GMLevel,
+			Friend:      p.Friend,
+			FriendLabel: p.FriendLabel,
+			Blocked:     p.Blocked,
+			Ignored:     p.Ignored,
+			Bard:        p.Bard,
+			ColorsHex:   hex,
+			FellWhere:   p.FellWhere,
+			KillerName:  p.KillerName,
 		})
 	}
 	playersMu.RUnlock()

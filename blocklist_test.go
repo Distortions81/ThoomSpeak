@@ -7,15 +7,15 @@ func TestHandleBlockCommandToggle(t *testing.T) {
 	consoleLog = messageLog{max: maxMessages}
 	handleBlockCommand("Bob")
 	p := getPlayer("Bob")
-	if !p.Blocked || p.Ignored || p.Friend {
-		t.Fatalf("expected Bob to be blocked only")
+	if !p.Blocked || p.Ignored || p.Friend || p.FriendLabel != 6 {
+		t.Fatalf("expected Bob to be blocked only with label 6")
 	}
 	msgs := getConsoleMessages()
 	if len(msgs) == 0 || msgs[len(msgs)-1] != "Blocking Bob." {
 		t.Fatalf("unexpected message: %v", msgs)
 	}
 	handleBlockCommand("Bob")
-	if p.Blocked {
+	if p.Blocked || p.FriendLabel != 0 {
 		t.Fatalf("expected Bob to be unblocked")
 	}
 	msgs = getConsoleMessages()
@@ -29,15 +29,15 @@ func TestHandleIgnoreCommandToggle(t *testing.T) {
 	consoleLog = messageLog{max: maxMessages}
 	handleIgnoreCommand("Bob")
 	p := getPlayer("Bob")
-	if !p.Ignored || p.Blocked || p.Friend {
-		t.Fatalf("expected Bob to be ignored only")
+	if !p.Ignored || p.Blocked || p.Friend || p.FriendLabel != 7 {
+		t.Fatalf("expected Bob to be ignored only with label 7")
 	}
 	msgs := getConsoleMessages()
 	if len(msgs) == 0 || msgs[len(msgs)-1] != "Ignoring Bob." {
 		t.Fatalf("unexpected message: %v", msgs)
 	}
 	handleIgnoreCommand("Bob")
-	if p.Ignored {
+	if p.Ignored || p.FriendLabel != 0 {
 		t.Fatalf("expected Bob to be unignored")
 	}
 	msgs = getConsoleMessages()
@@ -51,8 +51,9 @@ func TestHandleForgetCommand(t *testing.T) {
 	consoleLog = messageLog{max: maxMessages}
 	p := getPlayer("Bob")
 	p.Friend = true
+	p.FriendLabel = 1
 	handleForgetCommand("Bob")
-	if p.Blocked || p.Ignored || p.Friend {
+	if p.Blocked || p.Ignored || p.Friend || p.FriendLabel != 0 {
 		t.Fatalf("expected Bob to have no labels")
 	}
 	msgs := getConsoleMessages()
