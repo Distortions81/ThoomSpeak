@@ -119,6 +119,8 @@ type Player struct {
 	FellTime   time.Time
 	KillerName string
 	Bard       bool
+	SameClan   bool
+	BeWho      bool
 	LastSeen   time.Time
 	Offline    bool
 }

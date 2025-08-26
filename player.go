@@ -29,6 +29,8 @@ type Player struct {
 	FellTime    time.Time
 	KillerName  string
 	Bard        bool // true if player is in the Bards' Guild
+	SameClan    bool // true if player is in our clan
+	BeWho       bool // true if player has been enumerated
 	// Presence tracking
 	LastSeen time.Time // last time we observed any activity/info for this player
 	Offline  bool      // explicitly observed as offline/logged off
@@ -77,9 +79,21 @@ func updatePlayerAppearance(name string, pictID uint16, colors []byte, isNPC boo
 	// Seeing a player on screen implies they are present now.
 	p.LastSeen = time.Now()
 	p.Offline = false
+	bwChanged := !p.BeWho
+	p.BeWho = true
+	prevSC := p.SameClan
+	if me, ok := players[playerName]; ok {
+		p.SameClan = me.Clan != "" && p.Clan != "" && strings.EqualFold(p.Clan, me.Clan)
+	}
 	playerCopy := *p
 	playersMu.Unlock()
 	playersDirty = true
+	if bwChanged || prevSC != p.SameClan {
+		playersPersistDirty = true
+	}
+	if prevSC != p.SameClan {
+		killNameTagCacheFor(name)
+	}
 	notifyPlayerHandlers(playerCopy)
 
 	if playerName != "" && strings.EqualFold(name, playerName) {

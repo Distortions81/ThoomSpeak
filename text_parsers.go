@@ -32,10 +32,23 @@ func parseWhoText(raw []byte, s string) bool {
 	for _, name := range names {
 		p := getPlayer(name)
 		playersMu.Lock()
+		prevSC := p.SameClan
+		prevBW := p.BeWho
+		if me, ok := players[playerName]; ok {
+			p.SameClan = me.Clan != "" && p.Clan != "" && strings.EqualFold(p.Clan, me.Clan)
+		}
 		p.LastSeen = time.Now()
 		p.Offline = false
+		p.BeWho = true
+		playerCopy := *p
 		playersMu.Unlock()
-		notifyPlayerHandlers(*p)
+		if prevSC != p.SameClan {
+			killNameTagCacheFor(name)
+		}
+		if !prevBW {
+			playersPersistDirty = true
+		}
+		notifyPlayerHandlers(playerCopy)
 	}
 	playersDirty = true
 	return true
@@ -72,9 +85,26 @@ func parseShareText(raw []byte, s string) bool {
 			playersMu.Lock()
 			changed := make([]Player, 0, len(names))
 			for _, name := range names {
-				if p, ok := players[name]; ok && p.Sharee {
-					p.Sharee = false
-					changed = append(changed, *p)
+				if p, ok := players[name]; ok {
+					changedPlayer := false
+					if p.Sharee {
+						p.Sharee = false
+						changedPlayer = true
+					}
+					if me, ok := players[playerName]; ok {
+						sc := me.Clan != "" && p.Clan != "" && strings.EqualFold(p.Clan, me.Clan)
+						if p.SameClan != sc {
+							p.SameClan = sc
+							changedPlayer = true
+						}
+					}
+					if !p.BeWho {
+						p.BeWho = true
+						playersPersistDirty = true
+					}
+					if changedPlayer {
+						changed = append(changed, *p)
+					}
 				}
 			}
 			playersMu.Unlock()
@@ -110,6 +140,17 @@ func parseShareText(raw []byte, s string) bool {
 				if !p.Sharee {
 					p.Sharee = true
 					added = append(added, *p)
+				}
+				if me, ok := players[playerName]; ok {
+					sc := me.Clan != "" && p.Clan != "" && strings.EqualFold(p.Clan, me.Clan)
+					if p.SameClan != sc {
+						p.SameClan = sc
+						added = append(added, *p)
+					}
+				}
+				if !p.BeWho {
+					p.BeWho = true
+					playersPersistDirty = true
 				}
 			}
 			for _, pl := range added {
@@ -155,8 +196,23 @@ func parseShareText(raw []byte, s string) bool {
 				p = &Player{Name: name}
 				players[name] = p
 			}
+			changed := false
 			if !p.Sharee {
 				p.Sharee = true
+				changed = true
+			}
+			if me, ok := players[playerName]; ok {
+				sc := me.Clan != "" && p.Clan != "" && strings.EqualFold(p.Clan, me.Clan)
+				if p.SameClan != sc {
+					p.SameClan = sc
+					changed = true
+				}
+			}
+			if !p.BeWho {
+				p.BeWho = true
+				playersPersistDirty = true
+			}
+			if changed {
 				added = append(added, *p)
 			}
 		}
@@ -181,9 +237,26 @@ func parseShareText(raw []byte, s string) bool {
 			if name == "" || strings.EqualFold(name, playerName) {
 				continue
 			}
-			if p, ok := players[name]; ok && p.Sharee {
-				p.Sharee = false
-				changed = append(changed, *p)
+			if p, ok := players[name]; ok {
+				changedPlayer := false
+				if p.Sharee {
+					p.Sharee = false
+					changedPlayer = true
+				}
+				if me, ok := players[playerName]; ok {
+					sc := me.Clan != "" && p.Clan != "" && strings.EqualFold(p.Clan, me.Clan)
+					if p.SameClan != sc {
+						p.SameClan = sc
+						changedPlayer = true
+					}
+				}
+				if !p.BeWho {
+					p.BeWho = true
+					playersPersistDirty = true
+				}
+				if changedPlayer {
+					changed = append(changed, *p)
+				}
 			}
 		}
 		playersMu.Unlock()
@@ -244,8 +317,23 @@ func parseShareText(raw []byte, s string) bool {
 					p = &Player{Name: name}
 					players[name] = p
 				}
+				changedPlayer := false
 				if !p.Sharing {
 					p.Sharing = true
+					changedPlayer = true
+				}
+				if me, ok := players[playerName]; ok {
+					sc := me.Clan != "" && p.Clan != "" && strings.EqualFold(p.Clan, me.Clan)
+					if p.SameClan != sc {
+						p.SameClan = sc
+						changedPlayer = true
+					}
+				}
+				if !p.BeWho {
+					p.BeWho = true
+					playersPersistDirty = true
+				}
+				if changedPlayer {
 					changed = append(changed, *p)
 				}
 			}

@@ -131,12 +131,15 @@ func updatePlayersWindow() {
 	for _, p := range exiles {
 		offline := p.Offline || time.Since(p.LastSeen) > 5*time.Minute
 		name := p.Name
-		tags := make([]string, 0, 2)
+		tags := make([]string, 0, 3)
 		if p.Sharee {
 			tags = append(tags, "<")
 		}
 		if p.Sharing {
 			tags = append(tags, ">")
+		}
+		if p.SameClan {
+			tags = append(tags, "*")
 		}
 		if len(tags) > 0 {
 			name = fmt.Sprintf("%s %s", name, strings.Join(tags, "--"))
