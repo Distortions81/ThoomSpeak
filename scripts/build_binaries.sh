@@ -14,6 +14,13 @@ platforms=(
   "darwin:amd64"
 )
 
+declare -A FRIENDLY_NAMES=(
+  ["linux:amd64"]="goThoom-Linux-x86_64"
+  ["windows:amd64"]="goThoom-Windows-x86_64"
+  ["darwin:arm64"]="goThoom-macOS-AppleSilicon"
+  ["darwin:amd64"]="goThoom-macOS-Intel"
+)
+
 have() { command -v "$1" >/dev/null 2>&1; }
 
 ensure_cmd() {
@@ -135,8 +142,9 @@ ensure_cmd zip
 
 for platform in "${platforms[@]}"; do
   IFS=":" read -r GOOS GOARCH <<<"$platform"
-  BIN_NAME="gothoom-${GOOS}-${GOARCH}"
-  ZIP_NAME="${BIN_NAME}.zip"
+  FRIENDLY="${FRIENDLY_NAMES["$GOOS:$GOARCH"]}"
+  BIN_NAME="${FRIENDLY}"
+  ZIP_NAME="${FRIENDLY}.zip"
   TAGS=""
   LDFLAGS="-s -w"
 
