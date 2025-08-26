@@ -91,12 +91,12 @@ var gsdef settings = settings{
 	LastUpdateCheck:      time.Time{},
 	NotifiedVersion:      0,
 
-	GameWindow:      WindowState{Open: true},
-	InventoryWindow: WindowState{Open: true},
-	PlayersWindow:   WindowState{Open: true},
-	MessagesWindow:  WindowState{Open: true},
-	ChatWindow:      WindowState{Open: true},
-
+	GameWindow:          WindowState{Open: true},
+	InventoryWindow:     WindowState{Open: true},
+	PlayersWindow:       WindowState{Open: true},
+	MessagesWindow:      WindowState{Open: true},
+	ChatWindow:          WindowState{Open: true},
+	EnabledPlugins:      map[string]bool{},
 	vsync:               true,
 	nightEffect:         true,
 	throttleSounds:      true,
@@ -198,6 +198,7 @@ type settings struct {
 	pluginOutputDebug   bool
 	hideMoving          bool
 	hideMobiles         bool
+	EnabledPlugins      map[string]bool
 	vsync               bool
 	nightEffect         bool
 	precacheSounds      bool
@@ -266,6 +267,10 @@ func loadSettings() bool {
 		applyQualityPreset("High")
 		settingsLoaded = false
 		return false
+	}
+
+	if gs.EnabledPlugins == nil {
+		gs.EnabledPlugins = make(map[string]bool)
 	}
 
 	if gs.DenoiseAmount < 0 || gs.DenoiseAmount > 1 {
@@ -355,6 +360,21 @@ func updateBubbleVisibility() {
 }
 
 func saveSettings() {
+	pluginMu.RLock()
+	if gs.EnabledPlugins == nil {
+		gs.EnabledPlugins = make(map[string]bool, len(pluginDisabled))
+	} else {
+		for k := range gs.EnabledPlugins {
+			delete(gs.EnabledPlugins, k)
+		}
+	}
+	for k, v := range pluginDisabled {
+		if !v {
+			gs.EnabledPlugins[k] = true
+		}
+	}
+	pluginMu.RUnlock()
+
 	data, err := json.MarshalIndent(gs, "", "  ")
 	if err != nil {
 		logError("save settings: %v", err)
