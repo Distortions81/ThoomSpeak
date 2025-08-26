@@ -432,6 +432,7 @@ func disablePlugin(owner, reason string) {
 	for _, hk := range pluginHotkeys(owner) {
 		pluginRemoveHotkey(owner, hk.Combo)
 	}
+	pluginRemoveMacros(owner)
 	pluginMu.Lock()
 	for cmd, o := range pluginCommandOwners {
 		if o == owner {

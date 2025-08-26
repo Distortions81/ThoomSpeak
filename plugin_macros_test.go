@@ -74,3 +74,35 @@ func TestPluginAutoReplyRunsCommand(t *testing.T) {
 		t.Fatalf("pending command %q, want %q", pendingCommand, "/wave")
 	}
 }
+
+// Test that disabling a plugin removes any macros it registered.
+func TestPluginRemoveMacrosOnDisable(t *testing.T) {
+	// Reset shared state.
+	macroMu = sync.RWMutex{}
+	macroMaps = map[string]map[string]string{}
+	inputHandlersMu = sync.RWMutex{}
+	inputHandlers = nil
+	pluginMu = sync.RWMutex{}
+	pluginDisabled = map[string]bool{}
+	pluginDisplayNames = map[string]string{}
+	pluginTerminators = map[string]func(){}
+	pluginCommandOwners = map[string]string{}
+	pluginCommands = map[string]PluginCommandHandler{}
+	pluginSendHistory = map[string][]time.Time{}
+	hotkeysMu = sync.RWMutex{}
+	hotkeys = nil
+	pluginHotkeyEnabled = map[string]map[string]bool{}
+	consoleLog = messageLog{max: maxMessages}
+
+	owner := "plug"
+	pluginAddMacro(owner, "pp", "/ponder ")
+	if got, want := runInputHandlers("pphello"), "/ponder hello"; got != want {
+		t.Fatalf("macro not added: got %q, want %q", got, want)
+	}
+
+	disablePlugin(owner, "testing")
+
+	if got, want := runInputHandlers("pphello"), "pphello"; got != want {
+		t.Fatalf("macro not removed: got %q, want %q", got, want)
+	}
+}
