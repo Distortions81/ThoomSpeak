@@ -29,6 +29,7 @@ type persistPlayer struct {
 	FellWhere   string `json:"fell_where,omitempty"`
 	FellTime    int64  `json:"fell_time,omitempty"`
 	KillerName  string `json:"killer,omitempty"`
+	LastSeen    int64  `json:"last_seen,omitempty"`
 }
 
 const PlayersFile = "GT_Players.json"
@@ -55,6 +56,7 @@ func loadPlayersPersist() {
 		if p.Name == "" {
 			continue
 		}
+		last := time.Unix(p.LastSeen, 0)
 		pr := getPlayer(p.Name)
 		playersMu.Lock()
 		pr.Gender = p.Gender
@@ -87,6 +89,9 @@ func loadPlayersPersist() {
 			pr.FellTime = time.Time{}
 		}
 		pr.KillerName = p.KillerName
+		if pr.LastSeen.IsZero() && p.LastSeen > 0 {
+			pr.LastSeen = last
+		}
 		playersMu.Unlock()
 	}
 	playersDirty = true
@@ -126,6 +131,10 @@ func savePlayersPersist() {
 		var ft int64
 		if !p.FellTime.IsZero() {
 			ft = p.FellTime.Unix()
+    }
+		var lastSeen int64
+		if !p.LastSeen.IsZero() {
+			lastSeen = p.LastSeen.Unix()
 		}
 		list = append(list, persistPlayer{
 			Name:        p.Name,
@@ -144,6 +153,7 @@ func savePlayersPersist() {
 			FellWhere:   p.FellWhere,
 			FellTime:    ft,
 			KillerName:  p.KillerName,
+			LastSeen:    lastSeen,
 		})
 	}
 	playersMu.RUnlock()
