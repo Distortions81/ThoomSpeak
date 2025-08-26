@@ -17,15 +17,21 @@ type assetStats struct {
 
 const statsFile = "stats.json"
 
-// dataDirPath holds the absolute path to the "data" directory containing game
-// assets. The path is resolved relative to the executable so assets are placed
-// alongside the binary regardless of the current working directory.
+// dataDirPath holds the absolute path to the directory containing game assets.
+// On macOS the path resolves to the app's container directory so the client can
+// operate inside the sandbox. On other platforms the path is resolved relative
+// to the executable so assets are placed alongside the binary regardless of the
+// current working directory.
 var dataDirPath = func() string {
 	if runtime.GOOS == "darwin" {
 		if home, err := os.UserHomeDir(); err == nil {
-			p := filepath.Join(home, "Library", "Application Support", "goThoom")
-			_ = os.MkdirAll(p, 0o755)
-			return p
+			if filepath.Base(home) == "Data" && filepath.Base(filepath.Dir(home)) == "com.goThoom.client" {
+				home = filepath.Dir(home)
+			} else {
+				home = filepath.Join(home, "Library", "Containers", "com.goThoom.client")
+			}
+			_ = os.MkdirAll(home, 0o755)
+			return home
 		}
 	}
 	if exe, err := os.Executable(); err == nil {
