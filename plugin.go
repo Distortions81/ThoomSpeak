@@ -38,7 +38,6 @@ var basePluginExports = interp.Exports{
 		"Unequip":               reflect.ValueOf(pluginUnequip),
 		"PlaySound":             reflect.ValueOf(pluginPlaySound),
 		"RegisterInputHandler":  reflect.ValueOf(pluginRegisterInputHandler),
-		"RegisterChatHandler":   reflect.ValueOf(pluginRegisterChatHandler),
 		"InputText":             reflect.ValueOf(pluginInputText),
 		"SetInputText":          reflect.ValueOf(pluginSetInputText),
 		"PlayerStats":           reflect.ValueOf(pluginPlayerStats),
@@ -87,6 +86,7 @@ func exportsForPlugin(owner string) interp.Exports {
 		m["AddMacro"] = reflect.ValueOf(func(short, full string) { pluginAddMacro(owner, short, full) })
 		m["AddMacros"] = reflect.ValueOf(func(macros map[string]string) { pluginAddMacros(owner, macros) })
 		m["AutoReply"] = reflect.ValueOf(func(trigger, cmd string) { pluginAutoReply(owner, trigger, cmd) })
+		m["RegisterChatHandler"] = reflect.ValueOf(func(fn func(string)) { pluginRegisterChatHandler(owner, fn) })
 		m["RunCommand"] = reflect.ValueOf(func(cmd string) { pluginRunCommand(owner, cmd) })
 		m["EnqueueCommand"] = reflect.ValueOf(func(cmd string) { pluginEnqueueCommand(owner, cmd) })
 		ex[pkg] = m
@@ -301,7 +301,7 @@ var (
 	pluginDisabled      = map[string]bool{}
 	pluginPaths         = map[string]string{}
 	pluginTerminators   = map[string]func(){}
-	chatHandlers        []func(string)
+	pluginChatHandlers  = map[string][]func(string){}
 	chatHandlersMu      sync.RWMutex
 	inputHandlers       []func(string) string
 	inputHandlersMu     sync.RWMutex
@@ -452,6 +452,9 @@ func disablePlugin(owner, reason string) {
 		pluginRemoveHotkey(owner, hk.Combo)
 	}
 	pluginRemoveMacros(owner)
+	chatHandlersMu.Lock()
+	delete(pluginChatHandlers, owner)
+	chatHandlersMu.Unlock()
 	pluginMu.Lock()
 	for cmd, o := range pluginCommandOwners {
 		if o == owner {
@@ -597,12 +600,12 @@ func pluginRegisterInputHandler(fn func(string) string) {
 	inputHandlersMu.Unlock()
 }
 
-func pluginRegisterChatHandler(fn func(string)) {
+func pluginRegisterChatHandler(owner string, fn func(string)) {
 	if fn == nil {
 		return
 	}
 	chatHandlersMu.Lock()
-	chatHandlers = append(chatHandlers, fn)
+	pluginChatHandlers[owner] = append(pluginChatHandlers[owner], fn)
 	chatHandlersMu.Unlock()
 }
 

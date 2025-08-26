@@ -70,7 +70,7 @@ func pluginRemoveMacros(owner string) {
 // automatic responses.
 func pluginAutoReply(owner, trigger, cmd string) {
 	trig := strings.ToLower(trigger)
-	pluginRegisterChatHandler(func(msg string) {
+	pluginRegisterChatHandler(owner, func(msg string) {
 		if strings.HasPrefix(strings.ToLower(msg), trig) {
 			pluginRunCommand(owner, cmd)
 		}

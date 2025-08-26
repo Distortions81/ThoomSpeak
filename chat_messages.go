@@ -42,7 +42,10 @@ func chatMessage(msg string) {
 	}
 
 	chatHandlersMu.RLock()
-	handlers := append([]func(string){}, chatHandlers...)
+	var handlers []func(string)
+	for _, hs := range pluginChatHandlers {
+		handlers = append(handlers, hs...)
+	}
 	chatHandlersMu.RUnlock()
 	for _, h := range handlers {
 		go h(msg)
