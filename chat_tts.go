@@ -24,7 +24,7 @@ var (
 	chatTTSMu    sync.Mutex
 	ttsPlayers   = make(map[*audio.Player]struct{})
 	ttsPlayersMu sync.Mutex
-	chatTTSQueue = make(chan string, 16)
+	chatTTSQueue = make(chan string, 10)
 
 	piperPath   string
 	piperModel  string
@@ -37,10 +37,21 @@ func init() {
 
 func stopAllTTS() {
 	ttsPlayersMu.Lock()
-	defer ttsPlayersMu.Unlock()
 	for p := range ttsPlayers {
 		_ = p.Close()
 		delete(ttsPlayers, p)
+	}
+	ttsPlayersMu.Unlock()
+	clearChatTTSQueue()
+}
+
+func clearChatTTSQueue() {
+	for {
+		select {
+		case <-chatTTSQueue:
+		default:
+			return
+		}
 	}
 }
 
