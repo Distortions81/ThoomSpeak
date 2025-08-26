@@ -1,10 +1,17 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
+
+	"github.com/hajimehoshi/ebiten/v2/audio"
 )
 
 func TestListPiperVoices(t *testing.T) {
@@ -54,5 +61,43 @@ func TestListPiperVoices(t *testing.T) {
 	want := []string{"dirvoice", "othervoice", "rootvoice"}
 	if !reflect.DeepEqual(voices, want) {
 		t.Fatalf("voices = %v, want %v", voices, want)
+	}
+}
+
+func TestChatTTSPendingLimit(t *testing.T) {
+	origCtx := audioContext
+	audioContext = audio.NewContext(44100)
+	defer func() { audioContext = origCtx }()
+
+	origGS := gs
+	gs.ChatTTS = true
+	gs.Mute = false
+	blockTTS = false
+	defer func() { gs = origGS }()
+
+	clearChatTTSQueue()
+	atomic.StoreInt32(&pendingTTS, 0)
+
+	var mu sync.Mutex
+	total := 0
+	origFunc := playChatTTSFunc
+	playChatTTSFunc = func(text string) {
+		mu.Lock()
+		total += len(strings.Split(text, ". "))
+		mu.Unlock()
+	}
+	defer func() { playChatTTSFunc = origFunc }()
+
+	for i := 0; i < 25; i++ {
+		speakChatMessage(fmt.Sprintf("m%d", i))
+	}
+
+	time.Sleep(500 * time.Millisecond)
+
+	mu.Lock()
+	got := total
+	mu.Unlock()
+	if got > 10 {
+		t.Fatalf("synthesized %d messages, want at most 10", got)
 	}
 }
