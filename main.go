@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/binary"
 	"flag"
+	"image"
+	"image/png"
 	"log"
 	"os"
 	"os/signal"
@@ -19,9 +21,14 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	clipboard "golang.design/x/clipboard"
+
+	_ "embed"
 )
 
 var (
+	//go:embed goThoom.png
+	windowIconPNG []byte
+
 	clMovFPS int = 5
 
 	host     string = "server.deltatao.com:5010"
@@ -78,6 +85,12 @@ func main() {
 		gs.WindowHeight = initialWindowH
 	}
 	ebiten.SetWindowSize(gs.WindowWidth, gs.WindowHeight)
+
+	if img, err := png.Decode(bytes.NewReader(windowIconPNG)); err == nil {
+		ebiten.SetWindowIcon([]image.Image{img})
+	} else {
+		log.Printf("decode icon: %v", err)
+	}
 
 	var err error
 
