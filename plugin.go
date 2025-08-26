@@ -190,13 +190,13 @@ var pluginAllowedPkgs = []string{
 	"fmt/fmt",
 	"math/big/big",
 	"math/math",
-	"math/rand",
+	"math/rand/rand",
 	"regexp/regexp",
 	"sort/sort",
 	"strconv/strconv",
 	"strings/strings",
 	"time/time",
-	"unicode/utf8",
+	"unicode/utf8/utf8",
 }
 
 func restrictedStdlib() interp.Exports {
