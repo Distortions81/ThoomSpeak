@@ -283,6 +283,7 @@ func parseFallenText(raw []byte, s string) bool {
 		p.Dead = true
 		p.KillerName = killer
 		p.FellWhere = where
+		p.FellTime = time.Now()
 		playerCopy := *p
 		playersMu.Unlock()
 		playersDirty = true
@@ -308,6 +309,7 @@ func parseFallenText(raw []byte, s string) bool {
 			p.Dead = false
 			p.FellWhere = ""
 			p.KillerName = ""
+			p.FellTime = time.Time{}
 			playerCopy := *p
 			playersMu.Unlock()
 			playersDirty = true

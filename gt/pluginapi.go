@@ -116,6 +116,7 @@ type Player struct {
 	Ignored    bool
 	Dead       bool
 	FellWhere  string
+	FellTime   time.Time
 	KillerName string
 	Bard       bool
 	LastSeen   time.Time

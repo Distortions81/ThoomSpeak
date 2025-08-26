@@ -26,6 +26,7 @@ type Player struct {
 	Ignored     bool // true if player is fully ignored
 	Dead        bool // parsed from obit messages (future)
 	FellWhere   string
+	FellTime    time.Time
 	KillerName  string
 	Bard        bool // true if player is in the Bards' Guild
 	// Presence tracking
