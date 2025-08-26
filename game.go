@@ -544,7 +544,7 @@ func (g *Game) Update() error {
 	updateNotifications()
 	updateThinkMessages()
 
-	mx, my := ebiten.CursorPosition()
+	mx, my := eui.PointerPosition()
 	origX, origY, worldScale := worldDrawInfo()
 	hx := int16(float64(mx-origX)/worldScale - float64(fieldCenterX))
 	hy := int16(float64(my-origY)/worldScale - float64(fieldCenterY))
@@ -760,7 +760,7 @@ func (g *Game) Update() error {
 		}
 	}
 
-	mx, my = ebiten.CursorPosition()
+	mx, my = eui.PointerPosition()
 	// Map mouse to world coordinates accounting for current draw scale/offset.
 	origX, origY, worldScale = worldDrawInfo()
 	baseX := int16(float64(mx-origX)/worldScale - float64(fieldCenterX))
