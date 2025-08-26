@@ -162,6 +162,7 @@ func TestLoadHotkeysShowsEntriesInWindow(t *testing.T) {
 	hotkeys = nil
 	hotkeysWin = nil
 	hotkeysList = nil
+	pluginHotkeyEnabled = map[string]map[string]bool{}
 
 	dir := t.TempDir()
 	origDir := dataDirPath
@@ -284,6 +285,7 @@ func TestPluginHotkeysFontSize(t *testing.T) {
 	hotkeysWin = nil
 	hotkeysList = nil
 	pluginDisplayNames = map[string]string{"plug": "Plugin"}
+	pluginHotkeyEnabled = map[string]map[string]bool{}
 
 	makeHotkeysWindow()
 
@@ -301,5 +303,63 @@ func TestPluginHotkeysFontSize(t *testing.T) {
 	lbl := row.Contents[1]
 	if lbl.FontSize == 0 {
 		t.Fatalf("plugin hotkey label font size not set")
+	}
+}
+
+// Test that enabling a plugin hotkey persists only its state and not the
+// command details.
+func TestPluginHotkeyStatePersisted(t *testing.T) {
+	hotkeys = nil
+	pluginHotkeyEnabled = map[string]map[string]bool{}
+	dir := t.TempDir()
+	origDir := dataDirPath
+	dataDirPath = dir
+	defer func() { dataDirPath = origDir }()
+
+	// Add plugin hotkey and enable it.
+	pluginAddHotkey("plug", "Ctrl-P", "say hi")
+	if len(hotkeys) != 1 {
+		t.Fatalf("expected one plugin hotkey")
+	}
+	hotkeysMu.Lock()
+	hotkeys[0].Disabled = false
+	hotkeysMu.Unlock()
+	if pluginHotkeyEnabled["plug"] == nil {
+		pluginHotkeyEnabled["plug"] = map[string]bool{}
+	}
+	pluginHotkeyEnabled["plug"]["Ctrl-P"] = true
+	saveHotkeys()
+
+	// File should not contain command text.
+	data, err := os.ReadFile(filepath.Join(dir, hotkeysFile))
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	if strings.Contains(string(data), "say hi") {
+		t.Fatalf("plugin command persisted: %s", data)
+	}
+
+	// Simulate restart.
+	hotkeys = nil
+	pluginHotkeyEnabled = map[string]map[string]bool{}
+	loadHotkeys()
+	if !pluginHotkeyEnabled["plug"]["Ctrl-P"] {
+		t.Fatalf("expected enabled state, got disabled")
+	}
+
+	pluginAddHotkey("plug", "Ctrl-P", "say hi")
+	found := false
+	hotkeysMu.RLock()
+	for _, hk := range hotkeys {
+		if hk.Plugin == "plug" {
+			found = true
+			if hk.Disabled {
+				t.Fatalf("hotkey disabled after reload")
+			}
+		}
+	}
+	hotkeysMu.RUnlock()
+	if !found {
+		t.Fatalf("plugin hotkey not re-added")
 	}
 }

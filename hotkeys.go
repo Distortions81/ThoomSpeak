@@ -50,10 +50,15 @@ var (
 	recordStart   time.Time
 	recordTarget  *eui.ItemData
 	recordedCombo string
+
+	// pluginHotkeyEnabled holds the persisted enabled state for plugin
+	// hotkeys. The map is keyed first by plugin name and then by combo.
+	pluginHotkeyEnabled = map[string]map[string]bool{}
 )
 
 func loadHotkeys() {
 	path := filepath.Join(dataDirPath, hotkeysFile)
+	pluginHotkeyEnabled = map[string]map[string]bool{}
 	data, err := os.ReadFile(path)
 
 	var newList []Hotkey
@@ -65,14 +70,36 @@ func loadHotkeys() {
 			Command  string          `json:"command"`
 			Text     string          `json:"text,omitempty"`
 			Plugin   string          `json:"plugin,omitempty"`
-			Disabled bool            `json:"disabled,omitempty"`
+			Disabled *bool           `json:"disabled,omitempty"`
+			Enabled  *bool           `json:"enabled,omitempty"`
 		}
 		var raw []hotkeyJSON
 		if err := json.Unmarshal(data, &raw); err != nil {
 			return
 		}
 		for _, r := range raw {
-			hk := Hotkey{Combo: r.Combo, Name: r.Name, Plugin: r.Plugin, Disabled: r.Disabled}
+			if r.Plugin != "" {
+				m := pluginHotkeyEnabled[r.Plugin]
+				if m == nil {
+					m = map[string]bool{}
+					pluginHotkeyEnabled[r.Plugin] = m
+				}
+				enabled := false
+				if r.Enabled != nil {
+					enabled = *r.Enabled
+				} else if r.Disabled != nil {
+					enabled = !*r.Disabled
+				}
+				if enabled {
+					m[r.Combo] = true
+				}
+				continue
+			}
+			disabled := false
+			if r.Disabled != nil {
+				disabled = *r.Disabled
+			}
+			hk := Hotkey{Combo: r.Combo, Name: r.Name, Disabled: disabled}
 			if len(r.Commands) > 0 {
 				for _, c := range r.Commands {
 					cmd := strings.TrimSpace(c.Command)
@@ -118,7 +145,41 @@ func saveHotkeys() {
 	hotkeysMu.RLock()
 	snap := append([]Hotkey(nil), hotkeys...)
 	hotkeysMu.RUnlock()
-	data, err := json.MarshalIndent(snap, "", "  ")
+	type pluginState struct {
+		Plugin  string `json:"plugin,omitempty"`
+		Combo   string `json:"combo"`
+		Enabled bool   `json:"enabled,omitempty"`
+	}
+
+	var out []any
+	for _, hk := range snap {
+		if hk.Plugin != "" {
+			if hk.Disabled {
+				if m := pluginHotkeyEnabled[hk.Plugin]; m != nil {
+					delete(m, hk.Combo)
+					if len(m) == 0 {
+						delete(pluginHotkeyEnabled, hk.Plugin)
+					}
+				}
+			} else {
+				m := pluginHotkeyEnabled[hk.Plugin]
+				if m == nil {
+					m = map[string]bool{}
+					pluginHotkeyEnabled[hk.Plugin] = m
+				}
+				m[hk.Combo] = true
+			}
+			continue
+		}
+		out = append(out, hk)
+	}
+	for plug, m := range pluginHotkeyEnabled {
+		for combo := range m {
+			out = append(out, pluginState{Plugin: plug, Combo: combo, Enabled: true})
+		}
+	}
+
+	data, err := json.MarshalIndent(out, "", "  ")
 	if err != nil {
 		return
 	}
@@ -147,6 +208,12 @@ func pluginRemoveHotkey(owner, combo string) {
 		}
 	}
 	hotkeysMu.Unlock()
+	if m := pluginHotkeyEnabled[owner]; m != nil {
+		delete(m, combo)
+		if len(m) == 0 {
+			delete(pluginHotkeyEnabled, owner)
+		}
+	}
 	refreshHotkeysList()
 	saveHotkeys()
 }
@@ -269,6 +336,22 @@ func refreshHotkeysList() {
 				hotkeysMu.Lock()
 				if idx >= 0 && idx < len(hotkeys) {
 					hotkeys[idx].Disabled = !ev.Checked
+					hk := hotkeys[idx]
+					if hk.Disabled {
+						if m := pluginHotkeyEnabled[hk.Plugin]; m != nil {
+							delete(m, hk.Combo)
+							if len(m) == 0 {
+								delete(pluginHotkeyEnabled, hk.Plugin)
+							}
+						}
+					} else {
+						m := pluginHotkeyEnabled[hk.Plugin]
+						if m == nil {
+							m = map[string]bool{}
+							pluginHotkeyEnabled[hk.Plugin] = m
+						}
+						m[hk.Combo] = true
+					}
 				}
 				hotkeysMu.Unlock()
 				saveHotkeys()
