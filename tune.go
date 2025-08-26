@@ -31,11 +31,11 @@ var instruments = []instrument{
 	{76, 1, 100, 100, false},   // 6 Reed Flute (melody only)
 	{17, -1, 100, 100, true},   // 7 Temple Organ (longChord)
 	{94, -1, 100, 100, true},   // 8 Conch (longChord)
-	{80, 1, 100, 100, false},   // 9 Ocarina (melody only)
-	{77, 1, 100, 100, true},    // 10 Centaur Organ (longChord)
-	{12, 0, 100, 100, false},   // 11 Vibra
+	{79, 1, 100, 100, false},   // 9 Ocarina (melody only)
+	{19, 1, 100, 100, true},    // 10 Centaur Organ (longChord)
+	{11, 0, 100, 100, false},   // 11 Vibra
 	{59, -1, 100, 100, false},  // 12 Tuborn (melody only)
-	{110, 0, 100, 100, true},   // 13 Bagpipe (longChord)
+	{109, 0, 100, 100, true},   // 13 Bagpipe (longChord)
 	{117, -1, 100, 100, false}, // 14 Orga Drum (melody only)
 	{115, 0, 100, 100, false},  // 15 Casserole
 	{41, 1, 100, 100, false},   // 16 Violène
@@ -44,11 +44,11 @@ var instruments = []instrument{
 	{108, -1, 100, 100, false}, // 19 Gho-To
 	{44, -2, 100, 100, false},  // 20 Mammoth Violène
 	{33, -2, 100, 100, false},  // 21 Gutbucket Bass (melody only)
-	{77, 0, 100, 100, false},   // 22 Glass Jug (melody only)
+	{76, 0, 100, 100, false},   // 22 Glass Jug (melody only)
 	{17, -1, 100, 100, true},   // 23 Vibra Sustained (Temple Organ substitute) (longChord)
-	{20, -1, 100, 100, true},   // 24 Church Organ (strong sustain) (longChord)
-	{49, 0, 100, 100, false},   // 25 String Ensemble 1 (soft sustain)
-	{50, 0, 100, 100, false},   // 26 String Ensemble 2 (brighter sustain)
+	{19, -1, 100, 100, true},   // 24 Church Organ (strong sustain) (longChord)
+	{48, 0, 100, 100, false},   // 25 String Ensemble 1 (soft sustain)
+	{49, 0, 100, 100, false},   // 26 String Ensemble 2 (brighter sustain)
 	{52, 0, 100, 100, false},   // 27 Choir Aahs (vocal sustain)
 	{89, 0, 100, 100, true},    // 28 Warm Pad (synth pad sustain) (allow long)
 }
