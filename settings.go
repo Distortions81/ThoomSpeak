@@ -29,6 +29,11 @@ var gs settings = gsdef
 // settingsLoaded reports whether settings were successfully loaded from disk.
 var settingsLoaded bool
 
+// windowsRestored tracks whether window positions have been restored for the
+// current UI scale. Initialization defers restoration until the first layout
+// provides a final screen size.
+var windowsRestored bool
+
 var gsdef settings = settings{
 	Version: SETTINGS_VERSION,
 
@@ -514,6 +519,17 @@ func restoreWindowSettings() {
 	if hudWin != nil {
 		hudWin.MarkOpen()
 	}
+	windowsRestored = true
+}
+
+// restoreWindowsAfterScale ensures window geometry is applied only after the UI
+// scale and HiDPI settings have been established. It restores saved window
+// positions a single time per scale change.
+func restoreWindowsAfterScale() {
+	if windowsRestored {
+		return
+	}
+	restoreWindowSettings()
 }
 
 type qualityPreset struct {
