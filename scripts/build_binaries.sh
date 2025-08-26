@@ -233,9 +233,12 @@ for platform in "${platforms[@]}"; do
 
     echo "Creating ${APP_NAME}.app bundle..."
     rm -rf "$APP_DIR"
-    mkdir -p "$APP_DIR/Contents/MacOS"
-    cp "${OUTPUT_DIR}/${BIN_NAME}" "$APP_DIR/Contents/MacOS/${APP_NAME}"
-    cat <<'EOF' >"$APP_DIR/Contents/Info.plist"
+      mkdir -p "$APP_DIR/Contents/MacOS"
+      cp "${OUTPUT_DIR}/${BIN_NAME}" "$APP_DIR/Contents/MacOS/${APP_NAME}"
+      mkdir -p "$APP_DIR/Contents/Resources"
+      ensure_cmd convert imagemagick
+      convert "$SCRIPT_DIR/../goThoom.png" -define icon:auto-resize=16,32,64,128,256,512 "$APP_DIR/Contents/Resources/goThoom.icns"
+      cat <<'EOF' >"$APP_DIR/Contents/Info.plist"
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -250,17 +253,24 @@ for platform in "${platforms[@]}"; do
   <string>APPL</string>
   <key>CFBundleVersion</key>
   <string>1.0</string>
-  <key>CFBundleShortVersionString</key>
-  <string>1.0</string>
-   <key>com.apple.security.app-sandbox</key>
-   <true/>
-</dict>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>CFBundleIconFile</key>
+    <string>goThoom.icns</string>
+    <key>com.apple.security.app-sandbox</key>
+    <true/>
+  </dict>
 </plist>
 EOF
 
     if command -v codesign >/dev/null 2>&1; then
       echo "Codesigning ${APP_NAME}.app..."
-      codesign --force --deep --sign "${MAC_SIGN_IDENTITY:--}" "$APP_DIR" || echo "codesign failed, continuing" >&2
+      MAC_ENTITLEMENTS="${MAC_ENTITLEMENTS:-${SCRIPT_DIR}/goThoom.entitlements}"
+      if [ -f "$MAC_ENTITLEMENTS" ]; then
+        codesign --force --deep --sign "${MAC_SIGN_IDENTITY:--}" --entitlements "$MAC_ENTITLEMENTS" "$APP_DIR" || echo "codesign failed, continuing" >&2
+      else
+        codesign --force --deep --sign "${MAC_SIGN_IDENTITY:--}" "$APP_DIR" || echo "codesign failed, continuing" >&2
+      fi
     else
       echo "codesign tool not found; skipping macOS signing." >&2
     fi
