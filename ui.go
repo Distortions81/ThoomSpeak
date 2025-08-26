@@ -2186,40 +2186,37 @@ func makeSettingsWindow() {
 	*/
 
 	// Screen size settings in-place (moved from separate window)
-	/*
-				uiScaleSlider, uiScaleEvents := eui.NewSlider()
-				uiScaleSlider.Label = "UI Scaling"
-				uiScaleSlider.MinValue = 1.0
-				uiScaleSlider.MaxValue = 2.5
-				uiScaleSlider.Value = float32(gs.UIScale)
-				pendingUIScale := gs.UIScale
-				uiScaleEvents.Handle = func(ev eui.UIEvent) {
-					if ev.Type == eui.EventSliderChanged {
-						pendingUIScale = float64(ev.Value)
-					}
-				}
+	uiScaleSlider, uiScaleEvents := eui.NewSlider()
+	uiScaleSlider.Label = "UI Scaling"
+	uiScaleSlider.MinValue = 1.0
+	uiScaleSlider.MaxValue = 2.5
+	uiScaleSlider.Value = float32(gs.UIScale)
+	pendingUIScale := gs.UIScale
+	uiScaleEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			pendingUIScale = float64(ev.Value)
+		}
+	}
 
-			uiScaleApplyBtn, uiScaleApplyEvents := eui.NewButton()
-			uiScaleApplyBtn.Text = "Apply UI Scale"
-			uiScaleApplyBtn.Size = eui.Point{X: 140, Y: 24}
-			uiScaleApplyEvents.Handle = func(ev eui.UIEvent) {
-				if ev.Type == eui.EventClick {
-					gs.UIScale = pendingUIScale
-					eui.SetUIScale(float32(gs.UIScale))
-					updateGameWindowSize()
-					settingsDirty = true
-				}
-			}
+	uiScaleApplyBtn, uiScaleApplyEvents := eui.NewButton()
+	uiScaleApplyBtn.Text = "Apply UI Scale"
+	uiScaleApplyBtn.Size = eui.Point{X: 140, Y: 24}
+	uiScaleApplyEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			gs.UIScale = pendingUIScale
+			eui.SetUIScale(float32(gs.UIScale))
+			updateGameWindowSize()
+			settingsDirty = true
+		}
+	}
 
-
-		// Place the slider and button on the same row
-		uiScaleRow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
-		// Fit slider to remaining width in the row
-		uiScaleSlider.Size = eui.Point{X: rightW - uiScaleApplyBtn.Size.X - 10, Y: 24}
-		uiScaleRow.AddItem(uiScaleSlider)
-		uiScaleRow.AddItem(uiScaleApplyBtn)
-		right.AddItem(uiScaleRow)
-	*/
+	// Place the slider and button on the same row
+	uiScaleRow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
+	// Fit slider to remaining width in the row
+	uiScaleSlider.Size = eui.Point{X: rightW - uiScaleApplyBtn.Size.X - 10, Y: 24}
+	uiScaleRow.AddItem(uiScaleSlider)
+	uiScaleRow.AddItem(uiScaleApplyBtn)
+	right.AddItem(uiScaleRow)
 
 	fullscreenCB, fullscreenEvents := eui.NewCheckbox()
 	fullscreenCB.Text = "Fullscreen"
@@ -3442,34 +3439,6 @@ func makeDebugWindow() {
 	debugWin.SetZone(eui.HZoneCenterLeft, eui.VZoneMiddleTop)
 
 	debugFlow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
-
-	pendingUIScale := gs.UIScale
-
-	uiScaleSlider, uiScaleEvents := eui.NewSlider()
-	uiScaleSlider.Label = "UI Scale"
-	uiScaleSlider.MinValue = 0.5
-	uiScaleSlider.MaxValue = 4.0
-	uiScaleSlider.Value = float32(pendingUIScale)
-	uiScaleSlider.Size = eui.Point{X: width - 10, Y: 24}
-	uiScaleEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventSliderChanged {
-			pendingUIScale = float64(ev.Value)
-		}
-	}
-	debugFlow.AddItem(uiScaleSlider)
-
-	uiScaleApplyBtn, uiScaleApplyEvents := eui.NewButton()
-	uiScaleApplyBtn.Text = "Apply UI Scale"
-	uiScaleApplyBtn.Size = eui.Point{X: width - 10, Y: 24}
-	uiScaleApplyEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventClick {
-			gs.UIScale = pendingUIScale
-			eui.SetUIScale(float32(gs.UIScale))
-			updateGameWindowSize()
-			settingsDirty = true
-		}
-	}
-	debugFlow.AddItem(uiScaleApplyBtn)
 
 	lateInputCB, lateInputEvents := eui.NewCheckbox()
 	lateInputCB.Text = "Smart input updates"
