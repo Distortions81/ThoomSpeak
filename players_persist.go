@@ -25,6 +25,8 @@ type persistPlayer struct {
 	Blocked     bool   `json:"blocked,omitempty"`
 	Ignored     bool   `json:"ignored,omitempty"`
 	Bard        bool   `json:"bard,omitempty"`
+	SameClan    bool   `json:"same_clan,omitempty"`
+	BeWho       bool   `json:"bewho,omitempty"`
 	ColorsHex   string `json:"colors,omitempty"` // hex of [count][colors...]
 	FellWhere   string `json:"fell_where,omitempty"`
 	FellTime    int64  `json:"fell_time,omitempty"`
@@ -82,6 +84,8 @@ func loadPlayersPersist() {
 		pr.Blocked = p.Blocked
 		pr.Ignored = p.Ignored
 		pr.Bard = p.Bard
+		pr.SameClan = p.SameClan
+		pr.BeWho = p.BeWho
 		pr.FellWhere = p.FellWhere
 		if p.FellTime != 0 {
 			pr.FellTime = time.Unix(p.FellTime, 0)
@@ -131,7 +135,7 @@ func savePlayersPersist() {
 		var ft int64
 		if !p.FellTime.IsZero() {
 			ft = p.FellTime.Unix()
-    }
+		}
 		var lastSeen int64
 		if !p.LastSeen.IsZero() {
 			lastSeen = p.LastSeen.Unix()
@@ -149,6 +153,8 @@ func savePlayersPersist() {
 			Blocked:     p.Blocked,
 			Ignored:     p.Ignored,
 			Bard:        p.Bard,
+			SameClan:    p.SameClan,
+			BeWho:       p.BeWho,
 			ColorsHex:   hex,
 			FellWhere:   p.FellWhere,
 			FellTime:    ft,
