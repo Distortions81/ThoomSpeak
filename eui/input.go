@@ -37,7 +37,7 @@ func Update() error {
 	prevHovered := hoveredItem
 	hoveredItem = nil
 
-	mx, my := pointerPosition()
+	mx, my := PointerPosition()
 	mpos := point{X: float32(mx), Y: float32(my)}
 
 	click := pointerJustPressed()
