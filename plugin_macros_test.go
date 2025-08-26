@@ -57,7 +57,7 @@ func TestPluginAutoReplyRunsCommand(t *testing.T) {
 	inputHandlersMu = sync.RWMutex{}
 	inputHandlers = nil
 	chatHandlersMu = sync.RWMutex{}
-	chatHandlers = nil
+	pluginChatHandlers = map[string][]func(string){}
 	consoleLog = messageLog{max: maxMessages}
 	commandQueue = nil
 	pendingCommand = ""
@@ -66,7 +66,7 @@ func TestPluginAutoReplyRunsCommand(t *testing.T) {
 	pluginAutoReply("bot", "hi", "/wave")
 
 	chatHandlersMu.RLock()
-	handlers := append([]func(string){}, chatHandlers...)
+	handlers := append([]func(string){}, pluginChatHandlers["bot"]...)
 	chatHandlersMu.RUnlock()
 	if len(handlers) != 1 {
 		t.Fatalf("unexpected handler count: %d", len(handlers))
