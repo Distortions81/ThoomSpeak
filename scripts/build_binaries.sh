@@ -204,7 +204,7 @@ for platform in "${platforms[@]}"; do
   fi
 
   env \
-    GOOS="$GOOS" GOARCH="$GOARCH" GOEXPERIMENT="greenteagc"\ 
+    GOOS="$GOOS" GOARCH="$GOARCH" \
     CGO_ENABLED="$CGO_ENABLED" \
     CC="${CC:-}" CXX="${CXX:-}" \
     PATH="${OSXCROSS_ROOT:-$HOME/osxcross}/target/bin:${PATH}" \
