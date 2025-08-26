@@ -115,6 +115,15 @@ export MAC_ENTITLEMENTS=scripts/goThoom.entitlements  # override for custom enti
 scripts/build_binaries.sh
 ```
 
+This helper uses [`go-winres`](https://github.com/tc-hib/go-winres) to embed
+`goThoom.png` as the Windows executable icon. To build manually with the icon:
+
+```bash
+go install github.com/tc-hib/go-winres@latest   # once
+go-winres simply --icon goThoom.png --arch amd64 --manifest gui
+CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "-H=windowsgui" -o gothoom.exe
+```
+
 `MAC_SIGN_IDENTITY` uses `-` by default for ad-hoc signatures. Set it to
 your certificate name to sign with a real identity. `MAC_ENTITLEMENTS`
 defaults to `scripts/goThoom.entitlements`; point it elsewhere (or to

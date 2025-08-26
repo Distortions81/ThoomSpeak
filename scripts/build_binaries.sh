@@ -175,6 +175,16 @@ for platform in "${platforms[@]}"; do
       ;;
   esac
 
+  if [ "$GOOS" = "windows" ]; then
+    LDFLAGS="$LDFLAGS -H=windowsgui"
+    if ! command -v go-winres >/dev/null 2>&1; then
+      echo "go-winres not found; install with 'go install github.com/tc-hib/go-winres@latest'" >&2
+      exit 1
+    fi
+    rm -f rsrc*.syso
+    go-winres simply --icon goThoom.png --arch "$GOARCH" --manifest gui
+  fi
+
   # Make sure nothing forces the OpenGL backend for mac (support old/new env names)
   # Note: unsetting a non-existent var is OK; keep '|| true' for safety under -e
   unset EBITEN_GRAPHICS_LIBRARY EBITENGINE_GRAPHICS_LIBRARY EBITEN_USEGL || true
@@ -215,6 +225,7 @@ for platform in "${platforms[@]}"; do
     else
       echo "Skipping Windows signing; osslsigncode or certificate not configured." >&2
     fi
+    rm -f rsrc*.syso
   fi
   if [ "$GOOS" = "darwin" ]; then
     APP_NAME="gothoom"

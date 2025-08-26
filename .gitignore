@@ -1,6 +1,9 @@
 CL_Images
 CL_Sounds
 gothoom
+gothoom.exe
+*.syso
+*.ico
 *.log
 settings.json
 characters.json
