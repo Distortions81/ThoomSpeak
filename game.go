@@ -1760,10 +1760,25 @@ func drawStatusBars(screen *ebiten.Image, ox, oy int, snap drawSnapshot, alpha f
 		drawRect(x-pad, y+barHeight, barWidth+2*pad, pad, frameClr)
 		drawRect(x-pad, y, pad, barHeight, frameClr)
 		drawRect(x+barWidth, y, pad, barHeight, frameClr)
-		if max > 0 && cur > 0 {
-			w := barWidth * cur / max
+
+		if max < cur {
+			max = cur
+		}
+
+		total := 255
+		if cur > total {
+			cur = total
+		}
+		if max > total {
+			max = total
+		}
+
+		wCur := barWidth * cur / total
+		wMax := barWidth * max / total
+
+		if wCur > 0 {
 			base := clr
-			if gs.BarColorByValue {
+			if gs.BarColorByValue && max > 0 {
 				ratio := float64(cur) / float64(max)
 				switch {
 				case ratio <= 0.33:
@@ -1775,7 +1790,17 @@ func drawStatusBars(screen *ebiten.Image, ox, oy int, snap drawSnapshot, alpha f
 				}
 			}
 			fillClr := color.RGBA{base.R, base.G, base.B, alpha}
-			drawRect(x, y, w, barHeight, fillClr)
+			drawRect(x, y, wCur, barHeight, fillClr)
+		}
+
+		if wMax > wCur {
+			greyClr := color.RGBA{0x80, 0x80, 0x80, alpha}
+			drawRect(x+wCur, y, wMax-wCur, barHeight, greyClr)
+		}
+
+		if wMax < barWidth {
+			yellowClr := color.RGBA{0x80, 0x80, 0x00, alpha}
+			drawRect(x+wMax, y, barWidth-wMax, barHeight, yellowClr)
 		}
 	}
 
