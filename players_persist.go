@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"time"
 )
 
 type persistPlayers struct {
@@ -26,6 +27,7 @@ type persistPlayer struct {
 	Bard        bool   `json:"bard,omitempty"`
 	ColorsHex   string `json:"colors,omitempty"` // hex of [count][colors...]
 	FellWhere   string `json:"fell_where,omitempty"`
+	FellTime    int64  `json:"fell_time,omitempty"`
 	KillerName  string `json:"killer,omitempty"`
 }
 
@@ -79,6 +81,11 @@ func loadPlayersPersist() {
 		pr.Ignored = p.Ignored
 		pr.Bard = p.Bard
 		pr.FellWhere = p.FellWhere
+		if p.FellTime != 0 {
+			pr.FellTime = time.Unix(p.FellTime, 0)
+		} else {
+			pr.FellTime = time.Time{}
+		}
 		pr.KillerName = p.KillerName
 		playersMu.Unlock()
 	}
@@ -116,6 +123,10 @@ func savePlayersPersist() {
 			}
 			hex = encodeHex(buf)
 		}
+		var ft int64
+		if !p.FellTime.IsZero() {
+			ft = p.FellTime.Unix()
+		}
 		list = append(list, persistPlayer{
 			Name:        p.Name,
 			Gender:      p.Gender,
@@ -131,6 +142,7 @@ func savePlayersPersist() {
 			Bard:        p.Bard,
 			ColorsHex:   hex,
 			FellWhere:   p.FellWhere,
+			FellTime:    ft,
 			KillerName:  p.KillerName,
 		})
 	}
