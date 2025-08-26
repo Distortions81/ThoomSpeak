@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -197,6 +198,24 @@ var pluginAllowedPkgs = []string{
 	"strings/strings",
 	"time/time",
 	"unicode/utf8/utf8",
+}
+
+const pluginGoroutineLimit = 1000
+
+func init() {
+	go pluginGoroutineWatchdog()
+}
+
+func pluginGoroutineWatchdog() {
+	for {
+		if runtime.NumGoroutine() > pluginGoroutineLimit {
+			log.Printf("[plugin] goroutine limit exceeded; stopping all plugins")
+			consoleMessage("[plugin] goroutine limit exceeded; stopping plugins")
+			stopAllPlugins()
+			return
+		}
+		time.Sleep(time.Second)
+	}
 }
 
 func restrictedStdlib() interp.Exports {
