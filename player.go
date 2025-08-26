@@ -132,6 +132,6 @@ func notifyPlayerHandlers(p Player) {
 	handlers := append([]func(Player){}, playerHandlers...)
 	playerHandlersMu.RUnlock()
 	for _, fn := range handlers {
-		fn(p)
+		go fn(p)
 	}
 }

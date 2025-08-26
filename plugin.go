@@ -367,7 +367,7 @@ func loadPluginSource(owner, name, path string, src []byte, restricted interp.Ex
 	}
 	if v, err := i.Eval("Init"); err == nil {
 		if fn, ok := v.Interface().(func()); ok {
-			fn()
+			go fn()
 		}
 	}
 	log.Printf("loaded plugin %s", path)
@@ -427,7 +427,7 @@ func disablePlugin(owner, reason string) {
 	delete(pluginTerminators, owner)
 	pluginMu.Unlock()
 	if term != nil {
-		term()
+		go term()
 	}
 	for _, hk := range pluginHotkeys(owner) {
 		pluginRemoveHotkey(owner, hk.Combo)
