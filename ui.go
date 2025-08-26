@@ -341,6 +341,9 @@ func makePluginsWindow() {
 	pluginsList = list
 	root.AddItem(list)
 
+	buttonsBottom := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
+	root.AddItem(buttonsBottom)
+
 	refreshBtn, rh := eui.NewButton()
 	refreshBtn.Text = "Refresh"
 	refreshBtn.Size = eui.Point{X: 64, Y: 24}
@@ -349,7 +352,7 @@ func makePluginsWindow() {
 			rescanPlugins()
 		}
 	}
-	root.AddItem(refreshBtn)
+	buttonsBottom.AddItem(refreshBtn)
 
 	openBtn, oh := eui.NewButton()
 	openBtn.Text = "Open plugins folder"
@@ -359,7 +362,7 @@ func makePluginsWindow() {
 			open.Run(userPluginsDir())
 		}
 	}
-	root.AddItem(openBtn)
+	buttonsBottom.AddItem(openBtn)
 
 	pluginsWin.AddWindow(false)
 	refreshPluginsWindow()
@@ -387,7 +390,7 @@ func refreshPluginsWindow() {
 		row := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
 		cb, events := eui.NewCheckbox()
 		cb.Text = e.name
-		cb.Size = eui.Point{X: 128, Y: 24}
+		cb.Size = eui.Point{X: 256, Y: 24}
 		pluginMu.RLock()
 		cb.Checked = !pluginDisabled[e.owner]
 		pluginMu.RUnlock()
@@ -405,7 +408,7 @@ func refreshPluginsWindow() {
 
 		reloadBtn, rh := eui.NewButton()
 		reloadBtn.Text = "Reload"
-		reloadBtn.Size = eui.Point{X: 48, Y: 24}
+		reloadBtn.Size = eui.Point{X: 55, Y: 24}
 		rh.Handle = func(ev eui.UIEvent) {
 			if ev.Type == eui.EventClick {
 				pluginMu.RLock()
