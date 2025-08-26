@@ -24,7 +24,7 @@ const (
 var instruments = []instrument{
 	{47, 1, 100, 100, false},   // 0 Lucky Lyra
 	{73, 1, 100, 100, false},   // 1 Bone Flute (melody only)
-	{47, 0, 100, 100, false},   // 2 Starbuck Harp
+	{46, 0, 100, 100, false},   // 2 Starbuck Harp
 	{106, 0, 100, 100, false},  // 3 Torjo
 	{13, 0, 100, 100, false},   // 4 Xylo
 	{25, 0, 100, 100, false},   // 5 Gitor
