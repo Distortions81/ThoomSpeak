@@ -263,7 +263,11 @@ for platform in "${platforms[@]}"; do
 </plist>
 EOF
 
-    if command -v codesign >/dev/null 2>&1; then
+    if command -v rcodesign >/dev/null 2>&1; then
+      echo "Ad-hoc signing ${APP_NAME}.app with rcodesign..."
+      rcodesign sign "$APP_DIR" || echo "rcodesign sign failed, continuing" >&2
+      rcodesign verify --verbose "$APP_DIR" || echo "rcodesign verify failed, continuing" >&2
+    elif command -v codesign >/dev/null 2>&1; then
       echo "Codesigning ${APP_NAME}.app..."
       MAC_ENTITLEMENTS="${MAC_ENTITLEMENTS:-${SCRIPT_DIR}/goThoom.entitlements}"
       if [ -f "$MAC_ENTITLEMENTS" ]; then
@@ -272,7 +276,7 @@ EOF
         codesign --force --deep --sign "${MAC_SIGN_IDENTITY:--}" "$APP_DIR" || echo "codesign failed, continuing" >&2
       fi
     else
-      echo "codesign tool not found; skipping macOS signing." >&2
+      echo "rcodesign/codesign not found; skipping macOS signing." >&2
     fi
     rm "${OUTPUT_DIR}/${BIN_NAME}"
   fi
