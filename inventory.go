@@ -61,10 +61,10 @@ func addInventoryItem(id uint16, idx int, name string, equip bool) {
 		item := InventoryItem{ID: id, Name: name, Equipped: equip, Index: len(inventoryItems), IDIndex: idx, Quantity: 1}
 		inventoryItems = append(inventoryItems, item)
 	} else {
-		// Legacy/non-template: coalesce by ID and bump quantity
+		// Legacy/non-template: coalesce by ID only when names match.
 		found := false
 		for i := range inventoryItems {
-			if inventoryItems[i].ID == id && inventoryItems[i].IDIndex < 0 {
+			if inventoryItems[i].ID == id && inventoryItems[i].IDIndex < 0 && inventoryItems[i].Name == name {
 				inventoryItems[i].Quantity++
 				if equip {
 					inventoryItems[i].Equipped = true
@@ -183,24 +183,34 @@ func equipInventoryItem(id uint16, idx int, equip bool) {
 	inventoryDirty = true
 }
 
-// toggleInventoryEquip equips the specified item if no instance is currently
-// equipped. If an instance is already equipped, it unequips that item instead.
-// The server is informed via pendingCommand and local inventory state is
-// updated immediately.
-func toggleInventoryEquip(id uint16) {
+// toggleInventoryEquipAt equips or unequips a specific item index. When idx is
+// negative, the first matching item is targeted similar to the legacy
+// behavior. The server is informed via pendingCommand and local inventory state
+// is updated immediately.
+func toggleInventoryEquipAt(id uint16, idx int) {
 	items := getInventory()
 	equip := true
-	idx := -1
-	for _, it := range items {
-		if it.ID != id {
-			continue
+	if idx >= 0 {
+		for _, it := range items {
+			if it.ID == id && it.IDIndex == idx {
+				if it.Equipped {
+					equip = false
+				}
+				break
+			}
 		}
-		if it.Equipped {
-			equip = false
-			break
-		}
-		if idx < 0 {
-			idx = it.IDIndex
+	} else {
+		for _, it := range items {
+			if it.ID != id {
+				continue
+			}
+			if it.Equipped {
+				equip = false
+				break
+			}
+			if idx < 0 {
+				idx = it.IDIndex
+			}
 		}
 	}
 	if equip {
@@ -214,6 +224,13 @@ func toggleInventoryEquip(id uint16) {
 		pendingCommand = fmt.Sprintf("/unequip %d", id)
 		equipInventoryItem(id, -1, false)
 	}
+}
+
+// toggleInventoryEquip equips the specified item without specifying an index.
+// It retains the previous behavior and is kept for compatibility with
+// existing plugin APIs.
+func toggleInventoryEquip(id uint16) {
+	toggleInventoryEquipAt(id, -1)
 }
 
 func renameInventoryItem(id uint16, idx int, name string) {

@@ -61,21 +61,32 @@ func updateInventoryWindow() {
 		return
 	}
 
-	// Build a unique list of items by ID while counting duplicates and tracking
-	// whether any instance of a given ID is equipped.
+	// Build a unique list of items while counting duplicates and tracking
+	// whether any instance of a given key is equipped. Items with explicit
+	// per-ID indices are never grouped to preserve distinct properties.
+	type invGroupKey struct {
+		id   uint16
+		name string
+		idx  int
+	}
 	items := getInventory()
-	counts := make(map[uint16]int)
-	first := make(map[uint16]InventoryItem)
-	anyEquipped := make(map[uint16]bool)
-	order := make([]uint16, 0, len(items))
+	counts := make(map[invGroupKey]int)
+	first := make(map[invGroupKey]InventoryItem)
+	anyEquipped := make(map[invGroupKey]bool)
+	order := make([]invGroupKey, 0, len(items))
 	for _, it := range items {
-		if _, seen := counts[it.ID]; !seen {
-			order = append(order, it.ID)
-			first[it.ID] = it
+		key := invGroupKey{id: it.ID, idx: it.IDIndex}
+		if it.IDIndex < 0 {
+			key.idx = -1
+			key.name = it.Name
 		}
-		counts[it.ID]++
+		if _, seen := counts[key]; !seen {
+			order = append(order, key)
+			first[key] = it
+		}
+		counts[key]++
 		if it.Equipped {
-			anyEquipped[it.ID] = true
+			anyEquipped[key] = true
 		}
 	}
 
@@ -127,9 +138,10 @@ func updateInventoryWindow() {
 		clientHAvail = 0
 	}
 
-	for _, id := range order {
-		it := first[id]
-		qty := counts[id]
+	for _, key := range order {
+		it := first[key]
+		qty := counts[key]
+		id := key.id
 
 		// Row container for icon + text
 		row := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL, Fixed: true}
@@ -177,7 +189,7 @@ func updateInventoryWindow() {
 		t.FontSize = float32(fontSize)
 
 		face := goFace
-		if anyEquipped[id] {
+		if anyEquipped[key] {
 			switch slot {
 			case kItemSlotRightHand, kItemSlotLeftHand, kItemSlotBothHands:
 				if invBoldSrc != nil {
@@ -196,7 +208,7 @@ func updateInventoryWindow() {
 
 		availName := row.Size.X - float32(iconSize) - icon.Margin
 		var lt *eui.ItemData
-		if anyEquipped[id] && slot >= 0 && slot < len(slotNames) {
+		if anyEquipped[key] && slot >= 0 && slot < len(slotNames) {
 			loc := fmt.Sprintf("[%v]", TitleCaser.String(slotNames[slot]))
 			locW, _ := text.Measure(loc, face, 0)
 			locWU := float32(math.Ceil(locW / float64(uiScale)))
@@ -223,7 +235,8 @@ func updateInventoryWindow() {
 		}
 
 		idCopy := id
-		click := func() { toggleInventoryEquip(idCopy) }
+		idxCopy := it.IDIndex
+		click := func() { toggleInventoryEquipAt(idCopy, idxCopy) }
 		icon.Action = click
 		t.Action = click
 		if lt != nil {
