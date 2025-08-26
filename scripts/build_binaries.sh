@@ -266,7 +266,7 @@ EOF
     if command -v rcodesign >/dev/null 2>&1; then
       echo "Ad-hoc signing ${APP_NAME}.app with rcodesign..."
       rcodesign sign "$APP_DIR" || echo "rcodesign sign failed, continuing" >&2
-      rcodesign verify --verbose "$APP_DIR" || echo "rcodesign verify failed, continuing" >&2
+      rcodesign verify --verbose "$APP_DIR/Contents/MacOS/gothoom" || echo "rcodesign verify failed, continuing" >&2
     elif command -v codesign >/dev/null 2>&1; then
       echo "Codesigning ${APP_NAME}.app..."
       MAC_ENTITLEMENTS="${MAC_ENTITLEMENTS:-${SCRIPT_DIR}/goThoom.entitlements}"
