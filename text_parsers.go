@@ -333,20 +333,55 @@ func parsePresenceText(raw []byte, s string) bool {
 	if name == "" {
 		return false
 	}
+	labelStr := firstTagContent(raw, 'p', 'l')
+	label := -1
+	if labelStr != "" {
+		if v, err := strconv.Atoi(labelStr); err == nil {
+			label = v
+		}
+	}
 	// Login-like phrases
 	if strings.Contains(lower, "has logged on") || strings.Contains(lower, "has entered the lands") || strings.Contains(lower, "has joined the world") || strings.Contains(lower, "has arrived") {
 		var friend bool
 		var playerCopy Player
+		var labelChanged bool
 		changed := false
 		playersMu.Lock()
 		if p, ok := players[name]; ok {
 			p.LastSeen = time.Now()
 			p.Offline = false
+			if label >= 0 {
+				if p.FriendLabel != label {
+					p.FriendLabel = label
+					labelChanged = true
+				}
+				switch label {
+				case 6:
+					p.Blocked = true
+					p.Ignored = false
+					p.Friend = false
+				case 7:
+					p.Ignored = true
+					p.Blocked = false
+					p.Friend = false
+				default:
+					if label > 0 {
+						p.Friend = true
+					} else {
+						p.Friend = false
+					}
+					p.Blocked = false
+					p.Ignored = false
+				}
+			}
 			friend = p.Friend
 			playerCopy = *p
 			changed = true
 		}
 		playersMu.Unlock()
+		if labelChanged {
+			killNameTagCacheFor(name)
+		}
 		playersDirty = true
 		if changed {
 			notifyPlayerHandlers(playerCopy)
@@ -361,10 +396,34 @@ func parsePresenceText(raw []byte, s string) bool {
 		playersMu.Lock()
 		if p, ok := players[name]; ok {
 			p.Offline = true
+			if label >= 0 && p.FriendLabel != label {
+				p.FriendLabel = label
+				switch label {
+				case 6:
+					p.Blocked = true
+					p.Ignored = false
+					p.Friend = false
+				case 7:
+					p.Ignored = true
+					p.Blocked = false
+					p.Friend = false
+				default:
+					if label > 0 {
+						p.Friend = true
+					} else {
+						p.Friend = false
+					}
+					p.Blocked = false
+					p.Ignored = false
+				}
+			}
 			playerCopy := *p
 			playersMu.Unlock()
 			playersDirty = true
 			notifyPlayerHandlers(playerCopy)
+			if label >= 0 {
+				killNameTagCacheFor(name)
+			}
 		} else {
 			playersMu.Unlock()
 			playersDirty = true
