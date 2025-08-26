@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -75,13 +76,12 @@ func TestChatTTSPendingLimit(t *testing.T) {
 	blockTTS = false
 	defer func() { gs = origGS }()
 
-	clearChatTTSQueue()
-	atomic.StoreInt32(&pendingTTS, 0)
+	stopAllTTS()
 
 	var mu sync.Mutex
 	total := 0
 	origFunc := playChatTTSFunc
-	playChatTTSFunc = func(text string) {
+	playChatTTSFunc = func(ctx context.Context, text string) {
 		mu.Lock()
 		total += len(strings.Split(text, ". "))
 		mu.Unlock()
@@ -99,5 +99,45 @@ func TestChatTTSPendingLimit(t *testing.T) {
 	mu.Unlock()
 	if got > 10 {
 		t.Fatalf("synthesized %d messages, want at most 10", got)
+	}
+}
+
+func TestChatTTSDisableDropsQueued(t *testing.T) {
+	origCtx := audioContext
+	audioContext = audio.NewContext(44100)
+	defer func() { audioContext = origCtx }()
+
+	origGS := gs
+	gs.ChatTTS = true
+	gs.Mute = false
+	blockTTS = false
+	defer func() { gs = origGS }()
+
+	stopAllTTS()
+
+	var mu sync.Mutex
+	called := false
+	origFunc := playChatTTSFunc
+	playChatTTSFunc = func(ctx context.Context, text string) {
+		mu.Lock()
+		called = true
+		mu.Unlock()
+	}
+	defer func() { playChatTTSFunc = origFunc }()
+
+	speakChatMessage("hello")
+	speakChatMessage("world")
+	disableTTS()
+	time.Sleep(500 * time.Millisecond)
+
+	mu.Lock()
+	wasCalled := called
+	mu.Unlock()
+	if wasCalled {
+		t.Fatalf("playChatTTS called after disabling")
+	}
+
+	if n := atomic.LoadInt32(&pendingTTS); n != 0 {
+		t.Fatalf("pendingTTS = %d, want 0", n)
 	}
 }

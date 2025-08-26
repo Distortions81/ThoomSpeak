@@ -5,6 +5,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"compress/gzip"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -25,10 +26,13 @@ var (
 	chatTTSMu    sync.Mutex
 	ttsPlayers   = make(map[*audio.Player]struct{})
 	ttsPlayersMu sync.Mutex
-	chatTTSQueue = make(chan string, 10)
+
+	chatTTSQueue  chan string
+	chatTTSCtx    context.Context
+	chatTTSCancel func()
 
 	pendingTTS      int32
-	playChatTTSFunc = playChatTTS
+	playChatTTSFunc func(context.Context, string)
 
 	piperPath   string
 	piperModel  string
@@ -36,7 +40,17 @@ var (
 )
 
 func init() {
-	go chatTTSWorker()
+	playChatTTSFunc = playChatTTS
+	resetChatTTSWorker()
+}
+
+func resetChatTTSWorker() {
+	if chatTTSCancel != nil {
+		chatTTSCancel()
+	}
+	chatTTSCtx, chatTTSCancel = context.WithCancel(context.Background())
+	chatTTSQueue = make(chan string, 10)
+	go chatTTSWorker(chatTTSCtx, chatTTSQueue)
 }
 
 func stopAllTTS() {
@@ -46,19 +60,8 @@ func stopAllTTS() {
 		delete(ttsPlayers, p)
 	}
 	ttsPlayersMu.Unlock()
-	clearChatTTSQueue()
+	resetChatTTSWorker()
 	atomic.StoreInt32(&pendingTTS, 0)
-}
-
-func clearChatTTSQueue() {
-	for {
-		select {
-		case <-chatTTSQueue:
-			atomic.AddInt32(&pendingTTS, -1)
-		default:
-			return
-		}
-	}
 }
 
 func disableTTS() {
@@ -74,22 +77,37 @@ func disableTTS() {
 	}
 }
 
-func chatTTSWorker() {
-	for msg := range chatTTSQueue {
-		msgs := []string{msg}
-		timer := time.NewTimer(200 * time.Millisecond)
-	collect:
-		for {
-			select {
-			case m := <-chatTTSQueue:
-				msgs = append(msgs, m)
-			case <-timer.C:
-				break collect
+func chatTTSWorker(ctx context.Context, queue <-chan string) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case msg := <-queue:
+			msgs := []string{msg}
+			timer := time.NewTimer(200 * time.Millisecond)
+		collect:
+			for {
+				select {
+				case <-ctx.Done():
+					timer.Stop()
+					atomic.AddInt32(&pendingTTS, -int32(len(msgs)))
+					return
+				case m := <-queue:
+					msgs = append(msgs, m)
+				case <-timer.C:
+					break collect
+				}
 			}
+			timer.Stop()
+			select {
+			case <-ctx.Done():
+				atomic.AddInt32(&pendingTTS, -int32(len(msgs)))
+				return
+			default:
+			}
+			playChatTTSFunc(ctx, strings.Join(msgs, ". "))
+			atomic.AddInt32(&pendingTTS, -int32(len(msgs)))
 		}
-		timer.Stop()
-		playChatTTSFunc(strings.Join(msgs, ". "))
-		atomic.AddInt32(&pendingTTS, -int32(len(msgs)))
 	}
 }
 
@@ -106,14 +124,24 @@ func ensurePiper() bool {
 	return true
 }
 
-func playChatTTS(text string) {
+func playChatTTS(ctx context.Context, text string) {
 	if audioContext == nil || blockTTS || gs.Mute || !gs.ChatTTS {
 		return
+	}
+	select {
+	case <-ctx.Done():
+		return
+	default:
 	}
 	if !ensurePiper() {
 		logError("chat tts: piper not initialized")
 		disableTTS()
 		return
+	}
+	select {
+	case <-ctx.Done():
+		return
+	default:
 	}
 
 	wavData, err := synthesizeWithPiper(text)
@@ -121,6 +149,11 @@ func playChatTTS(text string) {
 		logError("chat tts synthesize: %v", err)
 		disableTTS()
 		return
+	}
+	select {
+	case <-ctx.Done():
+		return
+	default:
 	}
 	stream, err := wav.DecodeWithSampleRate(audioContext.SampleRate(), bytes.NewReader(wavData))
 	if err != nil {
@@ -132,6 +165,11 @@ func playChatTTS(text string) {
 	chatTTSMu.Lock()
 	defer chatTTSMu.Unlock()
 
+	select {
+	case <-ctx.Done():
+		return
+	default:
+	}
 	p, err := audioContext.NewPlayer(stream)
 	if err != nil {
 		logError("chat tts player: %v", err)
@@ -150,7 +188,16 @@ func playChatTTS(text string) {
 	p.SetVolume(vol)
 	p.Play()
 	for p.IsPlaying() {
-		time.Sleep(100 * time.Millisecond)
+		select {
+		case <-ctx.Done():
+			_ = p.Close()
+			ttsPlayersMu.Lock()
+			delete(ttsPlayers, p)
+			ttsPlayersMu.Unlock()
+			return
+		default:
+			time.Sleep(100 * time.Millisecond)
+		}
 	}
 	_ = p.Close()
 

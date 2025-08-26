@@ -683,7 +683,7 @@ func downloadDataFiles(clientVer int, status dataFilesStatus, getSoundfont, getP
 			piperPath, piperModel, piperConfig = path, model, cfg
 			gs.ChatTTS = true
 			settingsDirty = true
-			go playChatTTS(ttsTestPhrase)
+			go playChatTTS(chatTTSCtx, ttsTestPhrase)
 		} else {
 			logError("prepare piper: %v", err)
 		}
