@@ -20,14 +20,20 @@ const touchScrollScale = 0.05
 
 // PointerPosition returns the current pointer position in screen pixels.
 // If a touch is active, the first touch is used; otherwise the mouse cursor
-// position is returned. The coordinates already match the UI's scaled
-// coordinate space.
+// position is returned. Mouse coordinates are adjusted for the last device
+// scale factor so they match the UI's coordinate space.
 func PointerPosition() (int, int) {
 	ids := ebiten.AppendTouchIDs(nil)
 	if len(ids) > 0 {
 		return ebiten.TouchPosition(ids[0])
 	}
-	return ebiten.CursorPosition()
+
+	x, y := ebiten.CursorPosition()
+	if lastDeviceScale != 1.0 {
+		x = int(float64(x) * lastDeviceScale)
+		y = int(float64(y) * lastDeviceScale)
+	}
+	return x, y
 }
 
 // pointerWheel returns the wheel delta for mouse or two-finger touch scrolling.
