@@ -18,9 +18,11 @@ var (
 
 const touchScrollScale = 0.05
 
-// pointerPosition returns the current pointer position.
-// If a touch is active, the first touch is used. Otherwise the mouse cursor position is returned.
-func pointerPosition() (int, int) {
+// PointerPosition returns the current pointer position in screen pixels.
+// If a touch is active, the first touch is used; otherwise the mouse cursor
+// position is returned. The coordinates already match the UI's scaled
+// coordinate space.
+func PointerPosition() (int, int) {
 	ids := ebiten.AppendTouchIDs(nil)
 	if len(ids) > 0 {
 		return ebiten.TouchPosition(ids[0])
