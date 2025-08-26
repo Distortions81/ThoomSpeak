@@ -115,6 +115,13 @@ export MAC_ENTITLEMENTS=scripts/goThoom.entitlements  # override for custom enti
 scripts/build_binaries.sh
 ```
 
+The script uses [rcodesign](https://gregoryszorc.com/projects/apple-codesign/) to ad-hoc sign macOS `.app` bundles when available. Install it on Linux with:
+
+```bash
+curl -L -o rcodesign.tar.gz https://gregoryszorc.com/projects/apple-codesign/releases/latest/linux-x86_64.tar.gz
+tar -xf rcodesign.tar.gz && sudo mv rcodesign /usr/local/bin/
+```
+
 This helper uses [`go-winres`](https://github.com/tc-hib/go-winres) to embed
 `goThoom.png` as the Windows executable icon. To build manually with the icon:
 
