@@ -241,6 +241,8 @@ for platform in "${platforms[@]}"; do
   <string>1.0</string>
   <key>CFBundleShortVersionString</key>
   <string>1.0</string>
+   <key>com.apple.security.app-sandbox</key>
+   <true/>
 </dict>
 </plist>
 EOF
