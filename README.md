@@ -109,9 +109,16 @@ A helper script builds **Linux + Windows** binaries (and can sign Windows EXEs a
 ```bash
 export WINDOWS_CERT_FILE=certs/fullchain.pem
 export WINDOWS_KEY_FILE=certs/privkey.pem   # optional: WINDOWS_KEY_PASS, WINDOWS_CERT_NAME, WINDOWS_TIMESTAMP_URL
-export MAC_SIGN_IDENTITY="-"                # ad-hoc by default; set to your certificate name to sign
+# macOS signing (defaults: ad-hoc identity, repo entitlements)
+export MAC_SIGN_IDENTITY="-"                # '-' for ad-hoc; set to your certificate name to sign
+export MAC_ENTITLEMENTS=scripts/goThoom.entitlements  # override for custom entitlements
 scripts/build_binaries.sh
 ```
+
+`MAC_SIGN_IDENTITY` uses `-` by default for ad-hoc signatures. Set it to
+your certificate name to sign with a real identity. `MAC_ENTITLEMENTS`
+defaults to `scripts/goThoom.entitlements`; point it elsewhere (or to
+`/dev/null`) to use custom entitlements.
 
 ---
 

@@ -249,7 +249,12 @@ EOF
 
     if command -v codesign >/dev/null 2>&1; then
       echo "Codesigning ${APP_NAME}.app..."
-      codesign --force --deep --sign "${MAC_SIGN_IDENTITY:--}" "$APP_DIR" || echo "codesign failed, continuing" >&2
+      MAC_ENTITLEMENTS="${MAC_ENTITLEMENTS:-${SCRIPT_DIR}/goThoom.entitlements}"
+      if [ -f "$MAC_ENTITLEMENTS" ]; then
+        codesign --force --deep --sign "${MAC_SIGN_IDENTITY:--}" --entitlements "$MAC_ENTITLEMENTS" "$APP_DIR" || echo "codesign failed, continuing" >&2
+      else
+        codesign --force --deep --sign "${MAC_SIGN_IDENTITY:--}" "$APP_DIR" || echo "codesign failed, continuing" >&2
+      fi
     else
       echo "codesign tool not found; skipping macOS signing." >&2
     fi
