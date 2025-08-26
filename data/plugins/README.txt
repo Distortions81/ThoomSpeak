@@ -3,7 +3,7 @@ goThoom Plugins
 
 This folder contains example plugin scripts for goThoom. Plugins are plain Go
 files interpreted at runtime using Yaegi. The client exposes a small API under
-the import path "gt". There are example plugins in goThoom/example_plugins
+the import path "gt".
 
 Getting Started
 ---------------
