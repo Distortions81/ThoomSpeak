@@ -2126,7 +2126,7 @@ func makeSettingsWindow() {
 				}
 				updateSoundVolume()
 			}
-			go playChatTTS(ttsTestPhrase)
+			go playChatTTS(chatTTSCtx, ttsTestPhrase)
 		}
 	}
 	left.AddItem(ttsTestBtn)
