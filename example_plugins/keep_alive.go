@@ -7,8 +7,9 @@ import (
 
 const maxKeepAlive = 5
 
+const PluginName = "keep_alive"
+
 var (
-	PluginName     = "keep_alive"
 	keepAliveCount = 0
 	lastKeepalive  time.Time
 )
@@ -20,11 +21,11 @@ func init() {
 
 func watchChat(msg string) {
 	if msg == "Please do something to avoid being disconnected." {
-
 		if time.Since(lastKeepalive) < time.Minute*2 {
 			//Way too soon
 			return
-		} else if time.Since(lastKeepalive) > time.Minute*30 {
+		}
+		if time.Since(lastKeepalive) > time.Minute*30 {
 			//Its been long enough.. User is not AFK reset the count
 			keepAliveCount = 0
 		}
