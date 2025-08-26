@@ -62,12 +62,11 @@ func updateInventoryWindow() {
 	}
 
 	// Build a unique list of items while counting duplicates and tracking
-	// whether any instance of a given key is equipped. Items with explicit
-	// per-ID indices are never grouped to preserve distinct properties.
+	// whether any instance of a given key is equipped. Items are grouped by
+	// ID and name so identical items appear once with a quantity.
 	type invGroupKey struct {
 		id   uint16
 		name string
-		idx  int
 	}
 	items := getInventory()
 	counts := make(map[invGroupKey]int)
@@ -75,16 +74,12 @@ func updateInventoryWindow() {
 	anyEquipped := make(map[invGroupKey]bool)
 	order := make([]invGroupKey, 0, len(items))
 	for _, it := range items {
-		key := invGroupKey{id: it.ID, idx: it.IDIndex}
-		if it.IDIndex < 0 {
-			key.idx = -1
-			key.name = it.Name
-		}
+		key := invGroupKey{id: it.ID, name: it.Name}
 		if _, seen := counts[key]; !seen {
 			order = append(order, key)
 			first[key] = it
 		}
-		counts[key]++
+		counts[key] += it.Quantity
 		if it.Equipped {
 			anyEquipped[key] = true
 		}
@@ -236,6 +231,9 @@ func updateInventoryWindow() {
 
 		idCopy := id
 		idxCopy := it.IDIndex
+		if qty > 1 {
+			idxCopy = -1
+		}
 		click := func() { toggleInventoryEquipAt(idCopy, idxCopy) }
 		icon.Action = click
 		t.Action = click
