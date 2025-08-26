@@ -190,8 +190,6 @@ func initUI() {
 	loadPlayersPersist()
 	backfillCharactersFromPlayers()
 
-	restoreWindowSettings()
-
 	if status.NeedImages || status.NeedSounds {
 		downloadWin.MarkOpen()
 	} else if clmov == "" && pcapPath == "" && !fake {
@@ -696,7 +694,6 @@ func makeToolbar() {
 
 	hudWin.AddItem(flow)
 	hudWin.AddWindow(false)
-	hudWin.MarkOpen()
 	updateHandsWindow()
 }
 

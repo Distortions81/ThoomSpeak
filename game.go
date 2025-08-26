@@ -1888,6 +1888,10 @@ func equippedItemPicts() (uint16, uint16) {
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 	scaledW, scaledH := eui.Layout(outsideWidth, outsideHeight)
 
+	if uiReady && !windowsRestored {
+		restoreWindowsAfterScale()
+	}
+
 	if outsideWidth > 512 && outsideHeight > 384 {
 		if gs.WindowWidth != outsideWidth || gs.WindowHeight != outsideHeight {
 			gs.WindowWidth = outsideWidth
@@ -1972,7 +1976,6 @@ func makeGameWindow() {
 		gameWin.SetZone(eui.HZoneCenter, eui.VZoneTop)
 	}
 	gameWin.Size = eui.Point{X: 8000, Y: 8000}
-	gameWin.MarkOpen()
 	gameWin.OnResize = func() { onGameWindowResize() }
 	// Titlebar maximize button controlled by settings (now default on)
 	gameWin.Maximizable = true
