@@ -286,6 +286,22 @@ EOF
   else
     mv "${OUTPUT_DIR}/${BIN_NAME}" "$PKG_DIR/"
   fi
+
+  if [ "$GOOS" = "linux" ]; then
+    ensure_cmd convert imagemagick
+    ICON_DIR="$PKG_DIR/share/icons/hicolor/256x256/apps"
+    DESKTOP_DIR="$PKG_DIR/share/applications"
+    mkdir -p "$ICON_DIR" "$DESKTOP_DIR"
+    convert "$SCRIPT_DIR/../goThoom.png" -resize 256x256 "$ICON_DIR/goThoom.png"
+    cat <<'EOF' >"$DESKTOP_DIR/goThoom.desktop"
+[Desktop Entry]
+Type=Application
+Name=goThoom
+Exec=goThoom
+Icon=goThoom
+Categories=Game;
+EOF
+  fi
   (
     cd "$OUTPUT_DIR"
     zip -q -r "$ZIP_NAME" "goThoom"
