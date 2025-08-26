@@ -369,6 +369,7 @@ func enablePlugin(owner string) {
 		return
 	}
 	loadPluginSource(owner, name, path, src, restrictedStdlib())
+	settingsDirty = true
 	refreshPluginsWindow()
 }
 
@@ -425,6 +426,7 @@ func disablePlugin(owner, reason string) {
 		disp = owner
 	}
 	consoleMessage("[plugin:" + disp + "] stopped: " + reason)
+	settingsDirty = true
 	refreshPluginsWindow()
 }
 
@@ -716,6 +718,7 @@ func rescanPlugins() {
 	pluginMu.Unlock()
 
 	refreshPluginsWindow()
+	settingsDirty = true
 }
 
 func checkPluginMods() {
@@ -778,11 +781,20 @@ func loadPlugins() {
 			pluginNames[lower] = true
 			base := strings.TrimSuffix(e.Name(), ".go")
 			owner := name + "_" + base
+			disabled := true
+			if gs.EnabledPlugins != nil {
+				if en, ok := gs.EnabledPlugins[owner]; ok {
+					disabled = !en
+				}
+			}
 			pluginMu.Lock()
 			pluginDisplayNames[owner] = name
 			pluginPaths[owner] = path
-			pluginDisabled[owner] = true
+			pluginDisabled[owner] = disabled
 			pluginMu.Unlock()
+			if !disabled {
+				loadPluginSource(owner, name, path, src, restrictedStdlib())
+			}
 		}
 	}
 	hotkeysMu.Lock()
