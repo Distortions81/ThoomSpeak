@@ -21,7 +21,7 @@ var (
 // pluginAddMacro registers a single macro for the plugin identified by owner.
 // Typing short text in the chat box will expand into the full string before
 // being sent.  For example, adding ("pp", "/ponder ") means that typing
-// "pphello" becomes "/ponder hello".
+// "pp" or "pp hello" becomes "/ponder " or "/ponder hello" respectively.
 func pluginAddMacro(owner, short, full string) {
 	short = strings.ToLower(short)
 	macroMu.Lock()
@@ -39,7 +39,12 @@ func pluginAddMacro(owner, short, full string) {
 			lower := strings.ToLower(txt)
 			for k, v := range local {
 				if strings.HasPrefix(lower, k) {
-					return v + txt[len(k):]
+					if len(lower) == len(k) {
+						return v
+					}
+					if len(lower) > len(k) && lower[len(k)] == ' ' {
+						return v + txt[len(k)+1:]
+					}
 				}
 			}
 			return txt

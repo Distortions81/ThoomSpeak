@@ -16,12 +16,20 @@ func TestPluginAddMacroExpandsInput(t *testing.T) {
 
 	pluginAddMacro("tester", "pp", "/ponder ")
 
-	if got, want := runInputHandlers("pphello"), "/ponder hello"; got != want {
-		t.Fatalf("lowercase macro failed: got %q, want %q", got, want)
+	if got, want := runInputHandlers("pp"), "/ponder "; got != want {
+		t.Fatalf("bare macro failed: got %q, want %q", got, want)
 	}
 
-	if got, want := runInputHandlers("PPHello"), "/ponder Hello"; got != want {
+	if got, want := runInputHandlers("pp hello"), "/ponder hello"; got != want {
+		t.Fatalf("lowercase macro with space failed: got %q, want %q", got, want)
+	}
+
+	if got, want := runInputHandlers("PP Hello"), "/ponder Hello"; got != want {
 		t.Fatalf("uppercase macro failed: got %q, want %q", got, want)
+	}
+
+	if got, want := runInputHandlers("pphi"), "pphi"; got != want {
+		t.Fatalf("macro should not expand within word: got %q, want %q", got, want)
 	}
 }
 
@@ -34,10 +42,10 @@ func TestPluginAddMacros(t *testing.T) {
 
 	pluginAddMacros("bulk", map[string]string{"pp": "/ponder ", "hi": "/hello "})
 
-	if got, want := runInputHandlers("ppthere"), "/ponder there"; got != want {
+	if got, want := runInputHandlers("pp there"), "/ponder there"; got != want {
 		t.Fatalf("pp macro failed: got %q, want %q", got, want)
 	}
-	if got, want := runInputHandlers("hiyou"), "/hello you"; got != want {
+	if got, want := runInputHandlers("hi you"), "/hello you"; got != want {
 		t.Fatalf("hi macro failed: got %q, want %q", got, want)
 	}
 }
@@ -96,13 +104,13 @@ func TestPluginRemoveMacrosOnDisable(t *testing.T) {
 
 	owner := "plug"
 	pluginAddMacro(owner, "pp", "/ponder ")
-	if got, want := runInputHandlers("pphello"), "/ponder hello"; got != want {
+	if got, want := runInputHandlers("pp hello"), "/ponder hello"; got != want {
 		t.Fatalf("macro not added: got %q, want %q", got, want)
 	}
 
 	disablePlugin(owner, "testing")
 
-	if got, want := runInputHandlers("pphello"), "pphello"; got != want {
+	if got, want := runInputHandlers("pp hello"), "pp hello"; got != want {
 		t.Fatalf("macro not removed: got %q, want %q", got, want)
 	}
 }
