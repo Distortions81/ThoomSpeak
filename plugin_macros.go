@@ -56,6 +56,15 @@ func pluginAddMacros(owner string, macros map[string]string) {
 	}
 }
 
+// pluginRemoveMacros deletes all macros registered by the specified plugin.
+// It is typically called when a plugin is disabled or unloaded so that any
+// previously registered macro prefixes no longer expand.
+func pluginRemoveMacros(owner string) {
+	macroMu.Lock()
+	delete(macroMaps, owner)
+	macroMu.Unlock()
+}
+
 // pluginAutoReply watches chat messages and runs a command when a message
 // begins with trigger.  Comparison is case-insensitive.  It is handy for simple
 // automatic responses.
