@@ -336,7 +336,7 @@ func makePluginsWindow() {
 	pluginsWin.Movable = true
 	pluginsWin.SetZone(eui.HZoneCenterLeft, eui.VZoneMiddleTop)
 
-	root := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
+	root := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL, Scrollable: true}
 	pluginsWin.AddItem(root)
 
 	list := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
