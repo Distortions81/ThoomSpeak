@@ -3443,55 +3443,33 @@ func makeDebugWindow() {
 
 	debugFlow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
 
-	uiScaleCB, uiScaleCBEvents := eui.NewCheckbox()
-	uiScaleCB.Text = "Scale UI"
-	uiScaleCB.Tooltip = "Enable scaling of EUI elements"
-	uiScaleCB.Size = eui.Point{X: width, Y: 24}
-	uiScaleCB.Checked = gs.UIScale != 1
-	var uiScaleSlider *eui.ItemData
 	pendingUIScale := gs.UIScale
-	if pendingUIScale < 1 {
-		pendingUIScale = 1
-	}
-	uiScaleCBEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventCheckboxChanged {
-			if ev.Checked {
-				gs.UIScale = pendingUIScale
-				if uiScaleSlider != nil {
-					uiScaleSlider.Disabled = false
-					uiScaleSlider.Value = float32(pendingUIScale)
-				}
-			} else {
-				gs.UIScale = 1
-				if uiScaleSlider != nil {
-					uiScaleSlider.Disabled = true
-					uiScaleSlider.Value = 1
-				}
-			}
-			eui.SetUIScale(float32(gs.UIScale))
-			updateGameWindowSize()
-			settingsDirty = true
-		}
-	}
-	debugFlow.AddItem(uiScaleCB)
 
 	uiScaleSlider, uiScaleEvents := eui.NewSlider()
 	uiScaleSlider.Label = "UI Scale"
-	uiScaleSlider.MinValue = 1.0
-	uiScaleSlider.MaxValue = 3.0
+	uiScaleSlider.MinValue = 0.5
+	uiScaleSlider.MaxValue = 4.0
 	uiScaleSlider.Value = float32(pendingUIScale)
 	uiScaleSlider.Size = eui.Point{X: width - 10, Y: 24}
-	uiScaleSlider.Disabled = gs.UIScale == 1
 	uiScaleEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
 			pendingUIScale = float64(ev.Value)
+		}
+	}
+	debugFlow.AddItem(uiScaleSlider)
+
+	uiScaleApplyBtn, uiScaleApplyEvents := eui.NewButton()
+	uiScaleApplyBtn.Text = "Apply UI Scale"
+	uiScaleApplyBtn.Size = eui.Point{X: width - 10, Y: 24}
+	uiScaleApplyEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
 			gs.UIScale = pendingUIScale
 			eui.SetUIScale(float32(gs.UIScale))
 			updateGameWindowSize()
 			settingsDirty = true
 		}
 	}
-	debugFlow.AddItem(uiScaleSlider)
+	debugFlow.AddItem(uiScaleApplyBtn)
 
 	lateInputCB, lateInputEvents := eui.NewCheckbox()
 	lateInputCB.Text = "Smart input updates"
