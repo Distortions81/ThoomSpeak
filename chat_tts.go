@@ -14,6 +14,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2/audio"
@@ -25,6 +26,9 @@ var (
 	ttsPlayers   = make(map[*audio.Player]struct{})
 	ttsPlayersMu sync.Mutex
 	chatTTSQueue = make(chan string, 10)
+
+	pendingTTS      int32
+	playChatTTSFunc = playChatTTS
 
 	piperPath   string
 	piperModel  string
@@ -43,12 +47,14 @@ func stopAllTTS() {
 	}
 	ttsPlayersMu.Unlock()
 	clearChatTTSQueue()
+	atomic.StoreInt32(&pendingTTS, 0)
 }
 
 func clearChatTTSQueue() {
 	for {
 		select {
 		case <-chatTTSQueue:
+			atomic.AddInt32(&pendingTTS, -1)
 		default:
 			return
 		}
@@ -82,7 +88,8 @@ func chatTTSWorker() {
 			}
 		}
 		timer.Stop()
-		go playChatTTS(strings.Join(msgs, ". "))
+		playChatTTSFunc(strings.Join(msgs, ". "))
+		atomic.AddInt32(&pendingTTS, -int32(len(msgs)))
 	}
 }
 
@@ -168,10 +175,16 @@ func speakChatMessage(msg string) {
 		}
 		return
 	}
+	if atomic.LoadInt32(&pendingTTS) >= 10 {
+		logError("chat tts: too many pending messages, dropping message")
+		return
+	}
+	atomic.AddInt32(&pendingTTS, 1)
 	select {
 	case chatTTSQueue <- msg:
 	default:
-		logDebug("chat tts: queue full, dropping message")
+		atomic.AddInt32(&pendingTTS, -1)
+		logError("chat tts: queue full, dropping message")
 	}
 }
 
