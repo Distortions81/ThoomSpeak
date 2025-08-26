@@ -228,9 +228,10 @@ func (win *windowData) Draw(screen *ebiten.Image, dropdowns *[]openDropdown) {
 			win.Render.Clear()
 		}
 		origPos := win.Position
+		basePos := win.getPosition()
 		win.Position = point{}
 		win.drawBG(win.Render)
-		win.drawItems(win.Render, origPos, dropdowns)
+		win.drawItems(win.Render, basePos, dropdowns)
 		win.drawScrollbars(win.Render)
 		titleArea := win.Render.SubImage(win.getTitleRect().getRectangle()).(*ebiten.Image)
 		win.drawWinTitle(titleArea)
