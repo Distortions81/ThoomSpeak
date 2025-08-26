@@ -196,6 +196,9 @@ func initUI() {
 		loginWin.MarkOpen()
 	}
 	uiReady = true
+	if !windowsRestored {
+		restoreWindowSettings()
+	}
 }
 
 func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData {
