@@ -218,6 +218,51 @@ func loadImage(id uint16) *ebiten.Image {
 	return loadImageFrame(id, 0)
 }
 
+// loadHDOverride checks for a high-resolution PNG override in data/hd and
+// returns a scaled image matching the dimensions from CL_Images. It falls back
+// to nil if no override is found or an error occurs.
+func loadHDOverride(id uint16) *ebiten.Image {
+	hdPath := filepath.Join(dataDirPath, "hd", fmt.Sprintf("%d.png", id))
+	f, err := os.Open(hdPath)
+	if err != nil {
+		return nil
+	}
+	defer f.Close()
+	src, err := png.Decode(f)
+	if err != nil {
+		return nil
+	}
+
+	var w, h int
+	if clImages != nil {
+		if sheet := clImages.Get(uint32(id), nil, false); sheet != nil {
+			frames := clImages.NumFrames(uint32(id))
+			innerH := sheet.Bounds().Dy() - 2
+			w = sheet.Bounds().Dx() - 2
+			if frames > 0 {
+				h = innerH / frames
+			} else {
+				h = innerH
+			}
+		}
+	}
+	if w == 0 || h == 0 {
+		return ebiten.NewImageFromImage(src)
+	}
+
+	srcW := src.Bounds().Dx()
+	srcH := src.Bounds().Dy()
+	if srcW == w && srcH == h {
+		return ebiten.NewImageFromImage(src)
+	}
+
+	dst := ebiten.NewImage(w, h)
+	opts := &ebiten.DrawImageOptions{}
+	opts.GeoM.Scale(float64(w)/float64(srcW), float64(h)/float64(srcH))
+	dst.DrawImage(ebiten.NewImageFromImage(src), opts)
+	return dst
+}
+
 // loadImageFrame retrieves a specific animation frame for the specified picture
 // ID. Frames are cached individually after the first load.
 func loadImageFrame(id uint16, frame int) *ebiten.Image {
@@ -229,6 +274,18 @@ func loadImageFrame(id uint16, frame int) *ebiten.Image {
 			return img
 		}
 		imageMu.Unlock()
+	}
+
+	if frame == 0 {
+		if img := loadHDOverride(id); img != nil {
+			statImageLoaded(id)
+			if !gs.NoCaching {
+				imageMu.Lock()
+				imageCache[origKey] = img
+				imageMu.Unlock()
+			}
+			return img
+		}
 	}
 
 	sheet := loadSheet(id, nil, false)
