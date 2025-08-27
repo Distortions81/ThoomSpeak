@@ -566,6 +566,27 @@ func (item *itemData) drawFlows(win *windowData, parent *itemData, offset point,
 	subImg := screen.SubImage(drawRect.getRectangle()).(*ebiten.Image)
 	style := item.themeStyle()
 
+	if item.Filled || item.Outlined {
+		col := item.Color
+		if col == (Color{}) && style != nil {
+			col = style.Color
+		}
+		if item.Filled {
+			drawFilledRect(subImg, offset.X, offset.Y, item.GetSize().X, item.GetSize().Y, col.ToRGBA(), true)
+		}
+		if item.Outlined {
+			b := item.Border * uiScale
+			if b <= 0 {
+				b = 1 * uiScale
+			}
+			oc := item.OutlineColor
+			if oc == (Color{}) && style != nil {
+				oc = style.OutlineColor
+			}
+			strokeRect(subImg, offset.X, offset.Y, item.GetSize().X, item.GetSize().Y, b, oc, true)
+		}
+	}
+
 	var activeContents []*itemData
 	drawOffset := pointSub(offset, item.Scroll)
 
