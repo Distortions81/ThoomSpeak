@@ -180,7 +180,7 @@ func updateInventoryWindow() {
 		icon.Margin = 4
 		row.AddItem(icon)
 
-		// Text label with quantity suffix when >1
+		// Text label with quantity suffix after the name when >1
 		label := it.Name
 		if label == "" && clImages != nil {
 			label = clImages.ItemName(uint32(id))
@@ -189,7 +189,7 @@ func updateInventoryWindow() {
 			label = fmt.Sprintf("Item %d", id)
 		}
 		if qty > 1 {
-			label = fmt.Sprintf("(%v) %v", qty, label)
+			label = fmt.Sprintf("%v (%v)", label, qty)
 		}
 
 		t, _ := eui.NewText()
