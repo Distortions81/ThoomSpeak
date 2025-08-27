@@ -799,7 +799,7 @@ func (g *Game) Update() error {
 	rightClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
 
 	winW, winH := ebiten.WindowSize()
-	inWindow := mx >= 0 && my >= 0 && mx < winW && my < winH
+	inWindow := mx > 0 && my > 0 && mx < winW-1 && my < winH-1
 	if !focused || !inWindow {
 		if walkToggled {
 			walkToggled = false
