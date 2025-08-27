@@ -50,6 +50,7 @@ var (
 	musicDebug    bool
 	clientVersion int
 	experimental  bool
+	showUIScale   bool
 )
 
 func main() {
@@ -65,6 +66,7 @@ func main() {
 	flag.BoolVar(&dumpBEPPTags, "dumpBEPPTags", false, "log BEPP tags seen (for empirical analysis)")
 	flag.BoolVar(&musicDebug, "musicDebug", false, "show bard music messages in chat")
 	flag.BoolVar(&experimental, "experimental", false, "enable experimental features like CL_Images/CL_Sounds patching")
+	flag.BoolVar(&showUIScale, "uiscale", false, "show UI scaling options")
 	genPGO := flag.Bool("pgo", false, "create default.pgo using test.clMov at 30 fps for 30s")
 	flag.Parse()
 
