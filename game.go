@@ -810,6 +810,7 @@ func (g *Game) Update() error {
 		heldTime = 0
 	}
 
+	stopWalkIfOutside(click, inGame)
 	if click && pointInUI(mx, my) {
 		uiMouseDown = true
 	}
@@ -867,6 +868,12 @@ func (g *Game) Update() error {
 	checkHotkeys()
 
 	return nil
+}
+
+func stopWalkIfOutside(click, inGame bool) {
+	if gs.ClickToToggle && click && !inGame {
+		walkToggled = false
+	}
 }
 
 func updateGameWindowSize() {
