@@ -123,8 +123,10 @@ func readUDPMessage(connection net.Conn) ([]byte, error) {
 	return msg, nil
 }
 
-// sendPlayerInput sends the provided mouse state to the server via UDP.
-func sendPlayerInput(connection net.Conn, mouseX, mouseY int16, mouseDown bool) error {
+// sendPlayerInput sends the provided mouse state to the server. When
+// reliable is true the packet is written to the TCP connection; otherwise
+// it is sent via UDP.
+func sendPlayerInput(connection net.Conn, mouseX, mouseY int16, mouseDown bool, reliable bool) error {
 	const kMsgPlayerInput = 3
 	flags := uint16(0)
 
@@ -164,6 +166,9 @@ func sendPlayerInput(connection net.Conn, mouseX, mouseY int16, mouseDown bool) 
 	latencyMu.Lock()
 	lastInputSent = time.Now()
 	latencyMu.Unlock()
+	if reliable {
+		return sendTCPMessage(connection, packet)
+	}
 	return sendUDPMessage(connection, packet)
 }
 

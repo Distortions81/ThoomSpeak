@@ -10,6 +10,7 @@ import (
 	"image/color"
 	"log"
 	"math"
+	"math/rand"
 	"net"
 	"strings"
 	"sync"
@@ -2123,7 +2124,10 @@ func noteFrame() {
 	}
 }
 
-func sendInputLoop(ctx context.Context, conn net.Conn) {
+func sendInputLoop(ctx context.Context, udpConn, tcpConn net.Conn) {
+	// nextReliable determines when to send the next keep-alive packet via
+	// the reliable channel to preserve NAT mappings.
+	var nextReliable time.Time
 	for {
 		select {
 		case <-ctx.Done():
@@ -2131,47 +2135,30 @@ func sendInputLoop(ctx context.Context, conn net.Conn) {
 		case <-frameCh:
 		}
 		frameMu.Lock()
-		interval := frameInterval
 		last := lastFrameTime
 		frameMu.Unlock()
-		if time.Since(last) > 2*time.Second || conn == nil {
-			continue
-		}
-		delay := time.Duration(0)
-		if gs.lateInputUpdates {
-			delay = interval
-
-			latencyMu.Lock()
-			lat := netLatency
-			latencyMu.Unlock()
-
-			target := time.Duration(gs.lateInputAdjustment)
-			if target > lat {
-				lat = target
-			}
-			// Send the input early enough for the server to receive it
-			// before the next update, adding a safety margin to the
-			// measured latency.
-			adjusted := lat - (time.Millisecond)
-			delay = interval - adjusted
-		}
-		timer := time.NewTimer(delay)
-		select {
-		case <-ctx.Done():
-			timer.Stop()
-			return
-		case <-timer.C:
-		}
-		frameMu.Lock()
-		last = lastFrameTime
-		frameMu.Unlock()
-		if time.Since(last) > 2*time.Second || conn == nil {
+		if time.Since(last) > 2*time.Second || udpConn == nil {
 			continue
 		}
 		inputMu.Lock()
 		s := latestInput
 		inputMu.Unlock()
-		if err := sendPlayerInput(conn, s.mouseX, s.mouseY, s.mouseDown); err != nil {
+
+		reliable := false
+		now := time.Now()
+		if now.After(nextReliable) && pendingCommand == "" && tcpConn != nil {
+			reliable = true
+			// next packet will be 3 to 5 minutes from now
+			nextReliable = now.Add(3*time.Minute + time.Duration(rand.Intn(120))*time.Second)
+		}
+
+		var err error
+		if reliable {
+			err = sendPlayerInput(tcpConn, s.mouseX, s.mouseY, s.mouseDown, true)
+		} else {
+			err = sendPlayerInput(udpConn, s.mouseX, s.mouseY, s.mouseDown, false)
+		}
+		if err != nil {
 			logError("send player input: %v", err)
 		}
 	}

@@ -53,7 +53,7 @@ func TestSendPlayerInputCommandNumIncrements(t *testing.T) {
 	pendingCommand = ""
 
 	conn := &bufConn{}
-	if err := sendPlayerInput(conn, 0, 0, false); err != nil {
+	if err := sendPlayerInput(conn, 0, 0, false, false); err != nil {
 		t.Fatalf("sendPlayerInput: %v", err)
 	}
 	if got, want := commandNum, uint32(2); got != want {
@@ -64,7 +64,7 @@ func TestSendPlayerInputCommandNumIncrements(t *testing.T) {
 	}
 
 	conn2 := &bufConn{}
-	if err := sendPlayerInput(conn2, 0, 0, false); err != nil {
+	if err := sendPlayerInput(conn2, 0, 0, false, false); err != nil {
 		t.Fatalf("sendPlayerInput: %v", err)
 	}
 	if got, want := commandNum, uint32(3); got != want {
@@ -87,7 +87,7 @@ func TestSendPlayerInputCommandNumIncrementsWithCommand(t *testing.T) {
 	pendingCommand = "/test"
 
 	conn := &bufConn{}
-	if err := sendPlayerInput(conn, 0, 0, false); err != nil {
+	if err := sendPlayerInput(conn, 0, 0, false, false); err != nil {
 		t.Fatalf("sendPlayerInput: %v", err)
 	}
 	if got, want := commandNum, uint32(11); got != want {
