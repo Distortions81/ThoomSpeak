@@ -210,6 +210,7 @@ var frameCounter int
 var gameStarted = make(chan struct{})
 
 const framems = 200
+const frameHistorySize = 32
 
 var (
 	frameCh       = make(chan struct{}, 1)
@@ -218,6 +219,9 @@ var (
 	intervalHist  = map[int]int{}
 	frameMu       sync.Mutex
 	serverFPS     float64
+	frameTimes    [frameHistorySize]time.Time
+	frameTimeIdx  int
+	frameTimeCnt  int
 	netLatency    time.Duration
 	netJitter     time.Duration
 	lastInputSent time.Time
@@ -2094,6 +2098,11 @@ func noteFrame() {
 	}
 	now := time.Now()
 	frameMu.Lock()
+	frameTimes[frameTimeIdx%frameHistorySize] = now
+	frameTimeIdx++
+	if frameTimeCnt < frameHistorySize {
+		frameTimeCnt++
+	}
 	if !lastFrameTime.IsZero() {
 		dt := now.Sub(lastFrameTime)
 		ms := int(dt.Round(10*time.Millisecond) / time.Millisecond)
@@ -2124,55 +2133,85 @@ func noteFrame() {
 }
 
 func sendInputLoop(ctx context.Context, conn net.Conn) {
+	var predicted time.Time
 	for {
+		frameMu.Lock()
+		last := lastFrameTime
+		avg := frameInterval
+		if frameTimeCnt >= 2 {
+			start := frameTimeIdx - frameTimeCnt
+			prev := frameTimes[start%frameHistorySize]
+			var sum time.Duration
+			for i := 1; i < frameTimeCnt; i++ {
+				t := frameTimes[(start+i)%frameHistorySize]
+				sum += t.Sub(prev)
+				prev = t
+			}
+			avg = sum / time.Duration(frameTimeCnt-1)
+		}
+		frameMu.Unlock()
+		if predicted.IsZero() || last.After(predicted) {
+			predicted = last.Add(avg)
+		}
+		if time.Since(last) > 2*time.Second || conn == nil {
+			select {
+			case <-ctx.Done():
+				return
+			case <-frameCh:
+				predicted = time.Time{}
+				continue
+			}
+		}
+
+		latencyMu.Lock()
+		oneWay := netLatency / 2
+		latencyMu.Unlock()
+
+		sendAt := predicted.Add(-oneWay)
+		wait := time.Until(sendAt)
+		if wait < 0 {
+			wait = 0
+		}
+		sendTimer := time.NewTimer(wait)
 		select {
 		case <-ctx.Done():
+			sendTimer.Stop()
 			return
 		case <-frameCh:
-		}
-		frameMu.Lock()
-		interval := frameInterval
-		last := lastFrameTime
-		frameMu.Unlock()
-		if time.Since(last) > 2*time.Second || conn == nil {
+			sendTimer.Stop()
+			predicted = time.Time{}
 			continue
+		case <-sendTimer.C:
 		}
-		delay := time.Duration(0)
-		if gs.lateInputUpdates {
-			delay = interval
 
-			latencyMu.Lock()
-			lat := netLatency
-			latencyMu.Unlock()
-
-			target := time.Duration(gs.lateInputAdjustment)
-			if target > lat {
-				lat = target
-			}
-			// Send the input early enough for the server to receive it
-			// before the next update, adding a safety margin to the
-			// measured latency.
-			adjusted := lat - (time.Millisecond)
-			delay = interval - adjusted
-		}
-		timer := time.NewTimer(delay)
-		select {
-		case <-ctx.Done():
-			timer.Stop()
-			return
-		case <-timer.C:
-		}
-		frameMu.Lock()
-		last = lastFrameTime
-		frameMu.Unlock()
-		if time.Since(last) > 2*time.Second || conn == nil {
-			continue
-		}
 		inputMu.Lock()
 		s := latestInput
 		inputMu.Unlock()
 		if err := sendPlayerInput(conn, s.mouseX, s.mouseY, s.mouseDown); err != nil {
 			logError("send player input: %v", err)
+		}
+
+		wait = time.Until(predicted)
+		if wait < 0 {
+			wait = 0
+		}
+		frameTimer := time.NewTimer(wait)
+		select {
+		case <-ctx.Done():
+			frameTimer.Stop()
+			return
+		case <-frameCh:
+			frameTimer.Stop()
+			predicted = time.Time{}
+			continue
+		case <-frameTimer.C:
+			inputMu.Lock()
+			s := latestInput
+			inputMu.Unlock()
+			if err := sendPlayerInput(conn, s.mouseX, s.mouseY, s.mouseDown); err != nil {
+				logError("send player input: %v", err)
+			}
+			predicted = predicted.Add(avg)
 		}
 	}
 }
