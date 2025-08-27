@@ -3,7 +3,12 @@ package main
 import (
 	"fmt"
 	"sort"
+	"strings"
 	"sync"
+	"unicode"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/unicode/norm"
 )
 
 type InventoryItem struct {
@@ -25,6 +30,23 @@ var (
 	inventoryItems []InventoryItem
 	inventoryNames = make(map[inventoryKey]string)
 )
+
+var invFoldCaser = cases.Fold()
+
+// normalizeInventoryName returns a canonical form of an item name for comparisons.
+// It trims whitespace, removes diacritics and performs case folding so items with
+// minor name variations (e.g. capitalization differences) can be coalesced.
+func normalizeInventoryName(name string) string {
+	name = strings.TrimSpace(name)
+	name = norm.NFD.String(name)
+	name = strings.Map(func(r rune) rune {
+		if unicode.Is(unicode.Mn, r) {
+			return -1
+		}
+		return r
+	}, name)
+	return invFoldCaser.String(name)
+}
 
 func resetInventory() {
 	inventoryMu.Lock()
@@ -61,10 +83,11 @@ func addInventoryItem(id uint16, idx int, name string, equip bool) {
 		item := InventoryItem{ID: id, Name: name, Equipped: equip, Index: len(inventoryItems), IDIndex: idx, Quantity: 1}
 		inventoryItems = append(inventoryItems, item)
 	} else {
-		// Legacy/non-template: coalesce by ID only when names match.
+		// Legacy/non-template: coalesce by ID only when normalized names match.
 		found := false
+		normName := normalizeInventoryName(name)
 		for i := range inventoryItems {
-			if inventoryItems[i].ID == id && inventoryItems[i].IDIndex < 0 && inventoryItems[i].Name == name {
+			if inventoryItems[i].ID == id && inventoryItems[i].IDIndex < 0 && normalizeInventoryName(inventoryItems[i].Name) == normName {
 				inventoryItems[i].Quantity++
 				if equip {
 					inventoryItems[i].Equipped = true
@@ -290,30 +313,30 @@ func getInventory() []InventoryItem {
 
 // inventoryItemByIndex returns the InventoryItem at the given index.
 func inventoryItemByIndex(idx int) (InventoryItem, bool) {
-        inventoryMu.RLock()
-        defer inventoryMu.RUnlock()
-        if idx < 0 || idx >= len(inventoryItems) {
-                return InventoryItem{}, false
-        }
-        return inventoryItems[idx], true
+	inventoryMu.RLock()
+	defer inventoryMu.RUnlock()
+	if idx < 0 || idx >= len(inventoryItems) {
+		return InventoryItem{}, false
+	}
+	return inventoryItems[idx], true
 }
 
 // triggerInventoryShortcut activates the inventory item assigned to idx.
 // Wearable items toggle equip state; others are used.
 func triggerInventoryShortcut(idx int) {
-        it, ok := inventoryItemByIndex(idx)
-        if !ok {
-                return
-        }
-        if clImages != nil {
-                slot := clImages.ItemSlot(uint32(it.ID))
-                if slot >= kItemSlotFirstReal && slot <= kItemSlotLastReal {
-                        toggleInventoryEquipAt(it.ID, it.IDIndex)
-                        return
-                }
-        }
-        enqueueCommand(fmt.Sprintf("/useitem %d", it.ID))
-        nextCommand()
+	it, ok := inventoryItemByIndex(idx)
+	if !ok {
+		return
+	}
+	if clImages != nil {
+		slot := clImages.ItemSlot(uint32(it.ID))
+		if slot >= kItemSlotFirstReal && slot <= kItemSlotLastReal {
+			toggleInventoryEquipAt(it.ID, it.IDIndex)
+			return
+		}
+	}
+	enqueueCommand(fmt.Sprintf("/useitem %d", it.ID))
+	nextCommand()
 }
 
 func setFullInventory(ids []uint16, equipped []bool) {
