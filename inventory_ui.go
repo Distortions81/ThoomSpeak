@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"gothoom/eui"
 	"math"
-	"time"
 	"sort"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -338,6 +338,8 @@ func handleInventoryClick(id uint16, idx int) {
 		lastInvClickTime = now
 		updateInventoryWindow()
 	}
+}
+
 func officialName(k invGroupKey, it InventoryItem) string {
 	name := ""
 	if clImages != nil {
