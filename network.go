@@ -158,8 +158,8 @@ func sendPlayerInput(connection net.Conn, mouseX, mouseY int16, mouseDown bool) 
 		whoLastCommandFrame = ackFrame
 		pendingCommand = ""
 		nextCommand()
-		commandNum++
 	}
+	commandNum++
 	logDebug("player input ack=%d resend=%d cmd=%d mouse=%d,%d flags=%#x", ackFrame, resendFrame, packetCommand, mouseX, mouseY, flags)
 	latencyMu.Lock()
 	lastInputSent = time.Now()
