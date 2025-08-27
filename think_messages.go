@@ -9,6 +9,9 @@ import (
 	"gothoom/eui"
 )
 
+// sndThinkTo matches the original client's notification sound for think messages.
+const sndThinkTo = 58
+
 type thinkMessage struct {
 	item   *eui.ItemData
 	expiry time.Time
@@ -22,6 +25,7 @@ func showThinkMessage(msg string) {
 	if gameWin == nil {
 		return
 	}
+	playSound([]uint16{sndThinkTo})
 	btn, events := eui.NewButton()
 	btn.Text = msg
 	btn.FontSize = float32(gs.ChatFontSize)
