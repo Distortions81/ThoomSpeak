@@ -363,3 +363,67 @@ func TestPluginHotkeyStatePersisted(t *testing.T) {
 		t.Fatalf("plugin hotkey not re-added")
 	}
 }
+
+// Test that removing a plugin hotkey clears it from all state and UI.
+func TestPluginRemoveHotkeyClearsState(t *testing.T) {
+	origHotkeys := hotkeys
+	hotkeys = nil
+	t.Cleanup(func() { hotkeys = origHotkeys })
+
+	origEnabled := pluginHotkeyEnabled
+	pluginHotkeyEnabled = map[string]map[string]bool{"plug": {"Ctrl-P": true}}
+	t.Cleanup(func() { pluginHotkeyEnabled = origEnabled })
+
+	origWin := hotkeysWin
+	origList := hotkeysList
+	hotkeysWin = nil
+	hotkeysList = nil
+	t.Cleanup(func() {
+		hotkeysWin = origWin
+		hotkeysList = origList
+	})
+
+	origDir := dataDirPath
+	dataDirPath = t.TempDir()
+	t.Cleanup(func() { dataDirPath = origDir })
+
+	origDisabled := pluginDisabled
+	pluginDisabled = map[string]bool{}
+	t.Cleanup(func() { pluginDisabled = origDisabled })
+
+	makeHotkeysWindow()
+
+	pluginAddHotkey("plug", "Ctrl-P", "say hi")
+
+	hotkeysMu.RLock()
+	if len(hotkeys) != 1 {
+		hotkeysMu.RUnlock()
+		t.Fatalf("expected hotkey added, got %d", len(hotkeys))
+	}
+	hotkeysMu.RUnlock()
+	if m := pluginHotkeyEnabled["plug"]; m == nil || !m["Ctrl-P"] {
+		t.Fatalf("expected pluginHotkeyEnabled entry before removal")
+	}
+	if len(hotkeysList.Contents) != 2 {
+		t.Fatalf("expected hotkey list to have plugin header and row before removal, got %d", len(hotkeysList.Contents))
+	}
+
+	pluginRemoveHotkey("plug", "Ctrl-P")
+
+	hotkeysMu.RLock()
+	for _, hk := range hotkeys {
+		if hk.Plugin == "plug" && hk.Combo == "Ctrl-P" {
+			hotkeysMu.RUnlock()
+			t.Fatalf("plugin hotkey not removed")
+		}
+	}
+	hotkeysMu.RUnlock()
+
+	if _, ok := pluginHotkeyEnabled["plug"]; ok {
+		t.Fatalf("pluginHotkeyEnabled entry remains after removal")
+	}
+
+	if len(hotkeysList.Contents) != 0 {
+		t.Fatalf("expected empty hotkeys list after removal, got %d", len(hotkeysList.Contents))
+	}
+}
