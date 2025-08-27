@@ -18,6 +18,8 @@ import (
 var playersWin *eui.WindowData
 var playersList *eui.ItemData
 var playersDirty bool
+var playersRowRefs = map[*eui.ItemData]string{}
+var playersCtxWin *eui.WindowData
 
 // defaultMobilePictID returns a fallback CL_Images mobile pict ID for the
 // given gender when a player's specific PictID is unknown. Values are chosen
@@ -106,9 +108,10 @@ func updatePlayersWindow() {
 	linePx := math.Ceil(metrics.HAscent + metrics.HDescent + 2) // +2 px padding
 	rowUnits := float32(linePx) / ui
 
-	// Rebuild contents: header + one row per player
-	// Layout per row: [avatar (or default/blank)] [profession (or blank)] [name]
-	playersList.Contents = nil
+    // Rebuild contents: header + one row per player
+    // Layout per row: [avatar (or default/blank)] [profession (or blank)] [name]
+    playersList.Contents = nil
+    playersRowRefs = map[*eui.ItemData]string{}
 
 	header := fmt.Sprintf("Players Online: %d", onlineCount)
 	// Include simple share summary when relevant.
