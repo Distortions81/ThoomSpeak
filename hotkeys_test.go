@@ -363,3 +363,20 @@ func TestPluginHotkeyStatePersisted(t *testing.T) {
 		t.Fatalf("plugin hotkey not re-added")
 	}
 }
+func TestPluginAddHotkeyDuplicate(t *testing.T) {
+	hotkeys = nil
+	pluginHotkeyEnabled = map[string]map[string]bool{}
+
+	pluginAddHotkey("plug", "Ctrl-P", "say hi")
+	pluginAddHotkey("plug", "Ctrl-P", "say hi")
+
+	hotkeysMu.RLock()
+	if len(hotkeys) != 1 {
+		hotkeysMu.RUnlock()
+		t.Fatalf("expected 1 hotkey, got %d", len(hotkeys))
+	}
+	hotkeysMu.RUnlock()
+	if len(pluginHotkeyEnabled) != 0 {
+		t.Fatalf("unexpected pluginHotkeyEnabled entries: %v", pluginHotkeyEnabled)
+	}
+}
