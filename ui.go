@@ -2567,7 +2567,7 @@ func makeSettingsWindow() {
 
 	lateInputCB, lateInputEvents := eui.NewCheckbox()
 	lateInputCB.Text = "Smart input updates"
-	lateInputCB.Tooltip = "Polls for user input at last moment, sends update to server early by predicted ping"
+	lateInputCB.Tooltip = "Polls for user input at last moment, sends update to server early by current ping"
 	lateInputCB.Size = eui.Point{X: rightW, Y: 24}
 	lateInputCB.Checked = gs.lateInputUpdates
 	var targetPingSlider *eui.ItemData
@@ -2583,10 +2583,10 @@ func makeSettingsWindow() {
 	right.AddItem(lateInputCB)
 
 	targetPingSlider, targetPingEvents := eui.NewSlider()
-	targetPingSlider.Label = "Target ping"
-	targetPingSlider.Tooltip = "Keep this well above (2-3x) your network jitter. ( 3 - 30ms )"
-	targetPingSlider.MinValue = 5
-	targetPingSlider.MaxValue = 175
+	targetPingSlider.Label = "Smart Target"
+	targetPingSlider.Tooltip = "Keep this 3-10x above your network jitter (10-30ms)"
+	targetPingSlider.MinValue = 1
+	targetPingSlider.MaxValue = 200
 	targetPingSlider.IntOnly = true
 	targetPingSlider.Value = float32(gs.lateInputAdjustment)
 	targetPingSlider.Size = eui.Point{X: rightW - 10, Y: 24}
