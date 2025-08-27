@@ -37,7 +37,6 @@ var basePluginExports = interp.Exports{
 		"Equip":                 reflect.ValueOf(pluginEquip),
 		"Unequip":               reflect.ValueOf(pluginUnequip),
 		"PlaySound":             reflect.ValueOf(pluginPlaySound),
-		"RegisterInputHandler":  reflect.ValueOf(pluginRegisterInputHandler),
 		"InputText":             reflect.ValueOf(pluginInputText),
 		"SetInputText":          reflect.ValueOf(pluginSetInputText),
 		"PlayerStats":           reflect.ValueOf(pluginPlayerStats),
@@ -87,6 +86,7 @@ func exportsForPlugin(owner string) interp.Exports {
 		m["AddMacros"] = reflect.ValueOf(func(macros map[string]string) { pluginAddMacros(owner, macros) })
 		m["AutoReply"] = reflect.ValueOf(func(trigger, cmd string) { pluginAutoReply(owner, trigger, cmd) })
 		m["RegisterChatHandler"] = reflect.ValueOf(func(fn func(string)) { pluginRegisterChatHandler(owner, fn) })
+		m["RegisterInputHandler"] = reflect.ValueOf(func(fn func(string) string) { pluginRegisterInputHandler(owner, fn) })
 		m["RunCommand"] = reflect.ValueOf(func(cmd string) { pluginRunCommand(owner, cmd) })
 		m["EnqueueCommand"] = reflect.ValueOf(func(cmd string) { pluginEnqueueCommand(owner, cmd) })
 		ex[pkg] = m
@@ -303,7 +303,7 @@ var (
 	pluginTerminators   = map[string]func(){}
 	pluginChatHandlers  = map[string][]func(string){}
 	chatHandlersMu      sync.RWMutex
-	inputHandlers       []func(string) string
+	pluginInputHandlers = map[string][]func(string) string{}
 	inputHandlersMu     sync.RWMutex
 	pluginCommandOwners = map[string]string{}
 	pluginSendHistory   = map[string][]time.Time{}
@@ -452,6 +452,9 @@ func disablePlugin(owner, reason string) {
 		pluginRemoveHotkey(owner, hk.Combo)
 	}
 	pluginRemoveMacros(owner)
+	inputHandlersMu.Lock()
+	delete(pluginInputHandlers, owner)
+	inputHandlersMu.Unlock()
 	chatHandlersMu.Lock()
 	delete(pluginChatHandlers, owner)
 	chatHandlersMu.Unlock()
@@ -591,12 +594,12 @@ func pluginUnequip(id uint16) {
 	equipInventoryItem(id, -1, false)
 }
 
-func pluginRegisterInputHandler(fn func(string) string) {
+func pluginRegisterInputHandler(owner string, fn func(string) string) {
 	if fn == nil {
 		return
 	}
 	inputHandlersMu.Lock()
-	inputHandlers = append(inputHandlers, fn)
+	pluginInputHandlers[owner] = append(pluginInputHandlers[owner], fn)
 	inputHandlersMu.Unlock()
 }
 
@@ -620,7 +623,10 @@ func pluginRegisterPlayerHandler(fn func(Player)) {
 
 func runInputHandlers(txt string) string {
 	inputHandlersMu.RLock()
-	handlers := append([]func(string) string{}, inputHandlers...)
+	var handlers []func(string) string
+	for _, hs := range pluginInputHandlers {
+		handlers = append(handlers, hs...)
+	}
 	inputHandlersMu.RUnlock()
 	for _, h := range handlers {
 		if h != nil {

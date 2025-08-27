@@ -32,7 +32,7 @@ func pluginAddMacro(owner, short, full string) {
 		// Install an input handler the first time this plugin adds a
 		// macro.  It runs whenever the user submits chat text and
 		// replaces any macro prefixes.
-		pluginRegisterInputHandler(func(txt string) string {
+		pluginRegisterInputHandler(owner, func(txt string) string {
 			macroMu.RLock()
 			local := macroMaps[owner]
 			macroMu.RUnlock()

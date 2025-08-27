@@ -12,7 +12,7 @@ func TestPluginAddMacroExpandsInput(t *testing.T) {
 	macroMu = sync.RWMutex{}
 	macroMaps = map[string]map[string]string{}
 	inputHandlersMu = sync.RWMutex{}
-	inputHandlers = nil
+	pluginInputHandlers = map[string][]func(string) string{}
 
 	pluginAddMacro("tester", "pp", "/ponder ")
 
@@ -38,7 +38,7 @@ func TestPluginAddMacros(t *testing.T) {
 	macroMu = sync.RWMutex{}
 	macroMaps = map[string]map[string]string{}
 	inputHandlersMu = sync.RWMutex{}
-	inputHandlers = nil
+	pluginInputHandlers = map[string][]func(string) string{}
 
 	pluginAddMacros("bulk", map[string]string{"pp": "/ponder ", "hi": "/hello "})
 
@@ -55,7 +55,7 @@ func TestPluginAutoReplyRunsCommand(t *testing.T) {
 	macroMu = sync.RWMutex{}
 	macroMaps = map[string]map[string]string{}
 	inputHandlersMu = sync.RWMutex{}
-	inputHandlers = nil
+	pluginInputHandlers = map[string][]func(string) string{}
 	chatHandlersMu = sync.RWMutex{}
 	pluginChatHandlers = map[string][]func(string){}
 	consoleLog = messageLog{max: maxMessages}
@@ -89,7 +89,7 @@ func TestPluginRemoveMacrosOnDisable(t *testing.T) {
 	macroMu = sync.RWMutex{}
 	macroMaps = map[string]map[string]string{}
 	inputHandlersMu = sync.RWMutex{}
-	inputHandlers = nil
+	pluginInputHandlers = map[string][]func(string) string{}
 	pluginMu = sync.RWMutex{}
 	pluginDisabled = map[string]bool{}
 	pluginDisplayNames = map[string]string{}
