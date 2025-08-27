@@ -136,7 +136,7 @@ func Update() error {
 			if click && dragPart == PART_NONE && downWin == win {
 				if part == PART_CLOSE {
 					win.Close()
-					continue
+					break
 				}
 				if part == PART_MAXIMIZE {
 					if win.OnMaximize != nil {
