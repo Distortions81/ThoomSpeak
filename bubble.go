@@ -699,6 +699,10 @@ func drawBubbleCircle(screen *ebiten.Image, cx, cy, radius float32, col color.Co
 		vs[i].ColorB = float32(b) / 0xffff
 		vs[i].ColorA = float32(a) / 0xffff
 	}
-	op := &ebiten.DrawTrianglesOptions{ColorScaleMode: ebiten.ColorScaleModePremultipliedAlpha, AntiAlias: true}
+	op := &ebiten.DrawTrianglesOptions{
+		ColorScaleMode: ebiten.ColorScaleModePremultipliedAlpha,
+		AntiAlias:      true,
+		Blend:          ebiten.BlendCopy,
+	}
 	screen.DrawTriangles(vs, is, whiteImage, op)
 }
