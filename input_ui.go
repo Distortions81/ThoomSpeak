@@ -40,6 +40,26 @@ func pointInUI(x, y int) bool {
 	return false
 }
 
+// pointInGameWindow reports whether the given screen coordinate lies within the
+// playable area of the game window.
+func pointInGameWindow(x, y int) bool {
+	if gameWin == nil || !gameWin.IsOpen() {
+		return false
+	}
+
+	fx, fy := float32(x), float32(y)
+	pos := gameWin.GetPos()
+	size := gameWin.GetSize()
+	s := eui.UIScale()
+	frame := (gameWin.Margin + gameWin.Border + gameWin.BorderPad + gameWin.Padding) * s
+	title := gameWin.GetTitleSize()
+	x0 := pos.X + frame
+	y0 := pos.Y + frame + title
+	x1 := pos.X + size.X - frame
+	y1 := pos.Y + size.Y - frame
+	return fx >= x0 && fx < x1 && fy >= y0 && fy < y1
+}
+
 func pointInItems(items []*eui.ItemData, fx, fy float32) bool {
 	for i := len(items) - 1; i >= 0; i-- {
 		it := items[i]

@@ -790,6 +790,7 @@ func (g *Game) Update() error {
 	}
 
 	mx, my = eui.PointerPosition()
+	inGame := pointInGameWindow(mx, my)
 	// Map mouse to world coordinates accounting for current draw scale/offset.
 	origX, origY, worldScale = worldDrawInfo()
 	baseX := int16(float64(mx-origX)/worldScale - float64(fieldCenterX))
@@ -820,10 +821,10 @@ func (g *Game) Update() error {
 			heldTime = 0
 		}
 	}
-	if click && !uiMouseDown {
+	if click && !uiMouseDown && inGame {
 		handleWorldClick(baseX, baseY)
 	}
-	if rightClick && !pointInUI(mx, my) {
+	if rightClick && inGame && !pointInUI(mx, my) {
 		handleWorldClick(baseX, baseY)
 	}
 
@@ -833,12 +834,14 @@ func (g *Game) Update() error {
 		if keyWalk {
 			x, y, walk = keyX, keyY, true
 			walkToggled = false
-		} else if gs.ClickToToggle && click {
-			walkToggled = !walkToggled
-			walk = walkToggled
-		} else if !gs.ClickToToggle && heldTime > 1 && !click {
-			walk = true
-			walkToggled = false
+		} else if inGame {
+			if gs.ClickToToggle && click {
+				walkToggled = !walkToggled
+				walk = walkToggled
+			} else if !gs.ClickToToggle && heldTime > 1 && !click {
+				walk = true
+				walkToggled = false
+			}
 		}
 
 		if gs.ClickToToggle && walkToggled {
