@@ -78,7 +78,7 @@ func bubbleColors(typ int) (border, bg, text color.Color) {
 		bg = color.NRGBA{0x80, 0x80, 0x80, alpha}
 		text = color.Black
 	case kBubblePonder:
-		border = color.NRGBA{0xcc, 0xcc, 0xcc, 0xff}
+		border = color.NRGBA{0xcc, 0xcc, 0xcc, alpha}
 		bg = color.NRGBA{0xcc, 0xcc, 0xcc, alpha}
 		text = color.Black
 	case kBubbleRealAction:
