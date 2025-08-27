@@ -772,6 +772,16 @@ func (g *Game) Update() error {
 	click := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
 	rightClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
 
+	winW, winH := ebiten.WindowSize()
+	inWindow := mx >= 0 && my >= 0 && mx < winW && my < winH
+	if click && !inWindow {
+		if walkToggled {
+			walkToggled = false
+		}
+		click = false
+		heldTime = 0
+	}
+
 	if click && pointInUI(mx, my) {
 		uiMouseDown = true
 	}
