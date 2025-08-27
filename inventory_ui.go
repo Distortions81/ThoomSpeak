@@ -7,10 +7,14 @@ import (
 	"fmt"
 	"gothoom/eui"
 	"math"
+	"sort"
+	"strings"
+	"unicode"
 
 	text "github.com/hajimehoshi/ebiten/v2/text/v2"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+	"golang.org/x/text/unicode/norm"
 )
 
 var inventoryWin *eui.WindowData
@@ -18,11 +22,18 @@ var inventoryList *eui.ItemData
 var inventoryDirty bool
 
 var TitleCaser = cases.Title(language.AmericanEnglish)
+var foldCaser = cases.Fold()
 
 var (
 	invBoldSrc   *text.GoTextFaceSource
 	invItalicSrc *text.GoTextFaceSource
 )
+
+type invGroupKey struct {
+	id   uint16
+	name string
+	idx  int
+}
 
 // slotNames maps item slot constants to display strings.
 var slotNames = []string{
@@ -66,15 +77,11 @@ func updateInventoryWindow() {
 	// grouped by ID and name so identical items appear once with a quantity,
 	// while clothing items are listed individually to allow swapping similar
 	// pieces (e.g. different pairs of shoes).
-	type invGroupKey struct {
-		id   uint16
-		name string
-		idx  int
-	}
 	items := getInventory()
 	counts := make(map[invGroupKey]int)
 	first := make(map[invGroupKey]InventoryItem)
 	anyEquipped := make(map[invGroupKey]bool)
+	hasShortcut := make(map[invGroupKey]bool)
 	order := make([]invGroupKey, 0, len(items))
 	for _, it := range items {
 		slot := -1
@@ -96,7 +103,26 @@ func updateInventoryWindow() {
 		if it.Equipped {
 			anyEquipped[key] = true
 		}
+		if r, ok := getInventoryShortcut(it.Index); ok && r != 0 {
+			hasShortcut[key] = true
+		}
 	}
+
+	sort.SliceStable(order, func(i, j int) bool {
+		ai := order[i]
+		aj := order[j]
+		hi := hasShortcut[ai]
+		hj := hasShortcut[aj]
+		if hi != hj {
+			return hi
+		}
+		nameI := officialName(ai, first[ai])
+		nameJ := officialName(aj, first[aj])
+		if nameI != nameJ {
+			return nameI < nameJ
+		}
+		return first[ai].Index < first[aj].Index
+	})
 
 	// Clear prior contents and rebuild rows as [icon][name (xN)].
 	inventoryList.Contents = nil
@@ -278,4 +304,25 @@ func updateInventoryWindow() {
 		inventoryList.Size.Y = clientHAvail
 		inventoryWin.Refresh()
 	}
+}
+
+func officialName(k invGroupKey, it InventoryItem) string {
+	name := ""
+	if clImages != nil {
+		name = clImages.ItemName(uint32(k.id))
+	}
+	if name == "" {
+		name = it.Name
+	}
+	if name == "" {
+		name = fmt.Sprintf("Item %d", k.id)
+	}
+	name = norm.NFD.String(name)
+	name = strings.Map(func(r rune) rune {
+		if unicode.Is(unicode.Mn, r) {
+			return -1
+		}
+		return r
+	}, name)
+	return foldCaser.String(name)
 }
