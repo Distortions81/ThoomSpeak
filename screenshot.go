@@ -45,5 +45,5 @@ func takeScreenshot() {
 	if err := png.Encode(f, worldRT); err != nil {
 		logError("screenshot: encode %v: %v", fn, err)
 	}
-	consoleMessage("Screenshot saved.")
+	consoleMessage(fmt.Sprintf("snapshot taken: %s", filepath.Base(fn)))
 }
