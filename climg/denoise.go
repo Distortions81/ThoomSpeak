@@ -20,14 +20,29 @@ func denoiseImage(img *image.RGBA, sharpness, maxPercent float64) {
 	src := getTempRGBA(bounds)
 	copy(src.Pix, img.Pix)
 
+	neighbours := []image.Point{{-1, 0}, {1, 0}, {0, -1}, {0, 1}}
 	for y := 1; y < h-1; y++ {
 		yoff := y * src.Stride
 		for x := 1; x < w-1; x++ {
 			off := yoff + x*4
 			c := color.RGBA{src.Pix[off], src.Pix[off+1], src.Pix[off+2], src.Pix[off+3]}
 
-			// Check only direct neighbours.
-			neighbours := []image.Point{{-1, 0}, {1, 0}, {0, -1}, {0, 1}}
+			// If this pixel is opaque and all direct neighbours are
+			// non-opaque, blur it unless it is full black.
+			if c.A == 0xFF && (c.R != 0 || c.G != 0 || c.B != 0) {
+				isolated := true
+				for _, n := range neighbours {
+					nOff := (y+n.Y)*src.Stride + (x+n.X)*4
+					if src.Pix[nOff+3] == 0xFF {
+						isolated = false
+						break
+					}
+				}
+				if isolated {
+					c = mixColour(c, color.RGBA{}, maxPercent)
+				}
+			}
+
 			for _, n := range neighbours {
 				nOff := (y+n.Y)*src.Stride + (x+n.X)*4
 				ncol := color.RGBA{src.Pix[nOff], src.Pix[nOff+1], src.Pix[nOff+2], src.Pix[nOff+3]}
@@ -40,6 +55,7 @@ func denoiseImage(img *image.RGBA, sharpness, maxPercent float64) {
 					}
 				}
 			}
+
 			dstOff := y*img.Stride + x*4
 			img.Pix[dstOff] = c.R
 			img.Pix[dstOff+1] = c.G
@@ -68,15 +84,15 @@ func getTempRGBA(bounds image.Rectangle) *image.RGBA {
 func putTempRGBA(img *image.RGBA) { rgbaPool.Put(img) }
 
 // colourDist returns the squared Euclidean distance between two colours.
-const dt = 15
+const dt = 0
 
 func colourDist(a, b color.RGBA) int {
 	dr := int(a.R) - int(b.R)
 	dg := int(a.G) - int(b.G)
 	db := int(a.B) - int(b.B)
 	if a.A < 0xFF || b.A < 0xFF ||
-		(a.R < dt && a.G < dt && a.B < dt) ||
-		(b.R < dt && b.G < dt && b.B < dt) {
+		(a.R == dt && a.G == dt && a.B == dt) ||
+		(b.R == dt && b.G == dt && b.B == dt) {
 		return 195076
 	}
 	return dr*dr + dg*dg + db*db
