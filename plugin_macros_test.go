@@ -50,6 +50,30 @@ func TestPluginAddMacros(t *testing.T) {
 	}
 }
 
+// Test that calling pluginAddMacro multiple times for the same plugin
+// installs only one input handler while all macros still expand.
+func TestPluginAddMacroSingleHandler(t *testing.T) {
+	macroMu = sync.RWMutex{}
+	macroMaps = map[string]map[string]string{}
+	inputHandlersMu = sync.RWMutex{}
+	pluginInputHandlers = map[string][]func(string) string{}
+
+	owner := "dup"
+	pluginAddMacro(owner, "pp", "/ponder ")
+	pluginAddMacro(owner, "hi", "/hello ")
+
+	handlers := pluginInputHandlers[owner]
+	if len(handlers) != 1 {
+		t.Fatalf("unexpected handler count: %d", len(handlers))
+	}
+	if got, want := runInputHandlers("pp there"), "/ponder there"; got != want {
+		t.Fatalf("pp macro failed: got %q, want %q", got, want)
+	}
+	if got, want := runInputHandlers("hi you"), "/hello you"; got != want {
+		t.Fatalf("hi macro failed: got %q, want %q", got, want)
+	}
+}
+
 // Test that AutoReply triggers the specified command when the message starts with the trigger.
 func TestPluginAutoReplyRunsCommand(t *testing.T) {
 	macroMu = sync.RWMutex{}
