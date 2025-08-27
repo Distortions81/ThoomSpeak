@@ -24,48 +24,47 @@ var basePluginExports = interp.Exports{
 	// Short path used by simple plugin scripts: import "gt"
 	// Yaegi expects keys as "importPath/pkgName".
 	"gt/gt": {
-		"Logf":                  reflect.ValueOf(pluginLogf),
-		"Console":               reflect.ValueOf(pluginConsole),
-		"ShowNotification":      reflect.ValueOf(pluginShowNotification),
-		"ClientVersion":         reflect.ValueOf(&clientVersion).Elem(),
-		"PlayerName":            reflect.ValueOf(pluginPlayerName),
-		"Players":               reflect.ValueOf(pluginPlayers),
-		"Player":                reflect.ValueOf((*Player)(nil)),
-		"Inventory":             reflect.ValueOf(pluginInventory),
-		"InventoryItem":         reflect.ValueOf((*InventoryItem)(nil)),
-		"ToggleEquip":           reflect.ValueOf(pluginToggleEquip),
-		"Equip":                 reflect.ValueOf(pluginEquip),
-		"Unequip":               reflect.ValueOf(pluginUnequip),
-		"PlaySound":             reflect.ValueOf(pluginPlaySound),
-		"InputText":             reflect.ValueOf(pluginInputText),
-		"SetInputText":          reflect.ValueOf(pluginSetInputText),
-		"PlayerStats":           reflect.ValueOf(pluginPlayerStats),
-		"Stats":                 reflect.ValueOf((*Stats)(nil)),
-		"RegisterPlayerHandler": reflect.ValueOf(pluginRegisterPlayerHandler),
-		"KeyPressed":            reflect.ValueOf(pluginKeyPressed),
-		"KeyJustPressed":        reflect.ValueOf(pluginKeyJustPressed),
-		"MousePressed":          reflect.ValueOf(pluginMousePressed),
-		"MouseJustPressed":      reflect.ValueOf(pluginMouseJustPressed),
-		"MouseWheel":            reflect.ValueOf(pluginMouseWheel),
-		"LastClick":             reflect.ValueOf(pluginLastClick),
-		"ClickInfo":             reflect.ValueOf((*ClickInfo)(nil)),
-		"Mobile":                reflect.ValueOf((*Mobile)(nil)),
-		"EquippedItems":         reflect.ValueOf(pluginEquippedItems),
-		"HasItem":               reflect.ValueOf(pluginHasItem),
-		"FrameNumber":           reflect.ValueOf(pluginFrameNumber),
-		"IgnoreCase":            reflect.ValueOf(pluginIgnoreCase),
-		"StartsWith":            reflect.ValueOf(pluginStartsWith),
-		"EndsWith":              reflect.ValueOf(pluginEndsWith),
-		"Includes":              reflect.ValueOf(pluginIncludes),
-		"Lower":                 reflect.ValueOf(pluginLower),
-		"Upper":                 reflect.ValueOf(pluginUpper),
-		"Trim":                  reflect.ValueOf(pluginTrim),
-		"TrimStart":             reflect.ValueOf(pluginTrimStart),
-		"TrimEnd":               reflect.ValueOf(pluginTrimEnd),
-		"Words":                 reflect.ValueOf(pluginWords),
-		"Join":                  reflect.ValueOf(pluginJoin),
-		"Replace":               reflect.ValueOf(pluginReplace),
-		"Split":                 reflect.ValueOf(pluginSplit),
+		"Logf":             reflect.ValueOf(pluginLogf),
+		"Console":          reflect.ValueOf(pluginConsole),
+		"ShowNotification": reflect.ValueOf(pluginShowNotification),
+		"ClientVersion":    reflect.ValueOf(&clientVersion).Elem(),
+		"PlayerName":       reflect.ValueOf(pluginPlayerName),
+		"Players":          reflect.ValueOf(pluginPlayers),
+		"Player":           reflect.ValueOf((*Player)(nil)),
+		"Inventory":        reflect.ValueOf(pluginInventory),
+		"InventoryItem":    reflect.ValueOf((*InventoryItem)(nil)),
+		"ToggleEquip":      reflect.ValueOf(pluginToggleEquip),
+		"Equip":            reflect.ValueOf(pluginEquip),
+		"Unequip":          reflect.ValueOf(pluginUnequip),
+		"PlaySound":        reflect.ValueOf(pluginPlaySound),
+		"InputText":        reflect.ValueOf(pluginInputText),
+		"SetInputText":     reflect.ValueOf(pluginSetInputText),
+		"PlayerStats":      reflect.ValueOf(pluginPlayerStats),
+		"Stats":            reflect.ValueOf((*Stats)(nil)),
+		"KeyPressed":       reflect.ValueOf(pluginKeyPressed),
+		"KeyJustPressed":   reflect.ValueOf(pluginKeyJustPressed),
+		"MousePressed":     reflect.ValueOf(pluginMousePressed),
+		"MouseJustPressed": reflect.ValueOf(pluginMouseJustPressed),
+		"MouseWheel":       reflect.ValueOf(pluginMouseWheel),
+		"LastClick":        reflect.ValueOf(pluginLastClick),
+		"ClickInfo":        reflect.ValueOf((*ClickInfo)(nil)),
+		"Mobile":           reflect.ValueOf((*Mobile)(nil)),
+		"EquippedItems":    reflect.ValueOf(pluginEquippedItems),
+		"HasItem":          reflect.ValueOf(pluginHasItem),
+		"FrameNumber":      reflect.ValueOf(pluginFrameNumber),
+		"IgnoreCase":       reflect.ValueOf(pluginIgnoreCase),
+		"StartsWith":       reflect.ValueOf(pluginStartsWith),
+		"EndsWith":         reflect.ValueOf(pluginEndsWith),
+		"Includes":         reflect.ValueOf(pluginIncludes),
+		"Lower":            reflect.ValueOf(pluginLower),
+		"Upper":            reflect.ValueOf(pluginUpper),
+		"Trim":             reflect.ValueOf(pluginTrim),
+		"TrimStart":        reflect.ValueOf(pluginTrimStart),
+		"TrimEnd":          reflect.ValueOf(pluginTrimEnd),
+		"Words":            reflect.ValueOf(pluginWords),
+		"Join":             reflect.ValueOf(pluginJoin),
+		"Replace":          reflect.ValueOf(pluginReplace),
+		"Split":            reflect.ValueOf(pluginSplit),
 	},
 }
 
@@ -87,6 +86,7 @@ func exportsForPlugin(owner string) interp.Exports {
 		m["AutoReply"] = reflect.ValueOf(func(trigger, cmd string) { pluginAutoReply(owner, trigger, cmd) })
 		m["RegisterChatHandler"] = reflect.ValueOf(func(fn func(string)) { pluginRegisterChatHandler(owner, fn) })
 		m["RegisterInputHandler"] = reflect.ValueOf(func(fn func(string) string) { pluginRegisterInputHandler(owner, fn) })
+		m["RegisterPlayerHandler"] = reflect.ValueOf(func(fn func(Player)) { pluginRegisterPlayerHandler(owner, fn) })
 		m["RunCommand"] = reflect.ValueOf(func(cmd string) { pluginRunCommand(owner, cmd) })
 		m["EnqueueCommand"] = reflect.ValueOf(func(cmd string) { pluginEnqueueCommand(owner, cmd) })
 		ex[pkg] = m
@@ -458,6 +458,9 @@ func disablePlugin(owner, reason string) {
 	chatHandlersMu.Lock()
 	delete(pluginChatHandlers, owner)
 	chatHandlersMu.Unlock()
+	playerHandlersMu.Lock()
+	delete(pluginPlayerHandlers, owner)
+	playerHandlersMu.Unlock()
 	pluginMu.Lock()
 	for cmd, o := range pluginCommandOwners {
 		if o == owner {
@@ -612,12 +615,12 @@ func pluginRegisterChatHandler(owner string, fn func(string)) {
 	chatHandlersMu.Unlock()
 }
 
-func pluginRegisterPlayerHandler(fn func(Player)) {
+func pluginRegisterPlayerHandler(owner string, fn func(Player)) {
 	if fn == nil {
 		return
 	}
 	playerHandlersMu.Lock()
-	playerHandlers = append(playerHandlers, fn)
+	pluginPlayerHandlers[owner] = append(pluginPlayerHandlers[owner], fn)
 	playerHandlersMu.Unlock()
 }
 
