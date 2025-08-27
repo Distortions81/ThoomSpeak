@@ -14,6 +14,12 @@ UI Navigation
 - Use the Windows button to set windows open or closed.
 - Mouse wheel scrolls lists and text windows.
 
+Inventory
+---------
+- Single-click selects an item.
+- Double-click equips or unequips an item.
+- Shift + double-click uses an item.
+
 Extras
 -----
 - Want a custom background image? Save it as background.png in the data directory.

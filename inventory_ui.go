@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"gothoom/eui"
 	"math"
+	"time"
 
+	"github.com/hajimehoshi/ebiten/v2"
 	text "github.com/hajimehoshi/ebiten/v2/text/v2"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -16,6 +18,12 @@ import (
 var inventoryWin *eui.WindowData
 var inventoryList *eui.ItemData
 var inventoryDirty bool
+
+var selectedInvID uint16
+var selectedInvIdx int = -1
+var lastInvClickID uint16
+var lastInvClickIdx int
+var lastInvClickTime time.Time
 
 var TitleCaser = cases.Title(language.AmericanEnglish)
 
@@ -247,7 +255,13 @@ func updateInventoryWindow() {
 		if qty > 1 {
 			idxCopy = -1
 		}
-		click := func() { toggleInventoryEquipAt(idCopy, idxCopy) }
+		if idCopy == selectedInvID && idxCopy == selectedInvIdx {
+			row.Filled = true
+			if inventoryWin != nil && inventoryWin.Theme != nil {
+				row.Color = inventoryWin.Theme.Button.SelectedColor
+			}
+		}
+		click := func() { handleInventoryClick(idCopy, idxCopy) }
 		icon.Action = click
 		t.Action = click
 		if lt != nil {
@@ -277,5 +291,25 @@ func updateInventoryWindow() {
 		inventoryList.Size.X = clientWAvail
 		inventoryList.Size.Y = clientHAvail
 		inventoryWin.Refresh()
+	}
+}
+
+func handleInventoryClick(id uint16, idx int) {
+	now := time.Now()
+	if id == lastInvClickID && idx == lastInvClickIdx && now.Sub(lastInvClickTime) < 500*time.Millisecond {
+		if ebiten.IsKeyPressed(ebiten.KeyShift) || ebiten.IsKeyPressed(ebiten.KeyShiftLeft) || ebiten.IsKeyPressed(ebiten.KeyShiftRight) {
+			enqueueCommand(fmt.Sprintf("/useitem %d", id))
+			nextCommand()
+		} else {
+			toggleInventoryEquipAt(id, idx)
+		}
+		lastInvClickTime = time.Time{}
+	} else {
+		selectedInvID = id
+		selectedInvIdx = idx
+		lastInvClickID = id
+		lastInvClickIdx = idx
+		lastInvClickTime = now
+		updateInventoryWindow()
 	}
 }
