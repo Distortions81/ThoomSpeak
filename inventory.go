@@ -183,6 +183,38 @@ func equipInventoryItem(id uint16, idx int, equip bool) {
 	inventoryDirty = true
 }
 
+// queueEquipCommand enqueues the necessary server commands to equip an item
+// and unequip any clothing already occupying the same slot. idx is the
+// server-provided 0-based index for template items or -1 otherwise.
+func queueEquipCommand(id uint16, idx int) {
+	if clImages != nil {
+		slot := clImages.ItemSlot(uint32(id))
+		isClothing := slot >= kItemSlotForehead && slot <= kItemSlotHead &&
+			slot != kItemSlotRightHand && slot != kItemSlotLeftHand &&
+			slot != kItemSlotBothHands
+		if isClothing {
+			items := getInventory()
+			for _, it := range items {
+				if !it.Equipped {
+					continue
+				}
+				if it.ID == id && (idx < 0 || it.IDIndex == idx) {
+					continue
+				}
+				if clImages.ItemSlot(uint32(it.ID)) == slot {
+					enqueueCommand(fmt.Sprintf("/unequip %d", it.ID))
+				}
+			}
+		}
+	}
+	if idx >= 0 {
+		enqueueCommand(fmt.Sprintf("/equip %d %d", id, idx+1))
+	} else {
+		enqueueCommand(fmt.Sprintf("/equip %d", id))
+	}
+	nextCommand()
+}
+
 // toggleInventoryEquipAt equips or unequips a specific item index. When idx is
 // negative, the first matching item is targeted similar to the legacy
 // behavior. The server is informed via pendingCommand and local inventory state
@@ -214,14 +246,11 @@ func toggleInventoryEquipAt(id uint16, idx int) {
 		}
 	}
 	if equip {
-		if idx >= 0 {
-			pendingCommand = fmt.Sprintf("/equip %d %d", id, idx+1)
-		} else {
-			pendingCommand = fmt.Sprintf("/equip %d", id)
-		}
+		queueEquipCommand(id, idx)
 		equipInventoryItem(id, idx, true)
 	} else {
-		pendingCommand = fmt.Sprintf("/unequip %d", id)
+		enqueueCommand(fmt.Sprintf("/unequip %d", id))
+		nextCommand()
 		equipInventoryItem(id, -1, false)
 	}
 }
