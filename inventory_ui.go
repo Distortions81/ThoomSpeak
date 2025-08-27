@@ -34,6 +34,8 @@ var inventoryCtxWin *eui.WindowData
 var invShortcutWin *eui.WindowData
 var invShortcutDD *eui.ItemData
 var invShortcutTarget int
+var invNameWin *eui.WindowData
+var invNameInput *eui.ItemData
 
 var selectedInvID uint16
 var selectedInvIdx int = -1
@@ -424,6 +426,10 @@ func openInventoryContextMenu(ref invRef, pos eui.Point) {
 		flow.AddItem(b)
 	}
 	add("Use", func() {
+		enqueueCommand("/use")
+		nextCommand()
+	})
+	add("Use Item", func() {
 		selectInventoryItem(ref.id, ref.idx)
 		enqueueCommand(fmt.Sprintf("/useitem %d", ref.id))
 		nextCommand()
@@ -448,6 +454,7 @@ func openInventoryContextMenu(ref invRef, pos eui.Point) {
 		enqueueCommand(fmt.Sprintf("/examine %d", ref.id))
 		nextCommand()
 	})
+	add("Name", func() { promptInventoryName(ref.id, ref.idx) })
 	add("Sell", func() {
 		selectInventoryItem(ref.id, ref.idx)
 		enqueueCommand(fmt.Sprintf("/sell %d", ref.id))
@@ -498,6 +505,43 @@ func promptInventoryShortcut(idx int) {
 	invShortcutWin.AddItem(dd)
 	invShortcutWin.MarkOpen()
 	invShortcutWin.Refresh()
+}
+
+func promptInventoryName(id uint16, idx int) {
+	selectInventoryItem(id, idx)
+	if invNameWin == nil {
+		invNameWin = eui.NewWindow()
+		invNameWin.Title = "Name Item"
+		invNameWin.AutoSize = true
+		invNameWin.Closable = true
+		invNameWin.Movable = false
+		invNameWin.Resizable = false
+		invNameWin.NoScroll = true
+	}
+	invNameWin.Contents = nil
+	input, _ := eui.NewInput()
+	input.Size = eui.Point{X: 160, Y: 20}
+	invNameInput = input
+	apply := func() {
+		name := invNameInput.Text
+		if invNameInput.TextPtr != nil {
+			name = *invNameInput.TextPtr
+		}
+		enqueueCommand(fmt.Sprintf("/name %s", name))
+		nextCommand()
+		invNameWin.Close()
+	}
+	input.Action = apply
+	ok, _ := eui.NewButton()
+	ok.Text = "OK"
+	ok.FontSize = 12
+	ok.Action = apply
+	flow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL, Fixed: true}
+	flow.AddItem(input)
+	flow.AddItem(ok)
+	invNameWin.AddItem(flow)
+	invNameWin.MarkOpen()
+	invNameWin.Refresh()
 }
 
 func officialName(k invGroupKey, it InventoryItem) string {
