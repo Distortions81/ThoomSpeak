@@ -573,11 +573,7 @@ func pluginEquip(id uint16) {
 	if idx < 0 {
 		return
 	}
-	if idx >= 0 {
-		pendingCommand = fmt.Sprintf("/equip %d %d", id, idx+1)
-	} else {
-		pendingCommand = fmt.Sprintf("/equip %d", id)
-	}
+	queueEquipCommand(id, idx)
 	equipInventoryItem(id, idx, true)
 }
 
