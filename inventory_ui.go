@@ -482,12 +482,9 @@ func promptInventoryShortcut(idx int) {
 }
 
 func officialName(k invGroupKey, it InventoryItem) string {
-	name := ""
-	if clImages != nil {
+	name := it.Name
+	if name == "" && clImages != nil {
 		name = clImages.ItemName(uint32(k.id))
-	}
-	if name == "" {
-		name = it.Name
 	}
 	if name == "" {
 		name = fmt.Sprintf("Item %d", k.id)
