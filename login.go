@@ -401,11 +401,11 @@ func login(ctx context.Context, clientVersion int) error {
 		inputMu.Lock()
 		s := latestInput
 		inputMu.Unlock()
-		if err := sendPlayerInput(udpConn, s.mouseX, s.mouseY, s.mouseDown); err != nil {
+		if err := sendPlayerInput(udpConn, s.mouseX, s.mouseY, s.mouseDown, false); err != nil {
 			logError("send player input: %v", err)
 		}
 
-		go sendInputLoop(ctx, udpConn)
+		go sendInputLoop(ctx, udpConn, tcpConn)
 		go udpReadLoop(ctx, udpConn)
 		go tcpReadLoop(ctx, tcpConn)
 

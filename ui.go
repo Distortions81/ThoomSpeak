@@ -2563,41 +2563,8 @@ func makeSettingsWindow() {
 			settingsDirty = true
 		}
 	}
+
 	right.AddItem(pluginKillCB)
-
-	lateInputCB, lateInputEvents := eui.NewCheckbox()
-	lateInputCB.Text = "Smart input updates"
-	lateInputCB.Tooltip = "Polls for user input at last moment, sends update to server early by current ping"
-	lateInputCB.Size = eui.Point{X: rightW, Y: 24}
-	lateInputCB.Checked = gs.lateInputUpdates
-	var targetPingSlider *eui.ItemData
-	lateInputEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventCheckboxChanged {
-			gs.lateInputUpdates = ev.Checked
-			if targetPingSlider != nil {
-				targetPingSlider.Disabled = !ev.Checked
-			}
-			settingsDirty = true
-		}
-	}
-	right.AddItem(lateInputCB)
-
-	targetPingSlider, targetPingEvents := eui.NewSlider()
-	targetPingSlider.Label = "Smart Target"
-	targetPingSlider.Tooltip = "Keep this 3-10x above your network jitter (10-30ms)"
-	targetPingSlider.MinValue = 1
-	targetPingSlider.MaxValue = 200
-	targetPingSlider.IntOnly = true
-	targetPingSlider.Value = float32(gs.lateInputAdjustment)
-	targetPingSlider.Size = eui.Point{X: rightW - 10, Y: 24}
-	targetPingSlider.Disabled = !gs.lateInputUpdates
-	targetPingEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventSliderChanged {
-			gs.lateInputAdjustment = int(ev.Value)
-			settingsDirty = true
-		}
-	}
-	right.AddItem(targetPingSlider)
 
 	bubbleBtn, bubbleEvents := eui.NewButton()
 	bubbleBtn.Text = "Message Bubbles"

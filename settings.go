@@ -96,17 +96,15 @@ var gsdef settings = settings{
 	LastUpdateCheck:      time.Time{},
 	NotifiedVersion:      0,
 
-	GameWindow:          WindowState{Open: true},
-	InventoryWindow:     WindowState{Open: true},
-	PlayersWindow:       WindowState{Open: true},
-	MessagesWindow:      WindowState{Open: true},
-	ChatWindow:          WindowState{Open: true},
-	EnabledPlugins:      map[string]bool{},
-	vsync:               true,
-	nightEffect:         true,
-	throttleSounds:      true,
-	lateInputUpdates:    false,
-	lateInputAdjustment: 30,
+	GameWindow:      WindowState{Open: true},
+	InventoryWindow: WindowState{Open: true},
+	PlayersWindow:   WindowState{Open: true},
+	MessagesWindow:  WindowState{Open: true},
+	ChatWindow:      WindowState{Open: true},
+	EnabledPlugins:  map[string]bool{},
+	vsync:           true,
+	nightEffect:     true,
+	throttleSounds:  true,
 }
 
 type settings struct {
@@ -209,8 +207,6 @@ type settings struct {
 	precacheSounds      bool
 	precacheImages      bool
 	throttleSounds      bool
-	lateInputUpdates    bool
-	lateInputAdjustment int
 	smoothMoving        bool
 	dontShiftNewSprites bool
 	nameTagsNative      bool
