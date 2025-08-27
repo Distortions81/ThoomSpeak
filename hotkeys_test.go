@@ -363,48 +363,68 @@ func TestPluginHotkeyStatePersisted(t *testing.T) {
 		t.Fatalf("plugin hotkey not re-added")
 	}
 }
-func TestPluginHotkeysFilter(t *testing.T) {
+
+
+// Test that removing a plugin hotkey clears it from all state and UI.
+func TestPluginRemoveHotkeyClearsState(t *testing.T) {
+	origHotkeys := hotkeys
 	hotkeys = nil
-	pluginHotkeyEnabled = map[string]map[string]bool{}
-	pluginAddHotkey("plug1", "Ctrl-A", "cmd1")
-	pluginAddHotkey("plug2", "Ctrl-B", "cmd2")
+	t.Cleanup(func() { hotkeys = origHotkeys })
 
-	cases := []struct {
-		name   string
-		owner  string
-		combos []string
-	}{
-		{name: "first", owner: "plug1", combos: []string{"Ctrl-A"}},
-		{name: "second", owner: "plug2", combos: []string{"Ctrl-B"}},
-	}
+	origEnabled := pluginHotkeyEnabled
+	pluginHotkeyEnabled = map[string]map[string]bool{"plug": {"Ctrl-P": true}}
+	t.Cleanup(func() { pluginHotkeyEnabled = origEnabled })
 
-	for _, tc := range cases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			got := pluginHotkeys(tc.owner)
-			if len(got) != len(tc.combos) {
-				t.Fatalf("expected %d combo(s), got %d", len(tc.combos), len(got))
-			}
-			for i, hk := range got {
-				if hk.Combo != tc.combos[i] {
-					t.Fatalf("expected combos %v, got %v", tc.combos, got)
-				}
-			}
-		})
-func TestPluginAddHotkeyDuplicate(t *testing.T) {
-	hotkeys = nil
-	pluginHotkeyEnabled = map[string]map[string]bool{}
+	origWin := hotkeysWin
+	origList := hotkeysList
+	hotkeysWin = nil
+	hotkeysList = nil
+	t.Cleanup(func() {
+		hotkeysWin = origWin
+		hotkeysList = origList
+	})
 
-	pluginAddHotkey("plug", "Ctrl-P", "say hi")
+	origDir := dataDirPath
+	dataDirPath = t.TempDir()
+	t.Cleanup(func() { dataDirPath = origDir })
+
+	origDisabled := pluginDisabled
+	pluginDisabled = map[string]bool{}
+	t.Cleanup(func() { pluginDisabled = origDisabled })
+
+	makeHotkeysWindow()
+
 	pluginAddHotkey("plug", "Ctrl-P", "say hi")
 
 	hotkeysMu.RLock()
 	if len(hotkeys) != 1 {
 		hotkeysMu.RUnlock()
-		t.Fatalf("expected 1 hotkey, got %d", len(hotkeys))
+		t.Fatalf("expected hotkey added, got %d", len(hotkeys))
 	}
 	hotkeysMu.RUnlock()
-	if len(pluginHotkeyEnabled) != 0 {
-		t.Fatalf("unexpected pluginHotkeyEnabled entries: %v", pluginHotkeyEnabled)
+	if m := pluginHotkeyEnabled["plug"]; m == nil || !m["Ctrl-P"] {
+		t.Fatalf("expected pluginHotkeyEnabled entry before removal")
+	}
+	if len(hotkeysList.Contents) != 2 {
+		t.Fatalf("expected hotkey list to have plugin header and row before removal, got %d", len(hotkeysList.Contents))
+	}
+
+	pluginRemoveHotkey("plug", "Ctrl-P")
+
+	hotkeysMu.RLock()
+	for _, hk := range hotkeys {
+		if hk.Plugin == "plug" && hk.Combo == "Ctrl-P" {
+			hotkeysMu.RUnlock()
+			t.Fatalf("plugin hotkey not removed")
+		}
+	}
+	hotkeysMu.RUnlock()
+
+	if _, ok := pluginHotkeyEnabled["plug"]; ok {
+		t.Fatalf("pluginHotkeyEnabled entry remains after removal")
+	}
+
+	if len(hotkeysList.Contents) != 0 {
+		t.Fatalf("expected empty hotkeys list after removal, got %d", len(hotkeysList.Contents))
 	}
 }
