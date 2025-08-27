@@ -91,7 +91,8 @@ func addInventoryItem(id uint16, idx int, name string, equip bool) {
 			}
 		}
 		// Append as a distinct instance; keep display order by placing at end
-		item := InventoryItem{ID: id, Name: name, Equipped: equip, Index: len(inventoryItems), IDIndex: idx, Quantity: 1}
+		disp := fmt.Sprintf("%s <#%d>", name, idx+1)
+		item := InventoryItem{ID: id, Name: disp, Equipped: equip, Index: len(inventoryItems), IDIndex: idx, Quantity: 1}
 		inventoryItems = append(inventoryItems, item)
 	} else {
 		// Legacy/non-template: coalesce by ID only when normalized names match.
@@ -286,9 +287,15 @@ func renameInventoryItem(id uint16, idx int, name string) {
 		// retain distinct names.
 		for i := range inventoryItems {
 			if inventoryItems[i].ID == id && inventoryItems[i].IDIndex == idx {
-				inventoryItems[i].Name = name
+				base := inventoryItems[i].Name
+				if p := strings.Index(base, " <#"); p >= 0 {
+					base = base[:p]
+				}
 				if name != "" {
+					inventoryItems[i].Name = fmt.Sprintf("%s <#%d %s>", base, idx+1, name)
 					inventoryNames[inventoryKey{ID: id, IDIndex: int16(idx)}] = name
+				} else {
+					inventoryItems[i].Name = fmt.Sprintf("%s <#%d>", base, idx+1)
 				}
 				break
 			}
