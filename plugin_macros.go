@@ -52,6 +52,7 @@ func pluginAddMacro(owner, short, full string) {
 	}
 	m[short] = full
 	macroMu.Unlock()
+	refreshMacrosList()
 }
 
 // pluginAddMacros registers many macros at once for the given plugin.
@@ -68,6 +69,7 @@ func pluginRemoveMacros(owner string) {
 	macroMu.Lock()
 	delete(macroMaps, owner)
 	macroMu.Unlock()
+	refreshMacrosList()
 }
 
 // pluginAutoReply watches chat messages and runs a command when a message
