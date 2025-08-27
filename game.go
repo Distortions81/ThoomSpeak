@@ -2140,24 +2140,20 @@ func sendInputLoop(ctx context.Context, conn net.Conn) {
 		delay := time.Duration(0)
 		if gs.lateInputUpdates {
 			delay = interval
-			if delay <= 0 {
-				delay = 200 * time.Millisecond
-			}
+
 			latencyMu.Lock()
 			lat := netLatency
 			latencyMu.Unlock()
-			target := time.Duration(gs.lateInputAdjustment) * time.Millisecond
+
+			target := time.Duration(gs.lateInputAdjustment)
 			if target > lat {
 				lat = target
 			}
 			// Send the input early enough for the server to receive it
 			// before the next update, adding a safety margin to the
 			// measured latency.
-			adjusted := lat - (time.Millisecond * 1)
+			adjusted := lat - (time.Millisecond)
 			delay = interval - adjusted
-			if delay < 0 {
-				delay = 0
-			}
 		}
 		timer := time.NewTimer(delay)
 		select {
