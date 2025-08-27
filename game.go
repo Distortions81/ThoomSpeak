@@ -1520,7 +1520,7 @@ func drawMobileNameTag(screen *ebiten.Image, snap drawSnapshot, m frameMobile, a
 	x := roundToInt((h + float64(fieldCenterX)) * gs.GameScale)
 	y := roundToInt((v + float64(fieldCenterY)) * gs.GameScale)
 	if d, ok := snap.descriptors[m.Index]; ok {
-		nameAlpha := uint8(gs.NameBgOpacity * 255)
+		nameAlpha := uint8(gs.NameBgOpacity*255 + 0.5)
 		if d.Name != "" {
 			style := styleRegular
 			playersMu.RLock()
