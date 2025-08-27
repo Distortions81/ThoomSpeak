@@ -3,20 +3,20 @@
 package main
 
 import (
-        "bytes"
-        "fmt"
-        "gothoom/eui"
-        "math"
-        "time"
-        "sort"
-        "strings"
-        "unicode"
+	"bytes"
+	"fmt"
+	"gothoom/eui"
+	"math"
+	"sort"
+	"strings"
+	"time"
+	"unicode"
 
-        "github.com/hajimehoshi/ebiten/v2"
-        text "github.com/hajimehoshi/ebiten/v2/text/v2"
-        "golang.org/x/text/cases"
-        "golang.org/x/text/language"
-        "golang.org/x/text/unicode/norm"
+	"github.com/hajimehoshi/ebiten/v2"
+	text "github.com/hajimehoshi/ebiten/v2/text/v2"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+	"golang.org/x/text/unicode/norm"
 )
 
 var inventoryWin *eui.WindowData
@@ -24,9 +24,9 @@ var inventoryList *eui.ItemData
 var inventoryDirty bool
 
 type invRef struct {
-        id    uint16
-        idx   int
-        global int
+	id     uint16
+	idx    int
+	global int
 }
 
 var inventoryRowRefs = map[*eui.ItemData]invRef{}
@@ -92,11 +92,13 @@ func updateInventoryWindow() {
 		return
 	}
 
-        // Build a unique list of items while counting duplicates and tracking
-        // whether any instance of a given key is equipped. Non-clothing items are
-        // grouped by ID and name so identical items appear once with a quantity,
-        // while clothing items are listed individually to allow swapping similar
-        // pieces (e.g. different pairs of shoes).
+	prevScroll := inventoryList.Scroll
+
+	// Build a unique list of items while counting duplicates and tracking
+	// whether any instance of a given key is equipped. Non-clothing items are
+	// grouped by ID and name so identical items appear once with a quantity,
+	// while clothing items are listed individually to allow swapping similar
+	// pieces (e.g. different pairs of shoes).
 	items := getInventory()
 	counts := make(map[invGroupKey]int)
 	first := make(map[invGroupKey]InventoryItem)
@@ -139,9 +141,9 @@ func updateInventoryWindow() {
 		return first[ai].Index < first[aj].Index
 	})
 
-        // Clear prior contents and rebuild rows as [icon][name (xN)].
-        inventoryList.Contents = nil
-        inventoryRowRefs = map[*eui.ItemData]invRef{}
+	// Clear prior contents and rebuild rows as [icon][name (xN)].
+	inventoryList.Contents = nil
+	inventoryRowRefs = map[*eui.ItemData]invRef{}
 
 	// Compute row height from actual font metrics (ascent+descent) at the
 	// exact point size used when rendering (+2px fudge for Ebiten).
@@ -223,19 +225,19 @@ func updateInventoryWindow() {
 		row.AddItem(icon)
 
 		// Text label with quantity suffix after the name when >1
-                label := it.Name
-                if label == "" && clImages != nil {
-                        label = clImages.ItemName(uint32(id))
-                }
-                if label == "" {
-                        label = fmt.Sprintf("Item %d", id)
-                }
-                if r, ok := getInventoryShortcut(it.Index); ok && r != 0 {
-                        label = fmt.Sprintf("[%c] %v", unicode.ToUpper(r), label)
-                }
-                if qty > 1 {
-                        label = fmt.Sprintf("%v (%v)", label, qty)
-                }
+		label := it.Name
+		if label == "" && clImages != nil {
+			label = clImages.ItemName(uint32(id))
+		}
+		if label == "" {
+			label = fmt.Sprintf("Item %d", id)
+		}
+		if r, ok := getInventoryShortcut(it.Index); ok && r != 0 {
+			label = fmt.Sprintf("[%c] %v", unicode.ToUpper(r), label)
+		}
+		if qty > 1 {
+			label = fmt.Sprintf("%v (%v)", label, qty)
+		}
 
 		t, _ := eui.NewText()
 		t.Text = TitleCaser.String(label)
@@ -308,8 +310,8 @@ func updateInventoryWindow() {
 		// Row height matches the icon/text height with minimal padding.
 		row.Size.Y = rowUnits
 
-                inventoryList.AddItem(row)
-                inventoryRowRefs[row] = invRef{id: idCopy, idx: idxCopy, global: it.Index}
+		inventoryList.AddItem(row)
+		inventoryRowRefs[row] = invRef{id: idCopy, idx: idxCopy, global: it.Index}
 	}
 
 	// Add a trailing spacer equal to one row height so the last item is never
@@ -328,6 +330,7 @@ func updateInventoryWindow() {
 		}
 		inventoryList.Size.X = clientWAvail
 		inventoryList.Size.Y = clientHAvail
+		inventoryList.Scroll = prevScroll
 		inventoryWin.Refresh()
 	}
 }
@@ -347,128 +350,128 @@ func handleInventoryClick(id uint16, idx int) {
 		selectedInvIdx = idx
 		lastInvClickID = id
 		lastInvClickIdx = idx
-                lastInvClickTime = now
-                updateInventoryWindow()
-        }
+		lastInvClickTime = now
+		updateInventoryWindow()
+	}
 }
 
 func selectInventoryItem(id uint16, idx int) {
-        selectedInvID = id
-        selectedInvIdx = idx
-        updateInventoryWindow()
+	selectedInvID = id
+	selectedInvIdx = idx
+	updateInventoryWindow()
 }
 
 // handleInventoryContextClick opens the inventory context menu if the mouse
 // position is over an inventory row. Returns true if a menu was opened.
 func handleInventoryContextClick(mx, my int) bool {
-        if inventoryWin == nil || inventoryList == nil || !inventoryWin.IsOpen() {
-                return false
-        }
-        pos := eui.Point{X: float32(mx), Y: float32(my)}
-        for _, row := range inventoryList.Contents {
-                if !row.Hovered {
-                        continue
-                }
-                if ref, ok := inventoryRowRefs[row]; ok {
-                        openInventoryContextMenu(ref, pos)
-                        return true
-                }
-        }
-        return false
+	if inventoryWin == nil || inventoryList == nil || !inventoryWin.IsOpen() {
+		return false
+	}
+	pos := eui.Point{X: float32(mx), Y: float32(my)}
+	for _, row := range inventoryList.Contents {
+		if !row.Hovered {
+			continue
+		}
+		if ref, ok := inventoryRowRefs[row]; ok {
+			openInventoryContextMenu(ref, pos)
+			return true
+		}
+	}
+	return false
 }
 
 func openInventoryContextMenu(ref invRef, pos eui.Point) {
-        if inventoryCtxWin == nil {
-                inventoryCtxWin = eui.NewWindow()
-                inventoryCtxWin.Closable = true
-                inventoryCtxWin.Movable = false
-                inventoryCtxWin.Resizable = false
-                inventoryCtxWin.NoScroll = true
-                inventoryCtxWin.AutoSize = true
-        }
-        inventoryCtxWin.Contents = nil
-        flow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL, Fixed: true}
-        add := func(name string, fn func()) {
-                b, _ := eui.NewButton()
-                b.Text = name
-                b.FontSize = 12
-                b.Action = func() {
-                        fn()
-                        inventoryCtxWin.Close()
-                }
-                flow.AddItem(b)
-        }
-        add("Use", func() {
-                selectInventoryItem(ref.id, ref.idx)
-                enqueueCommand(fmt.Sprintf("/useitem %d", ref.id))
-                nextCommand()
-        })
-        add("Drop", func() {
-                selectInventoryItem(ref.id, ref.idx)
-                enqueueCommand(fmt.Sprintf("/drop %d", ref.id))
-                nextCommand()
-        })
-        add("Equip", func() { queueEquipCommand(ref.id, ref.idx) })
-        add("Unequip", func() {
-                enqueueCommand(fmt.Sprintf("/unequip %d", ref.id))
-                nextCommand()
-                equipInventoryItem(ref.id, ref.idx, false)
-        })
-        add("Examine", func() {
-                selectInventoryItem(ref.id, ref.idx)
-                enqueueCommand(fmt.Sprintf("/examine %d", ref.id))
-                nextCommand()
-        })
-        add("Sell", func() {
-                selectInventoryItem(ref.id, ref.idx)
-                enqueueCommand(fmt.Sprintf("/sell %d", ref.id))
-                nextCommand()
-        })
-        add("Show", func() {
-                selectInventoryItem(ref.id, ref.idx)
-                enqueueCommand(fmt.Sprintf("/show %d", ref.id))
-                nextCommand()
-        })
-        add("Assign Shortcut", func() { promptInventoryShortcut(ref.global) })
-        inventoryCtxWin.AddItem(flow)
-        inventoryCtxWin.Position = pos
-        inventoryCtxWin.MarkOpen()
-        inventoryCtxWin.Refresh()
+	if inventoryCtxWin == nil {
+		inventoryCtxWin = eui.NewWindow()
+		inventoryCtxWin.Closable = true
+		inventoryCtxWin.Movable = false
+		inventoryCtxWin.Resizable = false
+		inventoryCtxWin.NoScroll = true
+		inventoryCtxWin.AutoSize = true
+	}
+	inventoryCtxWin.Contents = nil
+	flow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL, Fixed: true}
+	add := func(name string, fn func()) {
+		b, _ := eui.NewButton()
+		b.Text = name
+		b.FontSize = 12
+		b.Action = func() {
+			fn()
+			inventoryCtxWin.Close()
+		}
+		flow.AddItem(b)
+	}
+	add("Use", func() {
+		selectInventoryItem(ref.id, ref.idx)
+		enqueueCommand(fmt.Sprintf("/useitem %d", ref.id))
+		nextCommand()
+	})
+	add("Drop", func() {
+		selectInventoryItem(ref.id, ref.idx)
+		enqueueCommand(fmt.Sprintf("/drop %d", ref.id))
+		nextCommand()
+	})
+	add("Equip", func() { queueEquipCommand(ref.id, ref.idx) })
+	add("Unequip", func() {
+		enqueueCommand(fmt.Sprintf("/unequip %d", ref.id))
+		nextCommand()
+		equipInventoryItem(ref.id, ref.idx, false)
+	})
+	add("Examine", func() {
+		selectInventoryItem(ref.id, ref.idx)
+		enqueueCommand(fmt.Sprintf("/examine %d", ref.id))
+		nextCommand()
+	})
+	add("Sell", func() {
+		selectInventoryItem(ref.id, ref.idx)
+		enqueueCommand(fmt.Sprintf("/sell %d", ref.id))
+		nextCommand()
+	})
+	add("Show", func() {
+		selectInventoryItem(ref.id, ref.idx)
+		enqueueCommand(fmt.Sprintf("/show %d", ref.id))
+		nextCommand()
+	})
+	add("Assign Shortcut", func() { promptInventoryShortcut(ref.global) })
+	inventoryCtxWin.AddItem(flow)
+	inventoryCtxWin.Position = pos
+	inventoryCtxWin.MarkOpen()
+	inventoryCtxWin.Refresh()
 }
 
 func promptInventoryShortcut(idx int) {
-        invShortcutTarget = idx
-        if invShortcutWin == nil {
-                invShortcutWin = eui.NewWindow()
-                invShortcutWin.Title = "Shortcut"
-                invShortcutWin.AutoSize = true
-                invShortcutWin.Closable = true
-                invShortcutWin.Movable = false
-                invShortcutWin.Resizable = false
-                invShortcutWin.NoScroll = true
-        }
-        invShortcutWin.Contents = nil
-        opts := []string{"None"}
-        for r := '0'; r <= '9'; r++ {
-                opts = append(opts, string(r))
-        }
-        for r := 'A'; r <= 'Z'; r++ {
-                opts = append(opts, string(r))
-        }
-        dd, _ := eui.NewDropdown()
-        dd.Options = opts
-        dd.OnSelect = func(n int) {
-                if n > 0 {
-                        setInventoryShortcut(idx, rune(opts[n][0]))
-                } else {
-                        setInventoryShortcut(idx, 0)
-                }
-                inventoryDirty = true
-                invShortcutWin.Close()
-        }
-        invShortcutWin.AddItem(dd)
-        invShortcutWin.MarkOpen()
-        invShortcutWin.Refresh()
+	invShortcutTarget = idx
+	if invShortcutWin == nil {
+		invShortcutWin = eui.NewWindow()
+		invShortcutWin.Title = "Shortcut"
+		invShortcutWin.AutoSize = true
+		invShortcutWin.Closable = true
+		invShortcutWin.Movable = false
+		invShortcutWin.Resizable = false
+		invShortcutWin.NoScroll = true
+	}
+	invShortcutWin.Contents = nil
+	opts := []string{"None"}
+	for r := '0'; r <= '9'; r++ {
+		opts = append(opts, string(r))
+	}
+	for r := 'A'; r <= 'Z'; r++ {
+		opts = append(opts, string(r))
+	}
+	dd, _ := eui.NewDropdown()
+	dd.Options = opts
+	dd.OnSelect = func(n int) {
+		if n > 0 {
+			setInventoryShortcut(idx, rune(opts[n][0]))
+		} else {
+			setInventoryShortcut(idx, 0)
+		}
+		inventoryDirty = true
+		invShortcutWin.Close()
+	}
+	invShortcutWin.AddItem(dd)
+	invShortcutWin.MarkOpen()
+	invShortcutWin.Refresh()
 }
 
 func officialName(k invGroupKey, it InventoryItem) string {

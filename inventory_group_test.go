@@ -12,6 +12,19 @@ func TestInventorySeparateNames(t *testing.T) {
 	}
 }
 
+func TestInventoryGroupNormalizedNames(t *testing.T) {
+	resetInventory()
+	addInventoryItem(100, -1, "Shadow Bell", false)
+	addInventoryItem(100, -1, "shadow bell", false)
+	items := getInventory()
+	if len(items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(items))
+	}
+	if items[0].Quantity != 2 {
+		t.Fatalf("expected quantity 2, got %d", items[0].Quantity)
+	}
+}
+
 func TestToggleInventoryEquipAt(t *testing.T) {
 	resetInventory()
 	addInventoryItem(100, 0, "Ring A", false)
