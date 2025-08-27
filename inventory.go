@@ -369,27 +369,6 @@ func setFullInventory(ids []uint16, equipped []bool) {
 	newNames := make(map[inventoryKey]string)
 
 	for i, id := range ids {
-		idIdx := seen[id]
-		key := inventoryKey{ID: id, IDIndex: int16(idIdx)}
-		name := inventoryNames[key]
-		if name == "" {
-			name = inventoryNames[inventoryKey{ID: id, IDIndex: -1}]
-			if name == "" {
-				// Prefer name from CL_Images ClientItem metadata when available.
-				if clImages != nil {
-					if n := clImages.ItemName(uint32(id)); n != "" {
-						name = n
-					}
-				}
-				if name == "" {
-					if n, ok := defaultInventoryNames[id]; ok {
-						name = n
-					} else {
-						name = fmt.Sprintf("Item %d", id)
-					}
-				}
-			}
-		}
 		equip := i < len(equipped) && equipped[i]
 
 		isTemplate := false
@@ -401,13 +380,40 @@ func setFullInventory(ids []uint16, equipped []bool) {
 			}
 		}
 
+		var name string
+		var idx int
 		if isTemplate {
-			idx := tmplCounts[id]
+			idx = tmplCounts[id]
 			tmplCounts[id] = idx + 1
+			name = oldNames[inventoryKey{ID: id, IDIndex: int16(idx)}]
+			if name == "" {
+				name = oldNames[inventoryKey{ID: id, IDIndex: -1}]
+			}
+		} else {
+			name = oldNames[inventoryKey{ID: id, IDIndex: -1}]
+		}
+
+		if name == "" {
+			// Prefer name from CL_Images ClientItem metadata when available.
+			if clImages != nil {
+				if n := clImages.ItemName(uint32(id)); n != "" {
+					name = n
+				}
+			}
+			if name == "" {
+				if n, ok := defaultInventoryNames[id]; ok {
+					name = n
+				} else {
+					name = fmt.Sprintf("Item %d", id)
+				}
+			}
+		}
+
+		if isTemplate {
 			item := InventoryItem{ID: id, Name: name, Equipped: equip, Index: len(grouped), IDIndex: idx, Quantity: 1}
 			grouped = append(grouped, item)
 			if name != "" {
-				newNames[inventoryKey{ID: id, Index: uint16(len(grouped) - 1)}] = name
+				newNames[inventoryKey{ID: id, IDIndex: int16(idx)}] = name
 			}
 			continue
 		}
@@ -425,10 +431,8 @@ func setFullInventory(ids []uint16, equipped []bool) {
 		grouped = append(grouped, item)
 		groupPos[gk] = len(grouped) - 1
 		if name != "" {
-			newNames[inventoryKey{ID: id, Index: uint16(len(grouped) - 1)}] = name
+			newNames[inventoryKey{ID: id, IDIndex: -1}] = name
 		}
-		items = append(items, InventoryItem{ID: id, Name: name, Equipped: equip, Index: len(items), IDIndex: idIdx, Quantity: 1})
-		seen[id] = idIdx + 1
 	}
 
 	inventoryMu.Lock()
