@@ -23,7 +23,7 @@ import (
 	text "github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	dark "github.com/thiagokokada/dark-mode-go"
-	clipboard "golang.design/x/clipboard"
+        clipboard "golang.design/x/clipboard"
 )
 
 const keyRepeatRate = 32
@@ -61,6 +61,18 @@ func updateDimmedScreenBG() {
 		B: uint8(uint16(c.B) / 2),
 		A: 255,
 	}
+}
+
+func keyForRune(r rune) ebiten.Key {
+        switch {
+        case r >= '0' && r <= '9':
+                return ebiten.KeyDigit0 + ebiten.Key(r-'0')
+        case r >= 'a' && r <= 'z':
+                return ebiten.KeyA + ebiten.Key(r-'a')
+        case r >= 'A' && r <= 'Z':
+                return ebiten.KeyA + ebiten.Key(r-'A')
+        }
+        return ebiten.Key(-1)
 }
 func ensureWorldRT(w, h int) {
 	if w < 1 {
@@ -547,11 +559,23 @@ func (g *Game) Update() error {
 	updateNotifications()
 	updateThinkMessages()
 
-	mx, my := eui.PointerPosition()
-	origX, origY, worldScale := worldDrawInfo()
-	hx := int16(float64(mx-origX)/worldScale - float64(fieldCenterX))
-	hy := int16(float64(my-origY)/worldScale - float64(fieldCenterY))
-	updateWorldHover(hx, hy)
+        mx, my := eui.PointerPosition()
+        origX, origY, worldScale := worldDrawInfo()
+        hx := int16(float64(mx-origX)/worldScale - float64(fieldCenterX))
+        hy := int16(float64(my-origY)/worldScale - float64(fieldCenterY))
+        updateWorldHover(hx, hy)
+
+        inventoryShortcutMu.RLock()
+        for idx, r := range inventoryShortcuts {
+                if k := keyForRune(r); k >= 0 && inpututil.IsKeyJustPressed(k) {
+                        triggerInventoryShortcut(idx)
+                }
+        }
+        inventoryShortcutMu.RUnlock()
+
+        if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) {
+                handleInventoryContextClick(mx, my)
+        }
 
 	if debugWin != nil && debugWin.IsOpen() {
 		if time.Since(lastDebugStatsUpdate) >= time.Second {

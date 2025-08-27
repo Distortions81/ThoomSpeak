@@ -288,6 +288,34 @@ func getInventory() []InventoryItem {
 	return out
 }
 
+// inventoryItemByIndex returns the InventoryItem at the given index.
+func inventoryItemByIndex(idx int) (InventoryItem, bool) {
+        inventoryMu.RLock()
+        defer inventoryMu.RUnlock()
+        if idx < 0 || idx >= len(inventoryItems) {
+                return InventoryItem{}, false
+        }
+        return inventoryItems[idx], true
+}
+
+// triggerInventoryShortcut activates the inventory item assigned to idx.
+// Wearable items toggle equip state; others are used.
+func triggerInventoryShortcut(idx int) {
+        it, ok := inventoryItemByIndex(idx)
+        if !ok {
+                return
+        }
+        if clImages != nil {
+                slot := clImages.ItemSlot(uint32(it.ID))
+                if slot >= kItemSlotFirstReal && slot <= kItemSlotLastReal {
+                        toggleInventoryEquipAt(it.ID, it.IDIndex)
+                        return
+                }
+        }
+        enqueueCommand(fmt.Sprintf("/useitem %d", it.ID))
+        nextCommand()
+}
+
 func setFullInventory(ids []uint16, equipped []bool) {
 	items := make([]InventoryItem, 0, len(ids))
 	seen := make(map[uint16]int)
