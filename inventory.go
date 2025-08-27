@@ -73,17 +73,18 @@ func resetInventory() {
 // inventory items and rebuilds the inventoryNames map based on the current
 // state. inventoryMu must be held by the caller.
 func rebuildInventoryIndices() {
-	inventoryNames = make(map[inventoryKey]string)
-	for i := range inventoryItems {
-		inventoryItems[i].Index = i
-		if inventoryItems[i].Name != "" {
-			key := inventoryKey{ID: inventoryItems[i].ID, IDIndex: int16(inventoryItems[i].IDIndex)}
-			if inventoryItems[i].IDIndex < 0 {
-				key.IDIndex = -1
-			}
-			inventoryNames[key] = inventoryItems[i].Name
-		}
-	}
+    inventoryNames = make(map[inventoryKey]string)
+    for i := range inventoryItems {
+        inventoryItems[i].Index = i
+        // Persist only the per-instance extra (custom) text, not the full display name.
+        if inventoryItems[i].Extra != "" {
+            key := inventoryKey{ID: inventoryItems[i].ID, IDIndex: int16(inventoryItems[i].IDIndex)}
+            if inventoryItems[i].IDIndex < 0 {
+                key.IDIndex = -1
+            }
+            inventoryNames[key] = inventoryItems[i].Extra
+        }
+    }
 }
 
 func addInventoryItem(id uint16, idx int, name string, equip bool) {
