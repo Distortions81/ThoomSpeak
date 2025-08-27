@@ -323,7 +323,7 @@ func buildNameTagImage(name string, colorCode uint8, opacity uint8, style uint8)
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Scale(float64(iw+5), float64(ih))
 	op.ColorScale.ScaleWithColor(bgClr)
-	op.ColorScale.ScaleAlpha(float32(gs.NameBgOpacity))
+	op.ColorScale.ScaleAlpha(float32(opacity) / 255)
 	img.DrawImage(whiteImage, op)
 	// Border
 	vector.StrokeRect(img, 1, 1, float32(iw+4), float32(ih-1), 1, frameClr, false)
@@ -1116,7 +1116,7 @@ func parseDrawState(data []byte, buildCache bool) error {
 				m.nameTagH = prev.nameTagH
 				m.nameTagKey = prev.nameTagKey
 			} else {
-				img, iw, ih := buildNameTagImage(d.Name, m.Colors, uint8(gs.NameBgOpacity*255), style)
+				img, iw, ih := buildNameTagImage(d.Name, m.Colors, uint8(gs.NameBgOpacity*255+0.5), style)
 				m.nameTag = img
 				m.nameTagW = iw
 				m.nameTagH = ih
