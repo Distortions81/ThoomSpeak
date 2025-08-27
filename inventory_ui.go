@@ -62,10 +62,10 @@ func updateInventoryWindow() {
 	}
 
 	// Build a unique list of items while counting duplicates and tracking
-	// whether any instance of a given key is equipped. Non-clothing items are
-	// grouped by ID and name so identical items appear once with a quantity,
-	// while clothing items are listed individually to allow swapping similar
-	// pieces (e.g. different pairs of shoes).
+	// whether any instance of a given key is equipped. Items carrying
+	// template data (kItemFlagData) retain unique entries keyed by their
+	// per-ID index. Other items are grouped by ID and name so identical
+	// items appear once with a quantity.
 	type invGroupKey struct {
 		id   uint16
 		name string
@@ -77,16 +77,11 @@ func updateInventoryWindow() {
 	anyEquipped := make(map[invGroupKey]bool)
 	order := make([]invGroupKey, 0, len(items))
 	for _, it := range items {
-		slot := -1
-		if clImages != nil {
-			slot = clImages.ItemSlot(uint32(it.ID))
-		}
-		isClothing := slot >= kItemSlotForehead && slot <= kItemSlotHead &&
-			slot != kItemSlotRightHand && slot != kItemSlotLeftHand &&
-			slot != kItemSlotBothHands
 		key := invGroupKey{id: it.ID, name: it.Name}
-		if isClothing {
-			key.idx = it.Index
+		if it.IDIndex >= 0 {
+			// Template-data items must remain unique by their per-ID index
+			key.idx = it.IDIndex
+			key.name = ""
 		}
 		if _, seen := counts[key]; !seen {
 			order = append(order, key)
