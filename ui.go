@@ -180,6 +180,7 @@ func initUI() {
 	makeWindowsWindow()
 	makeInventoryWindow()
 	makePlayersWindow()
+	makeMacrosWindow()
 	makeHotkeysWindow()
 	makePluginsWindow()
 	makeMixerWindow()
@@ -229,6 +230,18 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 		}
 	}
 	row1.AddItem(hotBtn)
+
+	macroBtn, macroEvents := eui.NewButton()
+	macroBtn.Text = "Macros"
+	macroBtn.Size = eui.Point{X: buttonWidth, Y: buttonHeight}
+	macroBtn.FontSize = toolFontSize
+	macroEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			refreshMacrosList()
+			macrosWin.ToggleNear(ev.Item)
+		}
+	}
+	row1.AddItem(macroBtn)
 
 	plugBtn, plugEvents := eui.NewButton()
 	plugBtn.Text = "Plugins"
