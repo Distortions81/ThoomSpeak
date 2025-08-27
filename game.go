@@ -801,10 +801,12 @@ func (g *Game) Update() error {
 
 	winW, winH := ebiten.WindowSize()
 	inWindow := mx > 0 && my > 0 && mx < winW-1 && my < winH-1
-	if !focused || !inWindow {
+	if !focused {
 		if walkToggled {
 			walkToggled = false
 		}
+	}
+	if !focused || !inWindow {
 		click = false
 		rightClick = false
 		heldTime = 0
