@@ -2137,11 +2137,12 @@ func sendInputLoop(ctx context.Context, conn net.Conn) {
 		if time.Since(last) > 2*time.Second || conn == nil {
 			continue
 		}
-		delay := interval
-		if delay <= 0 {
-			delay = 200 * time.Millisecond
-		}
+		delay := time.Duration(0)
 		if gs.lateInputUpdates {
+			delay = interval
+			if delay <= 0 {
+				delay = 200 * time.Millisecond
+			}
 			latencyMu.Lock()
 			lat := netLatency
 			latencyMu.Unlock()
