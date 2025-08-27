@@ -1962,21 +1962,6 @@ func makeSettingsWindow() {
 	}
 	left.AddItem(notifBtn)
 
-	pluginKillCB, pluginKillEvents := eui.NewCheckbox()
-	pluginKillCB.Text = "Auto-kill spammy plugins"
-	pluginKillCB.Size = eui.Point{X: leftW, Y: 24}
-	pluginKillCB.Checked = gs.PluginSpamKill
-	pluginKillCB.Tooltip = "Stop plugins that send too many lines"
-	pluginKillEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventCheckboxChanged {
-			SettingsLock.Lock()
-			gs.PluginSpamKill = ev.Checked
-			SettingsLock.Unlock()
-			settingsDirty = true
-		}
-	}
-	left.AddItem(pluginKillCB)
-
 	label, _ = eui.NewText()
 	label.Text = "\nChat & Audio:"
 	label.FontSize = 15
@@ -2185,38 +2170,40 @@ func makeSettingsWindow() {
 		right.AddItem(snapCB)
 	*/
 
-	// Screen size settings in-place (moved from separate window)
-	uiScaleSlider, uiScaleEvents := eui.NewSlider()
-	uiScaleSlider.Label = "UI Scaling"
-	uiScaleSlider.MinValue = 0.75
-	uiScaleSlider.MaxValue = 4
-	uiScaleSlider.Value = float32(gs.UIScale)
-	pendingUIScale := gs.UIScale
-	uiScaleEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventSliderChanged {
-			pendingUIScale = float64(ev.Value)
+	if showUIScale {
+		// Screen size settings in-place (moved from separate window)
+		uiScaleSlider, uiScaleEvents := eui.NewSlider()
+		uiScaleSlider.Label = "UI Scaling"
+		uiScaleSlider.MinValue = 0.75
+		uiScaleSlider.MaxValue = 4
+		uiScaleSlider.Value = float32(gs.UIScale)
+		pendingUIScale := gs.UIScale
+		uiScaleEvents.Handle = func(ev eui.UIEvent) {
+			if ev.Type == eui.EventSliderChanged {
+				pendingUIScale = float64(ev.Value)
+			}
 		}
-	}
 
-	uiScaleApplyBtn, uiScaleApplyEvents := eui.NewButton()
-	uiScaleApplyBtn.Text = "Apply"
-	uiScaleApplyBtn.Size = eui.Point{X: 48, Y: 24}
-	uiScaleApplyEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventClick {
-			gs.UIScale = pendingUIScale
-			eui.SetUIScale(float32(gs.UIScale))
-			updateGameWindowSize()
-			settingsDirty = true
+		uiScaleApplyBtn, uiScaleApplyEvents := eui.NewButton()
+		uiScaleApplyBtn.Text = "Apply"
+		uiScaleApplyBtn.Size = eui.Point{X: 48, Y: 24}
+		uiScaleApplyEvents.Handle = func(ev eui.UIEvent) {
+			if ev.Type == eui.EventClick {
+				gs.UIScale = pendingUIScale
+				eui.SetUIScale(float32(gs.UIScale))
+				updateGameWindowSize()
+				settingsDirty = true
+			}
 		}
-	}
 
-	// Place the slider and button on the same row
-	uiScaleRow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
-	// Fit slider to remaining width in the row
-	uiScaleSlider.Size = eui.Point{X: rightW - uiScaleApplyBtn.Size.X - 10, Y: 24}
-	uiScaleRow.AddItem(uiScaleSlider)
-	uiScaleRow.AddItem(uiScaleApplyBtn)
-	right.AddItem(uiScaleRow)
+		// Place the slider and button on the same row
+		uiScaleRow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
+		// Fit slider to remaining width in the row
+		uiScaleSlider.Size = eui.Point{X: rightW - uiScaleApplyBtn.Size.X - 10, Y: 24}
+		uiScaleRow.AddItem(uiScaleSlider)
+		uiScaleRow.AddItem(uiScaleApplyBtn)
+		right.AddItem(uiScaleRow)
+	}
 
 	fullscreenCB, fullscreenEvents := eui.NewCheckbox()
 	fullscreenCB.Text = "Fullscreen"
@@ -2562,6 +2549,56 @@ func makeSettingsWindow() {
 	label.FontSize = 15
 	label.Size = eui.Point{X: rightW, Y: 50}
 	right.AddItem(label)
+
+	pluginKillCB, pluginKillEvents := eui.NewCheckbox()
+	pluginKillCB.Text = "Auto-kill spammy plugins"
+	pluginKillCB.Size = eui.Point{X: rightW, Y: 24}
+	pluginKillCB.Checked = gs.PluginSpamKill
+	pluginKillCB.Tooltip = "Stop plugins that send too many lines"
+	pluginKillEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			SettingsLock.Lock()
+			gs.PluginSpamKill = ev.Checked
+			SettingsLock.Unlock()
+			settingsDirty = true
+		}
+	}
+	right.AddItem(pluginKillCB)
+
+	lateInputCB, lateInputEvents := eui.NewCheckbox()
+	lateInputCB.Text = "Smart input updates"
+	lateInputCB.Tooltip = "Polls for user input at last moment, sends update to server early by predicted ping"
+	lateInputCB.Size = eui.Point{X: rightW, Y: 24}
+	lateInputCB.Checked = gs.lateInputUpdates
+	var targetPingSlider *eui.ItemData
+	lateInputEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			gs.lateInputUpdates = ev.Checked
+			if targetPingSlider != nil {
+				targetPingSlider.Disabled = !ev.Checked
+			}
+			settingsDirty = true
+		}
+	}
+	right.AddItem(lateInputCB)
+
+	targetPingSlider, targetPingEvents := eui.NewSlider()
+	targetPingSlider.Label = "Target ping"
+	targetPingSlider.Tooltip = "Keep this well above (2-3x) your network jitter. ( 3 - 30ms )"
+	targetPingSlider.MinValue = 5
+	targetPingSlider.MaxValue = 175
+	targetPingSlider.IntOnly = true
+	targetPingSlider.Value = float32(gs.lateInputAdjustment)
+	targetPingSlider.Size = eui.Point{X: rightW - 10, Y: 24}
+	targetPingSlider.Disabled = !gs.lateInputUpdates
+	targetPingEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			gs.lateInputAdjustment = int(ev.Value)
+			settingsDirty = true
+		}
+	}
+	right.AddItem(targetPingSlider)
+
 	bubbleBtn, bubbleEvents := eui.NewButton()
 	bubbleBtn.Text = "Message Bubbles"
 	bubbleBtn.Size = eui.Point{X: rightW, Y: 24}
@@ -3439,40 +3476,6 @@ func makeDebugWindow() {
 	debugWin.SetZone(eui.HZoneCenterLeft, eui.VZoneMiddleTop)
 
 	debugFlow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
-
-	lateInputCB, lateInputEvents := eui.NewCheckbox()
-	lateInputCB.Text = "Smart input updates"
-	lateInputCB.Tooltip = "Polls for user input at last moment, sends update to server early by predicted ping"
-	lateInputCB.Size = eui.Point{X: width, Y: 24}
-	lateInputCB.Checked = gs.lateInputUpdates
-	var targetPingSlider *eui.ItemData
-	lateInputEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventCheckboxChanged {
-			gs.lateInputUpdates = ev.Checked
-			if targetPingSlider != nil {
-				targetPingSlider.Disabled = !ev.Checked
-			}
-			settingsDirty = true
-		}
-	}
-	debugFlow.AddItem(lateInputCB)
-
-	targetPingSlider, targetPingEvents := eui.NewSlider()
-	targetPingSlider.Label = "Target ping"
-	targetPingSlider.Tooltip = "Keep this well above (2-3x) your network jitter. ( 3 - 30ms )"
-	targetPingSlider.MinValue = 5
-	targetPingSlider.MaxValue = 175
-	targetPingSlider.IntOnly = true
-	targetPingSlider.Value = float32(gs.lateInputAdjustment)
-	targetPingSlider.Size = eui.Point{X: width - 10, Y: 24}
-	targetPingSlider.Disabled = !gs.lateInputUpdates
-	targetPingEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventSliderChanged {
-			gs.lateInputAdjustment = int(ev.Value)
-			settingsDirty = true
-		}
-	}
-	debugFlow.AddItem(targetPingSlider)
 
 	recordStatsCB, recordStatsEvents := eui.NewCheckbox()
 	recordStatsCB.Text = "Record Asset Stats"
