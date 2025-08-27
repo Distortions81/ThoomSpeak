@@ -38,6 +38,8 @@ var (
 
 var invFoldCaser = cases.Fold()
 
+const kItemFlagData = 0x0400
+
 // normalizeInventoryName returns a canonical form of an item name for comparisons.
 // It trims whitespace, removes diacritics and performs case folding so items with
 // minor name variations (e.g. capitalization differences) can be coalesced.
@@ -349,10 +351,23 @@ func triggerInventoryShortcut(idx int) {
 }
 
 func setFullInventory(ids []uint16, equipped []bool) {
-	items := make([]InventoryItem, 0, len(ids))
-	seen := make(map[uint16]int)
-	inventoryMu.Lock()
+	oldNames := make(map[inventoryKey]string)
+	inventoryMu.RLock()
+	for k, v := range inventoryNames {
+		oldNames[k] = v
+	}
+	inventoryMu.RUnlock()
+
+	type groupKey struct {
+		id   uint16
+		name string
+	}
+
+	grouped := make([]InventoryItem, 0, len(ids))
+	groupPos := make(map[groupKey]int)
+	tmplCounts := make(map[uint16]int)
 	newNames := make(map[inventoryKey]string)
+
 	for i, id := range ids {
 		idIdx := seen[id]
 		key := inventoryKey{ID: id, IDIndex: int16(idIdx)}
@@ -375,15 +390,49 @@ func setFullInventory(ids []uint16, equipped []bool) {
 				}
 			}
 		}
-		newNames[key] = name
-		equip := false
-		if i < len(equipped) && equipped[i] {
-			equip = true
+		equip := i < len(equipped) && equipped[i]
+
+		isTemplate := false
+		if clImages != nil {
+			if it, ok := clImages.Item(uint32(id)); ok {
+				if it.Flags&kItemFlagData != 0 {
+					isTemplate = true
+				}
+			}
+		}
+
+		if isTemplate {
+			idx := tmplCounts[id]
+			tmplCounts[id] = idx + 1
+			item := InventoryItem{ID: id, Name: name, Equipped: equip, Index: len(grouped), IDIndex: idx, Quantity: 1}
+			grouped = append(grouped, item)
+			if name != "" {
+				newNames[inventoryKey{ID: id, Index: uint16(len(grouped) - 1)}] = name
+			}
+			continue
+		}
+
+		gk := groupKey{id: id, name: normalizeInventoryName(name)}
+		if pos, ok := groupPos[gk]; ok {
+			grouped[pos].Quantity++
+			if equip {
+				grouped[pos].Equipped = true
+			}
+			continue
+		}
+
+		item := InventoryItem{ID: id, Name: name, Equipped: equip, Index: len(grouped), IDIndex: -1, Quantity: 1}
+		grouped = append(grouped, item)
+		groupPos[gk] = len(grouped) - 1
+		if name != "" {
+			newNames[inventoryKey{ID: id, Index: uint16(len(grouped) - 1)}] = name
 		}
 		items = append(items, InventoryItem{ID: id, Name: name, Equipped: equip, Index: len(items), IDIndex: idIdx, Quantity: 1})
 		seen[id] = idIdx + 1
 	}
-	inventoryItems = items
+
+	inventoryMu.Lock()
+	inventoryItems = grouped
 	inventoryNames = newNames
 	inventoryMu.Unlock()
 	inventoryDirty = true
