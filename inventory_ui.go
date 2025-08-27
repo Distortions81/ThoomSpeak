@@ -346,18 +346,25 @@ func handleInventoryClick(id uint16, idx int) {
 		}
 		lastInvClickTime = time.Time{}
 	} else {
-		selectedInvID = id
-		selectedInvIdx = idx
+		selectInventoryItem(id, idx)
 		lastInvClickID = id
 		lastInvClickIdx = idx
 		lastInvClickTime = now
-		updateInventoryWindow()
 	}
 }
 
 func selectInventoryItem(id uint16, idx int) {
+	if id == selectedInvID && idx == selectedInvIdx {
+		return
+	}
 	selectedInvID = id
 	selectedInvIdx = idx
+	serverIdx := idx
+	if serverIdx < 0 {
+		serverIdx = 0
+	}
+	enqueueCommand(fmt.Sprintf("\\BE-SELECT %d %d", id, serverIdx))
+	nextCommand()
 	updateInventoryWindow()
 }
 
