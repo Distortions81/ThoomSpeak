@@ -29,7 +29,8 @@ func chatMessage(msg string) {
 		}
 	}
 
-	chatLog.Add(msg)
+    chatLog.Add(msg)
+    appendChatLog(msg)
 
 	updateChatWindow()
 

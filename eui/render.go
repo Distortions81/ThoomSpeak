@@ -57,10 +57,23 @@ func Draw(screen *ebiten.Image) {
 		drawZoneOverlay(screen, zoneIndicatorWin)
 	}
 
-	screenClip := rect{X0: 0, Y0: 0, X1: float32(screenWidth), Y1: float32(screenHeight)}
-	for _, dd := range dropdowns {
-		drawDropdownOptions(dd.item, dd.offset, screenClip, screen)
-	}
+    screenClip := rect{X0: 0, Y0: 0, X1: float32(screenWidth), Y1: float32(screenHeight)}
+    for _, dd := range dropdowns {
+        drawDropdownOptions(dd.item, dd.offset, screenClip, screen)
+    }
+
+    // Draw any active context menus as overlays using the same dropdown menu
+    // rendering. Context menus originate from a screen-space position stored in
+    // the item's DrawRect X0/Y0.
+    if len(contextMenus) > 0 {
+        for _, cm := range contextMenus {
+            if cm == nil || !cm.Open {
+                continue
+            }
+            off := point{X: cm.DrawRect.X0, Y: cm.DrawRect.Y0}
+            drawDropdownOptions(cm, off, screenClip, screen)
+        }
+    }
 
 	if hoveredItem != nil && hoveredItem.Tooltip != "" {
 		drawTooltip(screen, hoveredItem)

@@ -381,103 +381,60 @@ func selectInventoryItem(id uint16, idx int) {
 // handleInventoryContextClick opens the inventory context menu if the mouse
 // position is over an inventory row. Returns true if a menu was opened.
 func handleInventoryContextClick(mx, my int) bool {
-	if inventoryWin == nil || inventoryList == nil || !inventoryWin.IsOpen() {
-		return false
-	}
-	pos := eui.Point{X: float32(mx), Y: float32(my)}
-	for _, row := range inventoryList.Contents {
-		if !row.Hovered {
-			continue
-		}
-		if ref, ok := inventoryRowRefs[row]; ok {
-			openInventoryContextMenu(ref, pos)
-			return true
-		}
-	}
-	return false
+    if inventoryWin == nil || inventoryList == nil || !inventoryWin.IsOpen() {
+        return false
+    }
+    pos := eui.Point{X: float32(mx), Y: float32(my)}
+    for _, row := range inventoryList.Contents {
+        r := row.DrawRect
+        if pos.X >= r.X0 && pos.X <= r.X1 && pos.Y >= r.Y0 && pos.Y <= r.Y1 {
+            if ref, ok := inventoryRowRefs[row]; ok {
+                openInventoryContextMenu(ref, pos)
+                return true
+            }
+        }
+    }
+    return false
 }
 
 func openInventoryContextMenu(ref invRef, pos eui.Point) {
-	if inventoryCtxWin == nil {
-		inventoryCtxWin = eui.NewWindow()
-		inventoryCtxWin.Closable = true
-		inventoryCtxWin.Movable = false
-		inventoryCtxWin.Resizable = false
-		inventoryCtxWin.NoScroll = true
-		inventoryCtxWin.AutoSize = true
-	}
-	inventoryCtxWin.Contents = nil
-	flow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL, Fixed: true}
-
-	// Determine whether the item is wearable and currently equipped to
-	// conditionally show Equip/Unequip actions.
-	wearable := false
-	equipped := false
-	if it, ok := inventoryItemByIndex(ref.global); ok {
-		equipped = it.Equipped
-		if clImages != nil {
-			slot := clImages.ItemSlot(uint32(it.ID))
-			if slot >= kItemSlotFirstReal && slot <= kItemSlotLastReal {
-				wearable = true
-			}
-		}
-	}
-
-	add := func(name string, fn func()) {
-		b, _ := eui.NewButton()
-		b.Text = name
-		b.FontSize = 12
-		b.Action = func() {
-			fn()
-			inventoryCtxWin.Close()
-		}
-		flow.AddItem(b)
-	}
-	add("Use", func() {
-		enqueueCommand("/use")
-		nextCommand()
-	})
-	add("Use Item", func() {
-		selectInventoryItem(ref.id, ref.idx)
-		enqueueCommand(fmt.Sprintf("/useitem %d", ref.id))
-		nextCommand()
-	})
-	add("Drop", func() {
-		selectInventoryItem(ref.id, ref.idx)
-		enqueueCommand(fmt.Sprintf("/drop %d", ref.id))
-		nextCommand()
-	})
-	if wearable && !equipped {
-		add("Equip", func() { queueEquipCommand(ref.id, ref.idx) })
-	}
-	if wearable && equipped {
-		add("Unequip", func() {
-			enqueueCommand(fmt.Sprintf("/unequip %d", ref.id))
-			nextCommand()
-			equipInventoryItem(ref.id, ref.idx, false)
-		})
-	}
-	add("Examine", func() {
-		selectInventoryItem(ref.id, ref.idx)
-		enqueueCommand(fmt.Sprintf("/examine %d", ref.id))
-		nextCommand()
-	})
-	add("Name", func() { promptInventoryName(ref.id, ref.idx) })
-	add("Sell", func() {
-		selectInventoryItem(ref.id, ref.idx)
-		enqueueCommand(fmt.Sprintf("/sell %d", ref.id))
-		nextCommand()
-	})
-	add("Show", func() {
-		selectInventoryItem(ref.id, ref.idx)
-		enqueueCommand(fmt.Sprintf("/show %d", ref.id))
-		nextCommand()
-	})
-	add("Assign Shortcut", func() { promptInventoryShortcut(ref.global) })
-	inventoryCtxWin.AddItem(flow)
-	inventoryCtxWin.Position = pos
-	inventoryCtxWin.MarkOpen()
-	inventoryCtxWin.Refresh()
+    // Minimal overlay menu using the new EUI context menus: Equip/Unequip
+    wearable := false
+    equipped := false
+    if it, ok := inventoryItemByIndex(ref.global); ok {
+        equipped = it.Equipped
+        if clImages != nil {
+            slot := clImages.ItemSlot(uint32(it.ID))
+            if slot >= kItemSlotFirstReal && slot <= kItemSlotLastReal {
+                wearable = true
+            }
+        }
+    }
+    options := []string{}
+    actions := []func(){}
+    if wearable && !equipped {
+        options = append(options, "Equip")
+        actions = append(actions, func() {
+            queueEquipCommand(ref.id, ref.idx)
+            equipInventoryItem(ref.id, ref.idx, true)
+        })
+    }
+    if wearable && equipped {
+        options = append(options, "Unequip")
+        actions = append(actions, func() {
+            enqueueCommand(fmt.Sprintf("/unequip %d", ref.id))
+            nextCommand()
+            equipInventoryItem(ref.id, -1, false)
+        })
+    }
+    if len(options) == 0 {
+        return
+    }
+    eui.ShowContextMenu(options, pos.X, pos.Y, func(i int) {
+        if i >= 0 && i < len(actions) {
+            actions[i]()
+        }
+    })
 }
 
 func promptInventoryShortcut(idx int) {

@@ -1,9 +1,9 @@
 package eui
 
 import (
-	"bytes"
+    "bytes"
 
-	"github.com/hajimehoshi/ebiten/v2/text/v2"
+    "github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
 // Windows returns the list of active windows.
@@ -99,6 +99,11 @@ func EnsureFontSource(ttf []byte) error {
 	faceCache = map[float64]*text.GoTextFace{}
 	return nil
 }
+
+// ShowContextMenu opens a simple context menu at screen-space pixel
+// coordinates (x, y) with the provided options. onSelect is called with the
+// selected index when an item is clicked. Returns the handle to the menu.
+// (context menu APIs are defined in context_menu.go)
 
 // AddItem appends a child item to the parent item.
 func (parent *ItemData) AddItem(child *ItemData) { parent.addItemTo(child) }
