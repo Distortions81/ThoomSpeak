@@ -569,7 +569,7 @@ func (item *itemData) drawFlows(win *windowData, parent *itemData, offset point,
 	if item.Filled || item.Outlined {
 		col := item.Color
 		if col == (Color{}) && style != nil {
-			col = style.Color
+			col = style.SelectedColor
 		}
 		if item.Filled {
 			drawFilledRect(subImg, offset.X, offset.Y, item.GetSize().X, item.GetSize().Y, col.ToRGBA(), true)
