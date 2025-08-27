@@ -149,7 +149,8 @@ func sendPlayerInput(connection net.Conn, mouseX, mouseY int16, mouseDown bool) 
 	binary.BigEndian.PutUint16(packet[6:8], flags)
 	binary.BigEndian.PutUint32(packet[8:12], uint32(ackFrame))
 	binary.BigEndian.PutUint32(packet[12:16], uint32(resendFrame))
-	binary.BigEndian.PutUint32(packet[16:20], commandNum)
+	packetCommand := commandNum
+	binary.BigEndian.PutUint32(packet[16:20], packetCommand)
 	copy(packet[20:], cmdBytes)
 	packet[20+len(cmdBytes)] = 0
 	if cmd != "" {
@@ -157,9 +158,9 @@ func sendPlayerInput(connection net.Conn, mouseX, mouseY int16, mouseDown bool) 
 		whoLastCommandFrame = ackFrame
 		pendingCommand = ""
 		nextCommand()
+		commandNum++
 	}
-	commandNum++
-	logDebug("player input ack=%d resend=%d cmd=%d mouse=%d,%d flags=%#x", ackFrame, resendFrame, commandNum-1, mouseX, mouseY, flags)
+	logDebug("player input ack=%d resend=%d cmd=%d mouse=%d,%d flags=%#x", ackFrame, resendFrame, packetCommand, mouseX, mouseY, flags)
 	latencyMu.Lock()
 	lastInputSent = time.Now()
 	latencyMu.Unlock()
