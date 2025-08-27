@@ -1327,13 +1327,6 @@ func drawPicture(screen *ebiten.Image, ox, oy int, p framePicture, alpha float64
 		w, h = clImages.Size(uint32(p.PictID))
 	}
 
-	// Large images on planes above the player are typically fullscreen effects
-	// like weather. Skip interpolation so they don't appear to lag behind.
-	if p.Plane > 0 && (w >= gameAreaSizeX || h >= gameAreaSizeY) {
-		offX = 0
-		offY = 0
-	}
-
 	var mobileX, mobileY float64
 	if gs.ObjectPinning && gs.MotionSmoothing && w <= 500 && h <= 500 {
 		if dx, dy, ok := pictureMobileOffset(p, mobiles, prevMobiles, prevPictures, alpha); ok {
