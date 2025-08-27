@@ -37,10 +37,11 @@ type Player struct {
 }
 
 var (
-	players          = make(map[string]*Player)
-	playersMu        sync.RWMutex
-	playerHandlers   []func(Player)
-	playerHandlersMu sync.RWMutex
+	players              = make(map[string]*Player)
+	playersMu            sync.RWMutex
+	playerHandlers       []func(Player)
+	playerHandlersMu     sync.RWMutex
+	pluginPlayerHandlers = map[string][]func(Player){}
 )
 
 func getPlayer(name string) *Player {
@@ -129,7 +130,11 @@ func getPlayers() []Player {
 
 func notifyPlayerHandlers(p Player) {
 	playerHandlersMu.RLock()
-	handlers := append([]func(Player){}, playerHandlers...)
+	var handlers []func(Player)
+	handlers = append(handlers, playerHandlers...)
+	for _, hs := range pluginPlayerHandlers {
+		handlers = append(handlers, hs...)
+	}
 	playerHandlersMu.RUnlock()
 	for _, fn := range handlers {
 		go fn(p)
