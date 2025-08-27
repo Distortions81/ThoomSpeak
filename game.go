@@ -23,7 +23,7 @@ import (
 	text "github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	dark "github.com/thiagokokada/dark-mode-go"
-        clipboard "golang.design/x/clipboard"
+	clipboard "golang.design/x/clipboard"
 )
 
 const keyRepeatRate = 32
@@ -64,15 +64,15 @@ func updateDimmedScreenBG() {
 }
 
 func keyForRune(r rune) ebiten.Key {
-        switch {
-        case r >= '0' && r <= '9':
-                return ebiten.KeyDigit0 + ebiten.Key(r-'0')
-        case r >= 'a' && r <= 'z':
-                return ebiten.KeyA + ebiten.Key(r-'a')
-        case r >= 'A' && r <= 'Z':
-                return ebiten.KeyA + ebiten.Key(r-'A')
-        }
-        return ebiten.Key(-1)
+	switch {
+	case r >= '0' && r <= '9':
+		return ebiten.KeyDigit0 + ebiten.Key(r-'0')
+	case r >= 'a' && r <= 'z':
+		return ebiten.KeyA + ebiten.Key(r-'a')
+	case r >= 'A' && r <= 'Z':
+		return ebiten.KeyA + ebiten.Key(r-'A')
+	}
+	return ebiten.Key(-1)
 }
 func ensureWorldRT(w, h int) {
 	if w < 1 {
@@ -559,23 +559,23 @@ func (g *Game) Update() error {
 	updateNotifications()
 	updateThinkMessages()
 
-        mx, my := eui.PointerPosition()
-        origX, origY, worldScale := worldDrawInfo()
-        hx := int16(float64(mx-origX)/worldScale - float64(fieldCenterX))
-        hy := int16(float64(my-origY)/worldScale - float64(fieldCenterY))
-        updateWorldHover(hx, hy)
+	mx, my := eui.PointerPosition()
+	origX, origY, worldScale := worldDrawInfo()
+	hx := int16(float64(mx-origX)/worldScale - float64(fieldCenterX))
+	hy := int16(float64(my-origY)/worldScale - float64(fieldCenterY))
+	updateWorldHover(hx, hy)
 
-        inventoryShortcutMu.RLock()
-        for idx, r := range inventoryShortcuts {
-                if k := keyForRune(r); k >= 0 && inpututil.IsKeyJustPressed(k) {
-                        triggerInventoryShortcut(idx)
-                }
-        }
-        inventoryShortcutMu.RUnlock()
+	inventoryShortcutMu.RLock()
+	for idx, r := range inventoryShortcuts {
+		if k := keyForRune(r); k >= 0 && inpututil.IsKeyJustPressed(k) {
+			triggerInventoryShortcut(idx)
+		}
+	}
+	inventoryShortcutMu.RUnlock()
 
-        if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) {
-                handleInventoryContextClick(mx, my)
-        }
+	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) {
+		handleInventoryContextClick(mx, my)
+	}
 
 	if debugWin != nil && debugWin.IsOpen() {
 		if time.Since(lastDebugStatsUpdate) >= time.Second {
@@ -757,10 +757,12 @@ func (g *Game) Update() error {
 		}
 	}
 
+	focused := ebiten.IsFocused()
+
 	/* WASD / ARROWS */
 
 	var keyWalk bool
-	if !inputActive {
+	if focused && !inputActive {
 		dx, dy := 0, 0
 		if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) || ebiten.IsKeyPressed(ebiten.KeyA) {
 			dx--
@@ -798,11 +800,12 @@ func (g *Game) Update() error {
 
 	winW, winH := ebiten.WindowSize()
 	inWindow := mx >= 0 && my >= 0 && mx < winW && my < winH
-	if click && !inWindow {
+	if !focused || !inWindow {
 		if walkToggled {
 			walkToggled = false
 		}
 		click = false
+		rightClick = false
 		heldTime = 0
 	}
 
@@ -841,6 +844,9 @@ func (g *Game) Update() error {
 		if gs.ClickToToggle && walkToggled {
 			walk = walkToggled
 		}
+	}
+	if !focused {
+		walk = false
 	}
 
 	/* Change Cursor */
