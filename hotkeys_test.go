@@ -363,6 +363,34 @@ func TestPluginHotkeyStatePersisted(t *testing.T) {
 		t.Fatalf("plugin hotkey not re-added")
 	}
 }
+func TestPluginHotkeysFilter(t *testing.T) {
+	hotkeys = nil
+	pluginHotkeyEnabled = map[string]map[string]bool{}
+	pluginAddHotkey("plug1", "Ctrl-A", "cmd1")
+	pluginAddHotkey("plug2", "Ctrl-B", "cmd2")
+
+	cases := []struct {
+		name   string
+		owner  string
+		combos []string
+	}{
+		{name: "first", owner: "plug1", combos: []string{"Ctrl-A"}},
+		{name: "second", owner: "plug2", combos: []string{"Ctrl-B"}},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			got := pluginHotkeys(tc.owner)
+			if len(got) != len(tc.combos) {
+				t.Fatalf("expected %d combo(s), got %d", len(tc.combos), len(got))
+			}
+			for i, hk := range got {
+				if hk.Combo != tc.combos[i] {
+					t.Fatalf("expected combos %v, got %v", tc.combos, got)
+				}
+			}
+		})
 func TestPluginAddHotkeyDuplicate(t *testing.T) {
 	hotkeys = nil
 	pluginHotkeyEnabled = map[string]map[string]bool{}
