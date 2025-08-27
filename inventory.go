@@ -20,9 +20,14 @@ type InventoryItem struct {
 	Quantity int
 }
 
+// inventoryKey uniquely identifies an inventory item when storing custom names.
+//
+// Items that support templates are distinguished by a per-ID index provided by
+// the server. Legacy items that do not expose an index use -1 so a name applies
+// to all instances of the same ID.
 type inventoryKey struct {
-	ID    uint16
-	Index uint16
+	ID      uint16
+	IDIndex int16
 }
 
 var (
@@ -66,7 +71,11 @@ func rebuildInventoryIndices() {
 	for i := range inventoryItems {
 		inventoryItems[i].Index = i
 		if inventoryItems[i].Name != "" {
-			inventoryNames[inventoryKey{ID: inventoryItems[i].ID, Index: uint16(i)}] = inventoryItems[i].Name
+			key := inventoryKey{ID: inventoryItems[i].ID, IDIndex: int16(inventoryItems[i].IDIndex)}
+			if inventoryItems[i].IDIndex < 0 {
+				key.IDIndex = -1
+			}
+			inventoryNames[key] = inventoryItems[i].Name
 		}
 	}
 }
@@ -279,19 +288,19 @@ func renameInventoryItem(id uint16, idx int, name string) {
 			if inventoryItems[i].ID == id && inventoryItems[i].IDIndex == idx {
 				inventoryItems[i].Name = name
 				if name != "" {
-					inventoryNames[inventoryKey{ID: id, Index: uint16(i)}] = name
+					inventoryNames[inventoryKey{ID: id, IDIndex: int16(idx)}] = name
 				}
 				break
 			}
 		}
 	} else {
 		// Legacy items without a template index: rename all matching IDs.
+		if name != "" {
+			inventoryNames[inventoryKey{ID: id, IDIndex: -1}] = name
+		}
 		for i := range inventoryItems {
-			if inventoryItems[i].ID == id && inventoryItems[i].IDIndex < 0 {
+			if inventoryItems[i].ID == id {
 				inventoryItems[i].Name = name
-				if name != "" {
-					inventoryNames[inventoryKey{ID: id, Index: uint16(i)}] = name
-				}
 			}
 		}
 	}
@@ -360,18 +369,24 @@ func setFullInventory(ids []uint16, equipped []bool) {
 	newNames := make(map[inventoryKey]string)
 
 	for i, id := range ids {
-		name := oldNames[inventoryKey{ID: id, Index: uint16(i)}]
+		idIdx := seen[id]
+		key := inventoryKey{ID: id, IDIndex: int16(idIdx)}
+		name := inventoryNames[key]
 		if name == "" {
-			if clImages != nil {
-				if n := clImages.ItemName(uint32(id)); n != "" {
-					name = n
-				}
-			}
+			name = inventoryNames[inventoryKey{ID: id, IDIndex: -1}]
 			if name == "" {
-				if n, ok := defaultInventoryNames[id]; ok {
-					name = n
-				} else {
-					name = fmt.Sprintf("Item %d", id)
+				// Prefer name from CL_Images ClientItem metadata when available.
+				if clImages != nil {
+					if n := clImages.ItemName(uint32(id)); n != "" {
+						name = n
+					}
+				}
+				if name == "" {
+					if n, ok := defaultInventoryNames[id]; ok {
+						name = n
+					} else {
+						name = fmt.Sprintf("Item %d", id)
+					}
 				}
 			}
 		}
@@ -412,6 +427,8 @@ func setFullInventory(ids []uint16, equipped []bool) {
 		if name != "" {
 			newNames[inventoryKey{ID: id, Index: uint16(len(grouped) - 1)}] = name
 		}
+		items = append(items, InventoryItem{ID: id, Name: name, Equipped: equip, Index: len(items), IDIndex: idIdx, Quantity: 1})
+		seen[id] = idIdx + 1
 	}
 
 	inventoryMu.Lock()
