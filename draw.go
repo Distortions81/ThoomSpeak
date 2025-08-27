@@ -565,7 +565,9 @@ func handleInvCmdOther(cmd int, data []byte) ([]byte, bool) {
 			logError("inventory: cmd %x missing name", cmd)
 			return nil, false
 		}
-		name = decodeMacRoman(data[:nidx])
+		raw := append([]byte(nil), data[:nidx]...)
+		raw = stripBEPPTags(raw)
+		name = strings.TrimSpace(decodeMacRoman(raw))
 		data = data[nidx+1:]
 	}
 	switch base {

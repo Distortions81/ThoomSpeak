@@ -79,7 +79,8 @@ func TestParseInventoryMacRomanName(t *testing.T) {
 		t.Fatalf("unexpected rest %v", rest)
 	}
 	inv := getInventory()
-	if len(inv) != 1 || inv[0].Name != decodeMacRoman(nameBytes) {
+	want := decodeMacRoman(nameBytes) + " <#1>"
+	if len(inv) != 1 || inv[0].Name != want {
 		t.Fatalf("unexpected inventory %v", inv)
 	}
 	if !inventoryDirty {
@@ -176,7 +177,7 @@ func TestInventoryRenameIndexed(t *testing.T) {
 	if len(inv) != 2 {
 		t.Fatalf("unexpected inventory length %d", len(inv))
 	}
-	if inv[0].Name != "First" || inv[1].Name != "Second" {
+	if inv[0].Name != "Bag <#1 First>" || inv[1].Name != "Bag <#2 Second>" {
 		t.Fatalf("unexpected inventory %v", inv)
 	}
 	if !inventoryDirty {
