@@ -19,6 +19,10 @@ Inventory
 - Single-click selects an item.
 - Double-click equips or unequips an item.
 - Shift + double-click uses an item.
+- Right-click an item for options to use, drop, equip, unequip, examine, sell,
+  show, or assign a shortcut key.
+- Assigned shortcut keys appear in brackets before the item name and pressing
+  the key activates the item.
 
 Extras
 -----
