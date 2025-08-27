@@ -12,12 +12,18 @@ import (
 )
 
 type InventoryItem struct {
-	ID       uint16
-	Name     string
-	Equipped bool
-	Index    int // display order (global)
-	IDIndex  int // per-ID index used by server (0-based)
-	Quantity int
+    ID       uint16
+    Name     string
+    // Base is the official base name without any custom/index suffix.
+    Base     string
+    // Extra is the per-instance extra data if present:
+    // - Template items: custom text after the index (e.g. "Sea What").
+    // - Legacy items: custom text inside angle brackets (e.g. color name).
+    Extra    string
+    Equipped bool
+    Index    int // display order (global)
+    IDIndex  int // per-ID index used by server (0-based)
+    Quantity int
 }
 
 // inventoryKey uniquely identifies an inventory item when storing custom names.
@@ -81,8 +87,8 @@ func rebuildInventoryIndices() {
 }
 
 func addInventoryItem(id uint16, idx int, name string, equip bool) {
-	inventoryMu.Lock()
-	if idx >= 0 {
+    inventoryMu.Lock()
+    if idx >= 0 {
 		// Template item with explicit per-ID index; insert a new entry and renumber
 		// existing items of the same ID whose IDIndex >= idx.
 		for i := range inventoryItems {
@@ -91,13 +97,13 @@ func addInventoryItem(id uint16, idx int, name string, equip bool) {
 			}
 		}
 		// Append as a distinct instance; keep display order by placing at end
-		disp := fmt.Sprintf("%s <#%d>", name, idx+1)
-		item := InventoryItem{ID: id, Name: disp, Equipped: equip, Index: len(inventoryItems), IDIndex: idx, Quantity: 1}
-		inventoryItems = append(inventoryItems, item)
-	} else {
-		// Legacy/non-template: coalesce by ID only when normalized names match.
-		found := false
-		normName := normalizeInventoryName(name)
+        disp := fmt.Sprintf("%s <#%d>", name, idx+1)
+        item := InventoryItem{ID: id, Name: disp, Base: name, Extra: "", Equipped: equip, Index: len(inventoryItems), IDIndex: idx, Quantity: 1}
+        inventoryItems = append(inventoryItems, item)
+    } else {
+        // Legacy/non-template: coalesce by ID only when normalized names match.
+        found := false
+        normName := normalizeInventoryName(name)
 		for i := range inventoryItems {
 			if inventoryItems[i].ID == id && inventoryItems[i].IDIndex < 0 && normalizeInventoryName(inventoryItems[i].Name) == normName {
 				inventoryItems[i].Quantity++
@@ -108,11 +114,11 @@ func addInventoryItem(id uint16, idx int, name string, equip bool) {
 				break
 			}
 		}
-		if !found {
-			item := InventoryItem{ID: id, Name: name, Equipped: equip, Index: len(inventoryItems), IDIndex: -1, Quantity: 1}
-			inventoryItems = append(inventoryItems, item)
-		}
-	}
+        if !found {
+            item := InventoryItem{ID: id, Name: name, Base: name, Extra: "", Equipped: equip, Index: len(inventoryItems), IDIndex: -1, Quantity: 1}
+            inventoryItems = append(inventoryItems, item)
+        }
+    }
 	rebuildInventoryIndices()
 	// If this item was equipped, clear any other equipped items occupying the
 	// same slot (e.g., hands, head). Mirrors BumpItemsFromSlot in the reference client.
@@ -280,39 +286,79 @@ func toggleInventoryEquip(id uint16) {
 }
 
 func renameInventoryItem(id uint16, idx int, name string) {
-	inventoryMu.Lock()
-	if idx >= 0 {
+    inventoryMu.Lock()
+    if idx >= 0 {
 		// Template items are addressed by a per-ID index. Update only the
 		// matching instance so multiple containers of the same type can
 		// retain distinct names.
-		for i := range inventoryItems {
-			if inventoryItems[i].ID == id && inventoryItems[i].IDIndex == idx {
-				base := inventoryItems[i].Name
-				if p := strings.Index(base, " <#"); p >= 0 {
-					base = base[:p]
-				}
-				if name != "" {
-					inventoryItems[i].Name = fmt.Sprintf("%s <#%d %s>", base, idx+1, name)
-					inventoryNames[inventoryKey{ID: id, IDIndex: int16(idx)}] = name
-				} else {
-					inventoryItems[i].Name = fmt.Sprintf("%s <#%d>", base, idx+1)
-				}
-				break
-			}
-		}
-	} else {
-		// Legacy items without a template index: rename all matching IDs.
-		if name != "" {
-			inventoryNames[inventoryKey{ID: id, IDIndex: -1}] = name
-		}
-		for i := range inventoryItems {
-			if inventoryItems[i].ID == id {
-				inventoryItems[i].Name = name
-			}
-		}
-	}
-	inventoryMu.Unlock()
-	inventoryDirty = true
+        for i := range inventoryItems {
+            if inventoryItems[i].ID == id && inventoryItems[i].IDIndex == idx {
+                // Determine base (official) name without any suffix
+                base := inventoryItems[i].Name
+                if p := strings.Index(base, " <#"); p >= 0 {
+                    base = base[:p]
+                }
+                if base == "" && clImages != nil {
+                    if n := clImages.ItemName(uint32(id)); n != "" {
+                        base = n
+                    }
+                }
+                if base == "" {
+                    base = fmt.Sprintf("Item %d", id)
+                }
+                if name != "" {
+                    // Canonical: include colon for custom template names
+                    inventoryItems[i].Name = fmt.Sprintf("%s <#%d: %s>", base, idx+1, name)
+                    inventoryItems[i].Base = base
+                    inventoryItems[i].Extra = name
+                    inventoryNames[inventoryKey{ID: id, IDIndex: int16(idx)}] = name
+                } else {
+                    inventoryItems[i].Name = fmt.Sprintf("%s <#%d>", base, idx+1)
+                    inventoryItems[i].Base = base
+                    inventoryItems[i].Extra = ""
+                }
+                break
+            }
+        }
+    } else {
+        // Legacy items without a template index: rename all matching IDs.
+        if name != "" {
+            inventoryNames[inventoryKey{ID: id, IDIndex: -1}] = name
+        }
+        for i := range inventoryItems {
+            // Only update legacy instances; do not override template instances.
+            if inventoryItems[i].ID == id && inventoryItems[i].IDIndex < 0 {
+                // Compose canonical legacy name: Base <custom> when set, otherwise Base
+                base := inventoryItems[i].Name
+                if p := strings.Index(base, " <"); p >= 0 {
+                    base = base[:p]
+                }
+                if base == "" && clImages != nil {
+                    if n := clImages.ItemName(uint32(id)); n != "" {
+                        base = n
+                    }
+                }
+                if base == "" {
+                    if n, ok := defaultInventoryNames[id]; ok {
+                        base = n
+                    } else {
+                        base = fmt.Sprintf("Item %d", id)
+                    }
+                }
+                if name != "" {
+                    inventoryItems[i].Name = fmt.Sprintf("%s <%s>", base, name)
+                    inventoryItems[i].Base = base
+                    inventoryItems[i].Extra = name
+                } else {
+                    inventoryItems[i].Name = base
+                    inventoryItems[i].Base = base
+                    inventoryItems[i].Extra = ""
+                }
+            }
+        }
+    }
+    inventoryMu.Unlock()
+    inventoryDirty = true
 }
 
 func getInventory() []InventoryItem {
@@ -387,60 +433,73 @@ func setFullInventory(ids []uint16, equipped []bool) {
 			}
 		}
 
-		var name string
-		var idx int
-		if isTemplate {
-			idx = tmplCounts[id]
-			tmplCounts[id] = idx + 1
-			name = oldNames[inventoryKey{ID: id, IDIndex: int16(idx)}]
-			if name == "" {
-				name = oldNames[inventoryKey{ID: id, IDIndex: -1}]
-			}
-		} else {
-			name = oldNames[inventoryKey{ID: id, IDIndex: -1}]
-		}
+        var name string
+        var idx int
+        if isTemplate {
+            idx = tmplCounts[id]
+            tmplCounts[id] = idx + 1
+            // Only use per-index custom for template items; do not fall back to legacy (-1).
+            name = oldNames[inventoryKey{ID: id, IDIndex: int16(idx)}]
+        } else {
+            name = oldNames[inventoryKey{ID: id, IDIndex: -1}]
+        }
 
-		if name == "" {
-			// Prefer name from CL_Images ClientItem metadata when available.
-			if clImages != nil {
-				if n := clImages.ItemName(uint32(id)); n != "" {
-					name = n
-				}
-			}
-			if name == "" {
-				if n, ok := defaultInventoryNames[id]; ok {
-					name = n
-				} else {
-					name = fmt.Sprintf("Item %d", id)
-				}
-			}
-		}
+        // Determine base (official) name
+        base := ""
+        if clImages != nil {
+            if n := clImages.ItemName(uint32(id)); n != "" {
+                base = n
+            }
+        }
+        if base == "" {
+            if n, ok := defaultInventoryNames[id]; ok {
+                base = n
+            } else {
+                base = fmt.Sprintf("Item %d", id)
+            }
+        }
 
-		if isTemplate {
-			item := InventoryItem{ID: id, Name: name, Equipped: equip, Index: len(grouped), IDIndex: idx, Quantity: 1}
-			grouped = append(grouped, item)
-			if name != "" {
-				newNames[inventoryKey{ID: id, IDIndex: int16(idx)}] = name
-			}
-			continue
-		}
+        // Compose canonical display name for the new list
+        disp := base
+        if isTemplate {
+            if strings.TrimSpace(name) != "" {
+                disp = fmt.Sprintf("%s <#%d: %s>", base, idx+1, name)
+            } else {
+                disp = fmt.Sprintf("%s <#%d>", base, idx+1)
+            }
+            item := InventoryItem{ID: id, Name: disp, Base: base, Extra: strings.TrimSpace(name), Equipped: equip, Index: len(grouped), IDIndex: idx, Quantity: 1}
+            grouped = append(grouped, item)
+            if name != "" {
+                newNames[inventoryKey{ID: id, IDIndex: int16(idx)}] = name
+            }
+            continue
+        }
 
-		gk := groupKey{id: id, name: normalizeInventoryName(name)}
-		if pos, ok := groupPos[gk]; ok {
-			grouped[pos].Quantity++
-			if equip {
-				grouped[pos].Equipped = true
-			}
-			continue
-		}
+        // Legacy items: If a custom exists and differs from base, append as "<custom>"
+        if strings.TrimSpace(name) != "" && normalizeInventoryName(name) != normalizeInventoryName(base) {
+            disp = fmt.Sprintf("%s <%s>", base, name)
+        }
 
-		item := InventoryItem{ID: id, Name: name, Equipped: equip, Index: len(grouped), IDIndex: -1, Quantity: 1}
-		grouped = append(grouped, item)
-		groupPos[gk] = len(grouped) - 1
-		if name != "" {
-			newNames[inventoryKey{ID: id, IDIndex: -1}] = name
-		}
-	}
+        gk := groupKey{id: id, name: normalizeInventoryName(disp)}
+        if pos, ok := groupPos[gk]; ok {
+            grouped[pos].Quantity++
+            if equip {
+                grouped[pos].Equipped = true
+            }
+            continue
+        }
+
+        legacyExtra := ""
+        if strings.TrimSpace(name) != "" && normalizeInventoryName(name) != normalizeInventoryName(base) {
+            legacyExtra = strings.TrimSpace(name)
+        }
+        item := InventoryItem{ID: id, Name: disp, Base: base, Extra: legacyExtra, Equipped: equip, Index: len(grouped), IDIndex: -1, Quantity: 1}
+        grouped = append(grouped, item)
+        groupPos[gk] = len(grouped) - 1
+        if name != "" {
+            newNames[inventoryKey{ID: id, IDIndex: -1}] = name
+        }
+    }
 
 	inventoryMu.Lock()
 	inventoryItems = grouped

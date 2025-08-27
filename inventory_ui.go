@@ -226,24 +226,32 @@ func updateInventoryWindow() {
 		icon.Margin = 4
 		row.AddItem(icon)
 
-		// Text label with quantity suffix after the name when >1
-		label := it.Name
-		if label == "" && clImages != nil {
-			label = clImages.ItemName(uint32(id))
-		}
-		if label == "" {
-			label = fmt.Sprintf("Item %d", id)
-		}
-		if r, ok := getInventoryShortcut(it.Index); ok && r != 0 {
-			label = fmt.Sprintf("[%c] %v", unicode.ToUpper(r), label)
-		}
-		if qty > 1 {
-			label = fmt.Sprintf("%v (%v)", label, qty)
-		}
+        // Text label: Title-case only base name; preserve bracketed/custom suffix exactly
+        raw := it.Name
+        if raw == "" && clImages != nil {
+            raw = clImages.ItemName(uint32(id))
+        }
+        if raw == "" {
+            raw = fmt.Sprintf("Item %d", id)
+        }
+        base := raw
+        suffix := ""
+        if p := strings.Index(base, " <"); p >= 0 {
+            suffix = base[p:]
+            base = base[:p]
+        }
+        prefix := ""
+        if r, ok := getInventoryShortcut(it.Index); ok && r != 0 {
+            prefix = fmt.Sprintf("[%c] ", unicode.ToUpper(r))
+        }
+        qtySuffix := ""
+        if qty > 1 {
+            qtySuffix = fmt.Sprintf(" (%v)", qty)
+        }
 
-		t, _ := eui.NewText()
-		t.Text = TitleCaser.String(label)
-		t.FontSize = float32(fontSize)
+        t, _ := eui.NewText()
+        t.Text = prefix + TitleCaser.String(base) + suffix + qtySuffix
+        t.FontSize = float32(fontSize)
 
 		face := goFace
 		if anyEquipped[key] {

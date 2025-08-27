@@ -139,12 +139,14 @@ func RegisterPlayerHandler(fn func(Player)) {}
 
 // InventoryItem mirrors the client's inventory item structure.
 type InventoryItem struct {
-	ID       uint16
-	Name     string
-	Equipped bool
-	Index    int
-	IDIndex  int
-	Quantity int
+    ID       uint16
+    Name     string
+    Base     string
+    Extra    string
+    Equipped bool
+    Index    int
+    IDIndex  int
+    Quantity int
 }
 
 // Inventory returns the player's inventory.
