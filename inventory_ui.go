@@ -398,6 +398,21 @@ func openInventoryContextMenu(ref invRef, pos eui.Point) {
 	}
 	inventoryCtxWin.Contents = nil
 	flow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL, Fixed: true}
+
+	// Determine whether the item is wearable and currently equipped to
+	// conditionally show Equip/Unequip actions.
+	wearable := false
+	equipped := false
+	if it, ok := inventoryItemByIndex(ref.global); ok {
+		equipped = it.Equipped
+		if clImages != nil {
+			slot := clImages.ItemSlot(uint32(it.ID))
+			if slot >= kItemSlotFirstReal && slot <= kItemSlotLastReal {
+				wearable = true
+			}
+		}
+	}
+
 	add := func(name string, fn func()) {
 		b, _ := eui.NewButton()
 		b.Text = name
@@ -418,12 +433,16 @@ func openInventoryContextMenu(ref invRef, pos eui.Point) {
 		enqueueCommand(fmt.Sprintf("/drop %d", ref.id))
 		nextCommand()
 	})
-	add("Equip", func() { queueEquipCommand(ref.id, ref.idx) })
-	add("Unequip", func() {
-		enqueueCommand(fmt.Sprintf("/unequip %d", ref.id))
-		nextCommand()
-		equipInventoryItem(ref.id, ref.idx, false)
-	})
+	if wearable && !equipped {
+		add("Equip", func() { queueEquipCommand(ref.id, ref.idx) })
+	}
+	if wearable && equipped {
+		add("Unequip", func() {
+			enqueueCommand(fmt.Sprintf("/unequip %d", ref.id))
+			nextCommand()
+			equipInventoryItem(ref.id, ref.idx, false)
+		})
+	}
 	add("Examine", func() {
 		selectInventoryItem(ref.id, ref.idx)
 		enqueueCommand(fmt.Sprintf("/examine %d", ref.id))
