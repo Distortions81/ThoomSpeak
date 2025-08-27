@@ -8,11 +8,15 @@ import (
 	"gothoom/eui"
 	"math"
 	"time"
+	"sort"
+	"strings"
+	"unicode"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	text "github.com/hajimehoshi/ebiten/v2/text/v2"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+	"golang.org/x/text/unicode/norm"
 )
 
 var inventoryWin *eui.WindowData
@@ -26,11 +30,18 @@ var lastInvClickIdx int
 var lastInvClickTime time.Time
 
 var TitleCaser = cases.Title(language.AmericanEnglish)
+var foldCaser = cases.Fold()
 
 var (
 	invBoldSrc   *text.GoTextFaceSource
 	invItalicSrc *text.GoTextFaceSource
 )
+
+type invGroupKey struct {
+	id   uint16
+	name string
+	idx  int
+}
 
 // slotNames maps item slot constants to display strings.
 var slotNames = []string{
@@ -83,18 +94,14 @@ func updateInventoryWindow() {
 	counts := make(map[invGroupKey]int)
 	first := make(map[invGroupKey]InventoryItem)
 	anyEquipped := make(map[invGroupKey]bool)
+	hasShortcut := make(map[invGroupKey]bool)
 	order := make([]invGroupKey, 0, len(items))
 	for _, it := range items {
-		slot := -1
-		if clImages != nil {
-			slot = clImages.ItemSlot(uint32(it.ID))
-		}
-		isClothing := slot >= kItemSlotForehead && slot <= kItemSlotHead &&
-			slot != kItemSlotRightHand && slot != kItemSlotLeftHand &&
-			slot != kItemSlotBothHands
 		key := invGroupKey{id: it.ID, name: it.Name}
-		if isClothing {
-			key.idx = it.Index
+		if it.IDIndex >= 0 {
+			// Template-data items must remain unique by their per-ID index
+			key.idx = it.IDIndex
+			key.name = ""
 		}
 		if _, seen := counts[key]; !seen {
 			order = append(order, key)
@@ -104,7 +111,26 @@ func updateInventoryWindow() {
 		if it.Equipped {
 			anyEquipped[key] = true
 		}
+		if r, ok := getInventoryShortcut(it.Index); ok && r != 0 {
+			hasShortcut[key] = true
+		}
 	}
+
+	sort.SliceStable(order, func(i, j int) bool {
+		ai := order[i]
+		aj := order[j]
+		hi := hasShortcut[ai]
+		hj := hasShortcut[aj]
+		if hi != hj {
+			return hi
+		}
+		nameI := officialName(ai, first[ai])
+		nameJ := officialName(aj, first[aj])
+		if nameI != nameJ {
+			return nameI < nameJ
+		}
+		return first[ai].Index < first[aj].Index
+	})
 
 	// Clear prior contents and rebuild rows as [icon][name (xN)].
 	inventoryList.Contents = nil
@@ -312,4 +338,23 @@ func handleInventoryClick(id uint16, idx int) {
 		lastInvClickTime = now
 		updateInventoryWindow()
 	}
+func officialName(k invGroupKey, it InventoryItem) string {
+	name := ""
+	if clImages != nil {
+		name = clImages.ItemName(uint32(k.id))
+	}
+	if name == "" {
+		name = it.Name
+	}
+	if name == "" {
+		name = fmt.Sprintf("Item %d", k.id)
+	}
+	name = norm.NFD.String(name)
+	name = strings.Map(func(r rune) rune {
+		if unicode.Is(unicode.Mn, r) {
+			return -1
+		}
+		return r
+	}, name)
+	return foldCaser.String(name)
 }
