@@ -3541,6 +3541,19 @@ func makeDebugWindow() {
 	}
 	debugFlow.AddItem(pluginOutCB)
 
+	shaderCB, shaderEvents := eui.NewCheckbox()
+	shaderCB.Text = "Shader lighting"
+	shaderCB.Size = eui.Point{X: width, Y: 24}
+	shaderCB.Checked = gs.shaderLighting
+	shaderCB.Tooltip = "Experimental shader-based light and dark rendering"
+	shaderEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			gs.shaderLighting = ev.Checked
+			settingsDirty = true
+		}
+	}
+	debugFlow.AddItem(shaderCB)
+
 	smoothinCB, smoothinEvents := eui.NewCheckbox()
 	smoothinCB.Text = "Tint moving objects red"
 	smoothinCB.Size = eui.Point{X: width, Y: 24}

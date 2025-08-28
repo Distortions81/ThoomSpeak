@@ -845,10 +845,10 @@ func (g *Game) Update() error {
     }
     // (right-click handling for menus/copy is handled earlier)
 
-    // Default desired target from current pointer, even if outside game window.
-    // We'll freeze it to the previous value only when we're NOT walking.
-    x, y := baseX, baseY
-    walk := false
+	// Default desired target from current pointer, even if outside game window.
+	// We'll freeze it to the previous value only when we're NOT walking.
+	x, y := baseX, baseY
+	walk := false
 	if !uiMouseDown {
 		if keyWalk {
 			x, y, walk = keyX, keyY, true
@@ -874,17 +874,17 @@ func (g *Game) Update() error {
 		ebiten.SetCursorShape(ebiten.CursorShapeDefault)
 	}
 
-    // If the pointer is outside the game window and we're not walking,
-    // keep the last target so idle mouse movement doesn't jitter the server
-    // input. When walking, continue tracking the live pointer position even
-    // outside the window as requested.
-    if !inGame && !walk {
-        x, y = prev.mouseX, prev.mouseY
-    }
+	// If the pointer is outside the game window and we're not walking,
+	// keep the last target so idle mouse movement doesn't jitter the server
+	// input. When walking, continue tracking the live pointer position even
+	// outside the window as requested.
+	if !inGame && !walk {
+		x, y = prev.mouseX, prev.mouseY
+	}
 
-    inputMu.Lock()
-    latestInput = inputState{mouseX: x, mouseY: y, mouseDown: walk}
-    inputMu.Unlock()
+	inputMu.Lock()
+	latestInput = inputState{mouseX: x, mouseY: y, mouseDown: walk}
+	inputMu.Unlock()
 
 	updateHotkeyRecording()
 	checkHotkeys()
@@ -1071,6 +1071,9 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		if gs.nightEffect {
 			drawNightOverlay(worldRT, 0, 0)
 		}
+		if gs.shaderLighting {
+			applyLightingShader(worldRT, frameLights, frameDarks)
+		}
 		drawStatusBars(worldRT, 0, 0, snap, alpha)
 		gs.GameScale = prev
 		haveSnap = true
@@ -1129,6 +1132,10 @@ var lastSeekPrev time.Time
 
 // drawScene renders all world objects for the current frame.
 func drawScene(screen *ebiten.Image, ox, oy int, snap drawSnapshot, alpha float64, mobileFade, pictFade float32) {
+	if gs.shaderLighting {
+		frameLights = frameLights[:0]
+		frameDarks = frameDarks[:0]
+	}
 
 	// Use cached descriptor map directly; no need to rebuild/sort it per frame.
 	descMap := snap.descriptors
@@ -1260,6 +1267,7 @@ func drawMobile(screen *ebiten.Image, ox, oy int, m frameMobile, descMap map[uin
 	}
 	if img != nil {
 		size := img.Bounds().Dx()
+		addLightSource(uint32(d.PictID), float64(x), float64(y), size)
 		blend := gs.BlendMobiles && prevImg != nil && fade > 0 && fade < 1
 		var src *ebiten.Image
 		drawSize := size
@@ -1366,6 +1374,8 @@ func drawPicture(screen *ebiten.Image, ox, oy int, p framePicture, alpha float64
 	y := roundToInt(((float64(p.V) + offY + mobileY) + float64(fieldCenterY)) * gs.GameScale)
 	x += ox
 	y += oy
+
+	addLightSource(uint32(p.PictID), float64(x), float64(y), w)
 
 	img := loadImageFrame(p.PictID, frame)
 	var prevImg *ebiten.Image
