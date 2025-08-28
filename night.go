@@ -47,7 +47,7 @@ const ambientNightStrength = 0.4
 
 var blackImg *ebiten.Image
 
-var nightRE = regexp.MustCompile(`^/nt ([0-9]+) /sa ([-0-9]+) /cl ([01])`)
+var nightRE = regexp.MustCompile(`(?i)^/nt ([0-9]+) /sa ([-0-9]+) /cl ([01])`)
 
 func (n *NightInfo) calcCurLevel() {
 	delta := 0
@@ -166,7 +166,7 @@ func parseNightCommand(s string) bool {
 		return true
 	}
 	const prefix = "/nt "
-	if !strings.HasPrefix(s, prefix) {
+	if len(s) < len(prefix) || !strings.EqualFold(s[:len(prefix)], prefix) {
 		return false
 	}
 	rest := s[len(prefix):]
