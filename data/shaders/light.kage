@@ -1,0 +1,50 @@
+package main
+
+const MaxLights = 32
+
+var (
+    LightCount int
+    DarkCount int
+    LightPosX [MaxLights]float
+    LightPosY [MaxLights]float
+    LightRadius [MaxLights]float
+    LightR [MaxLights]float
+    LightG [MaxLights]float
+    LightB [MaxLights]float
+    DarkPosX [MaxLights]float
+    DarkPosY [MaxLights]float
+    DarkRadius [MaxLights]float
+    DarkAlpha [MaxLights]float
+)
+
+func Fragment(pos vec4, texCoord vec2, color vec4) vec4 {
+    col := imageSrc0At(texCoord)
+    for i := 0; i < MaxLights; i++ {
+        if i < LightCount {
+            dx := pos.x - LightPosX[i]
+            dy := pos.y - LightPosY[i]
+            dist := sqrt(dx*dx + dy*dy)
+            f := max(0.0, 1.0 - dist/LightRadius[i])
+            col.r += LightR[i] * f
+            col.g += LightG[i] * f
+            col.b += LightB[i] * f
+        }
+    }
+    for i := 0; i < MaxLights; i++ {
+        if i < DarkCount {
+            dx := pos.x - DarkPosX[i]
+            dy := pos.y - DarkPosY[i]
+            dist := sqrt(dx*dx + dy*dy)
+            f := max(0.0, 1.0 - dist/DarkRadius[i])
+            d := DarkAlpha[i] * f
+            col.r *= 1.0 - d
+            col.g *= 1.0 - d
+            col.b *= 1.0 - d
+        }
+    }
+    col.r = clamp(col.r, 0.0, 1.0)
+    col.g = clamp(col.g, 0.0, 1.0)
+    col.b = clamp(col.b, 0.0, 1.0)
+    return col
+}
+

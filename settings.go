@@ -104,6 +104,7 @@ var gsdef settings = settings{
 	EnabledPlugins:  map[string]bool{},
 	vsync:           true,
 	nightEffect:     true,
+	shaderLighting:  false,
 	throttleSounds:  true,
 }
 
@@ -204,6 +205,7 @@ type settings struct {
 	EnabledPlugins      map[string]bool
 	vsync               bool
 	nightEffect         bool
+	shaderLighting      bool
 	precacheSounds      bool
 	precacheImages      bool
 	throttleSounds      bool
