@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestParseNightCommand(t *testing.T) {
 	tests := []struct {
@@ -38,6 +41,14 @@ func TestParseNightCommand(t *testing.T) {
 			azimuth:   40,
 			cloudy:    true,
 			shadows:   0,
+		},
+		{
+			name:      "new style extra spaces",
+			cmd:       "/nt 52  /sa  10  /cl 1",
+			baseLevel: 52,
+			level:     52,
+			azimuth:   10,
+			cloudy:    true,
 		},
 		{
 			name:      "legacy long mixed case",
@@ -94,7 +105,6 @@ func TestCurrentNightLevel(t *testing.T) {
 		{"ForcedDayOverrides", 0, 100, 0, 80, 0},
 		{"Force100FlagOverridesMax", -1, 25, kLightForce100Pct, 80, 80},
 	}
-
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			gNight.mu.Lock()
