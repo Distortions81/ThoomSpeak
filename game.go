@@ -1050,7 +1050,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	offW := worldW * offIntScale
 	offH := worldH * offIntScale
 	ensureWorldRT(offW, offH)
-	worldRT.Clear()
+	worldRT.Fill(color.Black)
 
 	// Render splash or live frame into worldRT using the offscreen scale
 	var snap drawSnapshot
@@ -1073,7 +1073,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			addNightDarkSources(offW, offH, float32(alpha))
 		} else {
 			// Classic overlay path when shader is off.
-			drawNightAmbient(worldRT, 0, 0)
+			//drawNightAmbient(worldRT, 0, 0)
 			drawNightOverlay(worldRT, 0, 0)
 		}
 		if gs.shaderLighting {
@@ -1085,7 +1085,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 
 	// Composite worldRT into the gameImage buffer: scale/center
-	gameImage.Clear()
 	scaleDown := math.Min(float64(bufW)/float64(offW), float64(bufH)/float64(offH))
 	drawW := float64(offW) * scaleDown
 	drawH := float64(offH) * scaleDown

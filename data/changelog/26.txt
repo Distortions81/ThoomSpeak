@@ -1,0 +1,16 @@
+Added icon for Mac, Windows and Linux.
+Made adjustments to work within the macos Sequoia app sandbox. Added Apple ad-hoc (free) signing so it will complain a bit less. 
+Muting or disabling TTS now clears the TTS queue.
+Updated to golang 1.25.0 
+Fixed window resizing bug (reverse direction).
+Adjusted networking for better performance.
+Added "think" sound.
+clothing items are no longer grouped, other duplicate items are
+The "drunk/impared" orange status bars work correctly now.
+Fixed nametags not always having the currently set opacity
+Closing a window no longer allows the click to pass through to whatever is under it (game, making you walk for instance)
+Added Equip, Examine, Show, Drop and Drop (mine) context menu options to inventory window. 
+Added Thanks, Curse, Anon Thank, Anon Curse, Share, Unshare, Info, Pull and Push to players window context menu. 
+Added copy (entire) line with right click in console/chat window, right click input bar can copy, paste or clear. 
+Added nice night-time lighting and day/night soft glow on effects using GPU shaders. 
+Cleaned up settings panel, toolbar, etc
