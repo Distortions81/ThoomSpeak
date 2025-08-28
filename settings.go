@@ -86,10 +86,11 @@ var gsdef settings = settings{
 	ChatTTSSpeed:         1.5,
 	ChatTTSVoice:         "en_US-hfc_female-medium",
 	Notifications:        true,
-	NotifyFallen:         true,
-	NotifyNotFallen:      true,
-	NotifyShares:         true,
-	NotifyFriendOnline:   true,
+    NotifyFallen:         true,
+    NotifyNotFallen:      true,
+    NotifyShares:         true,
+    NotifyFriendOnline:   true,
+    NotifyCopyText:       true,
 	NotificationDuration: 6,
 	PluginSpamKill:       true,
 	TimestampFormat:      "3:04PM",
@@ -173,8 +174,9 @@ type settings struct {
 	NotifyFallen         bool
 	NotifyNotFallen      bool
 	NotifyShares         bool
-	NotifyFriendOnline   bool
-	NotificationDuration float64
+    NotifyFriendOnline   bool
+    NotifyCopyText       bool
+    NotificationDuration float64
 	PluginSpamKill       bool
 	ChatTimestamps       bool
 	ConsoleTimestamps    bool

@@ -310,22 +310,24 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 	}
 	row2.AddItem(mixBtn)
 
-	stopBtn, stopEvents := eui.NewButton()
-	stopBtn.Text = "Stop Plugins"
-	stopBtn.Size = eui.Point{X: buttonWidth * 2, Y: buttonHeight}
-	stopBtn.FontSize = toolFontSize
+	/*
+		stopBtn, stopEvents := eui.NewButton()
+		stopBtn.Text = "Stop Plugins"
+		stopBtn.Size = eui.Point{X: buttonWidth * 2, Y: buttonHeight}
+		stopBtn.FontSize = toolFontSize
 
-	stopBtnTheme := *stopBtn.Theme
-	stopBtnTheme.Button.Color = eui.ColorDarkRed
-	stopBtnTheme.Button.HoverColor = eui.ColorRed
-	stopBtnTheme.Button.ClickColor = eui.ColorLightRed
-	stopBtn.Theme = &stopBtnTheme
-	stopEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventClick {
-			stopAllPlugins()
+		stopBtnTheme := *stopBtn.Theme
+		stopBtnTheme.Button.Color = eui.ColorDarkRed
+		stopBtnTheme.Button.HoverColor = eui.ColorRed
+		stopBtnTheme.Button.ClickColor = eui.ColorLightRed
+		stopBtn.Theme = &stopBtnTheme
+		stopEvents.Handle = func(ev eui.UIEvent) {
+			if ev.Type == eui.EventClick {
+				stopAllPlugins()
+			}
 		}
-	}
-	row2.AddItem(stopBtn)
+		row2.AddItem(stopBtn)
+	*/
 
 	// Removed toolbar volume slider and mute button (use Mixer instead)
 
@@ -3364,6 +3366,7 @@ func makeNotificationsWindow() {
 	addCB("Not fallen", &gs.NotifyNotFallen)
 	addCB("Shares", &gs.NotifyShares)
 	addCB("Friend online", &gs.NotifyFriendOnline)
+	addCB("Text copied", &gs.NotifyCopyText)
 
 	durSlider, durEvents := eui.NewSlider()
 	durSlider.Label = "Display Duration (sec)"

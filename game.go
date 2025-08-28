@@ -573,12 +573,19 @@ func (g *Game) Update() error {
 	}
 	inventoryShortcutMu.RUnlock()
 
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) {
-		// Try players list first, then inventory.
-		if !handlePlayersContextClick(mx, my) {
-			handleInventoryContextClick(mx, my)
-		}
-	}
+    if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) {
+        // Input bar menu takes precedence when right-clicking on input.
+        if !handleConsoleInputContext(mx, my) {
+            // Try players list first, then inventory, then chat/console copy.
+            if !handlePlayersContextClick(mx, my) {
+                if !handleInventoryContextClick(mx, my) {
+                    if !handleChatCopyRightClick(mx, my) {
+                        _ = handleConsoleCopyRightClick(mx, my)
+                    }
+                }
+            }
+        }
+    }
 
 	if debugWin != nil && debugWin.IsOpen() {
 		if time.Since(lastDebugStatsUpdate) >= time.Second {
@@ -833,9 +840,10 @@ func (g *Game) Update() error {
 	if click && !uiMouseDown && inGame {
 		handleWorldClick(baseX, baseY)
 	}
-	if rightClick && inGame && !pointInUI(mx, my) {
-		handleWorldClick(baseX, baseY)
-	}
+    if rightClick && inGame && !pointInUI(mx, my) {
+        handleWorldClick(baseX, baseY)
+    }
+    // (right-click handling for menus/copy is handled earlier)
 
     // Default desired target from current pointer, even if outside game window.
     // We'll freeze it to the previous value only when we're NOT walking.
