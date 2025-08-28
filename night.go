@@ -3,11 +3,9 @@ package main
 import (
 	"bytes"
 	_ "embed"
-	"fmt"
 	"image"
 	"image/color"
 	"math"
-	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -46,8 +44,6 @@ var (
 const ambientNightStrength = 0.4
 
 var blackImg *ebiten.Image
-
-var nightRE = regexp.MustCompile(`(?i)^/nt ([0-9]+) /sa ([-0-9]+) /cl ([01])`)
 
 func (n *NightInfo) calcCurLevel() {
 	delta := 0
@@ -151,44 +147,51 @@ func currentNightLevel() int {
 }
 
 func parseNightCommand(s string) bool {
-	if m := nightRE.FindStringSubmatch(s); m != nil {
-		lvl, _ := strconv.Atoi(m[1])
-		sa, _ := strconv.Atoi(m[2])
-		cloudy := m[3] != "0"
-		gNight.mu.Lock()
-		gNight.BaseLevel = lvl
-		gNight.Level = lvl
-		gNight.Azimuth = sa
-		gNight.Cloudy = cloudy
-		gNight.calcCurLevel()
-		gNight.calcRedshift()
-		gNight.mu.Unlock()
-		return true
+	fields := strings.Fields(s)
+	if len(fields) >= 6 && strings.EqualFold(fields[0], "/nt") && strings.EqualFold(fields[2], "/sa") && strings.EqualFold(fields[4], "/cl") {
+		lvl, err1 := strconv.Atoi(fields[1])
+		az, err2 := strconv.Atoi(fields[3])
+		cloudy := fields[5] != "0"
+		if err1 == nil && err2 == nil {
+			gNight.mu.Lock()
+			gNight.BaseLevel = lvl
+			gNight.Level = lvl
+			gNight.Azimuth = az
+			gNight.Cloudy = cloudy
+			gNight.calcCurLevel()
+			gNight.calcRedshift()
+			gNight.mu.Unlock()
+			return true
+		}
 	}
-	const prefix = "/nt "
-	if len(s) < len(prefix) || !strings.EqualFold(s[:len(prefix)], prefix) {
-		return false
-	}
-	rest := s[len(prefix):]
-	var nightLevel, shadowLevel, sunAngle, declination int
-	if n, err := fmt.Sscanf(rest, "%d %d %d %d", &nightLevel, &shadowLevel, &sunAngle, &declination); err == nil && n >= 3 {
-		gNight.mu.Lock()
-		gNight.BaseLevel = nightLevel
-		gNight.Level = nightLevel
-		gNight.Azimuth = sunAngle
-		gNight.calcCurLevel()
-		gNight.calcRedshift()
-		gNight.mu.Unlock()
-		return true
-	}
-	if n, err := fmt.Sscanf(rest, "%d", &nightLevel); err == nil && n == 1 {
-		gNight.mu.Lock()
-		gNight.BaseLevel = nightLevel
-		gNight.Level = nightLevel
-		gNight.calcCurLevel()
-		gNight.calcRedshift()
-		gNight.mu.Unlock()
-		return true
+	if len(fields) >= 1 && strings.EqualFold(fields[0], "/nt") {
+		if len(fields) >= 4 {
+			lvl, err1 := strconv.Atoi(fields[1])
+			shadow, err2 := strconv.Atoi(fields[2])
+			az, err3 := strconv.Atoi(fields[3])
+			if err1 == nil && err2 == nil && err3 == nil {
+				gNight.mu.Lock()
+				gNight.BaseLevel = lvl
+				gNight.Level = lvl
+				gNight.Azimuth = az
+				gNight.Shadows = shadow
+				gNight.calcRedshift()
+				gNight.mu.Unlock()
+				return true
+			}
+		}
+		if len(fields) >= 2 {
+			lvl, err := strconv.Atoi(fields[1])
+			if err == nil {
+				gNight.mu.Lock()
+				gNight.BaseLevel = lvl
+				gNight.Level = lvl
+				gNight.calcCurLevel()
+				gNight.calcRedshift()
+				gNight.mu.Unlock()
+				return true
+			}
+		}
 	}
 	return false
 }

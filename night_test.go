@@ -10,6 +10,7 @@ func TestParseNightCommand(t *testing.T) {
 		level     int
 		azimuth   int
 		cloudy    bool
+		shadows   int
 	}{
 		{
 			name:      "new style mixed case",
@@ -18,6 +19,7 @@ func TestParseNightCommand(t *testing.T) {
 			level:     50,
 			azimuth:   42,
 			cloudy:    true,
+			shadows:   0,
 		},
 		{
 			name:      "new style uppercase",
@@ -26,6 +28,16 @@ func TestParseNightCommand(t *testing.T) {
 			level:     51,
 			azimuth:   -1,
 			cloudy:    false,
+			shadows:   0,
+		},
+		{
+			name:      "new style odd whitespace",
+			cmd:       "/Nt\u00a052\t/SA\t40\u00a0/CL\u00a01",
+			baseLevel: 52,
+			level:     52,
+			azimuth:   40,
+			cloudy:    true,
+			shadows:   0,
 		},
 		{
 			name:      "legacy long mixed case",
@@ -33,12 +45,17 @@ func TestParseNightCommand(t *testing.T) {
 			baseLevel: 10,
 			level:     10,
 			azimuth:   30,
+			cloudy:    false,
+			shadows:   20,
 		},
 		{
 			name:      "legacy short uppercase",
 			cmd:       "/NT 25",
 			baseLevel: 25,
 			level:     25,
+			azimuth:   0,
+			cloudy:    false,
+			shadows:   25,
 		},
 	}
 	for _, tt := range tests {
@@ -52,11 +69,17 @@ func TestParseNightCommand(t *testing.T) {
 			gotLevel := gNight.Level
 			gotAzimuth := gNight.Azimuth
 			gotCloudy := gNight.Cloudy
+			gotShadows := gNight.Shadows
 			gNight.mu.Unlock()
-			if gotBase != tt.baseLevel || gotLevel != tt.level || gotAzimuth != tt.azimuth || gotCloudy != tt.cloudy {
-				t.Fatalf("parseNightCommand(%q) = {BaseLevel:%d Level:%d Azimuth:%d Cloudy:%v}, want {BaseLevel:%d Level:%d Azimuth:%d Cloudy:%v}", tt.cmd, gotBase, gotLevel, gotAzimuth, gotCloudy, tt.baseLevel, tt.level, tt.azimuth, tt.cloudy)
+			if gotBase != tt.baseLevel || gotLevel != tt.level || gotAzimuth != tt.azimuth || gotCloudy != tt.cloudy || gotShadows != tt.shadows {
+				t.Fatalf("parseNightCommand(%q) = {BaseLevel:%d Level:%d Azimuth:%d Cloudy:%v Shadows:%d}, want {BaseLevel:%d Level:%d Azimuth:%d Cloudy:%v Shadows:%d}",
+					tt.cmd, gotBase, gotLevel, gotAzimuth, gotCloudy, gotShadows, tt.baseLevel, tt.level, tt.azimuth, tt.cloudy, tt.shadows)
+			}
+		})
+	}
+}
 
-        func TestCurrentNightLevel(t *testing.T) {
+func TestCurrentNightLevel(t *testing.T) {
 	cases := []struct {
 		name   string
 		force  int
