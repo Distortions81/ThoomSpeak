@@ -76,3 +76,37 @@ func TestPluginRegisterAndDisableCommand(t *testing.T) {
 		t.Fatalf("commands queued when plugin disabled: %v", cmds)
 	}
 }
+
+// Test that registering a command twice logs a conflict and keeps the original handler.
+func TestPluginRegisterCommandConflict(t *testing.T) {
+	// Reset shared state.
+	pluginMu = sync.RWMutex{}
+	pluginCommands = map[string]PluginCommandHandler{}
+	pluginCommandOwners = map[string]string{}
+	consoleLog = messageLog{max: maxMessages}
+
+	owner1 := "one"
+	owner2 := "two"
+
+	ran := false
+	pluginRegisterCommand(owner1, "cmd", func(args string) { ran = true })
+
+	// Clear console messages before second registration attempt.
+	consoleLog = messageLog{max: maxMessages}
+
+	pluginRegisterCommand(owner2, "cmd", func(args string) {})
+
+	msgs := getConsoleMessages()
+	want := "[plugin] command conflict: /cmd already registered"
+	if len(msgs) == 0 || msgs[len(msgs)-1] != want {
+		t.Fatalf("unexpected console messages %v", msgs)
+	}
+
+	// Ensure original handler remains registered.
+	if h, ok := pluginCommands["cmd"]; ok {
+		h("")
+	}
+	if !ran {
+		t.Fatalf("original handler overwritten")
+	}
+}
