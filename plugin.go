@@ -315,6 +315,10 @@ var (
 	pluginModCheck      time.Time
 )
 
+func pluginIsDisabled(owner string) bool {
+	return pluginDisabled[owner]
+}
+
 // pluginRegisterCommand lets plugins handle a local slash command like
 // "/example". The name should be without the leading slash and will be
 // matched case-insensitively.
@@ -614,7 +618,7 @@ func pluginUnequip(owner string, id uint16) {
 }
 
 func pluginRegisterInputHandler(owner string, fn func(string) string) {
-	if fn == nil {
+	if pluginIsDisabled(owner) || fn == nil {
 		return
 	}
 	inputHandlersMu.Lock()
@@ -623,7 +627,7 @@ func pluginRegisterInputHandler(owner string, fn func(string) string) {
 }
 
 func pluginRegisterChatHandler(owner string, fn func(string)) {
-	if fn == nil {
+	if pluginIsDisabled(owner) || fn == nil {
 		return
 	}
 	chatHandlersMu.Lock()
@@ -632,7 +636,7 @@ func pluginRegisterChatHandler(owner string, fn func(string)) {
 }
 
 func pluginRegisterPlayerHandler(owner string, fn func(Player)) {
-	if fn == nil {
+	if pluginIsDisabled(owner) || fn == nil {
 		return
 	}
 	playerHandlersMu.Lock()
