@@ -813,6 +813,9 @@ func (g *Game) Update() error {
 	}
 
 	stopWalkIfOutside(click, inGame)
+	inputMu.Lock()
+	prev := latestInput
+	inputMu.Unlock()
 	if click && pointInUI(mx, my) {
 		uiMouseDown = true
 	}
@@ -832,23 +835,22 @@ func (g *Game) Update() error {
 	}
 
 	x, y := baseX, baseY
+	if !inGame {
+		x, y = prev.mouseX, prev.mouseY
+	}
 	walk := false
 	if !uiMouseDown {
 		if keyWalk {
 			x, y, walk = keyX, keyY, true
 			walkToggled = false
-		} else if inGame {
-			if gs.ClickToToggle && click {
+		} else if gs.ClickToToggle {
+			if click && inGame {
 				walkToggled = !walkToggled
-				walk = walkToggled
-			} else if !gs.ClickToToggle && heldTime > 1 && !click {
-				walk = true
-				walkToggled = false
 			}
-		}
-
-		if gs.ClickToToggle && walkToggled {
 			walk = walkToggled
+		} else if continueHeldWalk(prev, inGame, ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft), heldTime, click) {
+			walk = true
+			walkToggled = false
 		}
 	}
 	if !focused {
@@ -876,6 +878,10 @@ func stopWalkIfOutside(click, inGame bool) {
 	if gs.ClickToToggle && click && !inGame {
 		walkToggled = false
 	}
+}
+
+func continueHeldWalk(prev inputState, inGame, buttonPressed bool, heldTime int, click bool) bool {
+	return (heldTime > 1 && !click && inGame) || (prev.mouseDown && buttonPressed)
 }
 
 func updateGameWindowSize() {
