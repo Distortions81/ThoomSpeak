@@ -42,6 +42,7 @@ type CLImages struct {
 	lights           map[uint32]*dataLocation
 	items            map[uint32]*ClientItem
 	cache            map[string]*ebiten.Image
+	lightInfos       map[uint32]LightInfo
 	mu               sync.Mutex
 	Denoise          bool
 	DenoiseSharpness float64
@@ -89,13 +90,14 @@ func Load(path string) (*CLImages, error) {
 	}
 
 	imgs := &CLImages{
-		data:   data,
-		idrefs: make(map[uint32]*dataLocation, entryCount),
-		colors: make(map[uint32]*dataLocation, entryCount),
-		images: make(map[uint32]*dataLocation, entryCount),
-		lights: make(map[uint32]*dataLocation, entryCount),
-		items:  make(map[uint32]*ClientItem),
-		cache:  make(map[string]*ebiten.Image),
+		data:       data,
+		idrefs:     make(map[uint32]*dataLocation, entryCount),
+		colors:     make(map[uint32]*dataLocation, entryCount),
+		images:     make(map[uint32]*dataLocation, entryCount),
+		lights:     make(map[uint32]*dataLocation, entryCount),
+		items:      make(map[uint32]*ClientItem),
+		cache:      make(map[string]*ebiten.Image),
+		lightInfos: make(map[uint32]LightInfo),
 	}
 
 	for i := uint32(0); i < entryCount; i++ {
@@ -289,6 +291,19 @@ func Load(path string) (*CLImages, error) {
 				ref.animFrameTable[i] = v
 			}
 			remaining -= 2
+		}
+
+		if ref.lightingID != 0 {
+			if l := imgs.lights[uint32(ref.lightingID)]; l != nil && l.size >= 8 {
+				start := int(l.offset)
+				end := start + 8
+				if end <= len(imgs.data) {
+					var li LightInfo
+					if err := binary.Read(bytes.NewReader(imgs.data[start:end]), binary.BigEndian, &li); err == nil {
+						imgs.lightInfos[ref.id] = li
+					}
+				}
+			}
 		}
 
 		// verify checksum unless disabled
@@ -841,6 +856,22 @@ func (c *CLImages) Plane(id uint32) int {
 		return int(ref.plane)
 	}
 	return 0
+}
+
+// Flags returns the raw PictDef flags for the given image ID. If the ID is
+// unknown, it returns 0.
+func (c *CLImages) Flags(id uint32) uint32 {
+	if ref := c.idrefs[id]; ref != nil {
+		return ref.flags
+	}
+	return 0
+}
+
+// Lighting returns lighting metadata for the given image ID. The bool result
+// reports whether lighting information was found.
+func (c *CLImages) Lighting(id uint32) (LightInfo, bool) {
+	li, ok := c.lightInfos[id]
+	return li, ok
 }
 
 // IDs returns all image identifiers present in the archive.
