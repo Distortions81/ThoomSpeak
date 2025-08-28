@@ -1,21 +1,17 @@
 package main
 
 import (
-	"crypto/md5"
-	"encoding/binary"
-	"encoding/hex"
-	"fmt"
-	"io"
-	"log"
-	"os"
-	"time"
+    "crypto/md5"
+    "encoding/binary"
+    "encoding/hex"
+    "fmt"
+    "io"
+    "log"
+    "os"
+    "time"
 
-	"golang.org/x/crypto/twofish"
-	"golang.org/x/text/encoding/charmap"
-	"golang.org/x/text/runes"
-	"golang.org/x/text/transform"
-	"golang.org/x/text/unicode/norm"
-	"unicode"
+    "golang.org/x/crypto/twofish"
+    "golang.org/x/text/encoding/charmap"
 )
 
 func simpleEncrypt(data []byte) {
@@ -38,14 +34,9 @@ func encodeMacRoman(s string) []byte {
 	return b
 }
 
-func utfFold(s string) string {
-	t := transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
-	out, _, err := transform.String(t, s)
-	if err != nil {
-		return s
-	}
-	return out
-}
+// utfFold preserves the original string without stripping accents.
+// Accented characters should be kept everywhere except for filesystem paths.
+func utfFold(s string) string { return s }
 
 func encodeFullVersion(v int) uint32 { return uint32(v) << 8 }
 

@@ -153,9 +153,9 @@ func updatePlayersWindow() {
 		if p.Sharing {
 			tags = append(tags, ">")
 		}
-            if myClan != "" && p.Clan != "" && strings.EqualFold(p.Clan, myClan) {
-                tags = append(tags, "*")
-            }
+		if myClan != "" && p.Clan != "" && strings.EqualFold(p.Clan, myClan) {
+			tags = append(tags, "*")
+		}
 		if len(tags) > 0 {
 			name = fmt.Sprintf("%s %s", name, strings.Join(tags, "--"))
 		}
@@ -197,10 +197,10 @@ func updatePlayersWindow() {
 			avItem.Filled = false
 			avItem.Disabled = offline
 			var img *ebiten.Image
-                state := uint8(0)
-                if p.Dead && !strings.EqualFold(p.Name, playerName) {
-                    state = 32
-                }
+			state := uint8(0)
+			if p.Dead && !strings.EqualFold(p.Name, playerName) {
+				state = 32
+			}
 			if p.PictID != 0 {
 				if m := loadMobileFrame(p.PictID, state, p.Colors); m != nil {
 					img = m
@@ -240,10 +240,10 @@ func updatePlayersWindow() {
 			face = mainFontItalic
 		}
 		t.Face = face
-            if (p.Dead && !strings.EqualFold(p.Name, playerName)) || offline {
-                t.TextColor = eui.ColorVeryDarkGray
-                t.ForceTextColor = true
-            }
+		if (p.Dead && !strings.EqualFold(p.Name, playerName)) || offline {
+			t.TextColor = eui.ColorVeryDarkGray
+			t.ForceTextColor = true
+		}
 		t.Size = eui.Point{X: clientWAvail - float32(iconSize*2) - 8, Y: rowUnits}
 		// Click selects this player.
 		n := p.Name
@@ -346,11 +346,19 @@ func openPlayersContextMenu(name string, pos eui.Point) {
 	// Anon Thank / Anon Curse: prefill so user can type a message.
 	options = append(options, "Anon Thank…")
 	actions = append(actions, func() {
-		pluginSetInputText("/anonthank ")
+		n := displayName
+		actions = append(actions, func() {
+			enqueueCommand(fmt.Sprintf("/anonthank %s", maybeQuoteName(n)))
+			nextCommand()
+		})
 	})
 	options = append(options, "Anon Curse…")
 	actions = append(actions, func() {
-		pluginSetInputText("/anoncurse ")
+		n := displayName
+		actions = append(actions, func() {
+			enqueueCommand(fmt.Sprintf("/anoncurse %s", maybeQuoteName(n)))
+			nextCommand()
+		})
 	})
 
 	// Share / Unshare with this player.

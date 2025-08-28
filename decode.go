@@ -224,31 +224,34 @@ func decodeBEPP(data []byte) string {
 }
 
 func stripBEPPTags(b []byte) []byte {
-	out := b[:0]
-	for i := 0; i < len(b); {
-		c := b[i]
-		if c == 0xC2 {
-			if i+4 < len(b) && b[i+1] == 't' && b[i+2] == '_' && b[i+3] == 't' {
-				switch b[i+4] {
-				case 'h', 't', 'c', 'g':
-					i += 5
-					continue
-				}
-			}
-			if i+2 < len(b) {
-				i += 3
-				continue
-			}
-			break
-		}
-		if c >= 0x80 || c < 0x20 {
-			i++
-			continue
-		}
-		out = append(out, c)
-		i++
-	}
-	return out
+    out := b[:0]
+    for i := 0; i < len(b); {
+        c := b[i]
+        if c == 0xC2 {
+            if i+4 < len(b) && b[i+1] == 't' && b[i+2] == '_' && b[i+3] == 't' {
+                switch b[i+4] {
+                case 'h', 't', 'c', 'g':
+                    i += 5
+                    continue
+                }
+            }
+            if i+2 < len(b) {
+                i += 3
+                continue
+            }
+            break
+        }
+        // Preserve MacRoman high-bit printable characters so decodeMacRoman
+        // can convert them (e.g., curly apostrophes). Only drop ASCII control
+        // characters here.
+        if c < 0x20 {
+            i++
+            continue
+        }
+        out = append(out, c)
+        i++
+    }
+    return out
 }
 
 func parseThinkText(raw []byte, text string) (name string, target thinkTarget, msg string) {

@@ -1,14 +1,12 @@
 package main
 
 import (
-	"fmt"
-	"sort"
-	"strings"
-	"sync"
-	"unicode"
+    "fmt"
+    "sort"
+    "strings"
+    "sync"
 
-	"golang.org/x/text/cases"
-	"golang.org/x/text/unicode/norm"
+    "golang.org/x/text/cases"
 )
 
 type InventoryItem struct {
@@ -47,18 +45,12 @@ var invFoldCaser = cases.Fold()
 const kItemFlagData = 0x0400
 
 // normalizeInventoryName returns a canonical form of an item name for comparisons.
-// It trims whitespace, removes diacritics and performs case folding so items with
-// minor name variations (e.g. capitalization differences) can be coalesced.
+// It trims whitespace and performs case folding so items with minor name
+// variations (e.g. capitalization differences) can be coalesced. Accents are
+// preserved.
 func normalizeInventoryName(name string) string {
-	name = strings.TrimSpace(name)
-	name = norm.NFD.String(name)
-	name = strings.Map(func(r rune) rune {
-		if unicode.Is(unicode.Mn, r) {
-			return -1
-		}
-		return r
-	}, name)
-	return invFoldCaser.String(name)
+    name = strings.TrimSpace(name)
+    return invFoldCaser.String(name)
 }
 
 func resetInventory() {

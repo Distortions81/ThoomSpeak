@@ -3,20 +3,19 @@
 package main
 
 import (
-	"bytes"
-	"fmt"
-	"gothoom/eui"
-	"math"
-	"sort"
-	"strings"
-	"time"
-	"unicode"
+    "bytes"
+    "fmt"
+    "gothoom/eui"
+    "math"
+    "sort"
+    "strings"
+    "time"
+    "unicode"
 
-	"github.com/hajimehoshi/ebiten/v2"
-	text "github.com/hajimehoshi/ebiten/v2/text/v2"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
-	"golang.org/x/text/unicode/norm"
+    "github.com/hajimehoshi/ebiten/v2"
+    text "github.com/hajimehoshi/ebiten/v2/text/v2"
+    "golang.org/x/text/cases"
+    "golang.org/x/text/language"
 )
 
 var inventoryWin *eui.WindowData
@@ -589,19 +588,12 @@ func promptInventoryName(id uint16, idx int) {
 }
 
 func officialName(k invGroupKey, it InventoryItem) string {
-	name := it.Name
-	if name == "" && clImages != nil {
-		name = clImages.ItemName(uint32(k.id))
-	}
-	if name == "" {
-		name = fmt.Sprintf("Item %d", k.id)
-	}
-	name = norm.NFD.String(name)
-	name = strings.Map(func(r rune) rune {
-		if unicode.Is(unicode.Mn, r) {
-			return -1
-		}
-		return r
-	}, name)
-	return foldCaser.String(name)
+    name := it.Name
+    if name == "" && clImages != nil {
+        name = clImages.ItemName(uint32(k.id))
+    }
+    if name == "" {
+        name = fmt.Sprintf("Item %d", k.id)
+    }
+    return foldCaser.String(name)
 }
