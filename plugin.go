@@ -323,6 +323,13 @@ func pluginRegisterCommand(owner, name string, handler PluginCommandHandler) {
 	}
 	key := strings.ToLower(strings.TrimPrefix(name, "/"))
 	pluginMu.Lock()
+	if _, exists := pluginCommands[key]; exists {
+		pluginMu.Unlock()
+		msg := fmt.Sprintf("[plugin] command conflict: /%s already registered", key)
+		consoleMessage(msg)
+		log.Print(msg)
+		return
+	}
 	pluginCommands[key] = handler
 	pluginCommandOwners[key] = owner
 	pluginMu.Unlock()
