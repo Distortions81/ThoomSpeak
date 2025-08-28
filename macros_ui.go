@@ -44,18 +44,32 @@ func refreshMacrosList() {
 	macrosList.Contents = macrosList.Contents[:0]
 	macroMu.RLock()
 	type pair struct{ short, full string }
-	var list []pair
-	for _, m := range macroMaps {
+	type entry struct {
+		owner  string
+		macros []pair
+	}
+	var plugins []entry
+	for owner, m := range macroMaps {
+		e := entry{owner: owner}
 		for k, v := range m {
-			list = append(list, pair{k, v})
+			e.macros = append(e.macros, pair{k, v})
 		}
+		plugins = append(plugins, e)
 	}
 	macroMu.RUnlock()
-	sort.Slice(list, func(i, j int) bool { return list[i].short < list[j].short })
-	for _, p := range list {
-		txt := fmt.Sprintf("%s = %s", p.short, strings.TrimSpace(p.full))
-		item := &eui.ItemData{ItemType: eui.ITEM_TEXT, Text: txt, Fixed: true}
-		macrosList.AddItem(item)
+	sort.Slice(plugins, func(i, j int) bool { return plugins[i].owner < plugins[j].owner })
+	for _, p := range plugins {
+		disp := pluginDisplayNames[p.owner]
+		if disp == "" {
+			disp = p.owner
+		}
+		macrosList.AddItem(&eui.ItemData{ItemType: eui.ITEM_TEXT, Text: disp + ":", Fixed: true})
+		sort.Slice(p.macros, func(i, j int) bool { return p.macros[i].short < p.macros[j].short })
+		for _, m := range p.macros {
+			txt := fmt.Sprintf("  %s = %s", m.short, strings.TrimSpace(m.full))
+			item := &eui.ItemData{ItemType: eui.ITEM_TEXT, Text: txt, Fixed: true}
+			macrosList.AddItem(item)
+		}
 	}
 	if macrosWin != nil {
 		macrosWin.Refresh()
