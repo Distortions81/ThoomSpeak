@@ -57,23 +57,23 @@ func Draw(screen *ebiten.Image) {
 		drawZoneOverlay(screen, zoneIndicatorWin)
 	}
 
-    screenClip := rect{X0: 0, Y0: 0, X1: float32(screenWidth), Y1: float32(screenHeight)}
-    for _, dd := range dropdowns {
-        drawDropdownOptions(dd.item, dd.offset, screenClip, screen)
-    }
+	screenClip := rect{X0: 0, Y0: 0, X1: float32(screenWidth), Y1: float32(screenHeight)}
+	for _, dd := range dropdowns {
+		drawDropdownOptions(dd.item, dd.offset, screenClip, screen)
+	}
 
-    // Draw any active context menus as overlays using the same dropdown menu
-    // rendering. Context menus originate from a screen-space position stored in
-    // the item's DrawRect X0/Y0.
-    if len(contextMenus) > 0 {
-        for _, cm := range contextMenus {
-            if cm == nil || !cm.Open {
-                continue
-            }
-            off := point{X: cm.DrawRect.X0, Y: cm.DrawRect.Y0}
-            drawDropdownOptions(cm, off, screenClip, screen)
-        }
-    }
+	// Draw any active context menus as overlays using the same dropdown menu
+	// rendering. Context menus originate from a screen-space position stored in
+	// the item's DrawRect X0/Y0.
+	if len(contextMenus) > 0 {
+		for _, cm := range contextMenus {
+			if cm == nil || !cm.Open {
+				continue
+			}
+			off := point{X: cm.DrawRect.X0, Y: cm.DrawRect.Y0}
+			drawDropdownOptions(cm, off, screenClip, screen)
+		}
+	}
 
 	if hoveredItem != nil && hoveredItem.Tooltip != "" {
 		drawTooltip(screen, hoveredItem)
@@ -1525,27 +1525,27 @@ func drawDropdownOptions(item *itemData, offset point, clip rect, screen *ebiten
 		visibleRect.X1-visibleRect.X0,
 		visibleRect.Y1-visibleRect.Y0,
 		style.Color, false)
-    for i := first; i < first+visible && i < len(item.Options); i++ {
-        y := offY + float32(i-first)*optionH
-        // Do not highlight header rows.
-        if (i == item.Selected || i == item.HoverIndex) && i >= item.HeaderCount {
-            col := style.SelectedColor
-            if i == item.HoverIndex && i != item.Selected {
-                col = style.HoverColor
-            }
-            drawRoundRect(subImg, &roundRect{Size: maxSize, Position: point{X: offset.X, Y: y}, Fillet: item.Fillet, Filled: true, Color: col})
-        }
-        td := ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
-        td.GeoM.Translate(float64(offset.X+item.BorderPad+item.Padding+currentStyle.TextPadding*uiScale), float64(y+optionH/2))
-        tdo := &text.DrawOptions{DrawImageOptions: td, LayoutOptions: loo}
-        if i < item.HeaderCount {
-            // Render headers with disabled text color.
-            tdo.ColorScale.ScaleWithColor(style.DisabledColor)
-        } else {
-            tdo.ColorScale.ScaleWithColor(style.TextColor)
-        }
-        text.Draw(subImg, item.Options[i], face, tdo)
-    }
+	for i := first; i < first+visible && i < len(item.Options); i++ {
+		y := offY + float32(i-first)*optionH
+		// Do not highlight header rows.
+		if (i == item.Selected || i == item.HoverIndex) && i >= item.HeaderCount {
+			col := style.SelectedColor
+			if i == item.HoverIndex && i != item.Selected {
+				col = style.HoverColor
+			}
+			drawRoundRect(subImg, &roundRect{Size: maxSize, Position: point{X: offset.X, Y: y}, Fillet: item.Fillet, Filled: true, Color: col})
+		}
+		td := ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
+		td.GeoM.Translate(float64(offset.X+item.BorderPad+item.Padding+currentStyle.TextPadding*uiScale), float64(y+optionH/2))
+		tdo := &text.DrawOptions{DrawImageOptions: td, LayoutOptions: loo}
+		if i < item.HeaderCount {
+			// Render headers with disabled text color.
+			tdo.ColorScale.ScaleWithColor(style.DisabledColor)
+		} else {
+			tdo.ColorScale.ScaleWithColor(style.TextColor)
+		}
+		text.Draw(subImg, item.Options[i], face, tdo)
+	}
 
 	if len(item.Options) > visible {
 		openH := optionH * float32(visible)

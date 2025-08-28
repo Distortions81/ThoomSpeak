@@ -2335,7 +2335,7 @@ func makeSettingsWindow() {
 	}
 	center.AddItem(maxNightSlider)
 
-    // (Night overlay checkbox removed) – night effect is always applied; mode switches with Shader lighting.
+	// (Night overlay checkbox removed) – night effect is always applied; mode switches with Shader lighting.
 
 	label, _ = eui.NewText()
 	label.Text = "\nText Sizes:"

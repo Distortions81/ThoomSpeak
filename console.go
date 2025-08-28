@@ -7,14 +7,14 @@ const (
 var consoleLog = messageLog{max: maxMessages}
 
 func consoleMessage(msg string) {
-    if msg == "" {
-        return
-    }
+	if msg == "" {
+		return
+	}
 
-    consoleLog.Add(msg)
-    appendConsoleLog(msg)
+	consoleLog.Add(msg)
+	appendConsoleLog(msg)
 
-    updateConsoleWindow()
+	updateConsoleWindow()
 }
 
 func getConsoleMessages() []string {

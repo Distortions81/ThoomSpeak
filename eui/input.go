@@ -56,19 +56,19 @@ func Update() error {
 			}
 		}
 	}
-    if click {
-        if !dropdownOpenContainsAnywhere(mpos) {
-            closeAllDropdowns()
-        }
-        // Close context menus when clicking anywhere outside them.
-        if !contextMenuContainsAnywhere(mpos) {
-            CloseContextMenus()
-        }
-        if focusedItem != nil {
-            focusedItem.Focused = false
-        }
-        focusedItem = nil
-    }
+	if click {
+		if !dropdownOpenContainsAnywhere(mpos) {
+			closeAllDropdowns()
+		}
+		// Close context menus when clicking anywhere outside them.
+		if !contextMenuContainsAnywhere(mpos) {
+			CloseContextMenus()
+		}
+		if focusedItem != nil {
+			focusedItem.Focused = false
+		}
+		focusedItem = nil
+	}
 	clickTime := pointerPressDuration()
 	clickDrag := clickTime > 1
 	midClickTime := 0
@@ -96,15 +96,15 @@ func Update() error {
 	delta := pointSub(mpos, mposOld)
 	c := ebiten.CursorShapeDefault
 
-    // First, give active context menus a chance to handle the click/hover.
-    if handleContextMenus(mpos, click) {
-        // If a context menu handled the interaction, avoid passing the click to windows.
-        // Still continue with cursor updates and general housekeeping below.
-        click = false
-    }
+	// First, give active context menus a chance to handle the click/hover.
+	if handleContextMenus(mpos, click) {
+		// If a context menu handled the interaction, avoid passing the click to windows.
+		// Still continue with cursor updates and general housekeeping below.
+		click = false
+	}
 
-    //Check all windows
-    for i := len(windows) - 1; i >= 0; i-- {
+	//Check all windows
+	for i := len(windows) - 1; i >= 0; i-- {
 		win := windows[i]
 		if !win.Open {
 			continue
@@ -258,22 +258,22 @@ func Update() error {
 			win.markDirty()
 		}
 
-        // Bring window forward on click if the cursor is over it or an
-        // expanded dropdown. Break so windows behind don't receive the
-        // event. The check includes clicks on dropdown menus which may
-        // have closed during handling. Also consider context menus so a
-        // right-click menu doesn't cause window activation behind it.
-        if handled || win.getWinRect().containsPoint(mpos) || dropdownOpenContains(win.Contents, mpos) || contextMenuContainsAnywhere(mpos) {
-            if click || midClick {
-                if activeWindow == prevActiveWindow {
-                    if activeWindow != win || windows[len(windows)-1] != win {
-                        win.BringForward()
-                    }
-                }
-            }
-            break
-        }
-    }
+		// Bring window forward on click if the cursor is over it or an
+		// expanded dropdown. Break so windows behind don't receive the
+		// event. The check includes clicks on dropdown menus which may
+		// have closed during handling. Also consider context menus so a
+		// right-click menu doesn't cause window activation behind it.
+		if handled || win.getWinRect().containsPoint(mpos) || dropdownOpenContains(win.Contents, mpos) || contextMenuContainsAnywhere(mpos) {
+			if click || midClick {
+				if activeWindow == prevActiveWindow {
+					if activeWindow != win || windows[len(windows)-1] != win {
+						win.BringForward()
+					}
+				}
+			}
+			break
+		}
+	}
 
 	if cursorShape != c {
 		ebiten.SetCursorShape(c)
@@ -358,29 +358,29 @@ func Update() error {
 
 	mposOld = mpos
 
-    if wheelDelta.X != 0 || wheelDelta.Y != 0 {
-        for i := len(windows) - 1; i >= 0; i-- {
-            win := windows[i]
-            if !win.Open {
-                continue
-            }
-            // Give context menus first chance at scroll.
-            if scrollContextMenus(mpos, wheelDelta) {
-                break
-            }
-            if win.getMainRect().containsPoint(mpos) || dropdownOpenContains(win.Contents, mpos) {
-                if scrollDropdown(win.Contents, mpos, wheelDelta) {
-                    break
-                }
-                if scrollFlow(win.Contents, mpos, wheelDelta) {
-                    break
-                }
-                if scrollWindow(win, wheelDelta) {
-                    break
-                }
-            }
-        }
-    }
+	if wheelDelta.X != 0 || wheelDelta.Y != 0 {
+		for i := len(windows) - 1; i >= 0; i-- {
+			win := windows[i]
+			if !win.Open {
+				continue
+			}
+			// Give context menus first chance at scroll.
+			if scrollContextMenus(mpos, wheelDelta) {
+				break
+			}
+			if win.getMainRect().containsPoint(mpos) || dropdownOpenContains(win.Contents, mpos) {
+				if scrollDropdown(win.Contents, mpos, wheelDelta) {
+					break
+				}
+				if scrollFlow(win.Contents, mpos, wheelDelta) {
+					break
+				}
+				if scrollWindow(win, wheelDelta) {
+					break
+				}
+			}
+		}
+	}
 
 	if hoveredItem != prevHovered {
 		if prevHovered != nil {
@@ -1127,113 +1127,113 @@ func closeDropdowns(items []*itemData) {
 }
 
 func closeAllDropdowns() {
-    for _, win := range windows {
-        if win.Open {
-            closeDropdowns(win.Contents)
-        }
-    }
+	for _, win := range windows {
+		if win.Open {
+			closeDropdowns(win.Contents)
+		}
+	}
 }
 
 // ---- Context menu helpers (overlay, screen-space) ----
 
 // handleContextMenus processes hover and clicks for active context menus. Returns true if handled.
 func handleContextMenus(mpos point, click bool) bool {
-    handled := false
-    for _, cm := range contextMenus {
-        if cm == nil || !cm.Open {
-            continue
-        }
-        // Compute the open rectangle at the stored origin.
-        r, _ := dropdownOpenRect(cm, point{X: cm.DrawRect.X0, Y: cm.DrawRect.Y0})
-        if r.containsPoint(mpos) {
-            handled = true
-            optionH := cm.GetSize().Y
-            startY := r.Y0
-            idx := int((mpos.Y - startY + cm.Scroll.Y) / optionH)
-            if idx >= 0 && idx < len(cm.Options) {
-                // Treat header rows as non-selectable: ignore hover highlight
-                // and do not close or invoke selection callbacks.
-                if idx < cm.HeaderCount {
-                    if !click {
-                        if cm.HoverIndex != -1 {
-                            cm.HoverIndex = -1
-                            cm.markDirty()
-                        }
-                    }
-                    // Do not close menus; simply consume the hover/click area.
-                    return true
-                }
-                if click {
-                    cm.Selected = idx
-                    cm.Open = false
-                    if cm.OnSelect != nil {
-                        cm.OnSelect(idx)
-                    }
-                    // Close all context menus on selection.
-                    CloseContextMenus()
-                } else {
-                    if idx != cm.HoverIndex {
-                        cm.HoverIndex = idx
-                        // markDirty not required for overlays, but keeps parity.
-                        cm.markDirty()
-                        if cm.OnHover != nil {
-                            cm.OnHover(idx)
-                        }
-                    }
-                }
-            }
-        } else if !click {
-            if cm.HoverIndex != -1 {
-                cm.HoverIndex = -1
-                cm.markDirty()
-                if cm.OnHover != nil {
-                    cm.OnHover(cm.Selected)
-                }
-            }
-        }
-    }
-    return handled
+	handled := false
+	for _, cm := range contextMenus {
+		if cm == nil || !cm.Open {
+			continue
+		}
+		// Compute the open rectangle at the stored origin.
+		r, _ := dropdownOpenRect(cm, point{X: cm.DrawRect.X0, Y: cm.DrawRect.Y0})
+		if r.containsPoint(mpos) {
+			handled = true
+			optionH := cm.GetSize().Y
+			startY := r.Y0
+			idx := int((mpos.Y - startY + cm.Scroll.Y) / optionH)
+			if idx >= 0 && idx < len(cm.Options) {
+				// Treat header rows as non-selectable: ignore hover highlight
+				// and do not close or invoke selection callbacks.
+				if idx < cm.HeaderCount {
+					if !click {
+						if cm.HoverIndex != -1 {
+							cm.HoverIndex = -1
+							cm.markDirty()
+						}
+					}
+					// Do not close menus; simply consume the hover/click area.
+					return true
+				}
+				if click {
+					cm.Selected = idx
+					cm.Open = false
+					if cm.OnSelect != nil {
+						cm.OnSelect(idx)
+					}
+					// Close all context menus on selection.
+					CloseContextMenus()
+				} else {
+					if idx != cm.HoverIndex {
+						cm.HoverIndex = idx
+						// markDirty not required for overlays, but keeps parity.
+						cm.markDirty()
+						if cm.OnHover != nil {
+							cm.OnHover(idx)
+						}
+					}
+				}
+			}
+		} else if !click {
+			if cm.HoverIndex != -1 {
+				cm.HoverIndex = -1
+				cm.markDirty()
+				if cm.OnHover != nil {
+					cm.OnHover(cm.Selected)
+				}
+			}
+		}
+	}
+	return handled
 }
 
 func contextMenuContainsAnywhere(mpos point) bool {
-    for _, cm := range contextMenus {
-        if cm == nil || !cm.Open {
-            continue
-        }
-        r, _ := dropdownOpenRect(cm, point{X: cm.DrawRect.X0, Y: cm.DrawRect.Y0})
-        if r.containsPoint(mpos) {
-            return true
-        }
-    }
-    return false
+	for _, cm := range contextMenus {
+		if cm == nil || !cm.Open {
+			continue
+		}
+		r, _ := dropdownOpenRect(cm, point{X: cm.DrawRect.X0, Y: cm.DrawRect.Y0})
+		if r.containsPoint(mpos) {
+			return true
+		}
+	}
+	return false
 }
 
 func scrollContextMenus(mpos point, delta point) bool {
-    for _, cm := range contextMenus {
-        if cm == nil || !cm.Open {
-            continue
-        }
-        optionH := cm.GetSize().Y
-        r, _ := dropdownOpenRect(cm, point{X: cm.DrawRect.X0, Y: cm.DrawRect.Y0})
-        openH := r.Y1 - r.Y0
-        if r.containsPoint(mpos) {
-            maxScroll := optionH*float32(len(cm.Options)) - openH
-            if maxScroll < 0 {
-                maxScroll = 0
-            }
-            old := cm.Scroll
-            cm.Scroll.Y -= delta.Y * 16
-            if cm.Scroll.Y < 0 {
-                cm.Scroll.Y = 0
-            }
-            if cm.Scroll.Y > maxScroll {
-                cm.Scroll.Y = maxScroll
-            }
-            if cm.Scroll != old {
-                cm.markDirty()
-            }
-            return true
-        }
-    }
-    return false
+	for _, cm := range contextMenus {
+		if cm == nil || !cm.Open {
+			continue
+		}
+		optionH := cm.GetSize().Y
+		r, _ := dropdownOpenRect(cm, point{X: cm.DrawRect.X0, Y: cm.DrawRect.Y0})
+		openH := r.Y1 - r.Y0
+		if r.containsPoint(mpos) {
+			maxScroll := optionH*float32(len(cm.Options)) - openH
+			if maxScroll < 0 {
+				maxScroll = 0
+			}
+			old := cm.Scroll
+			cm.Scroll.Y -= delta.Y * 16
+			if cm.Scroll.Y < 0 {
+				cm.Scroll.Y = 0
+			}
+			if cm.Scroll.Y > maxScroll {
+				cm.Scroll.Y = maxScroll
+			}
+			if cm.Scroll != old {
+				cm.markDirty()
+			}
+			return true
+		}
+	}
+	return false
 }

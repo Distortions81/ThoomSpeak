@@ -1,17 +1,17 @@
 package main
 
 import (
-    "crypto/md5"
-    "encoding/binary"
-    "encoding/hex"
-    "fmt"
-    "io"
-    "log"
-    "os"
-    "time"
+	"crypto/md5"
+	"encoding/binary"
+	"encoding/hex"
+	"fmt"
+	"io"
+	"log"
+	"os"
+	"time"
 
-    "golang.org/x/crypto/twofish"
-    "golang.org/x/text/encoding/charmap"
+	"golang.org/x/crypto/twofish"
+	"golang.org/x/text/encoding/charmap"
 )
 
 func simpleEncrypt(data []byte) {

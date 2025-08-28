@@ -177,9 +177,9 @@ func TestInventoryRenameIndexed(t *testing.T) {
 	if len(inv) != 2 {
 		t.Fatalf("unexpected inventory length %d", len(inv))
 	}
-    if inv[0].Name != "Bag <#1: First>" || inv[1].Name != "Bag <#2: Second>" {
-        t.Fatalf("unexpected inventory %v", inv)
-    }
+	if inv[0].Name != "Bag <#1: First>" || inv[1].Name != "Bag <#2: Second>" {
+		t.Fatalf("unexpected inventory %v", inv)
+	}
 	if !inventoryDirty {
 		t.Fatalf("inventoryDirty not set")
 	}

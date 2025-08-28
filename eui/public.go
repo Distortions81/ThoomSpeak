@@ -1,9 +1,9 @@
 package eui
 
 import (
-    "bytes"
+	"bytes"
 
-    "github.com/hajimehoshi/ebiten/v2/text/v2"
+	"github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
 // Windows returns the list of active windows.

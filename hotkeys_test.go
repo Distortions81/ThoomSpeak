@@ -364,7 +364,6 @@ func TestPluginHotkeyStatePersisted(t *testing.T) {
 	}
 }
 
-
 // Test that removing a plugin hotkey clears it from all state and UI.
 func TestPluginRemoveHotkeyClearsState(t *testing.T) {
 	origHotkeys := hotkeys

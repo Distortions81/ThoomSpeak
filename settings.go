@@ -78,20 +78,20 @@ var gsdef settings = settings{
 	MusicVolume:          0.8,
 	Music:                true,
 	GameSound:            true,
-    GameScale:            2,
-    BarPlacement:         BarPlacementBottom,
-    MaxNightLevel:        100,
-    ForceNightLevel:      -1,
+	GameScale:            2,
+	BarPlacement:         BarPlacementBottom,
+	MaxNightLevel:        100,
+	ForceNightLevel:      -1,
 	ChatTTS:              true,
 	ChatTTSVolume:        1.0,
 	ChatTTSSpeed:         1.5,
 	ChatTTSVoice:         "en_US-hfc_female-medium",
 	Notifications:        true,
-    NotifyFallen:         true,
-    NotifyNotFallen:      true,
-    NotifyShares:         true,
-    NotifyFriendOnline:   true,
-    NotifyCopyText:       true,
+	NotifyFallen:         true,
+	NotifyNotFallen:      true,
+	NotifyShares:         true,
+	NotifyFriendOnline:   true,
+	NotifyCopyText:       true,
 	NotificationDuration: 6,
 	PluginSpamKill:       true,
 	TimestampFormat:      "3:04PM",
@@ -165,8 +165,8 @@ type settings struct {
 	Mute                 bool
 	GameScale            float64
 	BarPlacement         BarPlacement
-    MaxNightLevel        int
-    ForceNightLevel      int
+	MaxNightLevel        int
+	ForceNightLevel      int
 	Theme                string
 	MessagesToConsole    bool
 	ChatTTS              bool
@@ -177,9 +177,9 @@ type settings struct {
 	NotifyFallen         bool
 	NotifyNotFallen      bool
 	NotifyShares         bool
-    NotifyFriendOnline   bool
-    NotifyCopyText       bool
-    NotificationDuration float64
+	NotifyFriendOnline   bool
+	NotifyCopyText       bool
+	NotificationDuration float64
 	PluginSpamKill       bool
 	ChatTimestamps       bool
 	ConsoleTimestamps    bool

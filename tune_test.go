@@ -156,47 +156,47 @@ func TestLoopSeamlessRepeat(t *testing.T) {
 // appropriate tail segment per iteration and honor the default ending when a
 // specific index is not present.
 func TestAltEndingsSimple(t *testing.T) {
-    // (c|1d|2e!f)3 => iterations produce: c d | c e | c f
-    pt := parseClanLordTune("(c|1d|2e!f)3")
-    inst := instrument{program: 0, octave: 0, chord: 100, melody: 100}
-    notes := eventsToNotes(pt, inst, 100)
-    if len(notes) != 6 {
-        t.Fatalf("expected 6 notes, got %d", len(notes))
-    }
-    // Extract pitch classes modulo 12 to ignore octave
-    got := []int{notes[0].Key % 12, notes[1].Key % 12, notes[2].Key % 12, notes[3].Key % 12, notes[4].Key % 12, notes[5].Key % 12}
-    // c d c e c f => 0,2,0,4,0,5
-    want := []int{0, 2, 0, 4, 0, 5}
-    for i := range want {
-        if got[i] != want[i] {
-            t.Fatalf("ending seq note %d = %d, want %d", i, got[i], want[i])
-        }
-    }
+	// (c|1d|2e!f)3 => iterations produce: c d | c e | c f
+	pt := parseClanLordTune("(c|1d|2e!f)3")
+	inst := instrument{program: 0, octave: 0, chord: 100, melody: 100}
+	notes := eventsToNotes(pt, inst, 100)
+	if len(notes) != 6 {
+		t.Fatalf("expected 6 notes, got %d", len(notes))
+	}
+	// Extract pitch classes modulo 12 to ignore octave
+	got := []int{notes[0].Key % 12, notes[1].Key % 12, notes[2].Key % 12, notes[3].Key % 12, notes[4].Key % 12, notes[5].Key % 12}
+	// c d c e c f => 0,2,0,4,0,5
+	want := []int{0, 2, 0, 4, 0, 5}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("ending seq note %d = %d, want %d", i, got[i], want[i])
+		}
+	}
 }
 
 // TestLongChordSustain ensures that a long chord marked with '$' sustains until
 // the next chord without consuming time at its own event.
 func TestLongChordSustain(t *testing.T) {
-    // [ce]$ a a [df]
-    pt := parseClanLordTune("[ce]$ aa [df]")
-    inst := instrument{program: 0, octave: 0, chord: 100, melody: 100, longChord: true}
-    notes := eventsToNotes(pt, inst, 100)
-    // Expect 2 chord notes + 2 melody a + 2 chord notes = 6
-    if len(notes) != 6 {
-        t.Fatalf("expected 6 notes, got %d", len(notes))
-    }
-    // First two are chord c and e, starting at 0, duration spans over the two 'a' notes
-    // At 120 BPM, each lowercase note is 250ms minus 125ms gap = 125ms. But long chord
-    // ignores gap and sustains: total until next chord start is 2*250ms = 500ms.
-    if notes[0].Start != 0 || notes[1].Start != 0 {
-        t.Fatalf("long chord should start at 0")
-    }
-    if notes[2].Start != 0 || notes[3].Start != 250*time.Millisecond {
-        t.Fatalf("melody note starts wrong: got %v and %v", notes[2].Start, notes[3].Start)
-    }
-    if notes[0].Duration != 500*time.Millisecond || notes[1].Duration != 500*time.Millisecond {
-        t.Fatalf("long chord duration = %v,%v want 500ms,500ms", notes[0].Duration, notes[1].Duration)
-    }
+	// [ce]$ a a [df]
+	pt := parseClanLordTune("[ce]$ aa [df]")
+	inst := instrument{program: 0, octave: 0, chord: 100, melody: 100, longChord: true}
+	notes := eventsToNotes(pt, inst, 100)
+	// Expect 2 chord notes + 2 melody a + 2 chord notes = 6
+	if len(notes) != 6 {
+		t.Fatalf("expected 6 notes, got %d", len(notes))
+	}
+	// First two are chord c and e, starting at 0, duration spans over the two 'a' notes
+	// At 120 BPM, each lowercase note is 250ms minus 125ms gap = 125ms. But long chord
+	// ignores gap and sustains: total until next chord start is 2*250ms = 500ms.
+	if notes[0].Start != 0 || notes[1].Start != 0 {
+		t.Fatalf("long chord should start at 0")
+	}
+	if notes[2].Start != 0 || notes[3].Start != 250*time.Millisecond {
+		t.Fatalf("melody note starts wrong: got %v and %v", notes[2].Start, notes[3].Start)
+	}
+	if notes[0].Duration != 500*time.Millisecond || notes[1].Duration != 500*time.Millisecond {
+		t.Fatalf("long chord duration = %v,%v want 500ms,500ms", notes[0].Duration, notes[1].Duration)
+	}
 }
 
 func TestNoteDurationsWithTempoChange(t *testing.T) {
@@ -256,14 +256,14 @@ func TestParseNoteLowestCPreserved(t *testing.T) {
 // TestTieMergeIdenticalNotes ensures that tied identical notes become a single
 // sustained note without re-attack.
 func TestTieMergeIdenticalNotes(t *testing.T) {
-    pt := parseClanLordTune("c_c")
-    inst := instrument{program: 0, octave: 0, chord: 100, melody: 100}
-    notes := eventsToNotes(pt, inst, 100)
-    if len(notes) != 1 {
-        t.Fatalf("expected 1 merged note, got %d", len(notes))
-    }
-    // Two lowercase c notes at 120 BPM: each 250ms base. Tied merge => 500ms total.
-    if notes[0].Duration != 500*time.Millisecond {
-        t.Fatalf("merged tie duration = %v; want 500ms", notes[0].Duration)
-    }
+	pt := parseClanLordTune("c_c")
+	inst := instrument{program: 0, octave: 0, chord: 100, melody: 100}
+	notes := eventsToNotes(pt, inst, 100)
+	if len(notes) != 1 {
+		t.Fatalf("expected 1 merged note, got %d", len(notes))
+	}
+	// Two lowercase c notes at 120 BPM: each 250ms base. Tied merge => 500ms total.
+	if notes[0].Duration != 500*time.Millisecond {
+		t.Fatalf("merged tie duration = %v; want 500ms", notes[0].Duration)
+	}
 }

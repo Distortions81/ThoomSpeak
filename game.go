@@ -573,19 +573,19 @@ func (g *Game) Update() error {
 	}
 	inventoryShortcutMu.RUnlock()
 
-    if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) {
-        // Input bar menu takes precedence when right-clicking on input.
-        if !handleConsoleInputContext(mx, my) {
-            // Try players list first, then inventory, then chat/console copy.
-            if !handlePlayersContextClick(mx, my) {
-                if !handleInventoryContextClick(mx, my) {
-                    if !handleChatCopyRightClick(mx, my) {
-                        _ = handleConsoleCopyRightClick(mx, my)
-                    }
-                }
-            }
-        }
-    }
+	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) {
+		// Input bar menu takes precedence when right-clicking on input.
+		if !handleConsoleInputContext(mx, my) {
+			// Try players list first, then inventory, then chat/console copy.
+			if !handlePlayersContextClick(mx, my) {
+				if !handleInventoryContextClick(mx, my) {
+					if !handleChatCopyRightClick(mx, my) {
+						_ = handleConsoleCopyRightClick(mx, my)
+					}
+				}
+			}
+		}
+	}
 
 	if debugWin != nil && debugWin.IsOpen() {
 		if time.Since(lastDebugStatsUpdate) >= time.Second {
@@ -840,10 +840,10 @@ func (g *Game) Update() error {
 	if click && !uiMouseDown && inGame {
 		handleWorldClick(baseX, baseY)
 	}
-    if rightClick && inGame && !pointInUI(mx, my) {
-        handleWorldClick(baseX, baseY)
-    }
-    // (right-click handling for menus/copy is handled earlier)
+	if rightClick && inGame && !pointInUI(mx, my) {
+		handleWorldClick(baseX, baseY)
+	}
+	// (right-click handling for menus/copy is handled earlier)
 
 	// Default desired target from current pointer, even if outside game window.
 	// We'll freeze it to the previous value only when we're NOT walking.
@@ -1067,18 +1067,18 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		alpha, mobileFade, pictFade = computeInterpolation(snap.prevTime, snap.curTime, gs.MobileBlendAmount, gs.BlendAmount)
 		prev := gs.GameScale
 		gs.GameScale = float64(offIntScale)
-        drawScene(worldRT, 0, 0, snap, alpha, mobileFade, pictFade)
-        if gs.shaderLighting {
-            // Use shader-based night darkening with inverse-square falloff.
-            addNightDarkSources(offW, offH)
-        } else {
-            // Classic overlay path when shader is off.
-            drawNightAmbient(worldRT, 0, 0)
-            drawNightOverlay(worldRT, 0, 0)
-        }
-        if gs.shaderLighting {
-            applyLightingShader(worldRT, frameLights, frameDarks, float32(alpha))
-        }
+		drawScene(worldRT, 0, 0, snap, alpha, mobileFade, pictFade)
+		if gs.shaderLighting {
+			// Use shader-based night darkening with inverse-square falloff.
+			addNightDarkSources(offW, offH)
+		} else {
+			// Classic overlay path when shader is off.
+			drawNightAmbient(worldRT, 0, 0)
+			drawNightOverlay(worldRT, 0, 0)
+		}
+		if gs.shaderLighting {
+			applyLightingShader(worldRT, frameLights, frameDarks, float32(alpha))
+		}
 		drawStatusBars(worldRT, 0, 0, snap, alpha)
 		gs.GameScale = prev
 		haveSnap = true

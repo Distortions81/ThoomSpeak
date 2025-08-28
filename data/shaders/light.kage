@@ -2,9 +2,9 @@ package main
 
 const MaxLights = 128
 // Lights restore detail more aggressively near sources but never exceed base.
-const LightScale = 4
+const LightScale = 16
 // Strong darkening for barely visible ambient at 100% night.
-const DarkScale  = 0.25
+const DarkScale  = 16
 
 var (
     LightCount int
@@ -15,10 +15,12 @@ var (
     LightR [MaxLights]float
     LightG [MaxLights]float
     LightB [MaxLights]float
+    LightIntensity [MaxLights]float
     DarkPosX [MaxLights]float
     DarkPosY [MaxLights]float
     DarkRadius [MaxLights]float
     DarkAlpha [MaxLights]float
+    DarkIntensity [MaxLights]float
 )
 
 func Fragment(pos vec4, texCoord vec2, color vec4) vec4 {
@@ -34,15 +36,22 @@ func Fragment(pos vec4, texCoord vec2, color vec4) vec4 {
             dist := sqrt(dx*dx + dy*dy)
             nd := dist / DarkRadius[i]
             f := 1.0 / (1.0 + nd*nd)
-            d := clamp(DarkScale*DarkAlpha[i]*f, 0.0, 1.0)
+            d := clamp(DarkScale*DarkAlpha[i]*f, 0.0, 1.0) * DarkIntensity[i]
             dim *= vec3(1.0 - d)
         }
     }
     col := vec4(base.rgb*dim, base.a)
 
-    // Accumulate light contributions additively so lights mix smoothly.
-    // Apply a simple Reinhard-like saturation to avoid wash-out.
-    lacc := vec3(0.0, 0.0, 0.0)
+    // Compute a scalar reveal factor and a normalized color mix for smoother blending.
+    // This avoids per-channel "patchwork" reveals and blends light colors proportionally.
+    sumW := 0.0
+    sumC := vec3(0.0, 0.0, 0.0)
+    sumCraw := vec3(0.0, 0.0, 0.0)
+    // Perceptual luma weights (sRGB)
+    lumW := vec3(0.2126, 0.7152, 0.0722)
+    // How much to equalize per-light color by luma so
+    // low-luma hues (blue) aren't dominated by high-luma (yellow)
+    chromaEQ := 0.00
     for i := 0; i < MaxLights; i++ {
         if i < LightCount {
             dx := pos.x - LightPosX[i]
@@ -50,25 +59,62 @@ func Fragment(pos vec4, texCoord vec2, color vec4) vec4 {
             dist := sqrt(dx*dx + dy*dy)
             nd := dist / LightRadius[i]
             f := 1.0 / (1.0 + nd*nd)
-            // Sharper falloff so distant lights don't affect ambient much
+            // Sharper falloff to localize light influence
             f = f * f
-            contrib := vec3(
-                clamp(LightScale*LightR[i]*f, 0.0, 1.0),
-                clamp(LightScale*LightG[i]*f, 0.0, 1.0),
-                clamp(LightScale*LightB[i]*f, 0.0, 1.0),
-            )
-            lacc += contrib
+            w := clamp(LightScale*f, 0.0, 10.0) * LightIntensity[i]
+            sumW += w
+            rgb := vec3(LightR[i], LightG[i], LightB[i])
+            // Equalize by luminance to balance hue influence
+            lum := max(dot(rgb, lumW), 0.001)
+            normRGB := rgb / lum
+            eqRGB := mix(rgb, normRGB, chromaEQ)
+            sumC += w * eqRGB
+            sumCraw += w * rgb
         }
     }
-    // Soft saturate to [0,1) so overlapping lights brighten without abrupt borders
-    lacc = lacc / (1.0 + lacc)
-    // Blend back toward the original base color using lacc per channel
-    col.r = col.r*(1.0 - lacc.r) + base.r*lacc.r
-    col.g = col.g*(1.0 - lacc.g) + base.g*lacc.g
-    col.b = col.b*(1.0 - lacc.b) + base.b*lacc.b
 
-    col.r = clamp(col.r, 0.0, 1.0)
-    col.g = clamp(col.g, 0.0, 1.0)
-    col.b = clamp(col.b, 0.0, 1.0)
-    return col
+    // Tone map reveal to [0, 1) with a Reinhard-like curve
+    reveal := sumW / (1.0 + sumW)
+
+    // Normalized light color mix; default to white if no light
+    mixColor := vec3(1.0, 1.0, 1.0)
+    if sumW > 0.0001 {
+        // If the combined light is close to neutral white, reduce chroma equalization
+        // to let white mix more naturally with colored lights.
+        rawMix := sumCraw / sumW
+        cmax := max(rawMix.r, max(rawMix.g, rawMix.b))
+        cmin := min(rawMix.r, min(rawMix.g, rawMix.b))
+        avg := (rawMix.r + rawMix.g + rawMix.b) / 3.0
+        // A crude saturation proxy; higher means more chroma, lower means whiter
+        sat := 0.0
+        if avg > 0.0001 {
+            sat = clamp((cmax - cmin) / avg, 0.0, 1.0)
+        }
+        whiteness := 1.0 - sat
+        // Blend between equalized and raw sums based on whiteness
+        sumAdj := mix(sumC, sumCraw, whiteness)
+        mixColor = sumAdj / sumW
+    }
+
+    // Limit tint strength so base palette remains readable
+    // Reduce tinting when overall light is very white to avoid washing colors.
+    tintStrength := 0.6
+    if sumW > 0.0001 {
+        rawMix := sumCraw / sumW
+        cmax := max(rawMix.r, max(rawMix.g, rawMix.b))
+        cmin := min(rawMix.r, min(rawMix.g, rawMix.b))
+        avg := (rawMix.r + rawMix.g + rawMix.b) / 3.0
+        sat := 0.0
+        if avg > 0.0001 {
+            sat = clamp((cmax - cmin) / avg, 0.0, 1.0)
+        }
+        whiteness := 1.0 - sat
+        tintStrength = mix(tintStrength, 0.45, whiteness)
+    }
+    tintedBase := base.rgb * mix(vec3(1.0, 1.0, 1.0), mixColor, tintStrength)
+
+    // Reveal from darkened color toward tinted base using scalar reveal
+    finalRGB := mix(col.rgb, tintedBase, reveal)
+
+    return vec4(clamp(finalRGB, 0.0, 1.0), base.a)
 }
