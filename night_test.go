@@ -31,6 +31,14 @@ func TestParseNightCommand(t *testing.T) {
 			cloudy:    false,
 		},
 		{
+			name:      "new style extra spaces",
+			cmd:       "/nt 52  /sa  10  /cl 1",
+			baseLevel: 52,
+			level:     52,
+			azimuth:   10,
+			cloudy:    true,
+		},
+		{
 			name:      "legacy long mixed case",
 			cmd:       "/nT 10 20 30 40",
 			baseLevel: 10,

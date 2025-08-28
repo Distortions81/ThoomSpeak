@@ -47,7 +47,9 @@ const ambientNightStrength = 0.4
 
 var blackImg *ebiten.Image
 
-var nightRE = regexp.MustCompile(`(?i)^/nt ([0-9]+) /sa ([-0-9]+) /cl ([01])`)
+// nightRE matches server night commands. Historically the server may send
+// multiple spaces between arguments, so allow flexible whitespace here.
+var nightRE = regexp.MustCompile(`(?i)^/nt\s+([0-9]+)\s+/sa\s+([-0-9]+)\s+/cl\s+([01])`)
 
 func (n *NightInfo) calcCurLevel() {
 	delta := 0
