@@ -236,10 +236,17 @@ func stripBEPPTags(b []byte) []byte {
 				}
 			}
 			if i+2 < len(b) {
+				tagA, tagB := b[i+1], b[i+2]
 				i += 3
+				if j := bytes.Index(b[i:], []byte{0xC2, tagA, tagB}); j >= 0 {
+					out = append(out, stripBEPPTags(b[i:i+j])...)
+					i += j + 3
+					continue
+				}
 				continue
 			}
-			break
+			i++
+			continue
 		}
 		// Preserve MacRoman high-bit printable characters so decodeMacRoman
 		// can convert them (e.g., curly apostrophes). Handle ASCII control
