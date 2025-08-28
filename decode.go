@@ -242,9 +242,18 @@ func stripBEPPTags(b []byte) []byte {
 			break
 		}
 		// Preserve MacRoman high-bit printable characters so decodeMacRoman
-		// can convert them (e.g., curly apostrophes). Only drop ASCII control
-		// characters here.
+		// can convert them (e.g., curly apostrophes). Handle ASCII control
+		// characters carefully: keep CR/LF for line splitting and convert
+		// other whitespace to spaces so token boundaries remain intact.
 		if c < 0x20 {
+			switch c {
+			case '\r', '\n':
+				out = append(out, '\r')
+			case '\t', '\v', '\f':
+				out = append(out, ' ')
+			default:
+				// drop any other control character
+			}
 			i++
 			continue
 		}
