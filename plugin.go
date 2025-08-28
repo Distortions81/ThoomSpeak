@@ -33,9 +33,6 @@ var basePluginExports = interp.Exports{
 		"Player":           reflect.ValueOf((*Player)(nil)),
 		"Inventory":        reflect.ValueOf(pluginInventory),
 		"InventoryItem":    reflect.ValueOf((*InventoryItem)(nil)),
-		"ToggleEquip":      reflect.ValueOf(pluginToggleEquip),
-		"Equip":            reflect.ValueOf(pluginEquip),
-		"Unequip":          reflect.ValueOf(pluginUnequip),
 		"PlaySound":        reflect.ValueOf(pluginPlaySound),
 		"InputText":        reflect.ValueOf(pluginInputText),
 		"SetInputText":     reflect.ValueOf(pluginSetInputText),
@@ -75,6 +72,9 @@ func exportsForPlugin(owner string) interp.Exports {
 		for k, v := range symbols {
 			m[k] = v
 		}
+		m["ToggleEquip"] = reflect.ValueOf(func(id uint16) { pluginToggleEquip(owner, id) })
+		m["Equip"] = reflect.ValueOf(func(id uint16) { pluginEquip(owner, id) })
+		m["Unequip"] = reflect.ValueOf(func(id uint16) { pluginUnequip(owner, id) })
 		m["AddHotkey"] = reflect.ValueOf(func(combo, command string) { pluginAddHotkey(owner, combo, command) })
 		m["Hotkeys"] = reflect.ValueOf(func() []Hotkey { return pluginHotkeys(owner) })
 		m["RemoveHotkey"] = reflect.ValueOf(func(combo string) { pluginRemoveHotkey(owner, combo) })
@@ -513,7 +513,10 @@ func pluginInventory() []InventoryItem {
 	return getInventory()
 }
 
-func pluginToggleEquip(id uint16) {
+func pluginToggleEquip(owner string, id uint16) {
+	if recordPluginSend(owner) {
+		return
+	}
 	toggleInventoryEquip(id)
 }
 
@@ -551,7 +554,10 @@ func pluginSetInputText(text string) {
 	inputMu.Unlock()
 }
 
-func pluginEquip(id uint16) {
+func pluginEquip(owner string, id uint16) {
+	if recordPluginSend(owner) {
+		return
+	}
 	items := getInventory()
 	idx := -1
 	for _, it := range items {
@@ -577,7 +583,10 @@ func pluginEquip(id uint16) {
 	equipInventoryItem(id, idx, true)
 }
 
-func pluginUnequip(id uint16) {
+func pluginUnequip(owner string, id uint16) {
+	if recordPluginSend(owner) {
+		return
+	}
 	items := getInventory()
 	equipped := false
 	for _, it := range items {
