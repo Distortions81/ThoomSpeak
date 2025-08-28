@@ -210,24 +210,10 @@ func init() {
 }
 
 // drawNightAmbient applies a uniform darkening to the scene based on the
-// current night level. This keeps overall brightness appropriate even without
-// the shader path.
+// current night level. This mirrors classic client behavior and keeps overall
+// brightness appropriate even without the shader path.
 func drawNightAmbient(screen *ebiten.Image, ox, oy int) {
-	gNight.mu.Lock()
-	lvl := gNight.Level
-	flags := gNight.Flags
-	gNight.mu.Unlock()
-
-	limit := gs.MaxNightLevel
-	if flags&kLightForce100Pct != 0 {
-		limit = 100
-	}
-	if gs.ForceNightLevel >= 0 {
-		lvl = gs.ForceNightLevel
-	}
-	if lvl > limit {
-		lvl = limit
-	}
+	lvl := currentNightLevel() // Mirrors classic client night level logic
 	if lvl <= 0 {
 		return
 	}
@@ -248,22 +234,10 @@ func drawNightAmbient(screen *ebiten.Image, ox, oy int) {
 	screen.DrawImage(blackImg, op)
 }
 
+// drawNightOverlay applies the vignette overlay based on the current night
+// level. Matches classic client behavior.
 func drawNightOverlay(screen *ebiten.Image, ox, oy int) {
-	gNight.mu.Lock()
-	lvl := gNight.Level
-	flags := gNight.Flags
-	gNight.mu.Unlock()
-
-	limit := gs.MaxNightLevel
-	if flags&kLightForce100Pct != 0 {
-		limit = 100
-	}
-	if gs.ForceNightLevel >= 0 {
-		lvl = gs.ForceNightLevel
-	}
-	if lvl > limit {
-		lvl = limit
-	}
+	lvl := currentNightLevel() // Mirrors classic client night level logic
 	if lvl <= 0 {
 		return
 	}
