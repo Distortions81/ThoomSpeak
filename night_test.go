@@ -1,7 +1,6 @@
 package main
 
 import (
-	"strings"
 	"testing"
 )
 
@@ -128,5 +127,18 @@ func TestCurrentNightLevel(t *testing.T) {
 				t.Fatalf("currentNightLevel() = %d; want %d", got, tc.want)
 			}
 		})
+	}
+}
+
+func TestHandleInfoTextNight(t *testing.T) {
+	gNight = NightInfo{}
+	handleInfoText([]byte("/nt 42 /sa 10 /cl 1"))
+	gNight.mu.Lock()
+	lvl := gNight.Level
+	az := gNight.Azimuth
+	cloudy := gNight.Cloudy
+	gNight.mu.Unlock()
+	if lvl != 42 || az != 10 || !cloudy {
+		t.Fatalf("handleInfoText did not parse night info: {Level:%d Azimuth:%d Cloudy:%v}", lvl, az, cloudy)
 	}
 }

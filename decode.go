@@ -453,6 +453,9 @@ func handleInfoText(data []byte) {
 		if s == "" {
 			continue
 		}
+		if parseNightCommand(s) {
+			continue
+		}
 		// Empirical: classic client handles server-sent info-text music commands
 		// like "/music/..." here. Accept only this canonical prefix from
 		// info-text (not bubbles), and otherwise avoid parsing plain text.
