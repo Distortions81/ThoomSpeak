@@ -300,6 +300,15 @@ func (p *moviePlayer) makePlaybackWindow() {
 		}
 		playingMovie = false
 		movieMode = false
+		// Clear any players loaded during playback so GT_Players.json
+		// is unaffected.
+		playersMu.Lock()
+		players = make(map[string]*Player)
+		playersMu.Unlock()
+		loadPlayersPersist()
+		updatePlayersWindow()
+		playersPersistDirty = false
+		playersDirty = false
 		// Clear the selected movie path and reopen the login window.
 		clmov = ""
 		pcapPath = ""

@@ -615,7 +615,7 @@ func (g *Game) Update() error {
 	}
 
 	if time.Since(lastPlayersSave) >= 10*time.Second {
-		if playersDirty || playersPersistDirty {
+		if clmov == "" && !playingMovie && (playersDirty || playersPersistDirty) {
 			savePlayersPersist()
 			playersPersistDirty = false
 		}
