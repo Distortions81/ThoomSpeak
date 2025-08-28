@@ -1975,6 +1975,21 @@ func makeSettingsWindow() {
 	}
 	left.AddItem(alwaysTopCB)
 
+	pinLocCB, pinLocEvents := eui.NewCheckbox()
+	pinLocCB.Text = "Show pin-to locations"
+	pinLocCB.Size = eui.Point{X: panelWidth, Y: 24}
+	pinLocCB.Checked = gs.ShowPinToLocations
+	pinLocEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			SettingsLock.Lock()
+			gs.ShowPinToLocations = ev.Checked
+			SettingsLock.Unlock()
+			eui.SetShowPinLocations(ev.Checked)
+			settingsDirty = true
+		}
+	}
+	left.AddItem(pinLocCB)
+
 	themeDD, themeEvents := eui.NewDropdown()
 	themeDD.Label = "Window Theme"
 	if opts, err := eui.ListThemes(); err == nil {
@@ -2044,6 +2059,32 @@ func makeSettingsWindow() {
 		}
 	}
 	left.AddItem(midMove)
+
+	inputOpenCB, inputOpenEvents := eui.NewCheckbox()
+	inputOpenCB.Text = "Input bar always open"
+	inputOpenCB.Size = eui.Point{X: panelWidth, Y: 24}
+	inputOpenCB.Checked = gs.InputBarAlwaysOpen
+	inputOpenCB.Tooltip = "Keep console input active after sending"
+	inputOpenEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			SettingsLock.Lock()
+			gs.InputBarAlwaysOpen = ev.Checked
+			SettingsLock.Unlock()
+			if gs.InputBarAlwaysOpen {
+				inputActive = true
+			} else {
+				inputActive = false
+				inputText = inputText[:0]
+				historyPos = len(inputHistory)
+			}
+			updateConsoleWindow()
+			if consoleWin != nil {
+				consoleWin.Refresh()
+			}
+			settingsDirty = true
+		}
+	}
+	left.AddItem(inputOpenCB)
 
 	keySpeedSlider, keySpeedEvents := eui.NewSlider()
 	keySpeedSlider.Label = "Keyboard Walk Speed"

@@ -740,7 +740,11 @@ func (g *Game) Update() error {
 				}
 				inputHistory = append(inputHistory, txt)
 			}
-			inputActive = false
+			if gs.InputBarAlwaysOpen {
+				inputActive = true
+			} else {
+				inputActive = false
+			}
 			inputText = inputText[:0]
 			historyPos = len(inputHistory)
 			changedInput = true

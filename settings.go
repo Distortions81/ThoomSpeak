@@ -106,7 +106,7 @@ var gsdef settings = settings{
 	EnabledPlugins:  map[string]bool{},
 	vsync:           true,
 	nightEffect:     true,
-    shaderLighting:  true,
+	shaderLighting:  true,
 	throttleSounds:  true,
 }
 
@@ -116,6 +116,7 @@ type settings struct {
 	LastCharacter         string
 	ClickToToggle         bool
 	MiddleClickMoveWindow bool
+	InputBarAlwaysOpen    bool
 	KBWalkSpeed           float64
 	MainFontSize          float64
 	BubbleFontSize        float64
@@ -188,6 +189,7 @@ type settings struct {
 	NotifiedVersion      int
 	WindowTiling         bool
 	WindowSnapping       bool
+	ShowPinToLocations   bool
 
 	WindowWidth  int
 	WindowHeight int
@@ -306,6 +308,7 @@ func applySettings() {
 	updateBubbleVisibility()
 	eui.SetWindowTiling(gs.WindowTiling)
 	eui.SetWindowSnapping(gs.WindowSnapping)
+	eui.SetShowPinLocations(gs.ShowPinToLocations)
 	eui.SetMiddleClickMove(gs.MiddleClickMoveWindow)
 	eui.SetPotatoMode(gs.PotatoComputer)
 	climg.SetPotatoMode(gs.PotatoComputer)
@@ -319,6 +322,9 @@ func applySettings() {
 	ebiten.SetWindowFloating(gs.Fullscreen || gs.AlwaysOnTop)
 	initFont()
 	updateSoundVolume()
+	if gs.InputBarAlwaysOpen {
+		inputActive = true
+	}
 }
 
 func updateBubbleVisibility() {
@@ -535,55 +541,55 @@ func restoreWindowsAfterScale() {
 }
 
 type qualityPreset struct {
-    DenoiseImages   bool
-    MotionSmoothing bool
-    BlendMobiles    bool
-    BlendPicts      bool
-    NoCaching       bool
-    ShaderLighting  bool
+	DenoiseImages   bool
+	MotionSmoothing bool
+	BlendMobiles    bool
+	BlendPicts      bool
+	NoCaching       bool
+	ShaderLighting  bool
 }
 
 var (
-    ultraLowPreset = qualityPreset{
-        DenoiseImages:   false,
-        MotionSmoothing: false,
-        BlendMobiles:    false,
-        BlendPicts:      false,
-        NoCaching:       true,
-        ShaderLighting:  false,
-    }
-    lowPreset = qualityPreset{
-        DenoiseImages:   false,
-        MotionSmoothing: false,
-        BlendMobiles:    false,
-        BlendPicts:      false,
-        NoCaching:       false,
-        ShaderLighting:  false,
-    }
-    standardPreset = qualityPreset{
-        DenoiseImages:   true,
-        MotionSmoothing: true,
-        BlendMobiles:    false,
-        BlendPicts:      false,
-        NoCaching:       false,
-        ShaderLighting:  true,
-    }
-    highPreset = qualityPreset{
-        DenoiseImages:   true,
-        MotionSmoothing: true,
-        BlendMobiles:    false,
-        BlendPicts:      true,
-        NoCaching:       false,
-        ShaderLighting:  true,
-    }
-    ultimatePreset = qualityPreset{
-        DenoiseImages:   true,
-        MotionSmoothing: true,
-        BlendMobiles:    true,
-        BlendPicts:      true,
-        NoCaching:       false,
-        ShaderLighting:  true,
-    }
+	ultraLowPreset = qualityPreset{
+		DenoiseImages:   false,
+		MotionSmoothing: false,
+		BlendMobiles:    false,
+		BlendPicts:      false,
+		NoCaching:       true,
+		ShaderLighting:  false,
+	}
+	lowPreset = qualityPreset{
+		DenoiseImages:   false,
+		MotionSmoothing: false,
+		BlendMobiles:    false,
+		BlendPicts:      false,
+		NoCaching:       false,
+		ShaderLighting:  false,
+	}
+	standardPreset = qualityPreset{
+		DenoiseImages:   true,
+		MotionSmoothing: true,
+		BlendMobiles:    false,
+		BlendPicts:      false,
+		NoCaching:       false,
+		ShaderLighting:  true,
+	}
+	highPreset = qualityPreset{
+		DenoiseImages:   true,
+		MotionSmoothing: true,
+		BlendMobiles:    false,
+		BlendPicts:      true,
+		NoCaching:       false,
+		ShaderLighting:  true,
+	}
+	ultimatePreset = qualityPreset{
+		DenoiseImages:   true,
+		MotionSmoothing: true,
+		BlendMobiles:    true,
+		BlendPicts:      true,
+		NoCaching:       false,
+		ShaderLighting:  true,
+	}
 )
 
 func applyQualityPreset(name string) {
@@ -603,12 +609,12 @@ func applyQualityPreset(name string) {
 		return
 	}
 
-    gs.DenoiseImages = p.DenoiseImages
-    gs.MotionSmoothing = p.MotionSmoothing
-    gs.BlendMobiles = p.BlendMobiles
-    gs.BlendPicts = p.BlendPicts
-    gs.NoCaching = p.NoCaching
-    gs.shaderLighting = p.ShaderLighting
+	gs.DenoiseImages = p.DenoiseImages
+	gs.MotionSmoothing = p.MotionSmoothing
+	gs.BlendMobiles = p.BlendMobiles
+	gs.BlendPicts = p.BlendPicts
+	gs.NoCaching = p.NoCaching
+	gs.shaderLighting = p.ShaderLighting
 	if gs.NoCaching {
 		gs.precacheSounds = false
 		gs.precacheImages = false
@@ -617,9 +623,9 @@ func applyQualityPreset(name string) {
 	if denoiseCB != nil {
 		denoiseCB.Checked = gs.DenoiseImages
 	}
-    if motionCB != nil {
-        motionCB.Checked = gs.MotionSmoothing
-    }
+	if motionCB != nil {
+		motionCB.Checked = gs.MotionSmoothing
+	}
 	if animCB != nil {
 		animCB.Checked = gs.BlendMobiles
 	}
@@ -651,18 +657,18 @@ func applyQualityPreset(name string) {
 	if graphicsWin != nil {
 		graphicsWin.Refresh()
 	}
-    if debugWin != nil {
-        debugWin.Refresh()
-    }
+	if debugWin != nil {
+		debugWin.Refresh()
+	}
 }
 
 func matchesPreset(p qualityPreset) bool {
-    return gs.DenoiseImages == p.DenoiseImages &&
-        gs.MotionSmoothing == p.MotionSmoothing &&
-        gs.BlendMobiles == p.BlendMobiles &&
-        gs.BlendPicts == p.BlendPicts &&
-        gs.NoCaching == p.NoCaching &&
-        gs.shaderLighting == p.ShaderLighting
+	return gs.DenoiseImages == p.DenoiseImages &&
+		gs.MotionSmoothing == p.MotionSmoothing &&
+		gs.BlendMobiles == p.BlendMobiles &&
+		gs.BlendPicts == p.BlendPicts &&
+		gs.NoCaching == p.NoCaching &&
+		gs.shaderLighting == p.ShaderLighting
 }
 
 func detectQualityPreset() int {

@@ -21,6 +21,12 @@ func WindowSnapping() bool { return windowSnapping }
 // SetWindowSnapping enables or disables window snapping.
 func SetWindowSnapping(enabled bool) { windowSnapping = enabled }
 
+// ShowPinLocations reports whether pin-to zone indicators are shown while dragging windows.
+func ShowPinLocations() bool { return showPinLocations }
+
+// SetShowPinLocations enables or disables pin-to zone indicators while dragging windows.
+func SetShowPinLocations(enabled bool) { showPinLocations = enabled }
+
 // MiddleClickMove reports whether middle-click window dragging is enabled.
 func MiddleClickMove() bool { return middleClickMove }
 

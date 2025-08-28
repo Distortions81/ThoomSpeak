@@ -43,6 +43,9 @@ var (
 	// windowSnapping snaps windows to screen edges or other windows when enabled.
 	windowSnapping bool = true
 
+	// showPinLocations enables drawing pin-to zone indicators while dragging windows.
+	showPinLocations bool
+
 	// middleClickMove enables moving windows with the middle mouse button when enabled.
 	middleClickMove bool
 
