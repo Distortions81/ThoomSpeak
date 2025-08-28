@@ -1991,7 +1991,7 @@ func makeSettingsWindow() {
 	left.AddItem(pinLocCB)
 
 	themeDD, themeEvents := eui.NewDropdown()
-	themeDD.Label = "Window Theme"
+	themeDD.Label = "Color Theme"
 	if opts, err := eui.ListThemes(); err == nil {
 		themeDD.Options = opts
 		cur := eui.CurrentThemeName()
@@ -2317,6 +2317,21 @@ func makeSettingsWindow() {
 	label.FontSize = 15
 	label.Size = eui.Point{X: panelWidth, Y: 50}
 	right.AddItem(label)
+
+	maxNightSlider, maxNightEvents := eui.NewSlider()
+	maxNightSlider.Label = "Max Night Level"
+	maxNightSlider.MinValue = 0
+	maxNightSlider.MaxValue = 100
+	maxNightSlider.IntOnly = true
+	maxNightSlider.Value = float32(gs.MaxNightLevel)
+	maxNightSlider.Size = eui.Point{X: panelWidth - 10, Y: 24}
+	maxNightEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			gs.MaxNightLevel = int(ev.Value)
+			settingsDirty = true
+		}
+	}
+	right.AddItem(maxNightSlider)
 
 	nameBgSlider, nameBgEvents := eui.NewSlider()
 	nameBgSlider.Label = "Name Background Opacity"
@@ -2992,7 +3007,54 @@ func makeQualityWindow() {
 	qualityWin.Movable = true
 	qualityWin.SetZone(eui.HZoneCenterLeft, eui.VZoneMiddleTop)
 
-	flow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
+	// Split settings into three panes: basic (left), appearance (center) and advanced (right)
+	var panelWidth float32 = 270
+	outer := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
+	left := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
+	left.Size = eui.Point{X: panelWidth, Y: 10}
+	center := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
+	center.Size = eui.Point{X: panelWidth, Y: 10}
+
+	label, _ := eui.NewText()
+	label.Text = "\nGPU Options:"
+	label.FontSize = 15
+	label.Size = eui.Point{X: width, Y: 50}
+	left.AddItem(label)
+
+	renderScale, renderScaleEvents := eui.NewSlider()
+	renderScale.Label = "Upscale game amount (sharpness)"
+	renderScale.MinValue = 1
+	renderScale.MaxValue = 4
+	renderScale.IntOnly = true
+	if gs.GameScale < 1 {
+		gs.GameScale = 1
+	}
+	if gs.GameScale > 4 {
+		gs.GameScale = 4
+	}
+
+	renderScale.Value = float32(math.Round(gs.GameScale))
+	renderScale.Size = eui.Point{X: width - 10, Y: 24}
+	renderScale.Tooltip = "Game render resolution (1x - 4x). Higher will be shaper on higher-res displays."
+	renderScaleEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			v := math.Round(float64(ev.Value))
+			if v < 1 {
+				v = 1
+			}
+			if v > 10 {
+				v = 10
+			}
+			gs.GameScale = v
+			renderScale.Value = float32(v)
+			settingsDirty = true
+			initFont()
+			if gameWin != nil {
+				gameWin.Refresh()
+			}
+		}
+	}
+	left.AddItem(renderScale)
 
 	/*
 		showFPSCB, showFPSEvents := eui.NewCheckbox()
@@ -3011,7 +3073,7 @@ func makeQualityWindow() {
 
 	psCB, precacheSoundEvents := eui.NewCheckbox()
 	precacheSoundCB = psCB
-	precacheSoundCB.Text = "Precache Sounds (smoother)"
+	precacheSoundCB.Text = "Precache Sounds"
 	precacheSoundCB.Size = eui.Point{X: width, Y: 24}
 	precacheSoundCB.Checked = gs.precacheSounds
 	precacheSoundCB.Tooltip = "Load and pre-process all sounds, uses RAM but runs smoother (~300MB)"
@@ -3038,11 +3100,11 @@ func makeQualityWindow() {
 			}
 		}
 	}
-	flow.AddItem(precacheSoundCB)
+	left.AddItem(precacheSoundCB)
 
 	piCB, precacheImageEvents := eui.NewCheckbox()
 	precacheImageCB = piCB
-	precacheImageCB.Text = "Precache Images (smoother)"
+	precacheImageCB.Text = "Precache Images"
 	precacheImageCB.Size = eui.Point{X: width, Y: 24}
 	precacheImageCB.Checked = gs.precacheImages
 	precacheImageCB.Tooltip = "Load and pre-process all images, more RAM but runs smoother (<2GB)"
@@ -3069,7 +3131,7 @@ func makeQualityWindow() {
 			}
 		}
 	}
-	flow.AddItem(precacheImageCB)
+	left.AddItem(precacheImageCB)
 
 	/*
 		ncCB, noCacheEvents := eui.NewCheckbox()
@@ -3105,7 +3167,7 @@ func makeQualityWindow() {
 				}
 			}
 		}
-		flow.AddItem(noCacheCB)
+		left.AddItem(noCacheCB)
 	*/
 
 	pcCB, potatoEvents := eui.NewCheckbox()
@@ -3127,7 +3189,7 @@ func makeQualityWindow() {
 			}
 		}
 	}
-	flow.AddItem(potatoCB)
+	left.AddItem(potatoCB)
 
 	// Shader lighting toggle in the Quality window
 	shaderQualityCB, shaderQualityEv := eui.NewCheckbox()
@@ -3147,7 +3209,7 @@ func makeQualityWindow() {
 			}
 		}
 	}
-	flow.AddItem(shaderQualityCB)
+	left.AddItem(shaderQualityCB)
 
 	vsyncCB, vsyncEvents := eui.NewCheckbox()
 	vsyncCB.Text = "VSync - Limit FPS"
@@ -3161,16 +3223,13 @@ func makeQualityWindow() {
 			settingsDirty = true
 		}
 	}
-	flow.AddItem(vsyncCB)
+	left.AddItem(vsyncCB)
 
-	qualityWin.AddItem(flow)
-	qualityWin.AddWindow(false)
-
-	label, _ := eui.NewText()
-	label.Text = "Image denoising:"
+	label, _ = eui.NewText()
+	label.Text = "\nImage denoising:"
 	label.FontSize = 15
 	label.Size = eui.Point{X: width, Y: 50}
-	flow.AddItem(label)
+	left.AddItem(label)
 
 	dCB, denoiseEvents := eui.NewCheckbox()
 	denoiseCB = dCB
@@ -3188,7 +3247,7 @@ func makeQualityWindow() {
 			settingsDirty = true
 		}
 	}
-	flow.AddItem(denoiseCB)
+	left.AddItem(denoiseCB)
 
 	denoiseSharpSlider, denoiseSharpEvents := eui.NewSlider()
 	denoiseSharpSlider.Label = "Sharpness"
@@ -3207,7 +3266,7 @@ func makeQualityWindow() {
 			settingsDirty = true
 		}
 	}
-	flow.AddItem(denoiseSharpSlider)
+	left.AddItem(denoiseSharpSlider)
 
 	denoiseAmtSlider, denoiseAmtEvents := eui.NewSlider()
 	denoiseAmtSlider.Label = "Denoise strength"
@@ -3226,13 +3285,13 @@ func makeQualityWindow() {
 			settingsDirty = true
 		}
 	}
-	flow.AddItem(denoiseAmtSlider)
+	left.AddItem(denoiseAmtSlider)
 
 	label, _ = eui.NewText()
 	label.Text = "\nMotion Smoothing Options:"
 	label.FontSize = 15
 	label.Size = eui.Point{X: width, Y: 50}
-	flow.AddItem(label)
+	center.AddItem(label)
 
 	mCB, motionEvents := eui.NewCheckbox()
 	motionCB = mCB
@@ -3246,7 +3305,7 @@ func makeQualityWindow() {
 			settingsDirty = true
 		}
 	}
-	flow.AddItem(motionCB)
+	center.AddItem(motionCB)
 
 	// Object pinning: make small effect sprites follow mobiles smoothly
 	pinCB, pinEvents := eui.NewCheckbox()
@@ -3260,7 +3319,7 @@ func makeQualityWindow() {
 			settingsDirty = true
 		}
 	}
-	flow.AddItem(pinCB)
+	center.AddItem(pinCB)
 
 	/*
 		nsCB, noSmoothEvents := eui.NewCheckbox()
@@ -3275,28 +3334,14 @@ func makeQualityWindow() {
 				settingsDirty = true
 			}
 		}
-		flow.AddItem(noSmoothCB)
+		center.AddItem(noSmoothCB)
 	*/
 
-	maxNightSlider, maxNightEvents := eui.NewSlider()
-	maxNightSlider.Label = "Max Night Level"
-	maxNightSlider.MinValue = 0
-	maxNightSlider.MaxValue = 100
-	maxNightSlider.IntOnly = true
-	maxNightSlider.Value = float32(gs.MaxNightLevel)
-	maxNightSlider.Size = eui.Point{X: width - 10, Y: 24}
-	maxNightEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventSliderChanged {
-			gs.MaxNightLevel = int(ev.Value)
-			settingsDirty = true
-		}
-	}
-	flow.AddItem(maxNightSlider)
-
+	label, _ = eui.NewText()
 	label.Text = "\nAnimation Blending Options:"
 	label.FontSize = 15
 	label.Size = eui.Point{X: width, Y: 50}
-	flow.AddItem(label)
+	center.AddItem(label)
 
 	aCB, animEvents := eui.NewCheckbox()
 	animCB = aCB
@@ -3311,7 +3356,7 @@ func makeQualityWindow() {
 			mobileBlendCache = map[mobileBlendKey]*ebiten.Image{}
 		}
 	}
-	flow.AddItem(animCB)
+	center.AddItem(animCB)
 
 	pCB, pictBlendEvents := eui.NewCheckbox()
 	pictBlendCB = pCB
@@ -3326,7 +3371,7 @@ func makeQualityWindow() {
 			pictBlendCache = map[pictBlendKey]*ebiten.Image{}
 		}
 	}
-	flow.AddItem(pictBlendCB)
+	center.AddItem(pictBlendCB)
 
 	mobileBlendSlider, mobileBlendEvents := eui.NewSlider()
 	mobileBlendSlider.Label = "Mobile Animation Blend Amount"
@@ -3341,7 +3386,7 @@ func makeQualityWindow() {
 			settingsDirty = true
 		}
 	}
-	flow.AddItem(mobileBlendSlider)
+	center.AddItem(mobileBlendSlider)
 
 	blendSlider, blendEvents := eui.NewSlider()
 	blendSlider.Label = "World Animation Blending Strength"
@@ -3356,7 +3401,7 @@ func makeQualityWindow() {
 			settingsDirty = true
 		}
 	}
-	flow.AddItem(blendSlider)
+	center.AddItem(blendSlider)
 
 	mobileFramesSlider, mobileFramesEvents := eui.NewSlider()
 	mobileFramesSlider.Label = "Mobile Animation Blend Frames"
@@ -3372,7 +3417,7 @@ func makeQualityWindow() {
 			settingsDirty = true
 		}
 	}
-	flow.AddItem(mobileFramesSlider)
+	center.AddItem(mobileFramesSlider)
 
 	pictFramesSlider, pictFramesEvents := eui.NewSlider()
 	pictFramesSlider.Label = "World Animation Blend Frames"
@@ -3388,41 +3433,12 @@ func makeQualityWindow() {
 			settingsDirty = true
 		}
 	}
-	flow.AddItem(pictFramesSlider)
+	center.AddItem(pictFramesSlider)
 
-	renderScale, renderScaleEvents := eui.NewSlider()
-	renderScale.Label = "Upscale game amount"
-	renderScale.MinValue = 1
-	renderScale.MaxValue = 4
-	renderScale.IntOnly = true
-	if gs.GameScale < 1 {
-		gs.GameScale = 1
-	}
-	if gs.GameScale > 4 {
-		gs.GameScale = 4
-	}
-	renderScale.Value = float32(math.Round(gs.GameScale))
-	renderScale.Size = eui.Point{X: width - 10, Y: 24}
-	renderScale.Tooltip = "Game render resolution (1x - 4x). Higher will be shaper on higher-res displays."
-	renderScaleEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventSliderChanged {
-			v := math.Round(float64(ev.Value))
-			if v < 1 {
-				v = 1
-			}
-			if v > 10 {
-				v = 10
-			}
-			gs.GameScale = v
-			renderScale.Value = float32(v)
-			settingsDirty = true
-			initFont()
-			if gameWin != nil {
-				gameWin.Refresh()
-			}
-		}
-	}
-	flow.AddItem(renderScale)
+	outer.AddItem(left)
+	outer.AddItem(center)
+	qualityWin.AddItem(outer)
+	qualityWin.AddWindow(false)
 }
 
 func makeNotificationsWindow() {
