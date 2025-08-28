@@ -51,6 +51,8 @@ var (
 	recordTarget  *eui.ItemData
 	recordedCombo string
 
+	pluginHotkeyMu sync.RWMutex
+
 	// pluginHotkeyEnabled holds the persisted enabled state for plugin
 	// hotkeys. The map is keyed first by plugin name and then by combo.
 	pluginHotkeyEnabled = map[string]map[string]bool{}
@@ -58,6 +60,7 @@ var (
 
 func loadHotkeys() {
 	path := filepath.Join(dataDirPath, hotkeysFile)
+	pluginHotkeyMu.Lock()
 	pluginHotkeyEnabled = map[string]map[string]bool{}
 	data, err := os.ReadFile(path)
 
@@ -75,6 +78,7 @@ func loadHotkeys() {
 		}
 		var raw []hotkeyJSON
 		if err := json.Unmarshal(data, &raw); err != nil {
+			pluginHotkeyMu.Unlock()
 			return
 		}
 		for _, r := range raw {
@@ -116,8 +120,10 @@ func loadHotkeys() {
 			newList = append(newList, hk)
 		}
 	} else if !os.IsNotExist(err) {
+		pluginHotkeyMu.Unlock()
 		return
 	}
+	pluginHotkeyMu.Unlock()
 
 	// Ensure the default right-click use hotkey exists.
 	def := Hotkey{Name: "Click To Use", Combo: "RightClick", Commands: []HotkeyCommand{{Command: "/use @clicked"}}, Disabled: true}
@@ -152,6 +158,7 @@ func saveHotkeys() {
 	}
 
 	var out []any
+	pluginHotkeyMu.Lock()
 	for _, hk := range snap {
 		if hk.Plugin != "" {
 			if hk.Disabled {
@@ -178,6 +185,7 @@ func saveHotkeys() {
 			out = append(out, pluginState{Plugin: plug, Combo: combo, Enabled: true})
 		}
 	}
+	pluginHotkeyMu.Unlock()
 
 	data, err := json.MarshalIndent(out, "", "  ")
 	if err != nil {
@@ -208,12 +216,14 @@ func pluginRemoveHotkey(owner, combo string) {
 		}
 	}
 	hotkeysMu.Unlock()
+	pluginHotkeyMu.Lock()
 	if m := pluginHotkeyEnabled[owner]; m != nil {
 		delete(m, combo)
 		if len(m) == 0 {
 			delete(pluginHotkeyEnabled, owner)
 		}
 	}
+	pluginHotkeyMu.Unlock()
 	refreshHotkeysList()
 	saveHotkeys()
 }
@@ -334,9 +344,14 @@ func refreshHotkeysList() {
 		cbEvents.Handle = func(ev eui.UIEvent) {
 			if ev.Type == eui.EventClick {
 				hotkeysMu.Lock()
+				var hk Hotkey
 				if idx >= 0 && idx < len(hotkeys) {
 					hotkeys[idx].Disabled = !ev.Checked
-					hk := hotkeys[idx]
+					hk = hotkeys[idx]
+				}
+				hotkeysMu.Unlock()
+				if hk.Plugin != "" {
+					pluginHotkeyMu.Lock()
 					if hk.Disabled {
 						if m := pluginHotkeyEnabled[hk.Plugin]; m != nil {
 							delete(m, hk.Combo)
@@ -352,8 +367,8 @@ func refreshHotkeysList() {
 						}
 						m[hk.Combo] = true
 					}
+					pluginHotkeyMu.Unlock()
 				}
-				hotkeysMu.Unlock()
 				saveHotkeys()
 			}
 		}

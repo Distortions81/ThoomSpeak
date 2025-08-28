@@ -250,11 +250,13 @@ func pluginAddHotkey(owner, combo, command string) {
 		return
 	}
 	hk := Hotkey{Name: command, Combo: combo, Commands: []HotkeyCommand{{Command: command}}, Plugin: owner, Disabled: true}
+	pluginHotkeyMu.RLock()
 	if m := pluginHotkeyEnabled[owner]; m != nil {
 		if m[combo] {
 			hk.Disabled = false
 		}
 	}
+	pluginHotkeyMu.RUnlock()
 	hotkeysMu.Lock()
 	for _, existing := range hotkeys {
 		if existing.Plugin == owner && existing.Combo == combo {
@@ -264,6 +266,7 @@ func pluginAddHotkey(owner, combo, command string) {
 	}
 	hotkeys = append(hotkeys, hk)
 	hotkeysMu.Unlock()
+	pluginHotkeyMu.Lock()
 	if hk.Disabled {
 		if m := pluginHotkeyEnabled[owner]; m != nil {
 			delete(m, combo)
@@ -279,6 +282,7 @@ func pluginAddHotkey(owner, combo, command string) {
 		}
 		m[combo] = true
 	}
+	pluginHotkeyMu.Unlock()
 	refreshHotkeysList()
 	saveHotkeys()
 	name := pluginDisplayNames[owner]
