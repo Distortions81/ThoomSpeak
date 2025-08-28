@@ -25,13 +25,11 @@ var (
 const (
 	lightRadiusScale = 1.0
 	darkRadiusScale  = 1.0
-	// Stronger scaling for shader-based night attenuation. At 100% night,
-	// total effective darkening approaches this factor depending on layout.
-	// Increased baseline shader night strength to produce a very dark
-	// overall scene at 100% night.
 	// Scale for how strongly night level maps to shader darkening.
-	// Lower value avoids saturating darkness at low night levels.
-	shaderNightStrength = 3
+	// A value of 1 ensures full darkness is reached only at 100% night.
+	// Lights are gated separately in the shader to reach full brightness
+	// by 50% night.
+	shaderNightStrength = 1
 )
 
 // Growth factors for new lights/darks and shrink for fading items
@@ -167,7 +165,7 @@ func applyLightingShader(dst *ebiten.Image, lights []lightSource, darks []darkSo
 	// If we have night smoothing state, use it; otherwise fall back to current level.
 	nightFactor := float32(0)
 	if nightAlphaInited {
-		nf := lerpf(nightPrevTarget, nightCurTarget, ease(t)) / float32(shaderNightStrength)
+		nf := lerpf(nightPrevTarget, nightCurTarget, ease(t))
 		if nf < 0 {
 			nf = 0
 		} else if nf > 1 {
@@ -212,13 +210,10 @@ func addNightDarkSources(w, h int, t float32) {
 		return
 	}
 	// Convert to [0..1] strength; reuse ambientNightStrength as baseline.
-	// Use a higher strength specifically for shader night so 100% looks dark.
-	// Apply a gamma curve so low night levels are much gentler than high.
-	// This avoids cases where 25% appears darker than 100% due to reveal interplay.
+	// Use a linear mapping so low night levels remain light while 100%
+	// night reaches full dark. This avoids early saturation around 60%.
 	frac := float64(lvl) / 100.0
-	// Photometric-like response; tweak exponent if needed (2.2 is typical)
-	gamma := 2.2
-	target := float32(math.Pow(frac, gamma) * float64(shaderNightStrength))
+	target := float32(frac * float64(shaderNightStrength))
 	if nightAlphaInited {
 		if t < nightLastT { // new frame
 			nightPrevTarget = nightCurTarget
