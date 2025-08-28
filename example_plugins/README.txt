@@ -73,6 +73,7 @@ Common API calls:
 - `gt.RegisterInputHandler(func(text string) string)` – inspect or change chat
   text before it is sent.
 - `gt.RegisterChatHandler(func(msg string))` – react to every chat message.
+- `gt.RegisterConsoleHandler(func(msg string))` – react to every console message.
 - `gt.RegisterPlayerHandler(func(p gt.Player))` – react when player info
   changes.
 - `gt.PlayerName()` – name of your current character.

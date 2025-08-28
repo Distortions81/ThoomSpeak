@@ -15,6 +15,16 @@ func consoleMessage(msg string) {
 	appendConsoleLog(msg)
 
 	updateConsoleWindow()
+
+	consoleHandlersMu.RLock()
+	var handlers []func(string)
+	for _, hs := range pluginConsoleHandlers {
+		handlers = append(handlers, hs...)
+	}
+	consoleHandlersMu.RUnlock()
+	for _, h := range handlers {
+		go h(msg)
+	}
 }
 
 func getConsoleMessages() []string {
