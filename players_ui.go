@@ -20,6 +20,9 @@ var playersList *eui.ItemData
 var playersDirty bool
 var playersRowRefs = map[*eui.ItemData]string{}
 var playersCtxWin *eui.WindowData
+var selectedPlayerName string
+var lastPlayerClickName string
+var lastPlayerClickTime time.Time
 
 // defaultMobilePictID returns a fallback CL_Images mobile pict ID for the
 // given gender when a player's specific PictID is unknown. Values are chosen
@@ -140,17 +143,8 @@ func updatePlayersWindow() {
 	ht.Size = eui.Point{X: clientWAvail, Y: rowUnits}
 	playersList.AddItem(ht)
 
-	onlinePlayers := make([]Player, 0, onlineCount)
-	offlinePlayers := make([]Player, 0, len(exiles)-onlineCount)
 	for _, p := range exiles {
-		if p.Offline || time.Since(p.LastSeen) > 5*time.Minute {
-			offlinePlayers = append(offlinePlayers, p)
-		} else {
-			onlinePlayers = append(onlinePlayers, p)
-		}
-	}
-
-	addRow := func(p Player, offline bool, parent *eui.ItemData) {
+		offline := p.Offline || time.Since(p.LastSeen) > 5*time.Minute
 		name := p.Name
 		tags := make([]string, 0, 3)
 		if p.Sharee {
@@ -228,6 +222,9 @@ func updatePlayersWindow() {
 				avItem.Image = img
 			}
 			// Always add avatar slot, even if blank, to keep alignment.
+			// Click selects this player.
+			n := p.Name
+			avItem.Action = func() { handlePlayersClick(n) }
 			row.AddItem(avItem)
 		}
 
@@ -253,8 +250,13 @@ func updatePlayersWindow() {
 		t.Action = func() { handlePlayersClick(n) }
 		row.AddItem(t)
 
+		// Also allow clicking the row background to select.
+		n = p.Name
+		row.Action = func() { handlePlayersClick(n) }
+
 		row.Size.Y = rowUnits
 		playersList.AddItem(row)
+		playersRowRefs[row] = p.Name
 	}
 
 	// Size flows to client area like other text windows.

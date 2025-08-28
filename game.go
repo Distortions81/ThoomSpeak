@@ -837,11 +837,10 @@ func (g *Game) Update() error {
 		handleWorldClick(baseX, baseY)
 	}
 
-	x, y := baseX, baseY
-	if !inGame {
-		x, y = prev.mouseX, prev.mouseY
-	}
-	walk := false
+    // Default desired target from current pointer, even if outside game window.
+    // We'll freeze it to the previous value only when we're NOT walking.
+    x, y := baseX, baseY
+    walk := false
 	if !uiMouseDown {
 		if keyWalk {
 			x, y, walk = keyX, keyY, true
@@ -867,9 +866,17 @@ func (g *Game) Update() error {
 		ebiten.SetCursorShape(ebiten.CursorShapeDefault)
 	}
 
-	inputMu.Lock()
-	latestInput = inputState{mouseX: x, mouseY: y, mouseDown: walk}
-	inputMu.Unlock()
+    // If the pointer is outside the game window and we're not walking,
+    // keep the last target so idle mouse movement doesn't jitter the server
+    // input. When walking, continue tracking the live pointer position even
+    // outside the window as requested.
+    if !inGame && !walk {
+        x, y = prev.mouseX, prev.mouseY
+    }
+
+    inputMu.Lock()
+    latestInput = inputState{mouseX: x, mouseY: y, mouseDown: walk}
+    inputMu.Unlock()
 
 	updateHotkeyRecording()
 	checkHotkeys()
