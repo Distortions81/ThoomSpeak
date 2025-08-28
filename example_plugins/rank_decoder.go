@@ -68,7 +68,11 @@ var rankMessages = map[string]string{
 }
 
 func Init() {
-	gt.RegisterChatHandler(func(msg string) {
+	phrases := make([]string, 0, len(rankMessages))
+	for phrase := range rankMessages {
+		phrases = append(phrases, phrase)
+	}
+	gt.RegisterTriggers(phrases, func(msg string) {
 		for phrase, rank := range rankMessages {
 			if gt.Includes(msg, phrase) {
 				gt.ShowNotification("Rank " + rank)

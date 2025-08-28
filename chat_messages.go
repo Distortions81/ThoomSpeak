@@ -42,15 +42,7 @@ func chatMessage(msg string) {
 		})
 	}
 
-	chatHandlersMu.RLock()
-	var handlers []func(string)
-	for _, hs := range pluginChatHandlers {
-		handlers = append(handlers, hs...)
-	}
-	chatHandlersMu.RUnlock()
-	for _, h := range handlers {
-		go h(msg)
-	}
+	runTriggers(msg)
 }
 
 func getChatMessages() []string {

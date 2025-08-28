@@ -102,7 +102,7 @@ func pluginAutoReply(owner, trigger, cmd string) {
 		return
 	}
 	trig := strings.ToLower(trigger)
-	pluginRegisterChatHandler(owner, func(msg string) {
+	pluginRegisterTriggers(owner, []string{trigger}, func(msg string) {
 		if strings.HasPrefix(strings.ToLower(msg), trig) {
 			pluginRunCommand(owner, cmd)
 		}

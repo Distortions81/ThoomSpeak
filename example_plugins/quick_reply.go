@@ -11,13 +11,10 @@ var lastThinker string // remembers who last thought to us
 
 // Init watches chat for "thinks to you" messages and adds /r.
 func Init() {
-	gt.RegisterChatHandler(func(msg string) {
-		lower := gt.Lower(msg)
-		if gt.Includes(lower, "thinks to you") {
-			words := gt.Words(msg)
-			if len(words) > 0 {
-				lastThinker = words[0]
-			}
+	gt.RegisterTriggers([]string{"thinks to you"}, func(msg string) {
+		words := gt.Words(msg)
+		if len(words) > 0 {
+			lastThinker = words[0]
 		}
 	})
 	gt.RegisterCommand("r", func(args string) {
