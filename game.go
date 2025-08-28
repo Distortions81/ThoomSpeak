@@ -1068,9 +1068,9 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		prev := gs.GameScale
 		gs.GameScale = float64(offIntScale)
 		drawScene(worldRT, 0, 0, snap, alpha, mobileFade, pictFade)
-        if gs.shaderLighting {
-            // Use shader-based night darkening with inverse-square falloff.
-            addNightDarkSources(offW, offH, float32(alpha))
+		if gs.shaderLighting {
+			// Use shader-based night darkening with inverse-square falloff.
+			addNightDarkSources(offW, offH, float32(alpha))
 		} else {
 			// Classic overlay path when shader is off.
 			drawNightAmbient(worldRT, 0, 0)
@@ -1119,9 +1119,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	// Finally, draw UI (which includes the game window image)
 	eui.Draw(screen)
-	if gs.ShowFPS {
-		drawServerFPS(screen, screen.Bounds().Dx()-40, 4, serverFPS)
-	}
+
+	//if gs.ShowFPS {
+	//	drawServerFPS(screen, screen.Bounds().Dx()-40, 4, serverFPS)
+	//}
 
 	if seekingMov {
 		x, y := float64(screen.Bounds().Dx())/2, float64(screen.Bounds().Dy())/2
@@ -1927,7 +1928,8 @@ func drawServerFPS(screen *ebiten.Image, ox, oy int, fps float64) {
 		lat := netLatency
 		jit := netJitter
 		drop := droppedPercent()
-		msg := fmt.Sprintf("FPS: %0.2f Server: %0.2f Drop: %0.1f%% Ping: %-3v ms Jit: %-3v ms", ebiten.ActualFPS(), fps, drop, lat.Milliseconds(), jit.Milliseconds())
+		msg := fmt.Sprintf("FPS: %0.2f Server: %0.2f Drop: %0.1f%% Ping: %-3v ms Jit: %-3v ms",
+			ebiten.ActualFPS(), fps, drop, lat.Milliseconds(), jit.Milliseconds())
 		w, h := text.Measure(msg, mainFont, 0)
 
 		if fpsImage == nil || fpsHeight != h {

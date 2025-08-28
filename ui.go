@@ -275,7 +275,7 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 			toggleHelpWindow(ev.Item)
 		}
 	}
-	row1.AddItem(helpBtn)
+	row2.AddItem(helpBtn)
 
 	shotBtn, shotEvents := eui.NewButton()
 	shotBtn.Text = "Snapshot"
@@ -698,7 +698,7 @@ func makeToolbar() {
 	hudWin.Closable = false
 	hudWin.Resizable = false
 	hudWin.AutoSize = false
-	hudWin.Size = eui.Point{X: 450 + buttonWidth, Y: 75}
+	hudWin.Size = eui.Point{X: 450, Y: 75}
 	hudWin.Movable = true
 	hudWin.NoScroll = true
 	hudWin.SetZone(eui.HZoneLeft, eui.VZoneTop)
@@ -717,6 +717,16 @@ func makeToolbar() {
 	hudWin.AddItem(flow)
 	hudWin.AddWindow(false)
 	updateHandsWindow()
+
+	go func() {
+		for {
+			time.Sleep(time.Second * 5)
+			hudWin.Title = fmt.Sprintf("Toolbar - FPS: %4.0f Loss: %0.0f%% Ping: %-3v Jit: %-3v",
+				ebiten.ActualFPS(), droppedPercent(), netLatency.Milliseconds(), netJitter.Milliseconds())
+			hudWin.Refresh()
+
+		}
+	}()
 }
 
 func overlayItemOnHand(hand, item *ebiten.Image) *ebiten.Image {
@@ -1850,319 +1860,27 @@ func makeSettingsWindow() {
 	settingsWin.Movable = true
 
 	// Split settings into three panes: basic (left), appearance (center) and advanced (right)
-	var leftW float32 = 270
-	var centerW float32 = 270
-	var rightW float32 = 270
+	var panelWidth float32 = 270
 	outer := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
 	left := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
-	left.Size = eui.Point{X: leftW, Y: 10}
+	left.Size = eui.Point{X: panelWidth, Y: 10}
 	center := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
-	center.Size = eui.Point{X: centerW, Y: 10}
+	center.Size = eui.Point{X: panelWidth, Y: 10}
 	right := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
-	right.Size = eui.Point{X: rightW, Y: 10}
+	right.Size = eui.Point{X: panelWidth, Y: 10}
 
 	// (Reset button added at the bottom-right later)
 
-	themeDD, themeEvents := eui.NewDropdown()
-	themeDD.Label = "Theme"
-	if opts, err := eui.ListThemes(); err == nil {
-		themeDD.Options = opts
-		cur := eui.CurrentThemeName()
-		for i, n := range opts {
-			if n == cur {
-				themeDD.Selected = i
-				break
-			}
-		}
-	}
-	themeDD.Size = eui.Point{X: centerW, Y: 24}
-	themeEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventDropdownSelected {
-			SettingsLock.Lock()
-			defer SettingsLock.Unlock()
-
-			name := themeDD.Options[ev.Index]
-			if err := eui.LoadTheme(name); err == nil {
-				gs.Theme = name
-				settingsDirty = true
-				settingsWin.Refresh()
-				updateDimmedScreenBG()
-			}
-		}
-	}
-	center.AddItem(themeDD)
-
 	label, _ := eui.NewText()
-	label.Text = "\nControls:"
-	label.FontSize = 15
-	label.Size = eui.Point{X: leftW, Y: 50}
-	left.AddItem(label)
-
-	toggle, toggleEvents := eui.NewCheckbox()
-	toggle.Text = "Click-to-toggle movement"
-	toggle.Size = eui.Point{X: leftW, Y: 24}
-	toggle.Checked = gs.ClickToToggle
-	toggle.Tooltip = "Click once to start walking, click again to stop."
-	toggleEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventCheckboxChanged {
-			SettingsLock.Lock()
-			defer SettingsLock.Unlock()
-
-			gs.ClickToToggle = ev.Checked
-			if !gs.ClickToToggle {
-				walkToggled = false
-			}
-			settingsDirty = true
-		}
-	}
-	left.AddItem(toggle)
-
-	midMove, midMoveEvents := eui.NewCheckbox()
-	midMove.Text = "Middle-click moves windows"
-	midMove.Size = eui.Point{X: leftW, Y: 24}
-	midMove.Checked = gs.MiddleClickMoveWindow
-	midMove.Tooltip = "Drag windows using the middle mouse button"
-	midMoveEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventCheckboxChanged {
-			SettingsLock.Lock()
-			gs.MiddleClickMoveWindow = ev.Checked
-			eui.SetMiddleClickMove(ev.Checked)
-			SettingsLock.Unlock()
-			settingsDirty = true
-		}
-	}
-	left.AddItem(midMove)
-
-	keySpeedSlider, keySpeedEvents := eui.NewSlider()
-	keySpeedSlider.Label = "Keyboard Walk Speed"
-	keySpeedSlider.MinValue = 0.1
-	keySpeedSlider.MaxValue = 1.0
-	keySpeedSlider.Value = float32(gs.KBWalkSpeed)
-	keySpeedSlider.Size = eui.Point{X: leftW - 10, Y: 24}
-	keySpeedEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventSliderChanged {
-			SettingsLock.Lock()
-			defer SettingsLock.Unlock()
-
-			gs.KBWalkSpeed = float64(ev.Value)
-			settingsDirty = true
-		}
-	}
-	left.AddItem(keySpeedSlider)
-
-	notifCB, notifEvents := eui.NewCheckbox()
-	notifCB.Text = "Game Notifications"
-	notifCB.Size = eui.Point{X: leftW, Y: 24}
-	notifCB.Checked = gs.Notifications
-	notifCB.Tooltip = "Show in-game notifications"
-	notifEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventCheckboxChanged {
-			SettingsLock.Lock()
-			gs.Notifications = ev.Checked
-			SettingsLock.Unlock()
-			settingsDirty = true
-			if !ev.Checked {
-				clearNotifications()
-			}
-		}
-	}
-	left.AddItem(notifCB)
-
-	notifBtn, notifBtnEvents := eui.NewButton()
-	notifBtn.Text = "Notification Settings"
-	notifBtn.Size = eui.Point{X: leftW, Y: 24}
-	notifBtnEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventClick {
-			SettingsLock.Lock()
-			defer SettingsLock.Unlock()
-
-			notificationsWin.ToggleNear(ev.Item)
-		}
-	}
-	left.AddItem(notifBtn)
-
-	label, _ = eui.NewText()
-	label.Text = "\nChat & Audio:"
-	label.FontSize = 15
-	label.Size = eui.Point{X: leftW, Y: 50}
-	left.AddItem(label)
-
-	bubbleMsgCB, bubbleMsgEvents := eui.NewCheckbox()
-	bubbleMsgCB.Text = "Combine chat + console"
-	bubbleMsgCB.Size = eui.Point{X: leftW, Y: 24}
-	bubbleMsgCB.Checked = gs.MessagesToConsole
-	bubbleMsgEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventCheckboxChanged {
-			SettingsLock.Lock()
-			defer SettingsLock.Unlock()
-
-			gs.MessagesToConsole = ev.Checked
-			settingsDirty = true
-			if ev.Checked {
-				if chatWin != nil {
-					chatWin.Close()
-				}
-			}
-		}
-	}
-	left.AddItem(bubbleMsgCB)
-
-	chatTSCB, chatTSEvents := eui.NewCheckbox()
-	chatTSCB.Text = "Chat timestamps"
-	chatTSCB.Size = eui.Point{X: leftW, Y: 24}
-	chatTSCB.Checked = gs.ChatTimestamps
-	chatTSEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventCheckboxChanged {
-			SettingsLock.Lock()
-			defer SettingsLock.Unlock()
-
-			gs.ChatTimestamps = ev.Checked
-			settingsDirty = true
-			updateChatWindow()
-		}
-	}
-	left.AddItem(chatTSCB)
-
-	consoleTSCB, consoleTSEvents := eui.NewCheckbox()
-	consoleTSCB.Text = "Console timestamps"
-	consoleTSCB.Size = eui.Point{X: leftW, Y: 24}
-	consoleTSCB.Checked = gs.ConsoleTimestamps
-	consoleTSEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventCheckboxChanged {
-			SettingsLock.Lock()
-			defer SettingsLock.Unlock()
-
-			gs.ConsoleTimestamps = ev.Checked
-			settingsDirty = true
-			updateConsoleWindow()
-		}
-	}
-	left.AddItem(consoleTSCB)
-
-	ttsSpeedSlider, ttsSpeedEvents := eui.NewSlider()
-	ttsSpeedSlider.Label = "TTS Speed"
-	ttsSpeedSlider.MinValue = 0.5
-	ttsSpeedSlider.MaxValue = 2.0
-	ttsSpeedSlider.Value = float32(gs.ChatTTSSpeed)
-	ttsSpeedSlider.Size = eui.Point{X: leftW - 10, Y: 24}
-	ttsSpeedEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventSliderChanged {
-			SettingsLock.Lock()
-			gs.ChatTTSSpeed = float64(ev.Value)
-			SettingsLock.Unlock()
-			settingsDirty = true
-		}
-	}
-	left.AddItem(ttsSpeedSlider)
-
-	voiceDD, voiceEvents := eui.NewDropdown()
-	voiceDD.Label = "TTS Voice"
-	if voices, err := listPiperVoices(); err == nil {
-		voiceDD.Options = voices
-		for i, v := range voices {
-			if v == gs.ChatTTSVoice {
-				voiceDD.Selected = i
-				break
-			}
-		}
-	}
-	voiceDD.Action = func() {
-		if !voiceDD.Open {
-			return
-		}
-		if voices, err := listPiperVoices(); err == nil {
-			voiceDD.Options = voices
-			sel := 0
-			for i, v := range voices {
-				if v == gs.ChatTTSVoice {
-					sel = i
-					break
-				}
-			}
-			voiceDD.Selected = sel
-			if gs.ChatTTSVoice != voices[sel] {
-				SettingsLock.Lock()
-				gs.ChatTTSVoice = voices[sel]
-				SettingsLock.Unlock()
-				settingsDirty = true
-			}
-		}
-	}
-	voiceDD.Size = eui.Point{X: leftW, Y: 24}
-	voiceEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventDropdownSelected {
-			SettingsLock.Lock()
-			gs.ChatTTSVoice = voiceDD.Options[ev.Index]
-			SettingsLock.Unlock()
-			settingsDirty = true
-			piperModel = ""
-			piperConfig = ""
-			stopAllTTS()
-		}
-	}
-	left.AddItem(voiceDD)
-
-	ttsTestInput, ttsTestEvents := eui.NewInput()
-	ttsTestInput.Label = "TTS Test Phrase"
-	ttsTestInput.Text = ttsTestPhrase
-	ttsTestInput.TextPtr = &ttsTestPhrase
-	ttsTestInput.Size = eui.Point{X: leftW, Y: 24}
-	ttsTestEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventInputChanged {
-			ttsTestPhrase = ev.Text
-		}
-	}
-	left.AddItem(ttsTestInput)
-
-	ttsTestBtn, ttsTestBtnEvents := eui.NewButton()
-	ttsTestBtn.Text = "Test TTS"
-	ttsTestBtn.Size = eui.Point{X: leftW, Y: 24}
-	ttsTestBtnEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventClick {
-			if !gs.ChatTTS {
-				gs.ChatTTS = true
-				settingsDirty = true
-				if ttsMixCB != nil {
-					ttsMixCB.Checked = true
-				}
-				if ttsMixSlider != nil {
-					ttsMixSlider.Disabled = false
-				}
-				updateSoundVolume()
-			}
-			go playChatTTS(chatTTSCtx, ttsTestPhrase)
-		}
-	}
-	left.AddItem(ttsTestBtn)
-
-	tsFormatInput, tsFormatEvents := eui.NewInput()
-	tsFormatInput.Label = "Timestamp format"
-	tsFormatInput.Text = gs.TimestampFormat
-	tsFormatInput.TextPtr = &gs.TimestampFormat
-	tsFormatInput.Size = eui.Point{X: leftW, Y: 24}
-	tsFormatInput.Tooltip = "mo,day,hour,min,sec,yr:01,02,03..."
-	tsFormatEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventInputChanged {
-			SettingsLock.Lock()
-			gs.TimestampFormat = ev.Text
-			SettingsLock.Unlock()
-			settingsDirty = true
-			updateChatWindow()
-			updateConsoleWindow()
-		}
-	}
-	left.AddItem(tsFormatInput)
-
-	label, _ = eui.NewText()
 	label.Text = "\nWindow Behavior:"
 	label.FontSize = 15
-	label.Size = eui.Point{X: rightW, Y: 50}
-	right.AddItem(label)
+	label.Size = eui.Point{X: panelWidth, Y: 50}
+	left.AddItem(label)
 
 	/*
 		tilingCB, tilingEvents := eui.NewCheckbox()
 		tilingCB.Text = "Tiling window mode (buggy)"
-		tilingCB.Size = eui.Point{X: rightW, Y: 24}
+		tilingCB.Size = eui.Point{X: panelWidth, Y: 24}
 		tilingCB.Checked = gs.WindowTiling
 		tilingCB.Tooltip = "Prevent windows from overlapping"
 		tilingEvents.Handle = func(ev eui.UIEvent) {
@@ -2176,7 +1894,7 @@ func makeSettingsWindow() {
 
 		snapCB, snapEvents := eui.NewCheckbox()
 		snapCB.Text = "Window snapping (buggy)"
-		snapCB.Size = eui.Point{X: rightW, Y: 24}
+		snapCB.Size = eui.Point{X: panelWidth, Y: 24}
 		snapCB.Checked = gs.WindowSnapping
 		snapCB.Tooltip = "Snap windows to edges and others"
 		snapEvents.Handle = func(ev eui.UIEvent) {
@@ -2218,15 +1936,15 @@ func makeSettingsWindow() {
 		// Place the slider and button on the same row
 		uiScaleRow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
 		// Fit slider to remaining width in the row
-		uiScaleSlider.Size = eui.Point{X: rightW - uiScaleApplyBtn.Size.X - 10, Y: 24}
+		uiScaleSlider.Size = eui.Point{X: panelWidth - uiScaleApplyBtn.Size.X - 10, Y: 24}
 		uiScaleRow.AddItem(uiScaleSlider)
 		uiScaleRow.AddItem(uiScaleApplyBtn)
-		right.AddItem(uiScaleRow)
+		left.AddItem(uiScaleRow)
 	}
 
 	fullscreenCB, fullscreenEvents := eui.NewCheckbox()
 	fullscreenCB.Text = "Fullscreen"
-	fullscreenCB.Size = eui.Point{X: rightW, Y: 24}
+	fullscreenCB.Size = eui.Point{X: panelWidth, Y: 24}
 	fullscreenCB.Checked = gs.Fullscreen
 	fullscreenEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventCheckboxChanged {
@@ -2239,11 +1957,11 @@ func makeSettingsWindow() {
 			settingsDirty = true
 		}
 	}
-	right.AddItem(fullscreenCB)
+	left.AddItem(fullscreenCB)
 
 	alwaysTopCB, alwaysTopEvents := eui.NewCheckbox()
 	alwaysTopCB.Text = "Always on top"
-	alwaysTopCB.Size = eui.Point{X: rightW, Y: 24}
+	alwaysTopCB.Size = eui.Point{X: panelWidth, Y: 24}
 	alwaysTopCB.Checked = gs.AlwaysOnTop
 	alwaysTopEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventCheckboxChanged {
@@ -2255,12 +1973,262 @@ func makeSettingsWindow() {
 			settingsDirty = true
 		}
 	}
-	right.AddItem(alwaysTopCB)
+	left.AddItem(alwaysTopCB)
+
+	themeDD, themeEvents := eui.NewDropdown()
+	themeDD.Label = "Window Theme"
+	if opts, err := eui.ListThemes(); err == nil {
+		themeDD.Options = opts
+		cur := eui.CurrentThemeName()
+		for i, n := range opts {
+			if n == cur {
+				themeDD.Selected = i
+				break
+			}
+		}
+	}
+	themeDD.Size = eui.Point{X: panelWidth, Y: 24}
+	themeEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventDropdownSelected {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
+			name := themeDD.Options[ev.Index]
+			if err := eui.LoadTheme(name); err == nil {
+				gs.Theme = name
+				settingsDirty = true
+				settingsWin.Refresh()
+				updateDimmedScreenBG()
+			}
+		}
+	}
+	left.AddItem(themeDD)
+
+	label, _ = eui.NewText()
+	label.Text = "\nControls:"
+	label.FontSize = 15
+	label.Size = eui.Point{X: panelWidth, Y: 50}
+	left.AddItem(label)
+
+	toggle, toggleEvents := eui.NewCheckbox()
+	toggle.Text = "Click-to-toggle movement"
+	toggle.Size = eui.Point{X: panelWidth, Y: 24}
+	toggle.Checked = gs.ClickToToggle
+	toggle.Tooltip = "Click once to start walking, click again to stop."
+	toggleEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
+			gs.ClickToToggle = ev.Checked
+			if !gs.ClickToToggle {
+				walkToggled = false
+			}
+			settingsDirty = true
+		}
+	}
+	left.AddItem(toggle)
+
+	midMove, midMoveEvents := eui.NewCheckbox()
+	midMove.Text = "Middle-click moves windows"
+	midMove.Size = eui.Point{X: panelWidth, Y: 24}
+	midMove.Checked = gs.MiddleClickMoveWindow
+	midMove.Tooltip = "Drag windows using the middle mouse button"
+	midMoveEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			SettingsLock.Lock()
+			gs.MiddleClickMoveWindow = ev.Checked
+			eui.SetMiddleClickMove(ev.Checked)
+			SettingsLock.Unlock()
+			settingsDirty = true
+		}
+	}
+	left.AddItem(midMove)
+
+	keySpeedSlider, keySpeedEvents := eui.NewSlider()
+	keySpeedSlider.Label = "Keyboard Walk Speed"
+	keySpeedSlider.MinValue = 0.1
+	keySpeedSlider.MaxValue = 1.0
+	keySpeedSlider.Value = float32(gs.KBWalkSpeed)
+	keySpeedSlider.Size = eui.Point{X: panelWidth - 10, Y: 24}
+	keySpeedEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
+			gs.KBWalkSpeed = float64(ev.Value)
+			settingsDirty = true
+		}
+	}
+	left.AddItem(keySpeedSlider)
+
+	label, _ = eui.NewText()
+	label.Text = "\nQuality Options:"
+	label.FontSize = 15
+	label.Size = eui.Point{X: panelWidth, Y: 50}
+	left.AddItem(label)
+
+	qualityPresetDD, qpEvents := eui.NewDropdown()
+	qualityPresetDD.Options = []string{"Ultra-Low", "Low", "Standard", "High", "Ultimate", "Custom"}
+	qualityPresetDD.Size = eui.Point{X: panelWidth, Y: 24}
+	qualityPresetDD.Selected = detectQualityPreset()
+	qualityPresetDD.FontSize = 12
+	qpEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventDropdownSelected {
+			switch ev.Index {
+			case 0:
+				applyQualityPreset("Ultra Low")
+			case 1:
+				applyQualityPreset("Low")
+			case 2:
+				applyQualityPreset("Standard")
+			case 3:
+				applyQualityPreset("High")
+			case 4:
+				applyQualityPreset("Ultimate")
+			}
+			qualityPresetDD.Selected = detectQualityPreset()
+		}
+	}
+	left.AddItem(qualityPresetDD)
+
+	qualityBtn, qualityEvents := eui.NewButton()
+	qualityBtn.Text = "Quality Settings"
+	qualityBtn.Size = eui.Point{X: panelWidth, Y: 24}
+	qualityEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
+			qualityWin.ToggleNear(ev.Item)
+		}
+	}
+	left.AddItem(qualityBtn)
+
+	label, _ = eui.NewText()
+	label.Text = "\nChat:"
+	label.FontSize = 15
+	label.Size = eui.Point{X: panelWidth, Y: 50}
+	left.AddItem(label)
+
+	bubbleMsgCB, bubbleMsgEvents := eui.NewCheckbox()
+	bubbleMsgCB.Text = "Combine chat + console"
+	bubbleMsgCB.Size = eui.Point{X: panelWidth, Y: 24}
+	bubbleMsgCB.Checked = gs.MessagesToConsole
+	bubbleMsgEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
+			gs.MessagesToConsole = ev.Checked
+			settingsDirty = true
+			if ev.Checked {
+				if chatWin != nil {
+					chatWin.Close()
+				}
+			}
+		}
+	}
+	left.AddItem(bubbleMsgCB)
+
+	chatTSCB, chatTSEvents := eui.NewCheckbox()
+	chatTSCB.Text = "Chat timestamps"
+	chatTSCB.Size = eui.Point{X: panelWidth, Y: 24}
+	chatTSCB.Checked = gs.ChatTimestamps
+	chatTSEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
+			gs.ChatTimestamps = ev.Checked
+			settingsDirty = true
+			updateChatWindow()
+		}
+	}
+	left.AddItem(chatTSCB)
+
+	consoleTSCB, consoleTSEvents := eui.NewCheckbox()
+	consoleTSCB.Text = "Console timestamps"
+	consoleTSCB.Size = eui.Point{X: panelWidth, Y: 24}
+	consoleTSCB.Checked = gs.ConsoleTimestamps
+	consoleTSEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
+			gs.ConsoleTimestamps = ev.Checked
+			settingsDirty = true
+			updateConsoleWindow()
+		}
+	}
+	left.AddItem(consoleTSCB)
+
+	notifCB, notifEvents := eui.NewCheckbox()
+	notifCB.Text = "Game Notifications"
+	notifCB.Size = eui.Point{X: panelWidth, Y: 24}
+	notifCB.Checked = gs.Notifications
+	notifCB.Tooltip = "Show in-game notifications"
+	notifEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			SettingsLock.Lock()
+			gs.Notifications = ev.Checked
+			SettingsLock.Unlock()
+			settingsDirty = true
+			if !ev.Checked {
+				clearNotifications()
+			}
+		}
+	}
+	left.AddItem(notifCB)
+
+	tsFormatInput, tsFormatEvents := eui.NewInput()
+	tsFormatInput.Label = "Timestamp format"
+	tsFormatInput.Text = gs.TimestampFormat
+	tsFormatInput.TextPtr = &gs.TimestampFormat
+	tsFormatInput.Size = eui.Point{X: panelWidth, Y: 24}
+	tsFormatInput.Tooltip = "mo,day,hour,min,sec,yr:01,02,03..."
+	tsFormatEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventInputChanged {
+			SettingsLock.Lock()
+			gs.TimestampFormat = ev.Text
+			SettingsLock.Unlock()
+			settingsDirty = true
+			updateChatWindow()
+			updateConsoleWindow()
+		}
+	}
+	left.AddItem(tsFormatInput)
+
+	notifBtn, notifBtnEvents := eui.NewButton()
+	notifBtn.Text = "Notification Settings"
+	notifBtn.Size = eui.Point{X: panelWidth, Y: 24}
+	notifBtnEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
+			notificationsWin.ToggleNear(ev.Item)
+		}
+	}
+	left.AddItem(notifBtn)
+
+	bubbleBtn, bubbleEvents := eui.NewButton()
+	bubbleBtn.Text = "Message Bubbles"
+	bubbleBtn.Size = eui.Point{X: panelWidth, Y: 24}
+	bubbleEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
+			bubbleWin.ToggleNear(ev.Item)
+		}
+	}
+	left.AddItem(bubbleBtn)
 
 	label, _ = eui.NewText()
 	label.Text = "\nStatus Bar Options:"
 	label.FontSize = 15
-	label.Size = eui.Point{X: rightW, Y: 50}
+	label.Size = eui.Point{X: panelWidth, Y: 50}
 	right.AddItem(label)
 
 	placements := []struct {
@@ -2277,7 +2245,7 @@ func makeSettingsWindow() {
 		radio, radioEvents := eui.NewRadio()
 		radio.Text = p.name
 		radio.RadioGroup = "status-bar-placement"
-		radio.Size = eui.Point{X: rightW, Y: 24}
+		radio.Size = eui.Point{X: panelWidth, Y: 24}
 		radio.Checked = gs.BarPlacement == p.value
 		radioEvents.Handle = func(ev eui.UIEvent) {
 			if ev.Type == eui.EventRadioSelected {
@@ -2293,7 +2261,7 @@ func makeSettingsWindow() {
 
 	barColorCB, barColorEvents := eui.NewCheckbox()
 	barColorCB.Text = "Color bars by value"
-	barColorCB.Size = eui.Point{X: rightW, Y: 24}
+	barColorCB.Size = eui.Point{X: panelWidth, Y: 24}
 	barColorCB.Checked = gs.BarColorByValue
 	barColorEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventCheckboxChanged {
@@ -2303,12 +2271,65 @@ func makeSettingsWindow() {
 	}
 	right.AddItem(barColorCB)
 
+	label, _ = eui.NewText()
+	label.Text = "\nOpacity Settings:"
+	label.FontSize = 15
+	label.Size = eui.Point{X: panelWidth, Y: 50}
+	right.AddItem(label)
+
+	nameBgSlider, nameBgEvents := eui.NewSlider()
+	nameBgSlider.Label = "Name Background Opacity"
+	nameBgSlider.MinValue = 0
+	nameBgSlider.MaxValue = 1
+	nameBgSlider.Value = float32(gs.NameBgOpacity)
+	nameBgSlider.Size = eui.Point{X: panelWidth - 10, Y: 24}
+	nameBgEvents.Handle = func(ev eui.UIEvent) {
+
+		if ev.Type == eui.EventSliderChanged {
+			SettingsLock.Lock()
+			defer SettingsLock.Unlock()
+
+			gs.NameBgOpacity = float64(ev.Value)
+			killNameTagCache()
+			settingsDirty = true
+		}
+	}
+	right.AddItem(nameBgSlider)
+
+	bubbleOpSlider, bubbleOpEvents := eui.NewSlider()
+	bubbleOpSlider.Label = "Bubble Opacity"
+	bubbleOpSlider.MinValue = 0
+	bubbleOpSlider.MaxValue = 1
+	bubbleOpSlider.Value = float32(gs.BubbleOpacity)
+	bubbleOpSlider.Size = eui.Point{X: panelWidth - 10, Y: 24}
+	bubbleOpEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			gs.BubbleOpacity = float64(ev.Value)
+			settingsDirty = true
+		}
+	}
+	right.AddItem(bubbleOpSlider)
+
+	bubbleLifeSlider, bubbleLifeEvents := eui.NewSlider()
+	bubbleLifeSlider.Label = "Bubble Life (s/word)"
+	bubbleLifeSlider.MinValue = 0.5
+	bubbleLifeSlider.MaxValue = 5
+	bubbleLifeSlider.Value = float32(gs.BubbleLife)
+	bubbleLifeSlider.Size = eui.Point{X: panelWidth - 10, Y: 24}
+	bubbleLifeEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			gs.BubbleLife = float64(ev.Value)
+			settingsDirty = true
+		}
+	}
+	right.AddItem(bubbleLifeSlider)
+
 	barOpacitySlider, barOpacityEvents := eui.NewSlider()
 	barOpacitySlider.Label = "Status bar opacity"
 	barOpacitySlider.MinValue = 0.1
 	barOpacitySlider.MaxValue = 1.0
 	barOpacitySlider.Value = float32(gs.BarOpacity)
-	barOpacitySlider.Size = eui.Point{X: rightW - 10, Y: 24}
+	barOpacitySlider.Size = eui.Point{X: panelWidth - 10, Y: 24}
 	barOpacityEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
 			SettingsLock.Lock()
@@ -2320,27 +2341,10 @@ func makeSettingsWindow() {
 	}
 	right.AddItem(barOpacitySlider)
 
-	maxNightSlider, maxNightEvents := eui.NewSlider()
-	maxNightSlider.Label = "Max Night Level"
-	maxNightSlider.MinValue = 0
-	maxNightSlider.MaxValue = 100
-	maxNightSlider.IntOnly = true
-	maxNightSlider.Value = float32(gs.MaxNightLevel)
-	maxNightSlider.Size = eui.Point{X: centerW - 10, Y: 24}
-	maxNightEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventSliderChanged {
-			gs.MaxNightLevel = int(ev.Value)
-			settingsDirty = true
-		}
-	}
-	center.AddItem(maxNightSlider)
-
-	// (Night overlay checkbox removed) – night effect is always applied; mode switches with Shader lighting.
-
 	label, _ = eui.NewText()
 	label.Text = "\nText Sizes:"
 	label.FontSize = 15
-	label.Size = eui.Point{X: centerW, Y: 50}
+	label.Size = eui.Point{X: panelWidth, Y: 50}
 	center.AddItem(label)
 
 	labelFontSlider, labelFontEvents := eui.NewSlider()
@@ -2348,7 +2352,7 @@ func makeSettingsWindow() {
 	labelFontSlider.MinValue = 5
 	labelFontSlider.MaxValue = 48
 	labelFontSlider.Value = float32(gs.MainFontSize)
-	labelFontSlider.Size = eui.Point{X: centerW - 10, Y: 24}
+	labelFontSlider.Size = eui.Point{X: panelWidth - 10, Y: 24}
 	labelFontEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
 			SettingsLock.Lock()
@@ -2372,7 +2376,7 @@ func makeSettingsWindow() {
 		}
 		return float32(gs.ConsoleFontSize)
 	}()
-	invFontSlider.Size = eui.Point{X: centerW - 10, Y: 24}
+	invFontSlider.Size = eui.Point{X: panelWidth - 10, Y: 24}
 	invFontEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
 			SettingsLock.Lock()
@@ -2396,7 +2400,7 @@ func makeSettingsWindow() {
 		}
 		return float32(gs.ConsoleFontSize)
 	}()
-	plFontSlider.Size = eui.Point{X: centerW - 10, Y: 24}
+	plFontSlider.Size = eui.Point{X: panelWidth - 10, Y: 24}
 	plFontEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
 			SettingsLock.Lock()
@@ -2417,7 +2421,7 @@ func makeSettingsWindow() {
 	consoleFontSlider.MinValue = 4
 	consoleFontSlider.MaxValue = 48
 	consoleFontSlider.Value = float32(gs.ConsoleFontSize)
-	consoleFontSlider.Size = eui.Point{X: centerW - 10, Y: 24}
+	consoleFontSlider.Size = eui.Point{X: panelWidth - 10, Y: 24}
 	consoleFontEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
 			SettingsLock.Lock()
@@ -2438,7 +2442,7 @@ func makeSettingsWindow() {
 	chatWindowFontSlider.MinValue = 4
 	chatWindowFontSlider.MaxValue = 48
 	chatWindowFontSlider.Value = float32(gs.ChatFontSize)
-	chatWindowFontSlider.Size = eui.Point{X: centerW - 10, Y: 24}
+	chatWindowFontSlider.Size = eui.Point{X: panelWidth - 10, Y: 24}
 	chatWindowFontEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
 			SettingsLock.Lock()
@@ -2459,7 +2463,7 @@ func makeSettingsWindow() {
 	chatFontSlider.MinValue = 4
 	chatFontSlider.MaxValue = 48
 	chatFontSlider.Value = float32(gs.BubbleFontSize)
-	chatFontSlider.Size = eui.Point{X: centerW - 10, Y: 24}
+	chatFontSlider.Size = eui.Point{X: panelWidth - 10, Y: 24}
 	chatFontEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
 			gs.BubbleFontSize = float64(ev.Value)
@@ -2470,110 +2474,142 @@ func makeSettingsWindow() {
 	center.AddItem(chatFontSlider)
 
 	label, _ = eui.NewText()
-	label.Text = "\nOpacity Settings:"
+	label.Text = "\nAudio:"
 	label.FontSize = 15
-	label.Size = eui.Point{X: centerW, Y: 50}
+	label.Size = eui.Point{X: panelWidth, Y: 50}
 	center.AddItem(label)
 
-	nameBgSlider, nameBgEvents := eui.NewSlider()
-	nameBgSlider.Label = "Name Background Opacity"
-	nameBgSlider.MinValue = 0
-	nameBgSlider.MaxValue = 1
-	nameBgSlider.Value = float32(gs.NameBgOpacity)
-	nameBgSlider.Size = eui.Point{X: centerW - 10, Y: 24}
-	nameBgEvents.Handle = func(ev eui.UIEvent) {
-
-		if ev.Type == eui.EventSliderChanged {
-			SettingsLock.Lock()
-			defer SettingsLock.Unlock()
-
-			gs.NameBgOpacity = float64(ev.Value)
-			killNameTagCache()
+	// Move Throttle Sounds to Chat & Audio area
+	throttleCB, throttleEvents := eui.NewCheckbox()
+	throttleSoundCB = throttleCB
+	throttleSoundCB.Text = "Throttle Sounds"
+	throttleSoundCB.Size = eui.Point{X: panelWidth, Y: 24}
+	throttleSoundCB.Checked = gs.throttleSounds
+	throttleSoundCB.Tooltip = "Prevent same sound from playing every tick."
+	throttleEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			gs.throttleSounds = ev.Checked
+			clearCaches()
 			settingsDirty = true
 		}
 	}
-	center.AddItem(nameBgSlider)
+	center.AddItem(throttleSoundCB)
 
-	bubbleOpSlider, bubbleOpEvents := eui.NewSlider()
-	bubbleOpSlider.Label = "Bubble Opacity"
-	bubbleOpSlider.MinValue = 0
-	bubbleOpSlider.MaxValue = 1
-	bubbleOpSlider.Value = float32(gs.BubbleOpacity)
-	bubbleOpSlider.Size = eui.Point{X: centerW - 10, Y: 24}
-	bubbleOpEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventSliderChanged {
-			gs.BubbleOpacity = float64(ev.Value)
-			settingsDirty = true
-		}
-	}
-	center.AddItem(bubbleOpSlider)
-
-	bubbleLifeSlider, bubbleLifeEvents := eui.NewSlider()
-	bubbleLifeSlider.Label = "Bubble Life (s/word)"
-	bubbleLifeSlider.MinValue = 0.5
-	bubbleLifeSlider.MaxValue = 5
-	bubbleLifeSlider.Value = float32(gs.BubbleLife)
-	bubbleLifeSlider.Size = eui.Point{X: centerW - 10, Y: 24}
-	bubbleLifeEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventSliderChanged {
-			gs.BubbleLife = float64(ev.Value)
-			settingsDirty = true
-		}
-	}
-	center.AddItem(bubbleLifeSlider)
-
-	label, _ = eui.NewText()
-	label.Text = "\nQuality Options:"
-	label.FontSize = 15
-	label.Size = eui.Point{X: centerW, Y: 50}
-	center.AddItem(label)
-
-	qualityPresetDD, qpEvents := eui.NewDropdown()
-	qualityPresetDD.Options = []string{"Ultra-Low", "Low", "Standard", "High", "Ultimate", "Custom"}
-	qualityPresetDD.Size = eui.Point{X: centerW, Y: 24}
-	qualityPresetDD.Selected = detectQualityPreset()
-	qualityPresetDD.FontSize = 12
-	qpEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventDropdownSelected {
-			switch ev.Index {
-			case 0:
-				applyQualityPreset("Ultra Low")
-			case 1:
-				applyQualityPreset("Low")
-			case 2:
-				applyQualityPreset("Standard")
-			case 3:
-				applyQualityPreset("High")
-			case 4:
-				applyQualityPreset("Ultimate")
-			}
-			qualityPresetDD.Selected = detectQualityPreset()
-		}
-	}
-	center.AddItem(qualityPresetDD)
-
-	qualityBtn, qualityEvents := eui.NewButton()
-	qualityBtn.Text = "Quality Settings"
-	qualityBtn.Size = eui.Point{X: centerW, Y: 24}
-	qualityEvents.Handle = func(ev eui.UIEvent) {
+	mixBtn, mixEvents := eui.NewButton()
+	mixBtn.Text = "Mixer"
+	mixBtn.Size = eui.Point{X: panelWidth, Y: 24}
+	mixBtn.FontSize = 12
+	mixEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
-			SettingsLock.Lock()
-			defer SettingsLock.Unlock()
-
-			qualityWin.ToggleNear(ev.Item)
+			mixerWin.ToggleNear(ev.Item)
 		}
 	}
-	center.AddItem(qualityBtn)
+	center.AddItem(mixBtn)
+
+	ttsSpeedSlider, ttsSpeedEvents := eui.NewSlider()
+	ttsSpeedSlider.Label = "TTS Speed"
+	ttsSpeedSlider.MinValue = 0.5
+	ttsSpeedSlider.MaxValue = 2.0
+	ttsSpeedSlider.Value = float32(gs.ChatTTSSpeed)
+	ttsSpeedSlider.Size = eui.Point{X: panelWidth - 10, Y: 24}
+	ttsSpeedEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			SettingsLock.Lock()
+			gs.ChatTTSSpeed = float64(ev.Value)
+			SettingsLock.Unlock()
+			settingsDirty = true
+		}
+	}
+	center.AddItem(ttsSpeedSlider)
+
+	voiceDD, voiceEvents := eui.NewDropdown()
+	voiceDD.Label = "TTS Voice"
+	if voices, err := listPiperVoices(); err == nil {
+		voiceDD.Options = voices
+		for i, v := range voices {
+			if v == gs.ChatTTSVoice {
+				voiceDD.Selected = i
+				break
+			}
+		}
+	}
+	voiceDD.Action = func() {
+		if !voiceDD.Open {
+			return
+		}
+		if voices, err := listPiperVoices(); err == nil {
+			voiceDD.Options = voices
+			sel := 0
+			for i, v := range voices {
+				if v == gs.ChatTTSVoice {
+					sel = i
+					break
+				}
+			}
+			voiceDD.Selected = sel
+			if gs.ChatTTSVoice != voices[sel] {
+				SettingsLock.Lock()
+				gs.ChatTTSVoice = voices[sel]
+				SettingsLock.Unlock()
+				settingsDirty = true
+			}
+		}
+	}
+	voiceDD.Size = eui.Point{X: panelWidth, Y: 24}
+	voiceEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventDropdownSelected {
+			SettingsLock.Lock()
+			gs.ChatTTSVoice = voiceDD.Options[ev.Index]
+			SettingsLock.Unlock()
+			settingsDirty = true
+			piperModel = ""
+			piperConfig = ""
+			stopAllTTS()
+		}
+	}
+	center.AddItem(voiceDD)
+
+	ttsTestInput, ttsTestEvents := eui.NewInput()
+	ttsTestInput.Text = ttsTestPhrase
+	ttsTestInput.TextPtr = &ttsTestPhrase
+	ttsTestInput.Size = eui.Point{X: panelWidth, Y: 24}
+	ttsTestEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventInputChanged {
+			ttsTestPhrase = ev.Text
+		}
+	}
+	center.AddItem(ttsTestInput)
+
+	ttsTestBtn, ttsTestBtnEvents := eui.NewButton()
+	ttsTestBtn.Text = "Test TTS"
+	ttsTestBtn.Size = eui.Point{X: panelWidth, Y: 24}
+	ttsTestBtnEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			if !gs.ChatTTS {
+				gs.ChatTTS = true
+				settingsDirty = true
+				if ttsMixCB != nil {
+					ttsMixCB.Checked = true
+				}
+				if ttsMixSlider != nil {
+					ttsMixSlider.Disabled = false
+				}
+				updateSoundVolume()
+			}
+			go playChatTTS(chatTTSCtx, ttsTestPhrase)
+		}
+	}
+	center.AddItem(ttsTestBtn)
 
 	label, _ = eui.NewText()
 	label.Text = "\nAdvanced:"
 	label.FontSize = 15
-	label.Size = eui.Point{X: rightW, Y: 50}
+	label.Size = eui.Point{X: panelWidth, Y: 50}
 	right.AddItem(label)
 
 	pluginKillCB, pluginKillEvents := eui.NewCheckbox()
 	pluginKillCB.Text = "Auto-kill spammy plugins"
-	pluginKillCB.Size = eui.Point{X: rightW, Y: 24}
+	pluginKillCB.Size = eui.Point{X: panelWidth, Y: 24}
 	pluginKillCB.Checked = gs.PluginSpamKill
 	pluginKillCB.Tooltip = "Stop plugins that send too many lines"
 	pluginKillEvents.Handle = func(ev eui.UIEvent) {
@@ -2587,22 +2623,9 @@ func makeSettingsWindow() {
 
 	right.AddItem(pluginKillCB)
 
-	bubbleBtn, bubbleEvents := eui.NewButton()
-	bubbleBtn.Text = "Message Bubbles"
-	bubbleBtn.Size = eui.Point{X: rightW, Y: 24}
-	bubbleEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventClick {
-			SettingsLock.Lock()
-			defer SettingsLock.Unlock()
-
-			bubbleWin.ToggleNear(ev.Item)
-		}
-	}
-	right.AddItem(bubbleBtn)
-
 	debugBtn, debugEvents := eui.NewButton()
 	debugBtn.Text = "Debug Settings"
-	debugBtn.Size = eui.Point{X: rightW, Y: 24}
+	debugBtn.Size = eui.Point{X: panelWidth, Y: 24}
 	debugEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
 			SettingsLock.Lock()
@@ -2615,7 +2638,7 @@ func makeSettingsWindow() {
 
 	dlBtn, dlEvents := eui.NewButton()
 	dlBtn.Text = "Download Files"
-	dlBtn.Size = eui.Point{X: rightW, Y: 24}
+	dlBtn.Size = eui.Point{X: panelWidth, Y: 24}
 	dlBtn.Tooltip = "Download missing or optional files"
 	dlEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
@@ -2638,7 +2661,7 @@ func makeSettingsWindow() {
 	// Bottom-right: Reset All Settings
 	resetBtn, resetEv := eui.NewButton()
 	resetBtn.Text = "Reset All Settings"
-	resetBtn.Size = eui.Point{X: rightW, Y: 24}
+	resetBtn.Size = eui.Point{X: panelWidth, Y: 24}
 	resetBtn.Color = eui.ColorDarkRed
 	resetBtn.HoverColor = eui.ColorRed
 	resetBtn.Tooltip = "Restore defaults and reapply"
@@ -2930,6 +2953,178 @@ func makeQualityWindow() {
 
 	flow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
 
+	/*
+		showFPSCB, showFPSEvents := eui.NewCheckbox()
+		showFPSCB.Text = "Show FPS + UPS"
+		showFPSCB.Size = eui.Point{X: width, Y: 24}
+		showFPSCB.Checked = gs.ShowFPS
+		showFPSCB.Tooltip = "Display frames per second, and updates per second"
+		showFPSEvents.Handle = func(ev eui.UIEvent) {
+			if ev.Type == eui.EventCheckboxChanged {
+				gs.ShowFPS = ev.Checked
+				settingsDirty = true
+			}
+		}
+		flow.AddItem(showFPSCB)
+	*/
+
+	psCB, precacheSoundEvents := eui.NewCheckbox()
+	precacheSoundCB = psCB
+	precacheSoundCB.Text = "Precache Sounds (smoother)"
+	precacheSoundCB.Size = eui.Point{X: width, Y: 24}
+	precacheSoundCB.Checked = gs.precacheSounds
+	precacheSoundCB.Tooltip = "Load and pre-process all sounds, uses RAM but runs smoother (~300MB)"
+	precacheSoundCB.Disabled = gs.NoCaching
+	precacheSoundEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			gs.precacheSounds = ev.Checked
+			if ev.Checked {
+				gs.NoCaching = false
+				if noCacheCB != nil {
+					noCacheCB.Checked = false
+				}
+				go precacheAssets()
+			}
+			settingsDirty = true
+			if qualityWin != nil {
+				qualityWin.Refresh()
+			}
+			if graphicsWin != nil {
+				graphicsWin.Refresh()
+			}
+			if debugWin != nil {
+				debugWin.Refresh()
+			}
+		}
+	}
+	flow.AddItem(precacheSoundCB)
+
+	piCB, precacheImageEvents := eui.NewCheckbox()
+	precacheImageCB = piCB
+	precacheImageCB.Text = "Precache Images (smoother)"
+	precacheImageCB.Size = eui.Point{X: width, Y: 24}
+	precacheImageCB.Checked = gs.precacheImages
+	precacheImageCB.Tooltip = "Load and pre-process all images, more RAM but runs smoother (<2GB)"
+	precacheImageCB.Disabled = gs.NoCaching
+	precacheImageEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			gs.precacheImages = ev.Checked
+			if ev.Checked {
+				gs.NoCaching = false
+				if noCacheCB != nil {
+					noCacheCB.Checked = false
+				}
+				go precacheAssets()
+			}
+			settingsDirty = true
+			if qualityWin != nil {
+				qualityWin.Refresh()
+			}
+			if graphicsWin != nil {
+				graphicsWin.Refresh()
+			}
+			if debugWin != nil {
+				debugWin.Refresh()
+			}
+		}
+	}
+	flow.AddItem(precacheImageCB)
+
+	/*
+		ncCB, noCacheEvents := eui.NewCheckbox()
+		noCacheCB = ncCB
+		noCacheCB.Text = "No caching (Low RAM)"
+		noCacheCB.Tooltip = "Save around 100-200MB RAM at cost of more CPU."
+		noCacheCB.Size = eui.Point{X: width, Y: 24}
+		noCacheCB.Checked = gs.NoCaching
+		noCacheEvents.Handle = func(ev eui.UIEvent) {
+			if ev.Type == eui.EventCheckboxChanged {
+				gs.NoCaching = ev.Checked
+				precacheSoundCB.Disabled = ev.Checked
+				precacheImageCB.Disabled = ev.Checked
+				if ev.Checked {
+					gs.precacheSounds = false
+					gs.precacheImages = false
+					precacheSoundCB.Checked = false
+					precacheImageCB.Checked = false
+					clearCaches()
+				}
+				settingsDirty = true
+				if qualityPresetDD != nil {
+					qualityPresetDD.Selected = detectQualityPreset()
+				}
+				if qualityWin != nil {
+					qualityWin.Refresh()
+				}
+				if graphicsWin != nil {
+					graphicsWin.Refresh()
+				}
+				if debugWin != nil {
+					debugWin.Refresh()
+				}
+			}
+		}
+		flow.AddItem(noCacheCB)
+	*/
+
+	pcCB, potatoEvents := eui.NewCheckbox()
+	potatoCB = pcCB
+	potatoCB.Text = "Potato GPU (low VRAM)"
+	potatoCB.Tooltip = "Work-around for GPUs that only support 4096x4096 size sprites"
+	potatoCB.Size = eui.Point{X: width, Y: 24}
+	potatoCB.Checked = gs.PotatoComputer
+	potatoEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			gs.PotatoComputer = ev.Checked
+			applySettings()
+			if ev.Checked {
+				clearCaches()
+			}
+			settingsDirty = true
+			if qualityPresetDD != nil {
+				qualityPresetDD.Selected = detectQualityPreset()
+			}
+		}
+	}
+	flow.AddItem(potatoCB)
+
+	// Shader lighting toggle in the Quality window
+	shaderQualityCB, shaderQualityEv := eui.NewCheckbox()
+	shaderQualityCB.Text = "Shader Lighting Effects"
+	shaderQualityCB.Size = eui.Point{X: width, Y: 24}
+	shaderQualityCB.Checked = gs.shaderLighting
+	shaderQualityCB.Tooltip = "Enable shader-based lighting (disabled in Low/Ultra-Low presets)"
+	shaderQualityEv.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			gs.shaderLighting = ev.Checked
+			settingsDirty = true
+			if qualityPresetDD != nil {
+				qualityPresetDD.Selected = detectQualityPreset()
+			}
+			if debugWin != nil {
+				debugWin.Refresh()
+			}
+		}
+	}
+	flow.AddItem(shaderQualityCB)
+
+	vsyncCB, vsyncEvents := eui.NewCheckbox()
+	vsyncCB.Text = "VSync - Limit FPS"
+	vsyncCB.Size = eui.Point{X: width, Y: 24}
+	vsyncCB.Checked = gs.vsync
+	vsyncCB.Tooltip = "Limit framerate to monitor Hz. OFF can improve speed"
+	vsyncEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			gs.vsync = ev.Checked
+			ebiten.SetVsyncEnabled(gs.vsync)
+			settingsDirty = true
+		}
+	}
+	flow.AddItem(vsyncCB)
+
+	qualityWin.AddItem(flow)
+	qualityWin.AddWindow(false)
+
 	label, _ := eui.NewText()
 	label.Text = "Image denoising:"
 	label.FontSize = 15
@@ -3014,7 +3209,7 @@ func makeQualityWindow() {
 
 	// Object pinning: make small effect sprites follow mobiles smoothly
 	pinCB, pinEvents := eui.NewCheckbox()
-	pinCB.Text = "Object pinning"
+	pinCB.Text = "Object Effect Pinning"
 	pinCB.Size = eui.Point{X: width, Y: 24}
 	pinCB.Checked = gs.ObjectPinning
 	pinCB.Tooltip = "Objects or effects on mobiles are motion smoothed"
@@ -3026,19 +3221,36 @@ func makeQualityWindow() {
 	}
 	flow.AddItem(pinCB)
 
-	nsCB, noSmoothEvents := eui.NewCheckbox()
-	noSmoothCB = nsCB
-	noSmoothCB.Text = "Smooth moving objects,glitchy WIP"
-	noSmoothCB.Size = eui.Point{X: width, Y: 24}
-	noSmoothCB.Checked = gs.smoothMoving
-	noSmoothCB.Tooltip = "Smooth moving objects that are not 'mobiles' such as chains, clouds, etc"
-	noSmoothEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventCheckboxChanged {
-			gs.smoothMoving = ev.Checked
+	/*
+		nsCB, noSmoothEvents := eui.NewCheckbox()
+		noSmoothCB = nsCB
+		noSmoothCB.Text = "Smooth moving objects,glitchy WIP"
+		noSmoothCB.Size = eui.Point{X: width, Y: 24}
+		noSmoothCB.Checked = gs.smoothMoving
+		noSmoothCB.Tooltip = "Smooth moving objects that are not 'mobiles' such as chains, clouds, etc"
+		noSmoothEvents.Handle = func(ev eui.UIEvent) {
+			if ev.Type == eui.EventCheckboxChanged {
+				gs.smoothMoving = ev.Checked
+				settingsDirty = true
+			}
+		}
+		flow.AddItem(noSmoothCB)
+	*/
+
+	maxNightSlider, maxNightEvents := eui.NewSlider()
+	maxNightSlider.Label = "Max Night Level"
+	maxNightSlider.MinValue = 0
+	maxNightSlider.MaxValue = 100
+	maxNightSlider.IntOnly = true
+	maxNightSlider.Value = float32(gs.MaxNightLevel)
+	maxNightSlider.Size = eui.Point{X: width - 10, Y: 24}
+	maxNightEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			gs.MaxNightLevel = int(ev.Value)
 			settingsDirty = true
 		}
 	}
-	flow.AddItem(noSmoothCB)
+	flow.AddItem(maxNightSlider)
 
 	label.Text = "\nAnimation Blending Options:"
 	label.FontSize = 15
@@ -3170,169 +3382,6 @@ func makeQualityWindow() {
 		}
 	}
 	flow.AddItem(renderScale)
-
-	showFPSCB, showFPSEvents := eui.NewCheckbox()
-	showFPSCB.Text = "Show FPS + UPS"
-	showFPSCB.Size = eui.Point{X: width, Y: 24}
-	showFPSCB.Checked = gs.ShowFPS
-	showFPSCB.Tooltip = "Display frames per second, and updates per second"
-	showFPSEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventCheckboxChanged {
-			gs.ShowFPS = ev.Checked
-			settingsDirty = true
-		}
-	}
-	flow.AddItem(showFPSCB)
-
-	lqsCB, throttleSoundEvents := eui.NewCheckbox()
-	throttleSoundCB = lqsCB
-	throttleSoundCB.Text = "Throttle Sounds"
-	throttleSoundCB.Size = eui.Point{X: width, Y: 24}
-	throttleSoundCB.Checked = gs.throttleSounds
-	throttleSoundCB.Tooltip = "Prevent same sound from playing every tick."
-	throttleSoundEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventCheckboxChanged {
-			gs.throttleSounds = ev.Checked
-			clearCaches()
-			settingsDirty = true
-		}
-	}
-	flow.AddItem(throttleSoundCB)
-
-	psCB, precacheSoundEvents := eui.NewCheckbox()
-	precacheSoundCB = psCB
-	precacheSoundCB.Text = "Precache Sounds"
-	precacheSoundCB.Size = eui.Point{X: width, Y: 24}
-	precacheSoundCB.Checked = gs.precacheSounds
-	precacheSoundCB.Tooltip = "Load and pre-process all sounds, uses RAM but runs smoother (~300MB)"
-	precacheSoundCB.Disabled = gs.NoCaching
-	precacheSoundEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventCheckboxChanged {
-			gs.precacheSounds = ev.Checked
-			if ev.Checked {
-				gs.NoCaching = false
-				if noCacheCB != nil {
-					noCacheCB.Checked = false
-				}
-				go precacheAssets()
-			}
-			settingsDirty = true
-			if qualityWin != nil {
-				qualityWin.Refresh()
-			}
-			if graphicsWin != nil {
-				graphicsWin.Refresh()
-			}
-			if debugWin != nil {
-				debugWin.Refresh()
-			}
-		}
-	}
-	flow.AddItem(precacheSoundCB)
-
-	piCB, precacheImageEvents := eui.NewCheckbox()
-	precacheImageCB = piCB
-	precacheImageCB.Text = "Precache Images"
-	precacheImageCB.Size = eui.Point{X: width, Y: 24}
-	precacheImageCB.Checked = gs.precacheImages
-	precacheImageCB.Tooltip = "Load and pre-process all images, more RAM but runs smoother (<2GB)"
-	precacheImageCB.Disabled = gs.NoCaching
-	precacheImageEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventCheckboxChanged {
-			gs.precacheImages = ev.Checked
-			if ev.Checked {
-				gs.NoCaching = false
-				if noCacheCB != nil {
-					noCacheCB.Checked = false
-				}
-				go precacheAssets()
-			}
-			settingsDirty = true
-			if qualityWin != nil {
-				qualityWin.Refresh()
-			}
-			if graphicsWin != nil {
-				graphicsWin.Refresh()
-			}
-			if debugWin != nil {
-				debugWin.Refresh()
-			}
-		}
-	}
-	flow.AddItem(precacheImageCB)
-
-	ncCB, noCacheEvents := eui.NewCheckbox()
-	noCacheCB = ncCB
-	noCacheCB.Text = "No caching (Low RAM)"
-	noCacheCB.Tooltip = "Save around 100-200MB RAM at cost of more CPU."
-	noCacheCB.Size = eui.Point{X: width, Y: 24}
-	noCacheCB.Checked = gs.NoCaching
-	noCacheEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventCheckboxChanged {
-			gs.NoCaching = ev.Checked
-			precacheSoundCB.Disabled = ev.Checked
-			precacheImageCB.Disabled = ev.Checked
-			if ev.Checked {
-				gs.precacheSounds = false
-				gs.precacheImages = false
-				precacheSoundCB.Checked = false
-				precacheImageCB.Checked = false
-				clearCaches()
-			}
-			settingsDirty = true
-			if qualityPresetDD != nil {
-				qualityPresetDD.Selected = detectQualityPreset()
-			}
-			if qualityWin != nil {
-				qualityWin.Refresh()
-			}
-			if graphicsWin != nil {
-				graphicsWin.Refresh()
-			}
-			if debugWin != nil {
-				debugWin.Refresh()
-			}
-		}
-	}
-	flow.AddItem(noCacheCB)
-
-	pcCB, potatoEvents := eui.NewCheckbox()
-	potatoCB = pcCB
-	potatoCB.Text = "Potato GPU (low VRAM)"
-	potatoCB.Tooltip = "Work-around for GPUs that only support 4096x4096 size sprites"
-	potatoCB.Size = eui.Point{X: width, Y: 24}
-	potatoCB.Checked = gs.PotatoComputer
-	potatoEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventCheckboxChanged {
-			gs.PotatoComputer = ev.Checked
-			applySettings()
-			if ev.Checked {
-				clearCaches()
-			}
-			settingsDirty = true
-			if qualityPresetDD != nil {
-				qualityPresetDD.Selected = detectQualityPreset()
-			}
-		}
-	}
-	flow.AddItem(potatoCB)
-
-	vsyncCB, vsyncEvents := eui.NewCheckbox()
-	vsyncCB.Text = "VSync - Limit FPS"
-	vsyncCB.Size = eui.Point{X: width, Y: 24}
-	vsyncCB.Checked = gs.vsync
-	vsyncCB.Tooltip = "Limit framerate to monitor Hz. OFF can improve speed"
-	vsyncEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventCheckboxChanged {
-			gs.vsync = ev.Checked
-			ebiten.SetVsyncEnabled(gs.vsync)
-			settingsDirty = true
-		}
-	}
-	flow.AddItem(vsyncCB)
-
-	qualityWin.AddItem(flow)
-	qualityWin.AddWindow(false)
 }
 
 func makeNotificationsWindow() {
@@ -3403,19 +3452,20 @@ func makeBubbleWindow() {
 
 	flow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
 
-	bubbleCB, bubbleEvents := eui.NewCheckbox()
-	bubbleCB.Text = "Message Bubbles"
-	bubbleCB.Size = eui.Point{X: width, Y: 24}
-	bubbleCB.Checked = gs.SpeechBubbles
-	bubbleCB.Tooltip = "Show speech bubbles in game"
-	bubbleEvents.Handle = func(ev eui.UIEvent) {
+	// Quick toggle for message bubbles in Chat & Audio
+	bubblesQuickCB, bubblesQuickEvents := eui.NewCheckbox()
+	bubblesQuickCB.Text = "Message Bubbles"
+	bubblesQuickCB.Size = eui.Point{X: width, Y: 24}
+	bubblesQuickCB.Checked = gs.SpeechBubbles
+	bubblesQuickCB.Tooltip = "Show speech bubbles in game"
+	bubblesQuickEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventCheckboxChanged {
 			gs.SpeechBubbles = ev.Checked
 			settingsDirty = true
 			updateBubbleVisibility()
 		}
 	}
-	flow.AddItem(bubbleCB)
+	flow.AddItem(bubblesQuickCB)
 
 	addBubbleCB := func(label string, val *bool) {
 		cb, events := eui.NewCheckbox()
