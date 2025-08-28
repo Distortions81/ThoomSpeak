@@ -12,7 +12,7 @@ func TestPluginAddMacroExpandsInput(t *testing.T) {
 	macroMu = sync.RWMutex{}
 	macroMaps = map[string]map[string]string{}
 	inputHandlersMu = sync.RWMutex{}
-	pluginInputHandlers = map[string][]func(string) string{}
+	pluginInputHandlers = nil
 
 	pluginAddMacro("tester", "pp", "/ponder ")
 
@@ -38,7 +38,7 @@ func TestPluginAddMacros(t *testing.T) {
 	macroMu = sync.RWMutex{}
 	macroMaps = map[string]map[string]string{}
 	inputHandlersMu = sync.RWMutex{}
-	pluginInputHandlers = map[string][]func(string) string{}
+	pluginInputHandlers = nil
 
 	pluginAddMacros("bulk", map[string]string{"pp": "/ponder ", "hi": "/hello "})
 
@@ -56,15 +56,20 @@ func TestPluginAddMacroSingleHandler(t *testing.T) {
 	macroMu = sync.RWMutex{}
 	macroMaps = map[string]map[string]string{}
 	inputHandlersMu = sync.RWMutex{}
-	pluginInputHandlers = map[string][]func(string) string{}
+	pluginInputHandlers = nil
 
 	owner := "dup"
 	pluginAddMacro(owner, "pp", "/ponder ")
 	pluginAddMacro(owner, "hi", "/hello ")
 
-	handlers := pluginInputHandlers[owner]
-	if len(handlers) != 1 {
-		t.Fatalf("unexpected handler count: %d", len(handlers))
+	handlers := 0
+	for _, h := range pluginInputHandlers {
+		if h.owner == owner {
+			handlers++
+		}
+	}
+	if handlers != 1 {
+		t.Fatalf("unexpected handler count: %d", handlers)
 	}
 	if got, want := runInputHandlers("pp there"), "/ponder there"; got != want {
 		t.Fatalf("pp macro failed: got %q, want %q", got, want)
@@ -79,24 +84,16 @@ func TestPluginAutoReplyRunsCommand(t *testing.T) {
 	macroMu = sync.RWMutex{}
 	macroMaps = map[string]map[string]string{}
 	inputHandlersMu = sync.RWMutex{}
-	pluginInputHandlers = map[string][]func(string) string{}
-	chatHandlersMu = sync.RWMutex{}
-	pluginChatHandlers = map[string][]func(string){}
+	pluginInputHandlers = nil
+	triggerHandlersMu = sync.RWMutex{}
+	pluginTriggers = map[string][]triggerHandler{}
 	consoleLog = messageLog{max: maxMessages}
 	commandQueue = nil
 	pendingCommand = ""
 	pluginSendHistory = map[string][]time.Time{}
 
 	pluginAutoReply("bot", "hi", "/wave")
-
-	chatHandlersMu.RLock()
-	handlers := append([]func(string){}, pluginChatHandlers["bot"]...)
-	chatHandlersMu.RUnlock()
-	if len(handlers) != 1 {
-		t.Fatalf("unexpected handler count: %d", len(handlers))
-	}
-
-	handlers[0]("Hi there")
+	runTriggers("Hi there")
 
 	msgs := getConsoleMessages()
 	if len(msgs) == 0 || msgs[len(msgs)-1] != "> /wave" {
@@ -113,7 +110,7 @@ func TestPluginRemoveMacrosOnDisable(t *testing.T) {
 	macroMu = sync.RWMutex{}
 	macroMaps = map[string]map[string]string{}
 	inputHandlersMu = sync.RWMutex{}
-	pluginInputHandlers = map[string][]func(string) string{}
+	pluginInputHandlers = nil
 	pluginMu = sync.RWMutex{}
 	pluginDisabled = map[string]bool{}
 	pluginDisplayNames = map[string]string{}

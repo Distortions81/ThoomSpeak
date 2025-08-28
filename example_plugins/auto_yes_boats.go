@@ -13,13 +13,10 @@ func Init() {
 	// Grab our own name in lowercase so comparisons are easy.
 	nameLower := gt.Lower(gt.PlayerName())
 
-	// Watch every chat line the client receives.
-	gt.RegisterChatHandler(func(msg string) {
+	// Watch for boat offers and respond automatically.
+	gt.RegisterTriggers([]string{"my fine boats"}, func(msg string) {
 		lower := gt.Lower(msg)
-
-		// Boat ferrymen say "My fine boats" when offering a ride.
-		// If the message also mentions our name we whisper "yes".
-		if gt.Includes(lower, "my fine boats") && gt.Includes(lower, nameLower) {
+		if gt.Includes(lower, nameLower) {
 			gt.RunCommand("/whisper yes")
 		}
 	})

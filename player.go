@@ -36,12 +36,17 @@ type Player struct {
 	Offline  bool      // explicitly observed as offline/logged off
 }
 
+type playerHandler struct {
+	owner string
+	fn    func(Player)
+}
+
 var (
 	players              = make(map[string]*Player)
 	playersMu            sync.RWMutex
 	playerHandlers       []func(Player)
 	playerHandlersMu     sync.RWMutex
-	pluginPlayerHandlers = map[string][]func(Player){}
+	pluginPlayerHandlers []playerHandler
 )
 
 func getPlayer(name string) *Player {
@@ -130,10 +135,10 @@ func getPlayers() []Player {
 
 func notifyPlayerHandlers(p Player) {
 	playerHandlersMu.RLock()
-	var handlers []func(Player)
+	handlers := make([]func(Player), 0, len(playerHandlers)+len(pluginPlayerHandlers))
 	handlers = append(handlers, playerHandlers...)
-	for _, hs := range pluginPlayerHandlers {
-		handlers = append(handlers, hs...)
+	for _, h := range pluginPlayerHandlers {
+		handlers = append(handlers, h.fn)
 	}
 	playerHandlersMu.RUnlock()
 	for _, fn := range handlers {

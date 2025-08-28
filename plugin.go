@@ -84,8 +84,9 @@ func exportsForPlugin(owner string) interp.Exports {
 		m["AddMacro"] = reflect.ValueOf(func(short, full string) { pluginAddMacro(owner, short, full) })
 		m["AddMacros"] = reflect.ValueOf(func(macros map[string]string) { pluginAddMacros(owner, macros) })
 		m["AutoReply"] = reflect.ValueOf(func(trigger, cmd string) { pluginAutoReply(owner, trigger, cmd) })
-		m["RegisterChatHandler"] = reflect.ValueOf(func(fn func(string)) { pluginRegisterChatHandler(owner, fn) })
-		m["RegisterConsoleHandler"] = reflect.ValueOf(func(fn func(string)) { pluginRegisterConsoleHandler(owner, fn) })
+		m["RegisterTriggers"] = reflect.ValueOf(func(phrases []string, handler func(string)) {
+			pluginRegisterTriggers(owner, phrases, handler)
+		})
 		m["RegisterInputHandler"] = reflect.ValueOf(func(fn func(string) string) { pluginRegisterInputHandler(owner, fn) })
 		m["RegisterPlayerHandler"] = reflect.ValueOf(func(fn func(Player)) { pluginRegisterPlayerHandler(owner, fn) })
 		m["RunCommand"] = reflect.ValueOf(func(cmd string) { pluginRunCommand(owner, cmd) })
@@ -305,24 +306,32 @@ func pluginAddHotkey(owner, combo, command string) {
 // Plugin command registries.
 type PluginCommandHandler func(args string)
 
+type triggerHandler struct {
+	owner string
+	fn    func(string)
+}
+
+type inputHandler struct {
+	owner string
+	fn    func(string) string
+}
+
 var (
-	pluginCommands        = map[string]PluginCommandHandler{}
-	pluginMu              sync.RWMutex
-	pluginNames           = map[string]bool{}
-	pluginDisplayNames    = map[string]string{}
-	pluginDisabled        = map[string]bool{}
-	pluginPaths           = map[string]string{}
-	pluginTerminators     = map[string]func(){}
-	pluginChatHandlers    = map[string][]func(string){}
-	chatHandlersMu        sync.RWMutex
-	pluginConsoleHandlers = map[string][]func(string){}
-	consoleHandlersMu     sync.RWMutex
-	pluginInputHandlers   = map[string][]func(string) string{}
-	inputHandlersMu       sync.RWMutex
-	pluginCommandOwners   = map[string]string{}
-	pluginSendHistory     = map[string][]time.Time{}
-	pluginModTime         time.Time
-	pluginModCheck        time.Time
+	pluginCommands      = map[string]PluginCommandHandler{}
+	pluginMu            sync.RWMutex
+	pluginNames         = map[string]bool{}
+	pluginDisplayNames  = map[string]string{}
+	pluginDisabled      = map[string]bool{}
+	pluginPaths         = map[string]string{}
+	pluginTerminators   = map[string]func(){}
+	pluginTriggers      = map[string][]triggerHandler{}
+	triggerHandlersMu   sync.RWMutex
+	pluginInputHandlers []inputHandler
+	inputHandlersMu     sync.RWMutex
+	pluginCommandOwners = map[string]string{}
+	pluginSendHistory   = map[string][]time.Time{}
+	pluginModTime       time.Time
+	pluginModCheck      time.Time
 )
 
 // pluginRegisterCommand lets plugins handle a local slash command like
@@ -475,16 +484,38 @@ func disablePlugin(owner, reason string) {
 	}
 	pluginRemoveMacros(owner)
 	inputHandlersMu.Lock()
-	delete(pluginInputHandlers, owner)
+	for i := 0; i < len(pluginInputHandlers); {
+		if pluginInputHandlers[i].owner == owner {
+			pluginInputHandlers = append(pluginInputHandlers[:i], pluginInputHandlers[i+1:]...)
+		} else {
+			i++
+		}
+	}
 	inputHandlersMu.Unlock()
-	chatHandlersMu.Lock()
-	delete(pluginChatHandlers, owner)
-	chatHandlersMu.Unlock()
-	consoleHandlersMu.Lock()
-	delete(pluginConsoleHandlers, owner)
-	consoleHandlersMu.Unlock()
+	triggerHandlersMu.Lock()
+	for phrase, hs := range pluginTriggers {
+		n := 0
+		for _, h := range hs {
+			if h.owner != owner {
+				hs[n] = h
+				n++
+			}
+		}
+		if n == 0 {
+			delete(pluginTriggers, phrase)
+		} else {
+			pluginTriggers[phrase] = hs[:n]
+		}
+	}
+	triggerHandlersMu.Unlock()
 	playerHandlersMu.Lock()
-	delete(pluginPlayerHandlers, owner)
+	for i := 0; i < len(pluginPlayerHandlers); {
+		if pluginPlayerHandlers[i].owner == owner {
+			pluginPlayerHandlers = append(pluginPlayerHandlers[:i], pluginPlayerHandlers[i+1:]...)
+		} else {
+			i++
+		}
+	}
 	playerHandlersMu.Unlock()
 	pluginMu.Lock()
 	for cmd, o := range pluginCommandOwners {
@@ -633,26 +664,23 @@ func pluginRegisterInputHandler(owner string, fn func(string) string) {
 		return
 	}
 	inputHandlersMu.Lock()
-	pluginInputHandlers[owner] = append(pluginInputHandlers[owner], fn)
+	pluginInputHandlers = append(pluginInputHandlers, inputHandler{owner: owner, fn: fn})
 	inputHandlersMu.Unlock()
 }
 
-func pluginRegisterChatHandler(owner string, fn func(string)) {
+func pluginRegisterTriggers(owner string, phrases []string, fn func(string)) {
 	if pluginIsDisabled(owner) || fn == nil {
 		return
 	}
-	chatHandlersMu.Lock()
-	pluginChatHandlers[owner] = append(pluginChatHandlers[owner], fn)
-	chatHandlersMu.Unlock()
-}
-
-func pluginRegisterConsoleHandler(owner string, fn func(string)) {
-	if pluginIsDisabled(owner) || fn == nil {
-		return
+	triggerHandlersMu.Lock()
+	for _, p := range phrases {
+		if p == "" {
+			continue
+		}
+		p = strings.ToLower(p)
+		pluginTriggers[p] = append(pluginTriggers[p], triggerHandler{owner: owner, fn: fn})
 	}
-	consoleHandlersMu.Lock()
-	pluginConsoleHandlers[owner] = append(pluginConsoleHandlers[owner], fn)
-	consoleHandlersMu.Unlock()
+	triggerHandlersMu.Unlock()
 }
 
 func pluginRegisterPlayerHandler(owner string, fn func(Player)) {
@@ -660,15 +688,15 @@ func pluginRegisterPlayerHandler(owner string, fn func(Player)) {
 		return
 	}
 	playerHandlersMu.Lock()
-	pluginPlayerHandlers[owner] = append(pluginPlayerHandlers[owner], fn)
+	pluginPlayerHandlers = append(pluginPlayerHandlers, playerHandler{owner: owner, fn: fn})
 	playerHandlersMu.Unlock()
 }
 
 func runInputHandlers(txt string) string {
 	inputHandlersMu.RLock()
-	var handlers []func(string) string
-	for _, hs := range pluginInputHandlers {
-		handlers = append(handlers, hs...)
+	handlers := make([]func(string) string, len(pluginInputHandlers))
+	for i, h := range pluginInputHandlers {
+		handlers[i] = h.fn
 	}
 	inputHandlersMu.RUnlock()
 	for _, h := range handlers {
@@ -677,6 +705,19 @@ func runInputHandlers(txt string) string {
 		}
 	}
 	return txt
+}
+
+func runTriggers(msg string) {
+	triggerHandlersMu.RLock()
+	msgLower := strings.ToLower(msg)
+	for phrase, hs := range pluginTriggers {
+		if strings.Contains(msgLower, phrase) {
+			for _, h := range hs {
+				go h.fn(msg)
+			}
+		}
+	}
+	triggerHandlersMu.RUnlock()
 }
 
 func pluginPlaySound(ids []uint16) {
