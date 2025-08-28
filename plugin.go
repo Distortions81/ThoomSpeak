@@ -245,8 +245,15 @@ func pluginShowNotification(msg string) {
 	showNotification(msg)
 }
 
+func pluginIsDisabled(owner string) bool {
+	pluginMu.RLock()
+	disabled := pluginDisabled[owner]
+	pluginMu.RUnlock()
+	return disabled
+}
+
 func pluginAddHotkey(owner, combo, command string) {
-	if pluginDisabled[owner] {
+	if pluginIsDisabled(owner) {
 		return
 	}
 	hk := Hotkey{Name: command, Combo: combo, Commands: []HotkeyCommand{{Command: command}}, Plugin: owner, Disabled: true}
@@ -318,7 +325,7 @@ func pluginRegisterCommand(owner, name string, handler PluginCommandHandler) {
 	if name == "" || handler == nil {
 		return
 	}
-	if pluginDisabled[owner] {
+	if pluginIsDisabled(owner) {
 		return
 	}
 	key := strings.ToLower(strings.TrimPrefix(name, "/"))
@@ -332,7 +339,7 @@ func pluginRegisterCommand(owner, name string, handler PluginCommandHandler) {
 
 // pluginRunCommand echoes and enqueues a command for immediate sending.
 func pluginRunCommand(owner, cmd string) {
-	if pluginDisabled[owner] {
+	if pluginIsDisabled(owner) {
 		return
 	}
 	if recordPluginSend(owner) {
@@ -349,7 +356,7 @@ func pluginRunCommand(owner, cmd string) {
 
 // pluginEnqueueCommand enqueues a command to be sent on the next tick without echoing.
 func pluginEnqueueCommand(owner, cmd string) {
-	if pluginDisabled[owner] {
+	if pluginIsDisabled(owner) {
 		return
 	}
 	if recordPluginSend(owner) {
