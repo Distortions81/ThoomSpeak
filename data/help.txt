@@ -14,6 +14,7 @@ Communication
 UI Navigation
 -------------
 - Click the "Windows" button on the toolbar to open/close UI windows.
+- Click the "Actions" button on the toolbar for hotkeys, macros, plugins, settings, help, snapshots, mixer, or exit.
 - Mouse wheel scrolls lists and text windows.
 - Window positions, sizes, and open/closed state persist between runs.
 

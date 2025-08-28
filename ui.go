@@ -220,95 +220,49 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 	}
 	row1.AddItem(winBtn)
 
-	hotBtn, hotEvents := eui.NewButton()
-	hotBtn.Text = "Hotkeys"
-	hotBtn.Size = eui.Point{X: buttonWidth, Y: buttonHeight}
-	hotBtn.FontSize = toolFontSize
-	hotEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventClick {
-			hotkeysWin.ToggleNear(ev.Item)
+	actionsBtn, actionsEvents := eui.NewButton()
+	actionsBtn.Text = "Actions"
+	actionsBtn.Size = eui.Point{X: buttonWidth, Y: buttonHeight}
+	actionsBtn.FontSize = toolFontSize
+	actionsEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type != eui.EventClick {
+			return
 		}
-	}
-	row1.AddItem(hotBtn)
-
-	macroBtn, macroEvents := eui.NewButton()
-	macroBtn.Text = "Macros"
-	macroBtn.Size = eui.Point{X: buttonWidth, Y: buttonHeight}
-	macroBtn.FontSize = toolFontSize
-	macroEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventClick {
-			refreshMacrosList()
-			macrosWin.ToggleNear(ev.Item)
+		r := ev.Item.DrawRect
+		options := []string{
+			"Hotkeys",
+			"Macros",
+			"Plugins",
+			"Settings",
+			"Help",
+			"Snapshot",
+			"Mixer",
+			"Exit",
 		}
+		eui.ShowContextMenu(options, r.X0, r.Y1, func(i int) {
+			switch i {
+			case 0:
+				hotkeysWin.ToggleNear(actionsBtn)
+			case 1:
+				refreshMacrosList()
+				macrosWin.ToggleNear(actionsBtn)
+			case 2:
+				refreshPluginsWindow()
+				pluginsWin.ToggleNear(actionsBtn)
+			case 3:
+				settingsWin.ToggleNear(actionsBtn)
+			case 4:
+				toggleHelpWindow(actionsBtn)
+			case 5:
+				takeScreenshot()
+			case 6:
+				mixerWin.ToggleNear(actionsBtn)
+			case 7:
+				confirmExitSession()
+			}
+		})
 	}
-	row1.AddItem(macroBtn)
-
-	plugBtn, plugEvents := eui.NewButton()
-	plugBtn.Text = "Plugins"
-	plugBtn.Size = eui.Point{X: buttonWidth, Y: buttonHeight}
-	plugBtn.FontSize = toolFontSize
-	plugEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventClick {
-			refreshPluginsWindow()
-			pluginsWin.ToggleNear(ev.Item)
-		}
-	}
-	row1.AddItem(plugBtn)
-
-	btn, setEvents := eui.NewButton()
-	btn.Text = "Settings"
-	btn.Size = eui.Point{X: buttonWidth, Y: buttonHeight}
-	btn.FontSize = toolFontSize
-	setEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventClick {
-			settingsWin.ToggleNear(ev.Item)
-		}
-	}
-	row1.AddItem(btn)
-
-	helpBtn, helpEvents := eui.NewButton()
-	helpBtn.Text = "Help"
-	helpBtn.Size = eui.Point{X: buttonWidth, Y: buttonHeight}
-	helpBtn.FontSize = toolFontSize
-	helpEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventClick {
-			toggleHelpWindow(ev.Item)
-		}
-	}
-	row2.AddItem(helpBtn)
-
-	shotBtn, shotEvents := eui.NewButton()
-	shotBtn.Text = "Snapshot"
-	shotBtn.Size = eui.Point{X: buttonWidth, Y: buttonHeight}
-	shotBtn.FontSize = toolFontSize
-	shotEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventClick {
-			takeScreenshot()
-		}
-	}
-	row2.AddItem(shotBtn)
-
-	exitSessBtn, exitSessEv := eui.NewButton()
-	exitSessBtn.Text = "Exit"
-	exitSessBtn.Size = eui.Point{X: buttonWidth, Y: buttonHeight}
-	exitSessBtn.FontSize = toolFontSize
-	exitSessEv.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventClick {
-			confirmExitSession()
-		}
-	}
-	row2.AddItem(exitSessBtn)
-
-	mixBtn, mixEvents := eui.NewButton()
-	mixBtn.Text = "Mixer"
-	mixBtn.Size = eui.Point{X: 64, Y: buttonHeight}
-	mixBtn.FontSize = 12
-	mixEvents.Handle = func(ev eui.UIEvent) {
-		if ev.Type == eui.EventClick {
-			mixerWin.ToggleNear(ev.Item)
-		}
-	}
-	row2.AddItem(mixBtn)
+	row1.AddItem(actionsBtn)
 
 	/*
 		stopBtn, stopEvents := eui.NewButton()
