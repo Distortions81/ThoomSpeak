@@ -43,9 +43,7 @@ const (
 )
 
 func init() {
-	var err error
-	lightingShader, err = ebiten.NewShader(lightShaderSrc)
-	if err != nil {
+	if err := ReloadLightingShader(); err != nil {
 		panic(err)
 	}
 }
