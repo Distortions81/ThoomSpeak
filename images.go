@@ -276,7 +276,7 @@ func loadImageFrame(id uint16, frame int) *ebiten.Image {
 		imageMu.Unlock()
 	}
 
-	if frame == 0 {
+	if frame == 0 && hdTextures {
 		if img := loadHDOverride(id); img != nil {
 			statImageLoaded(id)
 			if !gs.NoCaching {
