@@ -202,7 +202,7 @@ var pluginAllowedPkgs = []string{
 	"unicode/utf8/utf8",
 }
 
-const pluginGoroutineLimit = 1000
+const pluginGoroutineLimit = 256
 
 func init() {
 	go pluginGoroutineWatchdog()
@@ -216,7 +216,7 @@ func pluginGoroutineWatchdog() {
 			stopAllPlugins()
 			return
 		}
-		time.Sleep(time.Second)
+		time.Sleep(time.Millisecond * 100)
 	}
 }
 
@@ -230,16 +230,9 @@ func restrictedStdlib() interp.Exports {
 	return restricted
 }
 
-func pluginLogf(format string, args ...interface{}) {
-	msg := fmt.Sprintf("[plugin] "+format, args...)
-	pluginConsole(msg)
-	log.Print(msg)
-}
-
 func pluginConsole(msg string) {
-	consoleMessage(msg)
 	if gs.pluginOutputDebug {
-		chatMessage(msg)
+		consoleMessage(msg)
 	}
 }
 
