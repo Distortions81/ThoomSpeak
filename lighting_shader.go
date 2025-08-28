@@ -19,8 +19,6 @@ var (
 	lightingTmp    *ebiten.Image
 	frameLights    []lightSource
 	frameDarks     []darkSource
-	prevLights     []lightSource
-	prevDarks      []darkSource
 )
 
 // Global multipliers to make lights/darks reach farther on screen.
@@ -86,88 +84,17 @@ func applyLightingShader(dst *ebiten.Image, lights []lightSource, darks []darkSo
 	ensureLightingTmp(w, h)
 	lightingTmp.DrawImage(dst, nil)
 
-	// Interpolate between previous and current lighting with one-frame
-	// persistence for disappearing sources and fade-in for new sources.
-	il := make([]lightSource, 0, maxLights)
-	id := make([]darkSource, 0, maxLights)
-
-	// Lights: match by nearest neighbor to preserve identity across frames.
-	usedPrev := make([]bool, len(prevLights))
-	for i := range lights {
-		// find best previous match within a threshold
-		best := -1
-		bestD := float32(1e30)
-		thr := lights[i].Radius * 0.24
-		thr2 := thr * thr
-		for j := range prevLights {
-			if usedPrev[j] {
-				continue
-			}
-			dx := prevLights[j].X - lights[i].X
-			dy := prevLights[j].Y - lights[i].Y
-			d2 := dx*dx + dy*dy
-			if d2 < bestD {
-				bestD = d2
-				best = j
-			}
-		}
-		if best >= 0 && bestD <= thr2 {
-			// Matched: interpolate all fields with the standard smoothing factor t
-			pl := prevLights[best]
-			usedPrev[best] = true
-			il = append(il, lightSource{
-				X:      lerp(pl.X, lights[i].X, t),
-				Y:      lerp(pl.Y, lights[i].Y, t),
-				Radius: lerp(pl.Radius, lights[i].Radius, t),
-				R:      lerp(pl.R, lights[i].R, t),
-				G:      lerp(pl.G, lights[i].G, t),
-				B:      lerp(pl.B, lights[i].B, t),
-			})
-		} else {
-			// New: take current values (no special fade)
-			il = append(il, lights[i])
-		}
-		if len(il) >= maxLights {
-			break
-		}
+	// Use the already-interpolated sprite/mobile positions directly.
+	// Interpolation for motion has been applied when enqueuing lights,
+	// so avoid re-interpolating here to keep shader lights aligned
+	// exactly with rendered objects.
+	il := make([]lightSource, 0, min(maxLights, len(lights)))
+	for i := 0; i < len(lights) && i < maxLights; i++ {
+		il = append(il, lights[i])
 	}
-
-	// Darks: same matching and fade behavior using alpha
-	usedPrevD := make([]bool, len(prevDarks))
-	for i := range darks {
-		best := -1
-		bestD := float32(1e30)
-		thr := darks[i].Radius * 0.5
-		thr2 := thr * thr
-		for j := range prevDarks {
-			if usedPrevD[j] {
-				continue
-			}
-			dx := prevDarks[j].X - darks[i].X
-			dy := prevDarks[j].Y - darks[i].Y
-			d2 := dx*dx + dy*dy
-			if d2 < bestD {
-				bestD = d2
-				best = j
-			}
-		}
-		if best >= 0 && bestD <= thr2 {
-			// Matched dark: interpolate all fields with t
-			pd := prevDarks[best]
-			usedPrevD[best] = true
-			id = append(id, darkSource{
-				X:      lerp(pd.X, darks[i].X, t),
-				Y:      lerp(pd.Y, darks[i].Y, t),
-				Radius: lerp(pd.Radius, darks[i].Radius, t),
-				Alpha:  lerp(pd.Alpha, darks[i].Alpha, t),
-			})
-		} else {
-			// New dark: take current values
-			id = append(id, darks[i])
-		}
-		if len(id) >= maxLights {
-			break
-		}
+	id := make([]darkSource, 0, min(maxLights, len(darks)))
+	for i := 0; i < len(darks) && i < maxLights; i++ {
+		id = append(id, darks[i])
 	}
 
 	uniforms := map[string]any{
@@ -208,29 +135,14 @@ func applyLightingShader(dst *ebiten.Image, lights []lightSource, darks []darkSo
 	op.Uniforms = uniforms
 	dst.DrawRectShader(w, h, lightingShader, op)
 
-	// Save current as previous for next interpolation step
-	prevLights = cloneLights(lights)
-	prevDarks = cloneDarks(darks)
 }
 
-func lerp(a, b, t float32) float32 { return a + (b-a)*t }
-
-func cloneLights(in []lightSource) []lightSource {
-	if len(in) == 0 {
-		return nil
+// min helper to avoid importing math just for ints
+func min(a, b int) int {
+	if a < b {
+		return a
 	}
-	out := make([]lightSource, len(in))
-	copy(out, in)
-	return out
-}
-
-func cloneDarks(in []darkSource) []darkSource {
-	if len(in) == 0 {
-		return nil
-	}
-	out := make([]darkSource, len(in))
-	copy(out, in)
-	return out
+	return b
 }
 
 // addNightDarkSources appends dark sources to produce a smooth inverse-square
