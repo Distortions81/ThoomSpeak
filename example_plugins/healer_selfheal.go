@@ -9,7 +9,7 @@ import (
 )
 
 // PluginName is how the client lists this plugin.
-var PluginName = "Healer Self-Heal"
+var PluginName = "Healer Helper"
 
 // Init launches a tiny loop that watches for right clicks on ourselves.
 func Init() {
@@ -36,5 +36,7 @@ func equipMoonstone() {
 			}
 			return
 		}
+		time.Sleep(50 * time.Millisecond)
+
 	}
 }

@@ -5,7 +5,7 @@ package main
 import "gt"
 
 // PluginName appears in the plugin list.
-var PluginName = "bard_macros"
+var PluginName = "Bard Macros"
 
 // Init sets up our commands and hotkeys.
 func Init() {

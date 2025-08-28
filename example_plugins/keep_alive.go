@@ -7,7 +7,7 @@ import (
 
 const maxKeepAlive = 5
 
-const PluginName = "keep_alive"
+const PluginName = "Prevent Idle"
 
 var (
 	keepAliveCount = 0

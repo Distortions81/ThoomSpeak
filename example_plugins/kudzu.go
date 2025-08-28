@@ -5,7 +5,7 @@ package main
 import "gt"
 
 // PluginName identifies this plugin in the list.
-var PluginName = "kudzu"
+var PluginName = "Kudzu Helper"
 
 // Init sets up a few helper commands for planting and moving kudzu seeds.
 func Init() {

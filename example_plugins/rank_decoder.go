@@ -5,7 +5,7 @@ package main
 import "gt"
 
 // PluginName identifies this tutorial plugin.
-var PluginName = "rankdecoder"
+var PluginName = "Rank Decoder"
 
 // rankMessages maps trainer phrases to their numerical rank ranges.
 var rankMessages = map[string]string{

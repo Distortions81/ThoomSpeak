@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-var PluginName = "coin_lord"
+var PluginName = "Coin Lord"
 
 var (
 	clRunning bool

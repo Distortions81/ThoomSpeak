@@ -9,7 +9,7 @@ import (
 )
 
 // PluginName shows up in the plugin list.
-var PluginName = "dance_macros"
+var PluginName = "Dance Macros"
 
 // Init adds the /dance command and a handy hotkey.
 func Init() {

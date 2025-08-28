@@ -8,7 +8,7 @@ import (
 )
 
 // PluginName identifies this plugin.
-var PluginName = "sharecads"
+var PluginName = "Sharecads"
 
 var (
 	scOn    bool
