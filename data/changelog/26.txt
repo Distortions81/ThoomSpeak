@@ -14,3 +14,4 @@ Added Thanks, Curse, Anon Thank, Anon Curse, Share, Unshare, Info, Pull and Push
 Added copy (entire) line with right click in console/chat window, right click input bar can copy, paste or clear. 
 Added nice night-time lighting and day/night soft glow on effects using GPU shaders. 
 Cleaned up settings panel, toolbar, etc
+Added chat logging
