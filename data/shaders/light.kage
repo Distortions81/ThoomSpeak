@@ -2,7 +2,7 @@ package main
 
 const MaxLights = 128
 // Lights restore detail more aggressively near sources but never exceed base.
-const LightScale = 2
+const LightScale = 4
 // Strong darkening for barely visible ambient at 100% night.
 const DarkScale  = 0.25
 
@@ -40,9 +40,8 @@ func Fragment(pos vec4, texCoord vec2, color vec4) vec4 {
     }
     col := vec4(base.rgb*dim, base.a)
 
-    // Accumulate light contributions using a per-channel maximum instead of
-    // summation/union so many small lights don't wash out night globally.
-    // This keeps only the strongest nearby light dominant at each pixel.
+    // Accumulate light contributions additively so lights mix smoothly.
+    // Apply a simple Reinhard-like saturation to avoid wash-out.
     lacc := vec3(0.0, 0.0, 0.0)
     for i := 0; i < MaxLights; i++ {
         if i < LightCount {
@@ -53,16 +52,17 @@ func Fragment(pos vec4, texCoord vec2, color vec4) vec4 {
             f := 1.0 / (1.0 + nd*nd)
             // Sharper falloff so distant lights don't affect ambient much
             f = f * f
-            lr := clamp(LightScale*LightR[i]*f, 0.0, 1.0)
-            lg := clamp(LightScale*LightG[i]*f, 0.0, 1.0)
-            lb := clamp(LightScale*LightB[i]*f, 0.0, 1.0)
-            // Per-channel max: only the strongest light wins at a pixel
-            lacc.r = max(lacc.r, lr)
-            lacc.g = max(lacc.g, lg)
-            lacc.b = max(lacc.b, lb)
+            contrib := vec3(
+                clamp(LightScale*LightR[i]*f, 0.0, 1.0),
+                clamp(LightScale*LightG[i]*f, 0.0, 1.0),
+                clamp(LightScale*LightB[i]*f, 0.0, 1.0),
+            )
+            lacc += contrib
         }
     }
-    // Blend back toward the original base color using lacc
+    // Soft saturate to [0,1) so overlapping lights brighten without abrupt borders
+    lacc = lacc / (1.0 + lacc)
+    // Blend back toward the original base color using lacc per channel
     col.r = col.r*(1.0 - lacc.r) + base.r*lacc.r
     col.g = col.g*(1.0 - lacc.g) + base.g*lacc.g
     col.b = col.b*(1.0 - lacc.b) + base.b*lacc.b

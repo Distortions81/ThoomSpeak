@@ -88,8 +88,8 @@ func applyLightingShader(dst *ebiten.Image, lights []lightSource, darks []darkSo
 
 	// Interpolate between previous and current lighting with one-frame
 	// persistence for disappearing sources and fade-in for new sources.
-    il := make([]lightSource, 0, maxLights)
-    id := make([]darkSource, 0, maxLights)
+	il := make([]lightSource, 0, maxLights)
+	id := make([]darkSource, 0, maxLights)
 
 	// Lights: match by nearest neighbor to preserve identity across frames.
 	usedPrev := make([]bool, len(prevLights))
@@ -97,7 +97,7 @@ func applyLightingShader(dst *ebiten.Image, lights []lightSource, darks []darkSo
 		// find best previous match within a threshold
 		best := -1
 		bestD := float32(1e30)
-		thr := lights[i].Radius * 0.5
+		thr := lights[i].Radius * 0.24
 		thr2 := thr * thr
 		for j := range prevLights {
 			if usedPrev[j] {
@@ -111,30 +111,30 @@ func applyLightingShader(dst *ebiten.Image, lights []lightSource, darks []darkSo
 				best = j
 			}
 		}
-        if best >= 0 && bestD <= thr2 {
-            // Matched: interpolate all fields with the standard smoothing factor t
-            pl := prevLights[best]
-            usedPrev[best] = true
-            il = append(il, lightSource{
-                X:      lerp(pl.X, lights[i].X, t),
-                Y:      lerp(pl.Y, lights[i].Y, t),
-                Radius: lerp(pl.Radius, lights[i].Radius, t),
-                R:      lerp(pl.R, lights[i].R, t),
-                G:      lerp(pl.G, lights[i].G, t),
-                B:      lerp(pl.B, lights[i].B, t),
-            })
-        } else {
-            // New: take current values (no special fade)
-            il = append(il, lights[i])
-        }
-        if len(il) >= maxLights {
-            break
-        }
-    }
+		if best >= 0 && bestD <= thr2 {
+			// Matched: interpolate all fields with the standard smoothing factor t
+			pl := prevLights[best]
+			usedPrev[best] = true
+			il = append(il, lightSource{
+				X:      lerp(pl.X, lights[i].X, t),
+				Y:      lerp(pl.Y, lights[i].Y, t),
+				Radius: lerp(pl.Radius, lights[i].Radius, t),
+				R:      lerp(pl.R, lights[i].R, t),
+				G:      lerp(pl.G, lights[i].G, t),
+				B:      lerp(pl.B, lights[i].B, t),
+			})
+		} else {
+			// New: take current values (no special fade)
+			il = append(il, lights[i])
+		}
+		if len(il) >= maxLights {
+			break
+		}
+	}
 
-    // Darks: same matching and fade behavior using alpha
-    usedPrevD := make([]bool, len(prevDarks))
-    for i := range darks {
+	// Darks: same matching and fade behavior using alpha
+	usedPrevD := make([]bool, len(prevDarks))
+	for i := range darks {
 		best := -1
 		bestD := float32(1e30)
 		thr := darks[i].Radius * 0.5
@@ -151,24 +151,24 @@ func applyLightingShader(dst *ebiten.Image, lights []lightSource, darks []darkSo
 				best = j
 			}
 		}
-        if best >= 0 && bestD <= thr2 {
-            // Matched dark: interpolate all fields with t
-            pd := prevDarks[best]
-            usedPrevD[best] = true
-            id = append(id, darkSource{
-                X:      lerp(pd.X, darks[i].X, t),
-                Y:      lerp(pd.Y, darks[i].Y, t),
-                Radius: lerp(pd.Radius, darks[i].Radius, t),
-                Alpha:  lerp(pd.Alpha, darks[i].Alpha, t),
-            })
-        } else {
-            // New dark: take current values
-            id = append(id, darks[i])
-        }
-        if len(id) >= maxLights {
-            break
-        }
-    }
+		if best >= 0 && bestD <= thr2 {
+			// Matched dark: interpolate all fields with t
+			pd := prevDarks[best]
+			usedPrevD[best] = true
+			id = append(id, darkSource{
+				X:      lerp(pd.X, darks[i].X, t),
+				Y:      lerp(pd.Y, darks[i].Y, t),
+				Radius: lerp(pd.Radius, darks[i].Radius, t),
+				Alpha:  lerp(pd.Alpha, darks[i].Alpha, t),
+			})
+		} else {
+			// New dark: take current values
+			id = append(id, darks[i])
+		}
+		if len(id) >= maxLights {
+			break
+		}
+	}
 
 	uniforms := map[string]any{
 		"LightCount": len(il),
@@ -208,9 +208,9 @@ func applyLightingShader(dst *ebiten.Image, lights []lightSource, darks []darkSo
 	op.Uniforms = uniforms
 	dst.DrawRectShader(w, h, lightingShader, op)
 
-    // Save current as previous for next interpolation step
-    prevLights = cloneLights(lights)
-    prevDarks = cloneDarks(darks)
+	// Save current as previous for next interpolation step
+	prevLights = cloneLights(lights)
+	prevDarks = cloneDarks(darks)
 }
 
 func lerp(a, b, t float32) float32 { return a + (b-a)*t }
