@@ -574,7 +574,10 @@ func (g *Game) Update() error {
 	inventoryShortcutMu.RUnlock()
 
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) {
-		handleInventoryContextClick(mx, my)
+		// Try players list first, then inventory.
+		if !handlePlayersContextClick(mx, my) {
+			handleInventoryContextClick(mx, my)
+		}
 	}
 
 	if debugWin != nil && debugWin.IsOpen() {

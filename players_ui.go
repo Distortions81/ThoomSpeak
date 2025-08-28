@@ -20,7 +20,6 @@ var playersList *eui.ItemData
 var playersDirty bool
 var playersRowRefs = map[*eui.ItemData]string{}
 var playersCtxWin *eui.WindowData
-var playersOfflineCollapsed = true
 
 // defaultMobilePictID returns a fallback CL_Images mobile pict ID for the
 // given gender when a player's specific PictID is unknown. Values are chosen
@@ -169,6 +168,14 @@ func updatePlayersWindow() {
 
 		row := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL, Fixed: true}
 
+		// Highlight if selected.
+		if p.Name == selectedPlayerName {
+			row.Filled = true
+			if playersWin != nil && playersWin.Theme != nil {
+				row.Color = playersWin.Theme.Button.SelectedColor
+			}
+		}
+
 		iconSize := int(rowUnits + 0.5)
 
 		{
@@ -183,6 +190,9 @@ func updatePlayersWindow() {
 					profItem.ImageName = "prof:cl:" + fmt.Sprint(pid)
 				}
 			}
+			// Click selects this player.
+			n := p.Name
+			profItem.Action = func() { handlePlayersClick(n) }
 			row.AddItem(profItem)
 		}
 
@@ -217,6 +227,7 @@ func updatePlayersWindow() {
 			if img != nil {
 				avItem.Image = img
 			}
+			// Always add avatar slot, even if blank, to keep alignment.
 			row.AddItem(avItem)
 		}
 
@@ -237,48 +248,13 @@ func updatePlayersWindow() {
 			t.ForceTextColor = true
 		}
 		t.Size = eui.Point{X: clientWAvail - float32(iconSize*2) - 8, Y: rowUnits}
+		// Click selects this player.
+		n := p.Name
+		t.Action = func() { handlePlayersClick(n) }
 		row.AddItem(t)
 
 		row.Size.Y = rowUnits
-		parent.AddItem(row)
-	}
-
-	for _, p := range onlinePlayers {
-		addRow(p, false, playersList)
-	}
-
-	if len(offlinePlayers) > 0 {
-		arrow := "\u25B6" // ▶
-		if !playersOfflineCollapsed {
-			arrow = "\u25BC" // ▼
-		}
-		foldBtn, events := eui.NewButton()
-		foldBtn.Text = fmt.Sprintf("%s Offline: %d", arrow, len(offlinePlayers))
-		foldBtn.FontSize = float32(fontSize)
-		foldBtn.Size = eui.Point{X: clientWAvail, Y: rowUnits}
-		foldBtn.Filled = false
-		foldBtn.Outlined = false
-		foldBtn.Border = 0
-		foldBtn.BorderPad = 0
-		foldBtn.Margin = 0
-		foldBtn.Padding = 0
-		foldBtn.Fixed = true
-		events.Handle = func(ev eui.UIEvent) {
-			if ev.Type == eui.EventClick {
-				playersOfflineCollapsed = !playersOfflineCollapsed
-				playersDirty = true
-			}
-		}
-		playersList.AddItem(foldBtn)
-
-		offFlow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL, Fixed: true}
-		if playersOfflineCollapsed {
-			offFlow.Invisible = true
-		}
-		playersList.AddItem(offFlow)
-		for _, p := range offlinePlayers {
-			addRow(p, true, offFlow)
-		}
+		playersList.AddItem(row)
 	}
 
 	// Size flows to client area like other text windows.
@@ -289,4 +265,145 @@ func updatePlayersWindow() {
 	playersList.Size.X = clientWAvail
 	playersList.Size.Y = clientHAvail
 	playersWin.Refresh()
+}
+
+// handlePlayersContextClick opens a context menu for the player row under the
+// mouse, mirroring the inventory menu behavior. Returns true if a menu opened.
+func handlePlayersContextClick(mx, my int) bool {
+	if playersWin == nil || playersList == nil || !playersWin.IsOpen() {
+		return false
+	}
+	pos := eui.Point{X: float32(mx), Y: float32(my)}
+	for _, row := range playersList.Contents {
+		r := row.DrawRect
+		if pos.X >= r.X0 && pos.X <= r.X1 && pos.Y >= r.Y0 && pos.Y <= r.Y1 {
+			if name, ok := playersRowRefs[row]; ok {
+				// Select the player before opening the context menu
+				selectPlayer(name)
+				openPlayersContextMenu(name, pos)
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// handlePlayersClick selects a player on single-click. If we later add
+// double-click behavior, we can use lastPlayerClick* similar to inventory.
+func handlePlayersClick(name string) {
+	now := time.Now()
+	if name == lastPlayerClickName && now.Sub(lastPlayerClickTime) < 500*time.Millisecond {
+		// Reserved for double-click behavior in the future.
+		lastPlayerClickTime = time.Time{}
+		return
+	}
+	selectPlayer(name)
+	lastPlayerClickName = name
+	lastPlayerClickTime = now
+}
+
+func selectPlayer(name string) {
+	if selectedPlayerName == name {
+		return
+	}
+	selectedPlayerName = name
+	updatePlayersWindow()
+}
+
+func openPlayersContextMenu(name string, pos eui.Point) {
+	// Close any existing context menus.
+	eui.CloseContextMenus()
+
+	displayName := name
+	options := []string{}
+	if displayName != "" {
+		options = append(options, displayName)
+	}
+	actions := []func(){}
+
+	// Thank: immediate thank.
+	if displayName != "" {
+		options = append(options, "Thank")
+		n := displayName
+		actions = append(actions, func() {
+			enqueueCommand(fmt.Sprintf("/thank %s", maybeQuoteName(n)))
+			nextCommand()
+		})
+	}
+
+	// Curse: immediate curse directed at this player.
+	if displayName != "" {
+		options = append(options, "Curse")
+		n := displayName
+		actions = append(actions, func() {
+			enqueueCommand(fmt.Sprintf("/curse %s", maybeQuoteName(n)))
+			nextCommand()
+		})
+	}
+
+	// Anon Thank / Anon Curse: prefill so user can type a message.
+	options = append(options, "Anon Thank…")
+	actions = append(actions, func() {
+		pluginSetInputText("/anonthank ")
+	})
+	options = append(options, "Anon Curse…")
+	actions = append(actions, func() {
+		pluginSetInputText("/anoncurse ")
+	})
+
+	// Share / Unshare with this player.
+	if displayName != "" {
+		options = append(options, "Share")
+		n := displayName
+		actions = append(actions, func() {
+			enqueueCommand(fmt.Sprintf("/share %s", maybeQuoteName(n)))
+			nextCommand()
+		})
+		options = append(options, "Unshare")
+		actions = append(actions, func() {
+			enqueueCommand(fmt.Sprintf("/unshare %s", maybeQuoteName(n)))
+			nextCommand()
+		})
+	}
+
+	// Info on this player.
+	if displayName != "" {
+		options = append(options, "Info")
+		n := displayName
+		actions = append(actions, func() {
+			enqueueCommand(fmt.Sprintf("/info %s", maybeQuoteName(n)))
+			nextCommand()
+		})
+	}
+
+	// Pull / Push this player.
+	if displayName != "" {
+		options = append(options, "Pull")
+		n := displayName
+		actions = append(actions, func() {
+			enqueueCommand(fmt.Sprintf("/pull %s", maybeQuoteName(n)))
+			nextCommand()
+		})
+		options = append(options, "Push")
+		actions = append(actions, func() {
+			enqueueCommand(fmt.Sprintf("/push %s", maybeQuoteName(n)))
+			nextCommand()
+		})
+	}
+
+	if len(options) == 0 {
+		return
+	}
+	menu := eui.ShowContextMenu(options, pos.X, pos.Y, func(i int) {
+		adj := i
+		if displayName != "" {
+			adj = i - 1
+		}
+		if adj >= 0 && adj < len(actions) {
+			actions[adj]()
+		}
+	})
+	if menu != nil && displayName != "" {
+		menu.HeaderCount = 1
+	}
 }
