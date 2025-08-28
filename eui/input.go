@@ -1151,6 +1151,18 @@ func handleContextMenus(mpos point, click bool) bool {
             startY := r.Y0
             idx := int((mpos.Y - startY + cm.Scroll.Y) / optionH)
             if idx >= 0 && idx < len(cm.Options) {
+                // Treat header rows as non-selectable: ignore hover highlight
+                // and do not close or invoke selection callbacks.
+                if idx < cm.HeaderCount {
+                    if !click {
+                        if cm.HoverIndex != -1 {
+                            cm.HoverIndex = -1
+                            cm.markDirty()
+                        }
+                    }
+                    // Do not close menus; simply consume the hover/click area.
+                    return true
+                }
                 if click {
                     cm.Selected = idx
                     cm.Open = false

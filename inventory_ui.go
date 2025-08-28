@@ -389,6 +389,9 @@ func handleInventoryContextClick(mx, my int) bool {
         r := row.DrawRect
         if pos.X >= r.X0 && pos.X <= r.X1 && pos.Y >= r.Y0 && pos.Y <= r.Y1 {
             if ref, ok := inventoryRowRefs[row]; ok {
+                // Also select the item to provide a visual cue and
+                // ensure subsequent actions can rely on current selection.
+                selectInventoryItem(ref.id, ref.idx)
                 openInventoryContextMenu(ref, pos)
                 return true
             }
@@ -403,6 +406,8 @@ func openInventoryContextMenu(ref invRef, pos eui.Point) {
     // Minimal overlay menu using the new EUI context menus: Equip/Unequip
     wearable := false
     equipped := false
+    displayName := ""
+    examineName := ""
     if it, ok := inventoryItemByIndex(ref.global); ok {
         equipped = it.Equipped
         if clImages != nil {
@@ -411,8 +416,28 @@ func openInventoryContextMenu(ref invRef, pos eui.Point) {
                 wearable = true
             }
         }
+        // Build a display name similar to the inventory list formatting.
+        raw := it.Name
+        if raw == "" && clImages != nil {
+            raw = clImages.ItemName(uint32(it.ID))
+        }
+        if raw == "" {
+            raw = fmt.Sprintf("Item %d", it.ID)
+        }
+        base := raw
+        suffix := ""
+        if p := strings.Index(base, " <"); p >= 0 {
+            suffix = base[p:]
+            base = base[:p]
+        }
+        displayName = TitleCaser.String(base) + suffix
+        examineName = base
     }
+    // First, the non-selectable header: item name.
     options := []string{}
+    if displayName != "" {
+        options = append(options, displayName)
+    }
     actions := []func(){}
     if wearable && !equipped {
         options = append(options, "Equip")
@@ -429,14 +454,62 @@ func openInventoryContextMenu(ref invRef, pos eui.Point) {
             equipInventoryItem(ref.id, -1, false)
         })
     }
+    // Always offer Examine when we know the item's name.
+    if examineName != "" {
+        options = append(options, "Examine")
+        nameArg := examineName
+        actions = append(actions, func() {
+            // Ensure the item is selected before examining
+            selectInventoryItem(ref.id, ref.idx)
+            enqueueCommand(fmt.Sprintf("/examine %s", maybeQuoteName(nameArg)))
+            nextCommand()
+        })
+    }
+    // Offer Show (announce item name).
+    if examineName != "" {
+        options = append(options, "Show")
+        nameArg := examineName
+        actions = append(actions, func() {
+            enqueueCommand(fmt.Sprintf("/show %s", maybeQuoteName(nameArg)))
+            nextCommand()
+        })
+    }
+    // Offer Drop options: plain and Mine-protected.
+    options = append(options, "Drop")
+    actions = append(actions, func() {
+        enqueueCommand("/drop")
+        nextCommand()
+    })
+    options = append(options, "Drop (Mine)")
+    actions = append(actions, func() {
+        enqueueCommand("/drop /mine")
+        nextCommand()
+    })
     if len(options) == 0 {
         return
     }
-    eui.ShowContextMenu(options, pos.X, pos.Y, func(i int) {
-        if i >= 0 && i < len(actions) {
-            actions[i]()
+    menu := eui.ShowContextMenu(options, pos.X, pos.Y, func(i int) {
+        // Adjust for header occupying first index (if present)
+        adj := i
+        if displayName != "" {
+            adj = i - 1
+        }
+        if adj >= 0 && adj < len(actions) {
+            actions[adj]()
         }
     })
+    if menu != nil && displayName != "" {
+        // Mark first row as a non-interactive header
+        menu.HeaderCount = 1
+    }
+}
+
+// maybeQuoteName wraps a name in quotes if it contains whitespace.
+func maybeQuoteName(s string) string {
+    if strings.IndexFunc(s, func(r rune) bool { return r == ' ' || r == '\t' }) >= 0 {
+        return fmt.Sprintf("\"%s\"", s)
+    }
+    return s
 }
 
 func promptInventoryShortcut(idx int) {

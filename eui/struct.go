@@ -125,6 +125,12 @@ type itemData struct {
 	MaxVisible int
 	HoverIndex int
 
+	// HeaderCount marks the number of initial options that are shown as
+	// non-interactive headers in dropdowns/context menus. These indices are
+	// rendered with the disabled text color, are not hover-highlighted, and
+	// do not trigger selection on click.
+	HeaderCount int
+
 	OnSelect func(int)
 	OnHover  func(int)
 
