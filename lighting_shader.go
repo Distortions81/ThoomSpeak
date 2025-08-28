@@ -23,8 +23,8 @@ var (
 
 // Global multipliers to make lights/darks reach farther on screen.
 const (
-	lightRadiusScale = 1.5
-	darkRadiusScale  = 1.5
+	lightRadiusScale = 1.0
+	darkRadiusScale  = 1.0
 	// Stronger scaling for shader-based night attenuation. At 100% night,
 	// total effective darkening approaches this factor depending on layout.
 	// Increased baseline shader night strength to produce a very dark
