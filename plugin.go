@@ -322,10 +322,6 @@ var (
 	pluginModCheck      time.Time
 )
 
-func pluginIsDisabled(owner string) bool {
-	return pluginDisabled[owner]
-}
-
 // pluginRegisterCommand lets plugins handle a local slash command like
 // "/example". The name should be without the leading slash and will be
 // matched case-insensitively.
