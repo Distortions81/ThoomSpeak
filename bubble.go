@@ -196,21 +196,8 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 		}
 	}
 
-	vs, is := tail.AppendVerticesAndIndicesForFilling(nil, nil)
+	vs, is := body.AppendVerticesAndIndicesForFilling(nil, nil)
 	op := &ebiten.DrawTrianglesOptions{ColorScaleMode: ebiten.ColorScaleModePremultipliedAlpha, AntiAlias: true}
-	if !far && !noArrow {
-		for i := range vs {
-			vs[i].SrcX = 0
-			vs[i].SrcY = 0
-			vs[i].ColorR = float32(bgR) / 0xffff
-			vs[i].ColorG = float32(bgG) / 0xffff
-			vs[i].ColorB = float32(bgB) / 0xffff
-			vs[i].ColorA = float32(bgA) / 0xffff
-		}
-		screen.DrawTriangles(vs, is, whiteImage, op)
-	}
-
-	vs, is = body.AppendVerticesAndIndicesForFilling(vs[:0], is[:0])
 	for i := range vs {
 		vs[i].SrcX = 0
 		vs[i].SrcY = 0
@@ -220,6 +207,23 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 		vs[i].ColorA = float32(bgA) / 0xffff
 	}
 	screen.DrawTriangles(vs, is, whiteImage, op)
+	if !far && !noArrow {
+		vs, is = tail.AppendVerticesAndIndicesForFilling(vs[:0], is[:0])
+		tailOp := &ebiten.DrawTrianglesOptions{
+			ColorScaleMode: ebiten.ColorScaleModePremultipliedAlpha,
+			AntiAlias:      true,
+			Blend:          ebiten.BlendCopy,
+		}
+		for i := range vs {
+			vs[i].SrcX = 0
+			vs[i].SrcY = 0
+			vs[i].ColorR = float32(bgR) / 0xffff
+			vs[i].ColorG = float32(bgG) / 0xffff
+			vs[i].ColorB = float32(bgB) / 0xffff
+			vs[i].ColorA = float32(bgA) / 0xffff
+		}
+		screen.DrawTriangles(vs, is, whiteImage, tailOp)
+	}
 	if bubbleType != kBubblePonder {
 		var outline vector.Path
 		outline.MoveTo(float32(left)+radius, float32(top))
