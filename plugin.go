@@ -430,6 +430,7 @@ func enablePlugin(owner string) {
 	}
 	loadPluginSource(owner, name, path, src, restrictedStdlib())
 	settingsDirty = true
+	saveSettings()
 	refreshPluginsWindow()
 }
 
@@ -500,6 +501,7 @@ func disablePlugin(owner, reason string) {
 	}
 	consoleMessage("[plugin:" + disp + "] stopped: " + reason)
 	settingsDirty = true
+	saveSettings()
 	refreshPluginsWindow()
 }
 
