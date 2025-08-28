@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"log"
 	"strings"
 	"sync"
 )
@@ -56,6 +58,13 @@ func pluginAddMacro(owner, short, full string) {
 	m[short] = full
 	macroMu.Unlock()
 	refreshMacrosList()
+	name := pluginDisplayNames[owner]
+	if name == "" {
+		name = owner
+	}
+	msg := fmt.Sprintf("[plugin:%s] macro added: %s -> %s", name, short, full)
+	consoleMessage(msg)
+	log.Print(msg)
 }
 
 // pluginAddMacros registers many macros at once for the given plugin.
@@ -76,6 +85,13 @@ func pluginRemoveMacros(owner string) {
 	delete(macroMaps, owner)
 	macroMu.Unlock()
 	refreshMacrosList()
+	name := pluginDisplayNames[owner]
+	if name == "" {
+		name = owner
+	}
+	msg := fmt.Sprintf("[plugin:%s] macros removed", name)
+	consoleMessage(msg)
+	log.Print(msg)
 }
 
 // pluginAutoReply watches chat messages and runs a command when a message
