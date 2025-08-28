@@ -29,7 +29,9 @@ const (
 	// total effective darkening approaches this factor depending on layout.
 	// Increased baseline shader night strength to produce a very dark
 	// overall scene at 100% night.
-	shaderNightStrength = 10
+    // Scale for how strongly night level maps to shader darkening.
+    // Lower value avoids saturating darkness at low night levels.
+    shaderNightStrength = 3
 )
 
 // Growth factors for new lights/darks and shrink for fading items
@@ -98,9 +100,9 @@ func ensureLightingTmp(w, h int) {
 }
 
 func applyLightingShader(dst *ebiten.Image, lights []lightSource, darks []darkSource, t float32) {
-	w, h := dst.Bounds().Dx(), dst.Bounds().Dy()
-	ensureLightingTmp(w, h)
-	lightingTmp.DrawImage(dst, nil)
+    w, h := dst.Bounds().Dx(), dst.Bounds().Dy()
+    ensureLightingTmp(w, h)
+    lightingTmp.DrawImage(dst, nil)
 
 	// Use the already-interpolated sprite/mobile positions directly.
 	// Interpolation for motion has been applied when enqueuing lights,
@@ -112,10 +114,10 @@ func applyLightingShader(dst *ebiten.Image, lights []lightSource, darks []darkSo
 	il := interpolateLights(lights, t)
 	id := interpolateDarks(darks, t)
 
-	uniforms := map[string]any{
-		"LightCount": len(il),
-		"DarkCount":  len(id),
-	}
+    uniforms := map[string]any{
+        "LightCount": len(il),
+        "DarkCount":  len(id),
+    }
 	var lposX, lposY, lradius, lr, lg, lb, lint [maxLights]float32
 	for i := 0; i < len(il) && i < maxLights; i++ {
 		ls := il[i]
@@ -158,8 +160,25 @@ func applyLightingShader(dst *ebiten.Image, lights []lightSource, darks []darkSo
 	uniforms["DarkPosX"] = dposX
 	uniforms["DarkPosY"] = dposY
 	uniforms["DarkRadius"] = dradius
-	uniforms["DarkAlpha"] = da
-	uniforms["DarkIntensity"] = dint
+    uniforms["DarkAlpha"] = da
+    uniforms["DarkIntensity"] = dint
+
+    // Compute smoothed night factor for reveal scaling in shader.
+    // If we have night smoothing state, use it; otherwise fall back to current level.
+    nightFactor := float32(0)
+    if nightAlphaInited {
+        nf := lerpf(nightPrevTarget, nightCurTarget, ease(t)) / float32(shaderNightStrength)
+        if nf < 0 {
+            nf = 0
+        } else if nf > 1 {
+            nf = 1
+        }
+        nightFactor = nf
+    } else {
+        lvl := currentNightLevel()
+        nightFactor = float32(lvl) / 100
+    }
+    uniforms["NightFactor"] = nightFactor
 
 	op := &ebiten.DrawRectShaderOptions{}
 	op.Images[0] = lightingTmp
@@ -179,17 +198,44 @@ func min(a, b int) int {
 // addNightDarkSources appends dark sources to produce a smooth inverse-square
 // vignette-like darkening using the shader path. The overall strength scales
 // with the current/effective night level and ambientNightStrength.
-func addNightDarkSources(w, h int) {
-	lvl := currentNightLevel()
-	if lvl <= 0 {
-		return
-	}
-	// Convert to [0..1] strength; reuse ambientNightStrength as baseline.
-	// Use a higher strength specifically for shader night so 100% looks dark.
-	alpha := float32(float64(lvl) / 100.0 * float64(shaderNightStrength))
-	if alpha <= 0 {
-		return
-	}
+// Night smoothing state
+var (
+    nightAlphaInited bool
+    nightLastT       float32
+    nightPrevTarget  float32
+    nightCurTarget   float32
+)
+
+func addNightDarkSources(w, h int, t float32) {
+    lvl := currentNightLevel()
+    if lvl <= 0 {
+        return
+    }
+    // Convert to [0..1] strength; reuse ambientNightStrength as baseline.
+    // Use a higher strength specifically for shader night so 100% looks dark.
+    // Apply a gamma curve so low night levels are much gentler than high.
+    // This avoids cases where 25% appears darker than 100% due to reveal interplay.
+    frac := float64(lvl) / 100.0
+    // Photometric-like response; tweak exponent if needed (2.2 is typical)
+    gamma := 2.2
+    target := float32(math.Pow(frac, gamma) * float64(shaderNightStrength))
+    if nightAlphaInited {
+        if t < nightLastT { // new frame
+            nightPrevTarget = nightCurTarget
+            nightCurTarget = target
+        } else {
+            nightCurTarget = target
+        }
+    } else {
+        nightAlphaInited = true
+        nightPrevTarget = target
+        nightCurTarget = target
+    }
+    nightLastT = t
+    alpha := lerpf(nightPrevTarget, nightCurTarget, ease(t))
+    if alpha <= 0 {
+        return
+    }
 	// Use four corner dark sources with shared alpha to bias edges darker.
 	// Radius based on screen diagonal yields gentle center falloff.
 	diag := float32(math.Hypot(float64(w), float64(h)))

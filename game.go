@@ -1068,9 +1068,9 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		prev := gs.GameScale
 		gs.GameScale = float64(offIntScale)
 		drawScene(worldRT, 0, 0, snap, alpha, mobileFade, pictFade)
-		if gs.shaderLighting {
-			// Use shader-based night darkening with inverse-square falloff.
-			addNightDarkSources(offW, offH)
+        if gs.shaderLighting {
+            // Use shader-based night darkening with inverse-square falloff.
+            addNightDarkSources(offW, offH, float32(alpha))
 		} else {
 			// Classic overlay path when shader is off.
 			drawNightAmbient(worldRT, 0, 0)

@@ -2,9 +2,12 @@ package main
 
 const MaxLights = 128
 // Lights restore detail more aggressively near sources but never exceed base.
-const LightScale = 16
-// Strong darkening for barely visible ambient at 100% night.
-const DarkScale  = 16
+const LightScale = 4
+// Darkening strength per dark source; tuned to avoid over-darkening at low night levels
+const DarkScale  = 1
+// Additive glow-ball parameters
+const HaloRadiusFrac = 0.35
+const HaloStrength  = 0.3
 
 var (
     LightCount int
@@ -21,6 +24,7 @@ var (
     DarkRadius [MaxLights]float
     DarkAlpha [MaxLights]float
     DarkIntensity [MaxLights]float
+    NightFactor float
 )
 
 func Fragment(pos vec4, texCoord vec2, color vec4) vec4 {
@@ -51,7 +55,7 @@ func Fragment(pos vec4, texCoord vec2, color vec4) vec4 {
     lumW := vec3(0.2126, 0.7152, 0.0722)
     // How much to equalize per-light color by luma so
     // low-luma hues (blue) aren't dominated by high-luma (yellow)
-    chromaEQ := 0.00
+    chromaEQ := 0.05
     for i := 0; i < MaxLights; i++ {
         if i < LightCount {
             dx := pos.x - LightPosX[i]
@@ -75,6 +79,10 @@ func Fragment(pos vec4, texCoord vec2, color vec4) vec4 {
 
     // Tone map reveal to [0, 1) with a Reinhard-like curve
     reveal := sumW / (1.0 + sumW)
+    // Gate reveal by night, reaching full power at 50% night
+    nf := clamp(NightFactor, 0.0, 1.0)
+    revealNF := clamp(nf * 2.0, 0.0, 1.0)
+    reveal = reveal * revealNF
 
     // Normalized light color mix; default to white if no light
     mixColor := vec3(1.0, 1.0, 1.0)
@@ -116,5 +124,23 @@ func Fragment(pos vec4, texCoord vec2, color vec4) vec4 {
     // Reveal from darkened color toward tinted base using scalar reveal
     finalRGB := mix(col.rgb, tintedBase, reveal)
 
-    return vec4(clamp(finalRGB, 0.0, 1.0), base.a)
+    // Small additive halo for compact glow near light centers
+    halo := vec3(0.0, 0.0, 0.0)
+    for i := 0; i < MaxLights; i++ {
+        if i < LightCount {
+            dx := pos.x - LightPosX[i]
+            dy := pos.y - LightPosY[i]
+            r := max(LightRadius[i] * HaloRadiusFrac, 1.0)
+            nd := sqrt(dx*dx + dy*dy) / r
+            h := 1.0 / (1.0 + nd*nd)
+            // Sharpen falloff for a tight inner glow
+            h = h * h * h
+            halo += LightIntensity[i] * h * vec3(LightR[i], LightG[i], LightB[i])
+        }
+    }
+    // Tone-map halo and add with small strength
+    halo = halo / (1.0 + halo)
+    finalRGB = clamp(finalRGB + HaloStrength*halo, 0.0, 1.0)
+
+    return vec4(finalRGB, base.a)
 }
