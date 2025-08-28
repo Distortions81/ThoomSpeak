@@ -398,6 +398,8 @@ func handleInventoryContextClick(mx, my int) bool {
 }
 
 func openInventoryContextMenu(ref invRef, pos eui.Point) {
+    // Close any existing context menus so only one is visible at a time.
+    eui.CloseContextMenus()
     // Minimal overlay menu using the new EUI context menus: Equip/Unequip
     wearable := false
     equipped := false
