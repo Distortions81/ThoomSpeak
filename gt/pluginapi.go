@@ -131,6 +131,9 @@ func Players() []Player { return nil }
 // RegisterChatHandler registers a callback for incoming chat messages.
 func RegisterChatHandler(fn func(msg string)) {}
 
+// RegisterConsoleHandler registers a callback for console messages.
+func RegisterConsoleHandler(fn func(msg string)) {}
+
 // RegisterInputHandler registers a callback to modify input text before sending.
 func RegisterInputHandler(fn func(text string) string) {}
 

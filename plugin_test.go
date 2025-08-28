@@ -110,3 +110,22 @@ func TestPluginRegisterCommandConflict(t *testing.T) {
 		t.Fatalf("original handler overwritten")
 	}
 }
+
+// Test that console handlers registered by plugins receive console messages.
+func TestPluginConsoleHandler(t *testing.T) {
+	pluginConsoleHandlers = map[string][]func(string){}
+	consoleHandlersMu = sync.RWMutex{}
+	pluginDisabled = map[string]bool{}
+	var got string
+	var wg sync.WaitGroup
+	wg.Add(1)
+	pluginRegisterConsoleHandler("test", func(msg string) {
+		got = msg
+		wg.Done()
+	})
+	consoleMessage("hello")
+	wg.Wait()
+	if got != "hello" {
+		t.Fatalf("handler did not run, got %q", got)
+	}
+}

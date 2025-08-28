@@ -85,6 +85,7 @@ func exportsForPlugin(owner string) interp.Exports {
 		m["AddMacros"] = reflect.ValueOf(func(macros map[string]string) { pluginAddMacros(owner, macros) })
 		m["AutoReply"] = reflect.ValueOf(func(trigger, cmd string) { pluginAutoReply(owner, trigger, cmd) })
 		m["RegisterChatHandler"] = reflect.ValueOf(func(fn func(string)) { pluginRegisterChatHandler(owner, fn) })
+		m["RegisterConsoleHandler"] = reflect.ValueOf(func(fn func(string)) { pluginRegisterConsoleHandler(owner, fn) })
 		m["RegisterInputHandler"] = reflect.ValueOf(func(fn func(string) string) { pluginRegisterInputHandler(owner, fn) })
 		m["RegisterPlayerHandler"] = reflect.ValueOf(func(fn func(Player)) { pluginRegisterPlayerHandler(owner, fn) })
 		m["RunCommand"] = reflect.ValueOf(func(cmd string) { pluginRunCommand(owner, cmd) })
@@ -305,21 +306,23 @@ func pluginAddHotkey(owner, combo, command string) {
 type PluginCommandHandler func(args string)
 
 var (
-	pluginCommands      = map[string]PluginCommandHandler{}
-	pluginMu            sync.RWMutex
-	pluginNames         = map[string]bool{}
-	pluginDisplayNames  = map[string]string{}
-	pluginDisabled      = map[string]bool{}
-	pluginPaths         = map[string]string{}
-	pluginTerminators   = map[string]func(){}
-	pluginChatHandlers  = map[string][]func(string){}
-	chatHandlersMu      sync.RWMutex
-	pluginInputHandlers = map[string][]func(string) string{}
-	inputHandlersMu     sync.RWMutex
-	pluginCommandOwners = map[string]string{}
-	pluginSendHistory   = map[string][]time.Time{}
-	pluginModTime       time.Time
-	pluginModCheck      time.Time
+	pluginCommands        = map[string]PluginCommandHandler{}
+	pluginMu              sync.RWMutex
+	pluginNames           = map[string]bool{}
+	pluginDisplayNames    = map[string]string{}
+	pluginDisabled        = map[string]bool{}
+	pluginPaths           = map[string]string{}
+	pluginTerminators     = map[string]func(){}
+	pluginChatHandlers    = map[string][]func(string){}
+	chatHandlersMu        sync.RWMutex
+	pluginConsoleHandlers = map[string][]func(string){}
+	consoleHandlersMu     sync.RWMutex
+	pluginInputHandlers   = map[string][]func(string) string{}
+	inputHandlersMu       sync.RWMutex
+	pluginCommandOwners   = map[string]string{}
+	pluginSendHistory     = map[string][]time.Time{}
+	pluginModTime         time.Time
+	pluginModCheck        time.Time
 )
 
 // pluginRegisterCommand lets plugins handle a local slash command like
@@ -476,6 +479,9 @@ func disablePlugin(owner, reason string) {
 	chatHandlersMu.Lock()
 	delete(pluginChatHandlers, owner)
 	chatHandlersMu.Unlock()
+	consoleHandlersMu.Lock()
+	delete(pluginConsoleHandlers, owner)
+	consoleHandlersMu.Unlock()
 	playerHandlersMu.Lock()
 	delete(pluginPlayerHandlers, owner)
 	playerHandlersMu.Unlock()
@@ -636,6 +642,15 @@ func pluginRegisterChatHandler(owner string, fn func(string)) {
 	chatHandlersMu.Lock()
 	pluginChatHandlers[owner] = append(pluginChatHandlers[owner], fn)
 	chatHandlersMu.Unlock()
+}
+
+func pluginRegisterConsoleHandler(owner string, fn func(string)) {
+	if pluginIsDisabled(owner) || fn == nil {
+		return
+	}
+	consoleHandlersMu.Lock()
+	pluginConsoleHandlers[owner] = append(pluginConsoleHandlers[owner], fn)
+	consoleHandlersMu.Unlock()
 }
 
 func pluginRegisterPlayerHandler(owner string, fn func(Player)) {
