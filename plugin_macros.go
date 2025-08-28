@@ -23,6 +23,9 @@ var (
 // being sent.  For example, adding ("pp", "/ponder ") means that typing
 // "pp" or "pp hello" becomes "/ponder " or "/ponder hello" respectively.
 func pluginAddMacro(owner, short, full string) {
+	if pluginIsDisabled(owner) {
+		return
+	}
 	short = strings.ToLower(short)
 	macroMu.Lock()
 	m := macroMaps[owner]
@@ -57,6 +60,9 @@ func pluginAddMacro(owner, short, full string) {
 
 // pluginAddMacros registers many macros at once for the given plugin.
 func pluginAddMacros(owner string, macros map[string]string) {
+	if pluginIsDisabled(owner) {
+		return
+	}
 	for k, v := range macros {
 		pluginAddMacro(owner, k, v)
 	}
@@ -76,6 +82,9 @@ func pluginRemoveMacros(owner string) {
 // begins with trigger.  Comparison is case-insensitive.  It is handy for simple
 // automatic responses.
 func pluginAutoReply(owner, trigger, cmd string) {
+	if pluginIsDisabled(owner) {
+		return
+	}
 	trig := strings.ToLower(trigger)
 	pluginRegisterChatHandler(owner, func(msg string) {
 		if strings.HasPrefix(strings.ToLower(msg), trig) {
