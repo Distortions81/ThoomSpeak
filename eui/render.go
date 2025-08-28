@@ -49,11 +49,11 @@ func Draw(screen *ebiten.Image) {
 		win.Draw(screen, &dropdowns)
 	}
 
-	if dragPart == PART_BAR && dragWin != nil {
+	if showPinLocations && dragPart == PART_BAR && dragWin != nil {
 		zoneIndicatorWin = dragWin
 	}
 
-	if zoneIndicatorWin != nil {
+	if showPinLocations && zoneIndicatorWin != nil {
 		drawZoneOverlay(screen, zoneIndicatorWin)
 	}
 
