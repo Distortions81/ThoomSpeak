@@ -7,25 +7,45 @@ Communication
 -------------
 - Press Enter to start typing. Enter again sends the message.
 - Press Esc to cancel typing. Up/Down browse previous messages.
-
+- While typing: Ctrl-V pastes, Ctrl-C copies the whole input line.
+- Right-click the input bar for a menu: Paste, Copy Line, Clear Line. Paste and Clear switch to typing mode so you can send immediately.
+- Right-click a chat or console line to copy it; the line briefly highlights.
 
 UI Navigation
 -------------
-- Use the Windows button to set windows open or closed.
+- Click the "Windows" button on the toolbar to open/close UI windows.
 - Mouse wheel scrolls lists and text windows.
+- Window positions, sizes, and open/closed state persist between runs.
+
+Chat & Console
+--------------
+- Chat and Console are separate windows. If "Messages to Console" is enabled in settings, chat is merged into the Console.
+- The input bar auto-expands as you type. Use the input bar menu (right-click) for paste/copy/clear.
+
+Players
+-------
+- The Players window lists nearby/known exiles. Header shows an Online count; share status summary appears when relevant.
+- Tags: ">" means sharing, "<" means sharee, "*" marks same clan.
+- Single-click selects a player.
+- Right-click a player for actions: Thank, Curse, Anon Thank…, Anon Curse…, Share, Unshare, Info, Pull, Push.
 
 Inventory
 ---------
 - Single-click selects an item.
-- Double-click equips or unequips an item.
-- Shift + double-click uses an item.
-- Right-click an item for options to use, drop, equip, unequip, examine, sell,
-  show, or assign a shortcut key.
-- Assigned shortcut keys appear in brackets before the item name and pressing
-  the key activates the item.
+- Double-click equips or unequips an item. Shift + double-click uses an item.
+- Right-click an item for a context menu: Equip/Unequip, Examine, Show, Drop, Drop (Mine).
+- If an item has a shortcut, its key appears in brackets before the name (e.g., "[Q]").
+
+Other Windows
+-------------
+- Help: this guide. Open via Windows → Help.
+- Hotkeys: configure built-in and plugin hotkeys.
+- Macros: define text expansions for the input bar.
+- Mixer: adjust overall, game, music, and TTS volumes; toggle channels.
+- Settings/Quality: tweak visuals (motion smoothing, blending), sound, notifications, and presets.
 
 Extras
------
-- Want a custom background image? Save it as background.png in the data directory.
-- Want a custom splash image (game window image while not logged in) put your own splash.png in the data directory.
-- Want to test music? download soundfont and use /play <instrument number> <music>
+------
+- Custom background: place `background.png` in the `data/` directory.
+- Custom splash image (pre-login): place `splash.png` in `data/`.
+- Music test: `/play <instrument-number> <notes>` (e.g., `/play 10 cdefg`).

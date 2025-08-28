@@ -40,6 +40,21 @@ Piper voices are stored in `data/piper/voices`. The client and `scripts/download
 
 ---
 
+## Using the UI
+
+- Windows: Click the `Windows` toolbar button to toggle common panels: Players, Inventory, Chat, Console, Help, Hotkeys, Macros, Mixer, Settings, and more. Window layout and open/closed state persist between runs.
+- Movement: Left-click to walk, or use WASD/arrow keys (hold Shift to run). An optional "Click-to-Toggle Walk" sets a target with one click.
+- Input bar: Press Enter to type; press Enter again to send. Esc cancels. Up/Down browse history. While typing, Ctrl-V pastes and Ctrl-C copies the whole line. Right-click the input bar for Paste / Copy Line / Clear Line (Paste and Clear switch to typing mode and refresh immediately).
+- Chat/Console: Chat and Console are separate windows by default. Right-click any chat or console line to copy it; the line briefly highlights. You can merge chat into the console in Settings.
+- Inventory: Single-click selects. Double-click equips/unequips; Shift + double-click uses. Right-click an item for a context menu: Equip/Unequip, Examine, Show, Drop, Drop (Mine). If a shortcut is assigned to an item, its key appears like `[Q]` before the name.
+- Players: Single-click selects a player. Right-click a name for Thank, Curse, Anon Thank…, Anon Curse…, Share, Unshare, Info, Pull, or Push. Tags in the list: `>` sharing, `<` sharee, `*` same clan.
+- Mixer: Adjust Main/Game/Music/TTS volumes and enable/disable channels.
+- Quality: Pick a preset, or tweak motion smoothing, denoising, blending.
+
+Tip: The input bar auto-expands as you type and has a context menu for quick paste/copy/clear.
+
+---
+
 ## Power-user tricks
 
 You can run the client with flags:
