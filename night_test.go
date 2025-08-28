@@ -28,6 +28,14 @@ func TestParseNightCommand(t *testing.T) {
 			cloudy:    false,
 		},
 		{
+			name:      "new style extra spaces",
+			cmd:       "/nt 52  /sa  10  /cl 1",
+			baseLevel: 52,
+			level:     52,
+			azimuth:   10,
+			cloudy:    true,
+		},
+		{
 			name:      "legacy long mixed case",
 			cmd:       "/nT 10 20 30 40",
 			baseLevel: 10,
@@ -55,8 +63,12 @@ func TestParseNightCommand(t *testing.T) {
 			gNight.mu.Unlock()
 			if gotBase != tt.baseLevel || gotLevel != tt.level || gotAzimuth != tt.azimuth || gotCloudy != tt.cloudy {
 				t.Fatalf("parseNightCommand(%q) = {BaseLevel:%d Level:%d Azimuth:%d Cloudy:%v}, want {BaseLevel:%d Level:%d Azimuth:%d Cloudy:%v}", tt.cmd, gotBase, gotLevel, gotAzimuth, gotCloudy, tt.baseLevel, tt.level, tt.azimuth, tt.cloudy)
+			}
+		})
+	}
+}
 
-        func TestCurrentNightLevel(t *testing.T) {
+func TestCurrentNightLevel(t *testing.T) {
 	cases := []struct {
 		name   string
 		force  int
