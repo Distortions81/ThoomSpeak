@@ -12,7 +12,7 @@ func TestPluginEquipAlreadyEquipped(t *testing.T) {
 	addInventoryItem(200, -1, "Shield", true)
 	consoleLog = messageLog{max: maxMessages}
 	pendingCommand = ""
-	pluginEquip(200)
+	pluginEquip("tester", 200)
 	msgs := getConsoleMessages()
 	if len(msgs) == 0 || msgs[len(msgs)-1] != "Shield already equipped, skipping" {
 		t.Fatalf("unexpected console messages %v", msgs)
