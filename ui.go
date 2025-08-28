@@ -314,8 +314,12 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 	stopBtn.Text = "Stop Plugins"
 	stopBtn.Size = eui.Point{X: buttonWidth * 2, Y: buttonHeight}
 	stopBtn.FontSize = toolFontSize
-	stopBtn.Color = eui.ColorDarkRed
-	stopBtn.HoverColor = eui.ColorRed
+
+	stopBtnTheme := *stopBtn.Theme
+	stopBtnTheme.Button.Color = eui.ColorDarkRed
+	stopBtnTheme.Button.HoverColor = eui.ColorRed
+	stopBtnTheme.Button.ClickColor = eui.ColorLightRed
+	stopBtn.Theme = &stopBtnTheme
 	stopEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
 			stopAllPlugins()
@@ -692,7 +696,7 @@ func makeToolbar() {
 	hudWin.Closable = false
 	hudWin.Resizable = false
 	hudWin.AutoSize = false
-	hudWin.Size = eui.Point{X: 450, Y: 75}
+	hudWin.Size = eui.Point{X: 450 + buttonWidth, Y: 75}
 	hudWin.Movable = true
 	hudWin.NoScroll = true
 	hudWin.SetZone(eui.HZoneLeft, eui.VZoneTop)
