@@ -38,3 +38,35 @@ func TestDecodeUnfallenWithoutTag(t *testing.T) {
 		t.Errorf("player still marked dead")
 	}
 }
+
+func TestDecodeSelfFallen(t *testing.T) {
+	players = make(map[string]*Player)
+	playerName = "Hero"
+	players["Hero"] = &Player{Name: "Hero"}
+	raw := fallenLine("hf", "You have fallen")
+	if got := decodeBEPP(raw); got != "You have fallen" {
+		t.Fatalf("decodeBEPP returned %q", got)
+	}
+	playersMu.RLock()
+	dead := players["Hero"].Dead
+	playersMu.RUnlock()
+	if !dead {
+		t.Errorf("player not marked dead")
+	}
+}
+
+func TestDecodeSelfUnfallen(t *testing.T) {
+	players = make(map[string]*Player)
+	playerName = "Hero"
+	players["Hero"] = &Player{Name: "Hero", Dead: true}
+	raw := fallenLine("nf", "You are no longer fallen")
+	if got := decodeBEPP(raw); got != "You are no longer fallen" {
+		t.Fatalf("decodeBEPP returned %q", got)
+	}
+	playersMu.RLock()
+	dead := players["Hero"].Dead
+	playersMu.RUnlock()
+	if dead {
+		t.Errorf("player still marked dead")
+	}
+}

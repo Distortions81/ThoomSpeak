@@ -352,6 +352,48 @@ func parseShareText(raw []byte, s string) bool {
 // parseFallenText detects fallen/not-fallen messages and updates state.
 // Returns true if handled.
 func parseFallenText(raw []byte, s string) bool {
+	if playerName != "" {
+		if strings.HasPrefix(s, "You have fallen") {
+			playersMu.Lock()
+			if p, ok := players[playerName]; ok {
+				p.Dead = true
+				p.KillerName = ""
+				p.FellWhere = ""
+				p.FellTime = time.Now()
+				playerCopy := *p
+				playersMu.Unlock()
+				playersDirty = true
+				notifyPlayerHandlers(playerCopy)
+			} else {
+				playersMu.Unlock()
+				playersDirty = true
+			}
+			if gs.NotifyFallen {
+				showNotification(playerName + " has fallen")
+			}
+			return true
+		}
+		if strings.HasPrefix(s, "You are no longer fallen") {
+			playersMu.Lock()
+			if p, ok := players[playerName]; ok {
+				p.Dead = false
+				p.FellWhere = ""
+				p.KillerName = ""
+				p.FellTime = time.Time{}
+				playerCopy := *p
+				playersMu.Unlock()
+				playersDirty = true
+				notifyPlayerHandlers(playerCopy)
+			} else {
+				playersMu.Unlock()
+				playersDirty = true
+			}
+			if gs.NotifyNotFallen {
+				showNotification(playerName + " is no longer fallen")
+			}
+			return true
+		}
+	}
 	// Fallen: "<pn name> has fallen" (with optional -mn and -lo tags)
 	if strings.Contains(s, " has fallen") {
 		// Extract main player name

@@ -20,6 +20,7 @@ var playersList *eui.ItemData
 var playersDirty bool
 var playersRowRefs = map[*eui.ItemData]string{}
 var playersCtxWin *eui.WindowData
+var playersOfflineCollapsed = true
 
 // defaultMobilePictID returns a fallback CL_Images mobile pict ID for the
 // given gender when a player's specific PictID is unknown. Values are chosen
@@ -74,6 +75,15 @@ func updatePlayersWindow() {
 		}
 	}
 
+	myClan := ""
+	if playerName != "" {
+		playersMu.RLock()
+		if me, ok := players[playerName]; ok {
+			myClan = me.Clan
+		}
+		playersMu.RUnlock()
+	}
+
 	// Compute client area for sizing children similar to updateTextWindow.
 	clientW := playersWin.GetSize().X
 	clientH := playersWin.GetSize().Y - playersWin.GetTitleSize()
@@ -108,10 +118,10 @@ func updatePlayersWindow() {
 	linePx := math.Ceil(metrics.HAscent + metrics.HDescent + 2) // +2 px padding
 	rowUnits := float32(linePx) / ui
 
-    // Rebuild contents: header + one row per player
-    // Layout per row: [avatar (or default/blank)] [profession (or blank)] [name]
-    playersList.Contents = nil
-    playersRowRefs = map[*eui.ItemData]string{}
+	// Rebuild contents: header + one row per player
+	// Layout per row: [avatar (or default/blank)] [profession (or blank)] [name]
+	playersList.Contents = nil
+	playersRowRefs = map[*eui.ItemData]string{}
 
 	header := fmt.Sprintf("Players Online: %d", onlineCount)
 	// Include simple share summary when relevant.
@@ -131,8 +141,17 @@ func updatePlayersWindow() {
 	ht.Size = eui.Point{X: clientWAvail, Y: rowUnits}
 	playersList.AddItem(ht)
 
+	onlinePlayers := make([]Player, 0, onlineCount)
+	offlinePlayers := make([]Player, 0, len(exiles)-onlineCount)
 	for _, p := range exiles {
-		offline := p.Offline || time.Since(p.LastSeen) > 5*time.Minute
+		if p.Offline || time.Since(p.LastSeen) > 5*time.Minute {
+			offlinePlayers = append(offlinePlayers, p)
+		} else {
+			onlinePlayers = append(onlinePlayers, p)
+		}
+	}
+
+	addRow := func(p Player, offline bool, parent *eui.ItemData) {
 		name := p.Name
 		tags := make([]string, 0, 3)
 		if p.Sharee {
@@ -141,20 +160,17 @@ func updatePlayersWindow() {
 		if p.Sharing {
 			tags = append(tags, ">")
 		}
-		if p.SameClan {
+		if myClan != "" && p.SameClan {
 			tags = append(tags, "*")
 		}
 		if len(tags) > 0 {
 			name = fmt.Sprintf("%s %s", name, strings.Join(tags, "--"))
 		}
 
-		// Build row flow: [avatar/default/blank] [profession/blank] [name]
 		row := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL, Fixed: true}
 
-		// Icon sized to row height, with a small right margin.
 		iconSize := int(rowUnits + 0.5)
 
-		// Profession sprite if available; else add a blank image to preserve spacing.
 		{
 			profItem, _ := eui.NewImageItem(iconSize, iconSize)
 			profItem.Margin = 4
@@ -170,7 +186,6 @@ func updatePlayersWindow() {
 			row.AddItem(profItem)
 		}
 
-		// Avatar: try live PictID first; else use default by gender; else blank.
 		{
 			avItem, _ := eui.NewImageItem(iconSize, iconSize)
 			avItem.Margin = 4
@@ -178,10 +193,9 @@ func updatePlayersWindow() {
 			avItem.Filled = false
 			avItem.Disabled = offline
 			var img *ebiten.Image
-			// Prefer mobile frame; use dead pose when fallen.
 			state := uint8(0)
 			if p.Dead {
-				state = 32 // kPoseDead
+				state = 32
 			}
 			if p.PictID != 0 {
 				if m := loadMobileFrame(p.PictID, state, p.Colors); m != nil {
@@ -191,7 +205,6 @@ func updatePlayersWindow() {
 				}
 			}
 			if img == nil {
-				// Fallback to default character image per gender (like classic client)
 				gid := defaultMobilePictID(genderFromString(p.Gender))
 				if gid != 0 {
 					if m := loadMobileFrame(gid, state, nil); m != nil {
@@ -204,17 +217,12 @@ func updatePlayersWindow() {
 			if img != nil {
 				avItem.Image = img
 			}
-			// Always add avatar slot, even if blank, to keep alignment.
 			row.AddItem(avItem)
 		}
 
-		// Gender icon removed per request; columns remain avatar + profession only.
-
-		// Name text constrained to the row height.
 		t, _ := eui.NewText()
 		t.Text = name
 		t.FontSize = float32(fontSize)
-		// Choose font style based on sharing relationship.
 		face := mainFont
 		if p.Sharing && p.Sharee {
 			face = mainFontBoldItalic
@@ -224,18 +232,53 @@ func updatePlayersWindow() {
 			face = mainFontItalic
 		}
 		t.Face = face
-		// Dim the name when fallen or stale/offline.
 		if p.Dead || offline {
 			t.TextColor = eui.ColorVeryDarkGray
 			t.ForceTextColor = true
 		}
-		// Reserve space for two icons (avatar + profession) + margins.
 		t.Size = eui.Point{X: clientWAvail - float32(iconSize*2) - 8, Y: rowUnits}
 		row.AddItem(t)
 
-		// Ensure the row's height matches the content.
 		row.Size.Y = rowUnits
-		playersList.AddItem(row)
+		parent.AddItem(row)
+	}
+
+	for _, p := range onlinePlayers {
+		addRow(p, false, playersList)
+	}
+
+	if len(offlinePlayers) > 0 {
+		arrow := "\u25B6" // ▶
+		if !playersOfflineCollapsed {
+			arrow = "\u25BC" // ▼
+		}
+		foldBtn, events := eui.NewButton()
+		foldBtn.Text = fmt.Sprintf("%s Offline: %d", arrow, len(offlinePlayers))
+		foldBtn.FontSize = float32(fontSize)
+		foldBtn.Size = eui.Point{X: clientWAvail, Y: rowUnits}
+		foldBtn.Filled = false
+		foldBtn.Outlined = false
+		foldBtn.Border = 0
+		foldBtn.BorderPad = 0
+		foldBtn.Margin = 0
+		foldBtn.Padding = 0
+		foldBtn.Fixed = true
+		events.Handle = func(ev eui.UIEvent) {
+			if ev.Type == eui.EventClick {
+				playersOfflineCollapsed = !playersOfflineCollapsed
+				playersDirty = true
+			}
+		}
+		playersList.AddItem(foldBtn)
+
+		offFlow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL, Fixed: true}
+		if playersOfflineCollapsed {
+			offFlow.Invisible = true
+		}
+		playersList.AddItem(offFlow)
+		for _, p := range offlinePlayers {
+			addRow(p, true, offFlow)
+		}
 	}
 
 	// Size flows to client area like other text windows.
