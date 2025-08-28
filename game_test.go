@@ -25,3 +25,16 @@ func TestStopWalkIfOutside(t *testing.T) {
 
 	gs.ClickToToggle = old
 }
+
+func TestContinueHeldWalk(t *testing.T) {
+	prev := inputState{mouseDown: true}
+	if !continueHeldWalk(prev, false, true, 0, false) {
+		t.Fatalf("walk should continue when mouse is held outside")
+	}
+	if continueHeldWalk(prev, false, false, 0, false) {
+		t.Fatalf("walk should stop when mouse button is released")
+	}
+	if !continueHeldWalk(inputState{}, true, true, 2, false) {
+		t.Fatalf("walk should start when mouse is held inside game")
+	}
+}
