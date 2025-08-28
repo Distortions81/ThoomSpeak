@@ -226,32 +226,32 @@ func updateInventoryWindow() {
 		icon.Margin = 4
 		row.AddItem(icon)
 
-        // Text label: Title-case only base name; preserve bracketed/custom suffix exactly
-        raw := it.Name
-        if raw == "" && clImages != nil {
-            raw = clImages.ItemName(uint32(id))
-        }
-        if raw == "" {
-            raw = fmt.Sprintf("Item %d", id)
-        }
-        base := raw
-        suffix := ""
-        if p := strings.Index(base, " <"); p >= 0 {
-            suffix = base[p:]
-            base = base[:p]
-        }
-        prefix := ""
-        if r, ok := getInventoryShortcut(it.Index); ok && r != 0 {
-            prefix = fmt.Sprintf("[%c] ", unicode.ToUpper(r))
-        }
-        qtySuffix := ""
-        if qty > 1 {
-            qtySuffix = fmt.Sprintf(" (%v)", qty)
-        }
+		// Text label: Title-case only base name; preserve bracketed/custom suffix exactly
+		raw := it.Name
+		if raw == "" && clImages != nil {
+			raw = clImages.ItemName(uint32(id))
+		}
+		if raw == "" {
+			raw = fmt.Sprintf("Item %d", id)
+		}
+		base := raw
+		suffix := ""
+		if p := strings.Index(base, " <"); p >= 0 {
+			suffix = base[p:]
+			base = base[:p]
+		}
+		prefix := ""
+		if r, ok := getInventoryShortcut(it.Index); ok && r != 0 {
+			prefix = fmt.Sprintf("[%c] ", unicode.ToUpper(r))
+		}
+		qtySuffix := ""
+		if qty > 1 {
+			qtySuffix = fmt.Sprintf(" (%v)", qty)
+		}
 
-        t, _ := eui.NewText()
-        t.Text = prefix + TitleCaser.String(base) + suffix + qtySuffix
-        t.FontSize = float32(fontSize)
+		t, _ := eui.NewText()
+		t.Text = prefix + TitleCaser.String(base) + suffix + qtySuffix
+		t.FontSize = float32(fontSize)
 
 		face := goFace
 		if anyEquipped[key] {
@@ -381,135 +381,139 @@ func selectInventoryItem(id uint16, idx int) {
 // handleInventoryContextClick opens the inventory context menu if the mouse
 // position is over an inventory row. Returns true if a menu was opened.
 func handleInventoryContextClick(mx, my int) bool {
-    if inventoryWin == nil || inventoryList == nil || !inventoryWin.IsOpen() {
-        return false
-    }
-    pos := eui.Point{X: float32(mx), Y: float32(my)}
-    for _, row := range inventoryList.Contents {
-        r := row.DrawRect
-        if pos.X >= r.X0 && pos.X <= r.X1 && pos.Y >= r.Y0 && pos.Y <= r.Y1 {
-            if ref, ok := inventoryRowRefs[row]; ok {
-                // Also select the item to provide a visual cue and
-                // ensure subsequent actions can rely on current selection.
-                selectInventoryItem(ref.id, ref.idx)
-                openInventoryContextMenu(ref, pos)
-                return true
-            }
-        }
-    }
-    return false
+	if inventoryWin == nil || inventoryList == nil || !inventoryWin.IsOpen() {
+		return false
+	}
+	pos := eui.Point{X: float32(mx), Y: float32(my)}
+	for _, row := range inventoryList.Contents {
+		r := row.DrawRect
+		if pos.X >= r.X0 && pos.X <= r.X1 && pos.Y >= r.Y0 && pos.Y <= r.Y1 {
+			if ref, ok := inventoryRowRefs[row]; ok {
+				// Also select the item to provide a visual cue and
+				// ensure subsequent actions can rely on current selection.
+				selectInventoryItem(ref.id, ref.idx)
+				openInventoryContextMenu(ref, pos)
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func openInventoryContextMenu(ref invRef, pos eui.Point) {
-    // Close any existing context menus so only one is visible at a time.
-    eui.CloseContextMenus()
-    // Minimal overlay menu using the new EUI context menus: Equip/Unequip
-    wearable := false
-    equipped := false
-    displayName := ""
-    examineName := ""
-    if it, ok := inventoryItemByIndex(ref.global); ok {
-        equipped = it.Equipped
-        if clImages != nil {
-            slot := clImages.ItemSlot(uint32(it.ID))
-            if slot >= kItemSlotFirstReal && slot <= kItemSlotLastReal {
-                wearable = true
-            }
-        }
-        // Build a display name similar to the inventory list formatting.
-        raw := it.Name
-        if raw == "" && clImages != nil {
-            raw = clImages.ItemName(uint32(it.ID))
-        }
-        if raw == "" {
-            raw = fmt.Sprintf("Item %d", it.ID)
-        }
-        base := raw
-        suffix := ""
-        if p := strings.Index(base, " <"); p >= 0 {
-            suffix = base[p:]
-            base = base[:p]
-        }
-        displayName = TitleCaser.String(base) + suffix
-        examineName = base
-    }
-    // First, the non-selectable header: item name.
-    options := []string{}
-    if displayName != "" {
-        options = append(options, displayName)
-    }
-    actions := []func(){}
-    if wearable && !equipped {
-        options = append(options, "Equip")
-        actions = append(actions, func() {
-            queueEquipCommand(ref.id, ref.idx)
-            equipInventoryItem(ref.id, ref.idx, true)
-        })
-    }
-    if wearable && equipped {
-        options = append(options, "Unequip")
-        actions = append(actions, func() {
-            enqueueCommand(fmt.Sprintf("/unequip %d", ref.id))
-            nextCommand()
-            equipInventoryItem(ref.id, -1, false)
-        })
-    }
-    // Always offer Examine when we know the item's name.
-    if examineName != "" {
-        options = append(options, "Examine")
-        nameArg := examineName
-        actions = append(actions, func() {
-            // Ensure the item is selected before examining
-            selectInventoryItem(ref.id, ref.idx)
-            enqueueCommand(fmt.Sprintf("/examine %s", maybeQuoteName(nameArg)))
-            nextCommand()
-        })
-    }
-    // Offer Show (announce item name).
-    if examineName != "" {
-        options = append(options, "Show")
-        nameArg := examineName
-        actions = append(actions, func() {
-            enqueueCommand(fmt.Sprintf("/show %s", maybeQuoteName(nameArg)))
-            nextCommand()
-        })
-    }
-    // Offer Drop options: plain and Mine-protected.
-    options = append(options, "Drop")
-    actions = append(actions, func() {
-        enqueueCommand("/drop")
-        nextCommand()
-    })
-    options = append(options, "Drop (Mine)")
-    actions = append(actions, func() {
-        enqueueCommand("/drop /mine")
-        nextCommand()
-    })
-    if len(options) == 0 {
-        return
-    }
-    menu := eui.ShowContextMenu(options, pos.X, pos.Y, func(i int) {
-        // Adjust for header occupying first index (if present)
-        adj := i
-        if displayName != "" {
-            adj = i - 1
-        }
-        if adj >= 0 && adj < len(actions) {
-            actions[adj]()
-        }
-    })
-    if menu != nil && displayName != "" {
-        // Mark first row as a non-interactive header
-        menu.HeaderCount = 1
-    }
+	// Close any existing context menus so only one is visible at a time.
+	eui.CloseContextMenus()
+	// Minimal overlay menu using the new EUI context menus: Equip/Unequip
+	wearable := false
+	equipped := false
+	slotVal := -1
+	displayName := ""
+	examineName := ""
+	if it, ok := inventoryItemByIndex(ref.global); ok {
+		equipped = it.Equipped
+		if clImages != nil {
+			slot := clImages.ItemSlot(uint32(it.ID))
+			if slot >= kItemSlotFirstReal && slot <= kItemSlotLastReal {
+				wearable = true
+				slotVal = int(slot)
+			}
+		}
+		// Build a display name similar to the inventory list formatting.
+		raw := it.Name
+		if raw == "" && clImages != nil {
+			raw = clImages.ItemName(uint32(it.ID))
+		}
+		if raw == "" {
+			raw = fmt.Sprintf("Item %d", it.ID)
+		}
+		base := raw
+		suffix := ""
+		if p := strings.Index(base, " <"); p >= 0 {
+			suffix = base[p:]
+			base = base[:p]
+		}
+		displayName = TitleCaser.String(base) + suffix
+		// Emulate classic client: show worn slot for equipped items.
+		if equipped && slotVal >= 0 && slotVal < len(slotNames) {
+			displayName += " [" + TitleCaser.String(slotNames[slotVal]) + "]"
+		}
+		examineName = base
+	}
+	// First, the non-selectable header: item name.
+	options := []string{}
+	if displayName != "" {
+		options = append(options, "Item: "+displayName+":")
+	}
+	actions := []func(){}
+	if wearable && !equipped {
+		options = append(options, "Equip")
+		actions = append(actions, func() {
+			queueEquipCommand(ref.id, ref.idx)
+			equipInventoryItem(ref.id, ref.idx, true)
+		})
+	}
+	if wearable && equipped {
+		options = append(options, "Unequip")
+		actions = append(actions, func() {
+			enqueueCommand(fmt.Sprintf("/unequip %d", ref.id))
+			nextCommand()
+			equipInventoryItem(ref.id, -1, false)
+		})
+	}
+	// Always offer Examine when we know the item's name.
+	if examineName != "" {
+		options = append(options, "Examine")
+		actions = append(actions, func() {
+			// Ensure the item is selected before examining
+			selectInventoryItem(ref.id, ref.idx)
+			enqueueCommand("/examine")
+			nextCommand()
+		})
+	}
+	// Offer Show (announce item name).
+	if examineName != "" {
+		options = append(options, "Show")
+		actions = append(actions, func() {
+			enqueueCommand("/show")
+			nextCommand()
+		})
+	}
+	// Offer Drop options: plain and Mine-protected.
+	options = append(options, "Drop")
+	actions = append(actions, func() {
+		enqueueCommand("/drop")
+		nextCommand()
+	})
+	options = append(options, "Drop (Mine)")
+	actions = append(actions, func() {
+		enqueueCommand("/drop /mine")
+		nextCommand()
+	})
+	if len(options) == 0 {
+		return
+	}
+	menu := eui.ShowContextMenu(options, pos.X, pos.Y, func(i int) {
+		// Adjust for header occupying first index (if present)
+		adj := i
+		if displayName != "" {
+			adj = i - 1
+		}
+		if adj >= 0 && adj < len(actions) {
+			actions[adj]()
+		}
+	})
+	if menu != nil && displayName != "" {
+		// Mark first row as a non-interactive header
+		menu.HeaderCount = 1
+	}
 }
 
 // maybeQuoteName wraps a name in quotes if it contains whitespace.
 func maybeQuoteName(s string) string {
-    if strings.IndexFunc(s, func(r rune) bool { return r == ' ' || r == '\t' }) >= 0 {
-        return fmt.Sprintf("\"%s\"", s)
-    }
-    return s
+	if strings.IndexFunc(s, func(r rune) bool { return r == ' ' || r == '\t' }) >= 0 {
+		return fmt.Sprintf("\"%s\"", s)
+	}
+	return s
 }
 
 func promptInventoryShortcut(idx int) {
