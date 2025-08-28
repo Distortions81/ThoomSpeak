@@ -78,9 +78,10 @@ var gsdef settings = settings{
 	MusicVolume:          0.8,
 	Music:                true,
 	GameSound:            true,
-	GameScale:            2,
-	BarPlacement:         BarPlacementBottom,
-	MaxNightLevel:        100,
+    GameScale:            2,
+    BarPlacement:         BarPlacementBottom,
+    MaxNightLevel:        100,
+    ForceNightLevel:      -1,
 	ChatTTS:              true,
 	ChatTTSVolume:        1.0,
 	ChatTTSSpeed:         1.5,
@@ -164,7 +165,8 @@ type settings struct {
 	Mute                 bool
 	GameScale            float64
 	BarPlacement         BarPlacement
-	MaxNightLevel        int
+    MaxNightLevel        int
+    ForceNightLevel      int
 	Theme                string
 	MessagesToConsole    bool
 	ChatTTS              bool

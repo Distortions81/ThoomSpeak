@@ -2335,6 +2335,8 @@ func makeSettingsWindow() {
 	}
 	center.AddItem(maxNightSlider)
 
+    // (Night overlay checkbox removed) – night effect is always applied; mode switches with Shader lighting.
+
 	label, _ = eui.NewText()
 	label.Text = "\nText Sizes:"
 	label.FontSize = 15
@@ -3543,7 +3545,7 @@ func makeDebugWindow() {
 
 	shaderCB, shaderEvents := eui.NewCheckbox()
 	shaderCB.Text = "Shader lighting"
-	shaderCB.Size = eui.Point{X: width, Y: 24}
+	shaderCB.Size = eui.Point{X: width - 90, Y: 24}
 	shaderCB.Checked = gs.shaderLighting
 	shaderCB.Tooltip = "Experimental shader-based light and dark rendering"
 	shaderEvents.Handle = func(ev eui.UIEvent) {
@@ -3552,7 +3554,69 @@ func makeDebugWindow() {
 			settingsDirty = true
 		}
 	}
-	debugFlow.AddItem(shaderCB)
+
+	// Add a small "Reload" button beside the shader checkbox for hot-reload.
+	reloadBtn, reloadEv := eui.NewButton()
+	reloadBtn.Text = "Reload"
+	reloadBtn.Size = eui.Point{X: 80, Y: 24}
+	reloadBtn.Tooltip = "Recompile the lighting shader from data/shaders/light.kage"
+	reloadEv.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			if err := ReloadLightingShader(); err != nil {
+				consoleMessage("Shader reload failed:" + err.Error())
+			} else {
+				consoleMessage("Shader reloaded.")
+			}
+		}
+	}
+
+	shaderRow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL, Fixed: true}
+	shaderRow.AddItem(shaderCB)
+	shaderRow.AddItem(reloadBtn)
+	debugFlow.AddItem(shaderRow)
+
+	// Force Night dropdown in Debug: Auto/Day/25/50/75/100
+	forceNightDD, forceNightEv := eui.NewDropdown()
+	forceNightDD.Label = "Force Night"
+	forceNightDD.Options = []string{"Auto", "Day (0%)", "25%", "50%", "75%", "Night (100%)"}
+	// Map gs.ForceNightLevel to option index
+	switch gs.ForceNightLevel {
+	case -1:
+		forceNightDD.Selected = 0
+	case 0:
+		forceNightDD.Selected = 1
+	case 25:
+		forceNightDD.Selected = 2
+	case 50:
+		forceNightDD.Selected = 3
+	case 75:
+		forceNightDD.Selected = 4
+	case 100:
+		forceNightDD.Selected = 5
+	default:
+		forceNightDD.Selected = 0
+	}
+	forceNightDD.Size = eui.Point{X: width, Y: 24}
+	forceNightEv.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventDropdownSelected {
+			switch ev.Index {
+			case 0:
+				gs.ForceNightLevel = -1
+			case 1:
+				gs.ForceNightLevel = 0
+			case 2:
+				gs.ForceNightLevel = 25
+			case 3:
+				gs.ForceNightLevel = 50
+			case 4:
+				gs.ForceNightLevel = 75
+			case 5:
+				gs.ForceNightLevel = 100
+			}
+			settingsDirty = true
+		}
+	}
+	debugFlow.AddItem(forceNightDD)
 
 	smoothinCB, smoothinEvents := eui.NewCheckbox()
 	smoothinCB.Text = "Tint moving objects red"
