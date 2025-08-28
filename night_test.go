@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestParseNightCommand(t *testing.T) {
 	tests := []struct {
@@ -62,9 +65,26 @@ func TestParseNightCommand(t *testing.T) {
 			gotCloudy := gNight.Cloudy
 			gNight.mu.Unlock()
 			if gotBase != tt.baseLevel || gotLevel != tt.level || gotAzimuth != tt.azimuth || gotCloudy != tt.cloudy {
-				t.Fatalf("parseNightCommand(%q) = {BaseLevel:%d Level:%d Azimuth:%d Cloudy:%v}, want {BaseLevel:%d Level:%d Azimuth:%d Cloudy:%v}", tt.cmd, gotBase, gotLevel, gotAzimuth, gotCloudy, tt.baseLevel, tt.level, tt.azimuth, tt.cloudy)
+				t.Fatalf("parseNightCommand(%q) = {BaseLevel:%d Level:%d Azimuth:%d Cloudy:%v}, want {BaseLevel:%d Level:%d Azimuth:%d Cloudy:%v}",
+					tt.cmd, gotBase, gotLevel, gotAzimuth, gotCloudy, tt.baseLevel, tt.level, tt.azimuth, tt.cloudy)
 			}
 		})
+	}
+}
+
+func TestParseNightCommandWithTabs(t *testing.T) {
+	raw := []byte("/NT 51\t/SA -1\t/CL 0")
+	msg := stripBEPPTags(raw)
+	line := strings.TrimSpace(decodeMacRoman(msg))
+	gNight = NightInfo{}
+	if !parseNightCommand(line) {
+		t.Fatalf("parseNightCommand(%q) = false, want true", line)
+	}
+	gNight.mu.Lock()
+	base, level, az, cloudy := gNight.BaseLevel, gNight.Level, gNight.Azimuth, gNight.Cloudy
+	gNight.mu.Unlock()
+	if base != 51 || level != 51 || az != -1 || cloudy {
+		t.Fatalf("unexpected night data: base=%d level=%d az=%d cloudy=%v", base, level, az, cloudy)
 	}
 }
 
@@ -83,7 +103,6 @@ func TestCurrentNightLevel(t *testing.T) {
 		{"ForcedDayOverrides", 0, 100, 0, 80, 0},
 		{"Force100FlagOverridesMax", -1, 25, kLightForce100Pct, 80, 80},
 	}
-
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			gNight.mu.Lock()
