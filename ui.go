@@ -534,6 +534,7 @@ func refreshPluginDetails() {
 	if owner == "" {
 		txt, _ := eui.NewText()
 		txt.Text = "Select a plugin"
+		txt.FontSize = 12
 		pluginDetails.AddItem(txt)
 		return
 	}
