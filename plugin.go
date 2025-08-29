@@ -92,6 +92,9 @@ func exportsForPlugin(owner string) interp.Exports {
 		m["RegisterInputHandler"] = reflect.ValueOf(func(fn func(string) string) { pluginRegisterInputHandler(owner, fn) })
 		m["RunCommand"] = reflect.ValueOf(func(cmd string) { pluginRunCommand(owner, cmd) })
 		m["EnqueueCommand"] = reflect.ValueOf(func(cmd string) { pluginEnqueueCommand(owner, cmd) })
+		m["StorageGet"] = reflect.ValueOf(func(key string) any { return pluginStorageGet(owner, key) })
+		m["StorageSet"] = reflect.ValueOf(func(key string, value any) { pluginStorageSet(owner, key, value) })
+		m["StorageDelete"] = reflect.ValueOf(func(key string) { pluginStorageDelete(owner, key) })
 		ex[pkg] = m
 	}
 	return ex
@@ -316,6 +319,7 @@ var (
 	pluginMu              sync.RWMutex
 	pluginNames           = map[string]bool{}
 	pluginDisplayNames    = map[string]string{}
+	pluginAuthors         = map[string]string{}
 	pluginDisabled        = map[string]bool{}
 	pluginPaths           = map[string]string{}
 	pluginTerminators     = map[string]func(){}
@@ -833,8 +837,11 @@ func rescanPlugins() {
 		"plugins",
 	}
 	nameRE := regexp.MustCompile(`(?m)^\s*(?:var|const)\s+PluginName\s*=\s*"([^"]+)"`)
+	authorRE := regexp.MustCompile(`(?m)^\s*(?:var|const)\s+PluginAuthor\s*=\s*"([^"]+)"`)
+	authorRE := regexp.MustCompile(`(?m)^\s*(?:var|const)\s+PluginAuthor\s*=\s*"([^"]+)"`)
 	newDisplay := map[string]string{}
 	newPaths := map[string]string{}
+	newAuthors := map[string]string{}
 	seenNames := map[string]bool{}
 	for _, dir := range pluginDirs {
 		entries, err := os.ReadDir(dir)
@@ -866,8 +873,13 @@ func rescanPlugins() {
 			seenNames[lower] = true
 			base := strings.TrimSuffix(e.Name(), ".go")
 			owner := name + "_" + base
+			author := ""
+			if match := authorRE.FindSubmatch(src); len(match) >= 2 {
+				author = strings.TrimSpace(string(match[1]))
+			}
 			newDisplay[owner] = name
 			newPaths[owner] = path
+			newAuthors[owner] = author
 		}
 	}
 
@@ -891,6 +903,7 @@ func rescanPlugins() {
 	pluginMu.Lock()
 	pluginDisplayNames = newDisplay
 	pluginPaths = newPaths
+	pluginAuthors = newAuthors
 	pluginDisabled = make(map[string]bool, len(newDisplay))
 	for o := range newDisplay {
 		if d, ok := oldDisabled[o]; ok {
@@ -930,6 +943,7 @@ func loadPlugins() {
 		"plugins",
 	}
 	nameRE := regexp.MustCompile(`(?m)^\s*(?:var|const)\s+PluginName\s*=\s*"([^"]+)"`)
+	authorRE := regexp.MustCompile(`(?m)^\s*(?:var|const)\s+PluginAuthor\s*=\s*"([^"]+)"`)
 	for _, dir := range pluginDirs {
 		entries, err := os.ReadDir(dir)
 		if err != nil {
@@ -969,6 +983,10 @@ func loadPlugins() {
 			pluginNames[lower] = true
 			base := strings.TrimSuffix(e.Name(), ".go")
 			owner := name + "_" + base
+			author := ""
+			if match := authorRE.FindSubmatch(src); len(match) >= 2 {
+				author = strings.TrimSpace(string(match[1]))
+			}
 			disabled := true
 			if gs.EnabledPlugins != nil {
 				if en, ok := gs.EnabledPlugins[owner]; ok {
@@ -978,6 +996,7 @@ func loadPlugins() {
 			pluginMu.Lock()
 			pluginDisplayNames[owner] = name
 			pluginPaths[owner] = path
+			pluginAuthors[owner] = author
 			pluginDisabled[owner] = disabled
 			pluginMu.Unlock()
 			if !disabled {

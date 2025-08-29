@@ -230,3 +230,12 @@ func HasItem(name string) bool { return false }
 
 // FrameNumber returns the current frame counter.
 func FrameNumber() int { return 0 }
+
+// StorageGet retrieves a value previously stored with StorageSet.
+func StorageGet(key string) any { return nil }
+
+// StorageSet stores a value associated with key for the plugin.
+func StorageSet(key string, value any) {}
+
+// StorageDelete removes a stored value for key.
+func StorageDelete(key string) {}
