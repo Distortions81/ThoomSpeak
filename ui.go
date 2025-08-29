@@ -424,99 +424,124 @@ func refreshPluginsWindow() {
 	pluginsList.AddItem(legend)
 
 	type entry struct {
-		owner string
-		name  string
+		owner   string
+		name    string
+		scope   string
+		cat     string
+		sub     string
+		invalid bool
 	}
 	pluginMu.RLock()
-	list := make([]entry, 0, len(pluginDisplayNames))
+	cats := make(map[string][]entry)
 	for o, n := range pluginDisplayNames {
-		list = append(list, entry{owner: o, name: n})
+		cats[pluginCategories[o]] = append(cats[pluginCategories[o]], entry{
+			owner:   o,
+			name:    n,
+			scope:   pluginEnabledFor[o],
+			cat:     pluginCategories[o],
+			sub:     pluginSubCategories[o],
+			invalid: pluginInvalid[o],
+		})
 	}
 	pluginMu.RUnlock()
-	sort.Slice(list, func(i, j int) bool {
-		return strings.ToLower(list[i].name) < strings.ToLower(list[j].name)
-	})
-	for _, e := range list {
+	var catList []string
+	for c := range cats {
+		catList = append(catList, c)
+	}
+	sort.Strings(catList)
+	for _, cat := range catList {
 		row := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
-		charCB, charEvents := eui.NewCheckbox()
-		charCB.Size = checkSize
-		allCB, allEvents := eui.NewCheckbox()
-		allCB.Size = checkSize
-		pluginMu.RLock()
-		scope := pluginEnabledFor[e.owner]
-		cat := pluginCategories[e.owner]
-		sub := pluginSubCategories[e.owner]
-		invalid := pluginInvalid[e.owner]
-		pluginMu.RUnlock()
-		charCB.Checked = playerName != "" && scope == playerName
-		charCB.Disabled = invalid
-		allCB.Checked = scope == "all"
-		allCB.Disabled = invalid
-		label := e.name
-		if cat != "" {
-			label += " [" + cat
-			if sub != "" {
-				label += " - " + sub
-			}
-			label += "]"
+		spacer1 := &eui.ItemData{ItemType: eui.ITEM_TEXT, Size: checkSize, Fixed: true}
+		spacer2 := &eui.ItemData{ItemType: eui.ITEM_TEXT, Size: checkSize, Fixed: true}
+		row.AddItem(spacer1)
+		row.AddItem(spacer2)
+		txt, _ := eui.NewText()
+		label := cat
+		if label == "" {
+			label = "Other"
 		}
-		owner := e.owner
-		click := func() { selectPlugin(owner) }
-		if selectedPlugin == owner {
-			row.Filled = true
-			if pluginsWin != nil && pluginsWin.Theme != nil {
-				row.Color = pluginsWin.Theme.Button.SelectedColor
-			}
-		}
-		if !invalid {
-			charEvents.Handle = func(ev eui.UIEvent) {
-				if ev.Type == eui.EventCheckboxChanged {
-					setPluginEnabled(owner, ev.Checked, allCB.Checked)
-				}
-			}
-			allEvents.Handle = func(ev eui.UIEvent) {
-				if ev.Type == eui.EventCheckboxChanged {
-					setPluginEnabled(owner, charCB.Checked, ev.Checked)
-				}
-			}
-		}
-		row.AddItem(charCB)
-		row.AddItem(allCB)
-		nameTxt, _ := eui.NewText()
-		nameTxt.Text = label
-		nameTxt.FontSize = 12
-		nameTxt.Size = pluginSize
-		nameTxt.Disabled = invalid
-		nameTxt.Action = click
-		row.Action = click
-		row.AddItem(nameTxt)
+		txt.Text = label
+		txt.FontSize = 12
+		txt.Size = pluginSize
+		row.AddItem(txt)
+		pluginsList.AddItem(row)
 
-		if !invalid {
-			reloadBtn, rh := eui.NewButton()
-			reloadBtn.Text = "Reload"
-			reloadBtn.Size = eui.Point{X: 55, Y: 24}
-			rh.Handle = func(ev eui.UIEvent) {
-				if ev.Type == eui.EventClick {
-					pluginMu.RLock()
-					enabled := !pluginDisabled[owner]
-					pluginMu.RUnlock()
-					if enabled {
-						disablePlugin(owner, "reloaded")
-						enablePlugin(owner)
+		plist := cats[cat]
+		sort.Slice(plist, func(i, j int) bool {
+			return strings.ToLower(plist[i].name) < strings.ToLower(plist[j].name)
+		})
+		for _, e := range plist {
+			row := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
+			charCB, charEvents := eui.NewCheckbox()
+			charCB.Size = checkSize
+			allCB, allEvents := eui.NewCheckbox()
+			allCB.Size = checkSize
+			charCB.Checked = playerName != "" && e.scope == playerName
+			charCB.Disabled = e.invalid
+			allCB.Checked = e.scope == "all"
+			allCB.Disabled = e.invalid
+			label := e.name
+			if e.sub != "" {
+				label += " [" + e.sub + "]"
+			}
+			owner := e.owner
+			click := func() { selectPlugin(owner) }
+			if selectedPlugin == owner {
+				row.Filled = true
+				if pluginsWin != nil && pluginsWin.Theme != nil {
+					row.Color = pluginsWin.Theme.Button.SelectedColor
+				}
+			}
+			if !e.invalid {
+				charEvents.Handle = func(ev eui.UIEvent) {
+					if ev.Type == eui.EventCheckboxChanged {
+						setPluginEnabled(owner, ev.Checked, allCB.Checked)
+					}
+				}
+				allEvents.Handle = func(ev eui.UIEvent) {
+					if ev.Type == eui.EventCheckboxChanged {
+						setPluginEnabled(owner, charCB.Checked, ev.Checked)
 					}
 				}
 			}
-			row.AddItem(reloadBtn)
-		}
-		nameTxt, _ = eui.NewText()
-		nameTxt.FontSize = 12
-		nameTxt.Size = eui.Point{X: 10, Y: 24}
-		nameTxt.Disabled = invalid
-		nameTxt.Action = click
-		row.Action = click
-		row.AddItem(nameTxt)
+			row.AddItem(charCB)
+			row.AddItem(allCB)
+			nameTxt, _ := eui.NewText()
+			nameTxt.Text = label
+			nameTxt.FontSize = 12
+			nameTxt.Size = pluginSize
+			nameTxt.Disabled = e.invalid
+			nameTxt.Action = click
+			row.Action = click
+			row.AddItem(nameTxt)
 
-		pluginsList.AddItem(row)
+			if !e.invalid {
+				reloadBtn, rh := eui.NewButton()
+				reloadBtn.Text = "Reload"
+				reloadBtn.Size = eui.Point{X: 55, Y: 24}
+				rh.Handle = func(ev eui.UIEvent) {
+					if ev.Type == eui.EventClick {
+						pluginMu.RLock()
+						enabled := !pluginDisabled[owner]
+						pluginMu.RUnlock()
+						if enabled {
+							disablePlugin(owner, "reloaded")
+							enablePlugin(owner)
+						}
+					}
+				}
+				row.AddItem(reloadBtn)
+			}
+			nameTxt, _ = eui.NewText()
+			nameTxt.FontSize = 12
+			nameTxt.Size = eui.Point{X: 10, Y: 24}
+			nameTxt.Disabled = e.invalid
+			nameTxt.Action = click
+			row.Action = click
+			row.AddItem(nameTxt)
+
+			pluginsList.AddItem(row)
+		}
 	}
 	if pluginsWin != nil {
 		refreshPluginDetails()
