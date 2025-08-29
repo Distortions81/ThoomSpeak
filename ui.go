@@ -410,11 +410,21 @@ func refreshPluginsWindow() {
 	for _, e := range list {
 		row := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
 		cb, events := eui.NewCheckbox()
-		cb.Text = e.name
-		cb.Size = eui.Point{X: 256, Y: 24}
 		pluginMu.RLock()
+		cat := pluginCategories[e.owner]
+		sub := pluginSubCategories[e.owner]
 		cb.Checked = !pluginDisabled[e.owner]
 		pluginMu.RUnlock()
+		label := e.name
+		if cat != "" {
+			label += " [" + cat
+			if sub != "" {
+				label += " - " + sub
+			}
+			label += "]"
+		}
+		cb.Text = label
+		cb.Size = eui.Point{X: 256, Y: 24}
 		owner := e.owner
 		events.Handle = func(ev eui.UIEvent) {
 			if ev.Type == eui.EventCheckboxChanged {

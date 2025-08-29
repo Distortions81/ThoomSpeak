@@ -11,6 +11,12 @@ import (
 // PluginName is how the client lists this plugin.
 var PluginName = "Healer Helper"
 
+// PluginCategory groups this plugin.
+var PluginCategory = "Profession"
+
+// PluginSubCategory refines the category.
+var PluginSubCategory = "Healer"
+
 // Init launches a tiny loop that watches for right clicks on ourselves.
 func Init() {
 	go func() {

@@ -10,6 +10,8 @@ func TestTriggersWindowListsTriggers(t *testing.T) {
 	triggerHandlersMu = sync.RWMutex{}
 	pluginTriggers = map[string][]triggerHandler{}
 	pluginDisplayNames = map[string]string{}
+	pluginCategories = map[string]string{}
+	pluginSubCategories = map[string]string{}
 	triggersWin = nil
 	triggersList = nil
 	macroMu = sync.RWMutex{}
@@ -18,6 +20,8 @@ func TestTriggersWindowListsTriggers(t *testing.T) {
 		triggerHandlersMu = sync.RWMutex{}
 		pluginTriggers = map[string][]triggerHandler{}
 		pluginDisplayNames = map[string]string{}
+		pluginCategories = map[string]string{}
+		pluginSubCategories = map[string]string{}
 		triggersWin = nil
 		triggersList = nil
 		macroMu = sync.RWMutex{}
@@ -32,7 +36,7 @@ func TestTriggersWindowListsTriggers(t *testing.T) {
 		t.Fatalf("expected empty triggers list")
 	}
 
-	pluginRegisterTriggers("tester", []string{"hi"}, func(string) {})
+	pluginRegisterTriggers("tester", "", []string{"hi"}, func() {})
 	if len(triggersList.Contents) != 2 {
 		t.Fatalf("items not added to list: %d", len(triggersList.Contents))
 	}
@@ -49,6 +53,8 @@ func TestDisablePluginRefreshesTriggers(t *testing.T) {
 	triggerHandlersMu = sync.RWMutex{}
 	pluginTriggers = map[string][]triggerHandler{}
 	pluginDisplayNames = map[string]string{}
+	pluginCategories = map[string]string{}
+	pluginSubCategories = map[string]string{}
 	triggersWin = nil
 	triggersList = nil
 	macroMu = sync.RWMutex{}
@@ -60,6 +66,8 @@ func TestDisablePluginRefreshesTriggers(t *testing.T) {
 		triggerHandlersMu = sync.RWMutex{}
 		pluginTriggers = map[string][]triggerHandler{}
 		pluginDisplayNames = map[string]string{}
+		pluginCategories = map[string]string{}
+		pluginSubCategories = map[string]string{}
 		triggersWin = nil
 		triggersList = nil
 		macroMu = sync.RWMutex{}
@@ -70,7 +78,7 @@ func TestDisablePluginRefreshesTriggers(t *testing.T) {
 	})
 
 	makeTriggersWindow()
-	pluginRegisterTriggers("plug", []string{"yo"}, func(string) {})
+	pluginRegisterTriggers("plug", "", []string{"yo"}, func() {})
 	if len(triggersList.Contents) != 2 {
 		t.Fatalf("items not added to list: %d", len(triggersList.Contents))
 	}

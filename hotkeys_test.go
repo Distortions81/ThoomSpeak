@@ -285,6 +285,8 @@ func TestPluginHotkeysFontSize(t *testing.T) {
 	hotkeysWin = nil
 	hotkeysList = nil
 	pluginDisplayNames = map[string]string{"plug": "Plugin"}
+	pluginCategories = map[string]string{"plug": ""}
+	pluginSubCategories = map[string]string{"plug": ""}
 	pluginHotkeyEnabled = map[string]map[string]bool{}
 
 	makeHotkeysWindow()
