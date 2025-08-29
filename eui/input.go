@@ -425,6 +425,57 @@ func Update() error {
 		}
 	}
 
+	if inpututil.IsKeyJustPressed(ebiten.KeyEnter) || inpututil.IsKeyJustPressed(ebiten.KeyKPEnter) {
+		if activeWindow != nil && activeWindow.DefaultButton != nil {
+			btn := activeWindow.DefaultButton
+			if !btn.Disabled && !btn.Invisible {
+				activeItem = btn
+				btn.Clicked = time.Now()
+				if btn.Handler != nil {
+					btn.Handler.Emit(UIEvent{Item: btn, Type: EventClick})
+				}
+				btn.markDirty()
+			}
+		}
+	}
+
+	if inpututil.IsKeyJustPressed(ebiten.KeyTab) {
+		if activeWindow != nil {
+			var inputs []*itemData
+			collectInputs(activeWindow.Contents, &inputs)
+			if len(inputs) > 0 {
+				idx := -1
+				for i, it := range inputs {
+					if it == focusedItem {
+						idx = i
+						break
+					}
+				}
+				next := 0
+				if ebiten.IsKeyPressed(ebiten.KeyShift) || ebiten.IsKeyPressed(ebiten.KeyShiftLeft) || ebiten.IsKeyPressed(ebiten.KeyShiftRight) {
+					if idx == -1 {
+						next = len(inputs) - 1
+					} else {
+						next = (idx - 1 + len(inputs)) % len(inputs)
+					}
+				} else {
+					if idx == -1 {
+						next = 0
+					} else {
+						next = (idx + 1) % len(inputs)
+					}
+				}
+				if focusedItem != nil {
+					focusedItem.Focused = false
+					focusedItem.markDirty()
+				}
+				focusedItem = inputs[next]
+				focusedItem.Focused = true
+				focusedItem.markDirty()
+			}
+		}
+	}
+
 	mposOld = mpos
 
 	if wheelDelta.X != 0 || wheelDelta.Y != 0 {
@@ -1211,6 +1262,26 @@ func closeAllDropdowns() {
 	for _, win := range windows {
 		if win.Open {
 			closeDropdowns(win.Contents)
+		}
+	}
+}
+
+func collectInputs(items []*itemData, inputs *[]*itemData) {
+	for _, it := range items {
+		if it.ItemType == ITEM_INPUT && !it.Disabled && !it.Invisible {
+			*inputs = append(*inputs, it)
+		}
+		if it.ItemType == ITEM_FLOW {
+			if len(it.Tabs) > 0 {
+				if it.ActiveTab >= len(it.Tabs) {
+					it.ActiveTab = 0
+				}
+				collectInputs(it.Tabs[it.ActiveTab].Contents, inputs)
+			} else {
+				collectInputs(it.Contents, inputs)
+			}
+		} else {
+			collectInputs(it.Contents, inputs)
 		}
 	}
 }
