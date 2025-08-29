@@ -234,20 +234,19 @@ func makeHotkeysWindow() {
 	}
 	hotkeysWin = eui.NewWindow()
 	hotkeysWin.Title = "Hotkeys"
-	hotkeysWin.Size = eui.Point{X: 520, Y: 300}
+	hotkeysWin.Size = eui.Point{X: 640, Y: 300}
 	hotkeysWin.Closable = true
 	hotkeysWin.Movable = true
 	hotkeysWin.Resizable = true
 	hotkeysWin.NoScroll = true
 	hotkeysWin.SetZone(eui.HZoneCenter, eui.VZoneMiddleTop)
 
-	flow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL, Fixed: true}
-	hotkeysWin.AddItem(flow)
+	root := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL, Fixed: true}
+	hotkeysWin.AddItem(root)
 
-	help := &eui.ItemData{ItemType: eui.ITEM_TEXT, Text: "@clicked -> last clicked, @hovered -> last hovered", Fixed: true}
-	help.Size = eui.Point{X: hotkeysWin.Size.X, Y: 20}
-	help.FontSize = 10
-	flow.AddItem(help)
+	flow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL, Fixed: true}
+	flow.Size = eui.Point{X: 520, Y: hotkeysWin.Size.Y}
+	root.AddItem(flow)
 
 	btnRow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL, Fixed: true}
 	addBtn, addEvents := eui.NewButton()
@@ -260,12 +259,21 @@ func makeHotkeysWindow() {
 		}
 	}
 	btnRow.AddItem(addBtn)
-	btnRow.Size = eui.Point{X: hotkeysWin.Size.X, Y: addBtn.Size.Y}
+	btnRow.Size = eui.Point{X: flow.Size.X, Y: addBtn.Size.Y}
 	flow.AddItem(btnRow)
 
 	hotkeysList = &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL, Scrollable: true, Fixed: true}
-	hotkeysList.Size = eui.Point{X: hotkeysWin.Size.X, Y: hotkeysWin.Size.Y - btnRow.Size.Y}
+	hotkeysList.Size = eui.Point{X: flow.Size.X, Y: flow.Size.Y - btnRow.Size.Y}
 	flow.AddItem(hotkeysList)
+
+	infoFlow := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL, Fixed: true}
+	infoFlow.Size = eui.Point{X: hotkeysWin.Size.X - flow.Size.X, Y: hotkeysWin.Size.Y}
+	infoText := "@clicked -> last clicked\n@hovered -> last hovered\n@selected.player -> selected player\n@selected.item -> selected item\n@equipped.left -> left hand item\n@equipped.belt -> belt item\n@equipped.<slot> -> item in wear slot"
+	help := &eui.ItemData{ItemType: eui.ITEM_TEXT, Text: infoText, Fixed: true}
+	help.Size = infoFlow.Size
+	help.FontSize = 10
+	infoFlow.AddItem(help)
+	root.AddItem(infoFlow)
 
 	hotkeysWin.AddWindow(false)
 	refreshHotkeysList()
