@@ -11,12 +11,16 @@ func TestMacrosWindowListsMacros(t *testing.T) {
 	macroMu = sync.RWMutex{}
 	macroMaps = map[string]map[string]string{}
 	pluginDisplayNames = map[string]string{}
+	pluginCategories = map[string]string{}
+	pluginSubCategories = map[string]string{}
 	macrosWin = nil
 	macrosList = nil
 	t.Cleanup(func() {
 		macroMu = sync.RWMutex{}
 		macroMaps = map[string]map[string]string{}
 		pluginDisplayNames = map[string]string{}
+		pluginCategories = map[string]string{}
+		pluginSubCategories = map[string]string{}
 		macrosWin = nil
 		macrosList = nil
 	})
@@ -47,12 +51,16 @@ func TestPluginRemoveMacrosRefresh(t *testing.T) {
 	macroMu = sync.RWMutex{}
 	macroMaps = map[string]map[string]string{}
 	pluginDisplayNames = map[string]string{}
+	pluginCategories = map[string]string{}
+	pluginSubCategories = map[string]string{}
 	macrosWin = nil
 	macrosList = nil
 	t.Cleanup(func() {
 		macroMu = sync.RWMutex{}
 		macroMaps = map[string]map[string]string{}
 		pluginDisplayNames = map[string]string{}
+		pluginCategories = map[string]string{}
+		pluginSubCategories = map[string]string{}
 		macrosWin = nil
 		macrosList = nil
 	})

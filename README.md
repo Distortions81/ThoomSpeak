@@ -80,7 +80,11 @@ go run . -pcap reference-client.pcapng
 
 goThoom can load optional plugins at startup using [yaegi](https://github.com/traefik/yaegi), a Go interpreter.
 Place `.go` files inside the `plugins/` directory. Each plugin is evaluated and may
-define an `Init()` function that runs after client initialization.
+define an `Init()` function that runs after client initialization. Every plugin
+must declare a unique `PluginName` string and can classify itself with optional
+`PluginCategory` and `PluginSubCategory` fields. Suggested categories include
+"Quality Of Life", "Profession", "Fun", and "Equipment". For example,
+`PluginCategory = "Profession"` with `PluginSubCategory = "Healer"`.
 
 Plugins only see a small, approved API exposed through the `gt` package:
 

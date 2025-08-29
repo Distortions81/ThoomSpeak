@@ -115,6 +115,8 @@ func TestPluginRemoveMacrosOnDisable(t *testing.T) {
 	pluginMu = sync.RWMutex{}
 	pluginDisabled = map[string]bool{}
 	pluginDisplayNames = map[string]string{}
+	pluginCategories = map[string]string{}
+	pluginSubCategories = map[string]string{}
 	pluginTerminators = map[string]func(){}
 	pluginCommandOwners = map[string]string{}
 	pluginCommands = map[string]PluginCommandHandler{}
