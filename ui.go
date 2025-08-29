@@ -438,9 +438,14 @@ func refreshPluginsWindow() {
 		scope := pluginEnabledFor[e.owner]
 		cat := pluginCategories[e.owner]
 		sub := pluginSubCategories[e.owner]
+		invalid := pluginInvalid[e.owner]
 		pluginMu.RUnlock()
 		charCB.Checked = playerName != "" && scope == playerName
 		allCB.Checked = scope == "all"
+		if invalid {
+			charCB.Disabled = true
+			allCB.Disabled = true
+		}
 		label := e.name
 		if cat != "" {
 			label += " [" + cat
@@ -466,13 +471,17 @@ func refreshPluginsWindow() {
 		nameTxt.Text = label
 		nameTxt.FontSize = 12
 		nameTxt.Size = pluginSize
+		if invalid {
+			nameTxt.Disabled = true
+		}
 		row.AddItem(nameTxt)
 
 		reloadBtn, rh := eui.NewButton()
 		reloadBtn.Text = "Reload"
 		reloadBtn.Size = eui.Point{X: 55, Y: 24}
+		reloadBtn.Disabled = invalid
 		rh.Handle = func(ev eui.UIEvent) {
-			if ev.Type == eui.EventClick {
+			if ev.Type == eui.EventClick && !invalid {
 				pluginMu.RLock()
 				enabled := !pluginDisabled[owner]
 				pluginMu.RUnlock()

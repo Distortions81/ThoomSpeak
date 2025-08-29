@@ -322,6 +322,7 @@ var (
 	pluginAuthors         = map[string]string{}
 	pluginCategories      = map[string]string{}
 	pluginSubCategories   = map[string]string{}
+	pluginInvalid         = map[string]bool{}
 	pluginDisabled        = map[string]bool{}
 	pluginEnabledFor      = map[string]string{}
 	pluginPaths           = map[string]string{}
@@ -583,7 +584,14 @@ func applyEnabledPlugins() {
 		pluginMu.RLock()
 		scope := pluginEnabledFor[o]
 		disabled := pluginDisabled[o]
+		invalid := pluginInvalid[o]
 		pluginMu.RUnlock()
+		if invalid {
+			pluginMu.Lock()
+			pluginDisabled[o] = true
+			pluginMu.Unlock()
+			continue
+		}
 		shouldEnable := scope == "all" || (playerName != "" && scope == playerName)
 		if disabled && shouldEnable {
 			enablePlugin(o)
@@ -897,6 +905,7 @@ func rescanPlugins() {
 	newPaths := map[string]string{}
 	newCategories := map[string]string{}
 	newSubCategories := map[string]string{}
+	newInvalid := map[string]bool{}
 	seenNames := map[string]bool{}
 	for _, dir := range pluginDirs {
 		entries, err := os.ReadDir(dir)
@@ -914,10 +923,11 @@ func rescanPlugins() {
 				continue
 			}
 			match := nameRE.FindSubmatch(src)
-			if len(match) < 2 {
-				continue
+			base := strings.TrimSuffix(e.Name(), ".go")
+			name := base
+			if len(match) >= 2 {
+				name = strings.TrimSpace(string(match[1]))
 			}
-			name := strings.TrimSpace(string(match[1]))
 			catMatch := categoryRE.FindSubmatch(src)
 			category := ""
 			if len(catMatch) >= 2 {
@@ -928,25 +938,36 @@ func rescanPlugins() {
 			if len(subMatch) >= 2 {
 				subCategory = strings.TrimSpace(string(subMatch[1]))
 			}
+			author := ""
+			if match := authorRE.FindSubmatch(src); len(match) >= 2 {
+				author = strings.TrimSpace(string(match[1]))
+			}
+			invalid := name == "" || author == "" || category == "" || subCategory == ""
 			if name == "" {
-				continue
+				consoleMessage("[plugin] missing name: " + path)
+				name = base
+			}
+			if author == "" {
+				consoleMessage("[plugin] missing author: " + path)
+			}
+			if category == "" {
+				consoleMessage("[plugin] missing category: " + path)
+			}
+			if subCategory == "" {
+				consoleMessage("[plugin] missing sub-category: " + path)
 			}
 			lower := strings.ToLower(name)
 			if seenNames[lower] {
 				continue
 			}
 			seenNames[lower] = true
-			base := strings.TrimSuffix(e.Name(), ".go")
 			owner := name + "_" + base
-			author := ""
-			if match := authorRE.FindSubmatch(src); len(match) >= 2 {
-				author = strings.TrimSpace(string(match[1]))
-			}
 			newDisplay[owner] = name
 			newPaths[owner] = path
 			newAuthors[owner] = author
 			newCategories[owner] = category
 			newSubCategories[owner] = subCategory
+			newInvalid[owner] = invalid
 		}
 	}
 
@@ -974,8 +995,13 @@ func rescanPlugins() {
 	pluginAuthors = newAuthors
 	pluginCategories = newCategories
 	pluginSubCategories = newSubCategories
+	pluginInvalid = newInvalid
 	pluginDisabled = make(map[string]bool, len(newDisplay))
 	for o := range newDisplay {
+		if newInvalid[o] {
+			pluginDisabled[o] = true
+			continue
+		}
 		if en, ok := pluginEnabledFor[o]; ok {
 			newEnabled[o] = en
 		} else if gs.EnabledPlugins != nil {
@@ -1041,12 +1067,11 @@ func loadPlugins() {
 				continue
 			}
 			match := nameRE.FindSubmatch(src)
-			if len(match) < 2 {
-				log.Printf("plugin %s missing PluginName", path)
-				consoleMessage("[plugin] missing name: " + path)
-				continue
+			base := strings.TrimSuffix(e.Name(), ".go")
+			name := base
+			if len(match) >= 2 {
+				name = strings.TrimSpace(string(match[1]))
 			}
-			name := strings.TrimSpace(string(match[1]))
 			catMatch := categoryRE.FindSubmatch(src)
 			category := ""
 			if len(catMatch) >= 2 {
@@ -1057,10 +1082,23 @@ func loadPlugins() {
 			if len(subMatch) >= 2 {
 				subCategory = strings.TrimSpace(string(subMatch[1]))
 			}
+			author := ""
+			if match := authorRE.FindSubmatch(src); len(match) >= 2 {
+				author = strings.TrimSpace(string(match[1]))
+			}
+			invalid := len(match) < 2 || name == "" || author == "" || category == "" || subCategory == ""
 			if name == "" {
-				log.Printf("plugin %s empty PluginName", path)
-				consoleMessage("[plugin] empty name: " + path)
-				continue
+				consoleMessage("[plugin] missing name: " + path)
+				name = base
+			}
+			if author == "" {
+				consoleMessage("[plugin] missing author: " + path)
+			}
+			if category == "" {
+				consoleMessage("[plugin] missing category: " + path)
+			}
+			if subCategory == "" {
+				consoleMessage("[plugin] missing sub-category: " + path)
 			}
 			lower := strings.ToLower(name)
 			if pluginNames[lower] {
@@ -1069,20 +1107,15 @@ func loadPlugins() {
 				continue
 			}
 			pluginNames[lower] = true
-			base := strings.TrimSuffix(e.Name(), ".go")
 			owner := name + "_" + base
 			en := ""
-			author := ""
-			if match := authorRE.FindSubmatch(src); len(match) >= 2 {
-				author = strings.TrimSpace(string(match[1]))
-			}
 			disabled := true
 			if gs.EnabledPlugins != nil {
 				if val, ok := gs.EnabledPlugins[owner]; ok {
 					en = val
 				}
 			}
-			disabled = !(en == "all" || (playerName != "" && en == playerName))
+			disabled = invalid || !(en == "all" || (playerName != "" && en == playerName))
 			pluginMu.Lock()
 			pluginDisplayNames[owner] = name
 			pluginCategories[owner] = category
@@ -1090,6 +1123,7 @@ func loadPlugins() {
 			pluginPaths[owner] = path
 			pluginEnabledFor[owner] = en
 			pluginAuthors[owner] = author
+			pluginInvalid[owner] = invalid
 			pluginDisabled[owner] = disabled
 			pluginMu.Unlock()
 			if !disabled {

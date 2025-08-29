@@ -61,6 +61,7 @@ func TestDisablePluginRefreshesTriggers(t *testing.T) {
 	macroMaps = map[string]map[string]string{}
 	pluginMu = sync.RWMutex{}
 	pluginDisabled = map[string]bool{}
+	pluginInvalid = map[string]bool{}
 	pluginEnabledFor = map[string]string{}
 	pluginTerminators = map[string]func(){}
 	t.Cleanup(func() {
@@ -75,6 +76,7 @@ func TestDisablePluginRefreshesTriggers(t *testing.T) {
 		macroMaps = map[string]map[string]string{}
 		pluginMu = sync.RWMutex{}
 		pluginDisabled = map[string]bool{}
+		pluginInvalid = map[string]bool{}
 		pluginEnabledFor = map[string]string{}
 		pluginTerminators = map[string]func(){}
 	})
