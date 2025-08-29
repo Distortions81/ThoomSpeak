@@ -6,6 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"golang.org/x/image/font/gofont/goregular"
+	"gothoom/eui"
 )
 
 // Test that closing the hotkey editor clears the reference and allows reopening.
@@ -92,6 +95,26 @@ func TestHotkeyEmptyCommandSaved(t *testing.T) {
 	if hotkeyEditWin != nil {
 		hotkeyEditWin.Close()
 	}
+}
+
+// Test that attempting to bind a duplicate combo results in an error and no save.
+func TestHotkeyDuplicateComboError(t *testing.T) {
+	if err := eui.EnsureFontSource(goregular.TTF); err != nil {
+		t.Fatalf("ensure font: %v", err)
+	}
+	hotkeys = []Hotkey{{Combo: "Ctrl-A"}}
+
+	openHotkeyEditor(-1)
+	hotkeyComboText.Text = "Ctrl-A"
+	finishHotkeyEdit(true)
+
+	if len(hotkeys) != 1 {
+		t.Fatalf("duplicate hotkey saved")
+	}
+	if hotkeyEditWin == nil {
+		t.Fatalf("editor closed despite duplicate combo")
+	}
+	hotkeyEditWin.Close()
 }
 
 // Test that editing a hotkey with no name still saves changes.

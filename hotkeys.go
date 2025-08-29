@@ -628,6 +628,26 @@ func finishHotkeyEdit(save bool) {
 			}
 		}
 		if combo != "" {
+			hotkeysMu.RLock()
+			for i, hk := range hotkeys {
+				if i == editingHotkey {
+					continue
+				}
+				if strings.EqualFold(hk.Combo, combo) {
+					hotkeysMu.RUnlock()
+					name := hk.Name
+					if name == "" {
+						name = hk.Plugin
+					}
+					if name == "" {
+						name = "another hotkey"
+					}
+					showPopup("Error", fmt.Sprintf("%s already bound to %s", combo, name), []popupButton{{Text: "OK"}})
+					return
+				}
+			}
+			hotkeysMu.RUnlock()
+
 			hk := Hotkey{Name: name, Combo: combo, Commands: cmds}
 			hotkeysMu.Lock()
 			if editingHotkey >= 0 && editingHotkey < len(hotkeys) {
