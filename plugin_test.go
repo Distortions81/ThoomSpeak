@@ -39,6 +39,7 @@ func TestPluginRegisterAndDisableCommand(t *testing.T) {
 	pluginCommands = map[string]PluginCommandHandler{}
 	pluginCommandOwners = map[string]string{}
 	pluginDisabled = map[string]bool{}
+	pluginInvalid = map[string]bool{}
 	pluginEnabledFor = map[string]string{}
 	pluginSendHistory = map[string][]time.Time{}
 	consoleLog = messageLog{max: maxMessages}
@@ -118,6 +119,7 @@ func TestPluginTriggers(t *testing.T) {
 	pluginConsoleTriggers = map[string][]triggerHandler{}
 	triggerHandlersMu = sync.RWMutex{}
 	pluginDisabled = map[string]bool{}
+	pluginInvalid = map[string]bool{}
 	pluginEnabledFor = map[string]string{}
 	triggered := false
 	var wg sync.WaitGroup
@@ -142,6 +144,7 @@ func TestPluginRemoveTriggersOnDisable(t *testing.T) {
 	inputHandlersMu = sync.RWMutex{}
 	pluginMu = sync.RWMutex{}
 	pluginDisabled = map[string]bool{}
+	pluginInvalid = map[string]bool{}
 	pluginEnabledFor = map[string]string{}
 	pluginDisplayNames = map[string]string{}
 	pluginCategories = map[string]string{}
@@ -179,6 +182,7 @@ func TestDisablePluginRemovesHandlers(t *testing.T) {
 	triggerHandlersMu = sync.RWMutex{}
 	pluginMu = sync.RWMutex{}
 	pluginDisabled = map[string]bool{}
+	pluginInvalid = map[string]bool{}
 	pluginEnabledFor = map[string]string{}
 	pluginDisplayNames = map[string]string{"plug": "Plug"}
 	pluginTerminators = map[string]func(){}

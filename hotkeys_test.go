@@ -391,7 +391,12 @@ func TestPluginRemoveHotkeyClearsState(t *testing.T) {
 
 	origDisabled := pluginDisabled
 	pluginDisabled = map[string]bool{}
-	t.Cleanup(func() { pluginDisabled = origDisabled })
+	origInvalid := pluginInvalid
+	pluginInvalid = map[string]bool{}
+	t.Cleanup(func() {
+		pluginDisabled = origDisabled
+		pluginInvalid = origInvalid
+	})
 	origEnabledPlugins := pluginEnabledFor
 	pluginEnabledFor = map[string]string{}
 	t.Cleanup(func() { pluginEnabledFor = origEnabledPlugins })
