@@ -402,7 +402,7 @@ func refreshPluginsWindow() {
 		return
 	}
 	checkSize := eui.Point{X: 32, Y: 32}
-	pluginSize := eui.Point{X: 512, Y: 32}
+	pluginSize := eui.Point{X: 256, Y: 32}
 
 	pluginsList.Contents = pluginsList.Contents[:0]
 	legend := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
