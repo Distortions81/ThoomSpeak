@@ -617,6 +617,10 @@ func applyEnabledPlugins() {
 
 func setPluginEnabled(owner string, char, all bool) {
 	pluginMu.Lock()
+	if pluginInvalid[owner] {
+		pluginMu.Unlock()
+		return
+	}
 	if all {
 		pluginEnabledFor[owner] = "all"
 	} else if char && playerName != "" {
@@ -952,31 +956,36 @@ func rescanPlugins() {
 			if match := authorRE.FindSubmatch(src); len(match) >= 2 {
 				author = strings.TrimSpace(string(match[1]))
 			}
-			invalid := invalidPluginValue(name) || invalidPluginValue(author) || invalidPluginValue(category) || subCategory == ""
-			if invalidPluginValue(name) {
-				if name == "" {
+
+			invalid := false
+			if len(match) < 2 || name == "" || invalidPluginValue(name) {
+				if len(match) < 2 || name == "" {
 					consoleMessage("[plugin] missing name: " + path)
 					name = base
 				} else {
 					consoleMessage("[plugin] invalid name: " + path)
 				}
+				invalid = true
 			}
-			if invalidPluginValue(author) {
+			if author == "" || invalidPluginValue(author) {
 				if author == "" {
 					consoleMessage("[plugin] missing author: " + path)
 				} else {
 					consoleMessage("[plugin] invalid author: " + path)
 				}
+				invalid = true
 			}
-			if invalidPluginValue(category) {
+			if category == "" || invalidPluginValue(category) {
 				if category == "" {
 					consoleMessage("[plugin] missing category: " + path)
 				} else {
 					consoleMessage("[plugin] invalid category: " + path)
 				}
+				invalid = true
 			}
 			if subCategory == "" {
 				consoleMessage("[plugin] missing sub-category: " + path)
+				invalid = true
 			}
 			lower := strings.ToLower(name)
 			if seenNames[lower] {
@@ -1108,25 +1117,35 @@ func loadPlugins() {
 			if match := authorRE.FindSubmatch(src); len(match) >= 2 {
 				author = strings.TrimSpace(string(match[1]))
 			}
-			invalid := len(match) < 2 || invalidPluginValue(name) || invalidPluginValue(author) || invalidPluginValue(category) || subCategory == ""
-			if len(match) < 2 || name == "" {
-				consoleMessage("[plugin] missing name: " + path)
-				name = base
-			} else if invalidPluginValue(name) {
-				consoleMessage("[plugin] invalid name: " + path)
+			invalid := false
+			if len(match) < 2 || name == "" || invalidPluginValue(name) {
+				if len(match) < 2 || name == "" {
+					consoleMessage("[plugin] missing name: " + path)
+					name = base
+				} else {
+					consoleMessage("[plugin] invalid name: " + path)
+				}
+				invalid = true
 			}
-			if author == "" {
-				consoleMessage("[plugin] missing author: " + path)
-			} else if invalidPluginValue(author) {
-				consoleMessage("[plugin] invalid author: " + path)
+			if author == "" || invalidPluginValue(author) {
+				if author == "" {
+					consoleMessage("[plugin] missing author: " + path)
+				} else {
+					consoleMessage("[plugin] invalid author: " + path)
+				}
+				invalid = true
 			}
-			if category == "" {
-				consoleMessage("[plugin] missing category: " + path)
-			} else if invalidPluginValue(category) {
-				consoleMessage("[plugin] invalid category: " + path)
+			if category == "" || invalidPluginValue(category) {
+				if category == "" {
+					consoleMessage("[plugin] missing category: " + path)
+				} else {
+					consoleMessage("[plugin] invalid category: " + path)
+				}
+				invalid = true
 			}
 			if subCategory == "" {
 				consoleMessage("[plugin] missing sub-category: " + path)
+				invalid = true
 			}
 			lower := strings.ToLower(name)
 			if pluginNames[lower] {

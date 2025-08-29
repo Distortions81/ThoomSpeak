@@ -441,11 +441,9 @@ func refreshPluginsWindow() {
 		invalid := pluginInvalid[e.owner]
 		pluginMu.RUnlock()
 		charCB.Checked = playerName != "" && scope == playerName
+		charCB.Disabled = invalid
 		allCB.Checked = scope == "all"
-		if invalid {
-			charCB.Disabled = true
-			allCB.Disabled = true
-		}
+		allCB.Disabled = invalid
 		label := e.name
 		if cat != "" {
 			label += " [" + cat
@@ -455,14 +453,16 @@ func refreshPluginsWindow() {
 			label += "]"
 		}
 		owner := e.owner
-		charEvents.Handle = func(ev eui.UIEvent) {
-			if ev.Type == eui.EventCheckboxChanged {
-				setPluginEnabled(owner, ev.Checked, allCB.Checked)
+		if !invalid {
+			charEvents.Handle = func(ev eui.UIEvent) {
+				if ev.Type == eui.EventCheckboxChanged {
+					setPluginEnabled(owner, ev.Checked, allCB.Checked)
+				}
 			}
-		}
-		allEvents.Handle = func(ev eui.UIEvent) {
-			if ev.Type == eui.EventCheckboxChanged {
-				setPluginEnabled(owner, charCB.Checked, ev.Checked)
+			allEvents.Handle = func(ev eui.UIEvent) {
+				if ev.Type == eui.EventCheckboxChanged {
+					setPluginEnabled(owner, charCB.Checked, ev.Checked)
+				}
 			}
 		}
 		row.AddItem(charCB)
@@ -471,9 +471,7 @@ func refreshPluginsWindow() {
 		nameTxt.Text = label
 		nameTxt.FontSize = 12
 		nameTxt.Size = pluginSize
-		if invalid {
-			nameTxt.Disabled = true
-		}
+		nameTxt.Disabled = invalid
 		row.AddItem(nameTxt)
 
 		if !invalid {
