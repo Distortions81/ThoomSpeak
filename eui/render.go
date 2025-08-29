@@ -330,7 +330,24 @@ func (win *windowData) drawWinTitle(screen *ebiten.Image) {
 			textWidth = 0
 		}
 
-		//Close, Maximize, and Pin icons
+		if win.searchOpen {
+			sb := win.searchBoxRect()
+			drawRoundRect(screen, &roundRect{Size: point{X: sb.X1 - sb.X0, Y: sb.Y1 - sb.Y0}, Position: point{X: sb.X0, Y: sb.Y0}, Fillet: 0, Filled: true, Color: win.Theme.Window.BGColor})
+			drawRoundRect(screen, &roundRect{Size: point{X: sb.X1 - sb.X0, Y: sb.Y1 - sb.Y0}, Position: point{X: sb.X0, Y: sb.Y0}, Fillet: 0, Filled: false, Border: uiScale, Color: win.Theme.Window.TitleColor})
+			textSize := win.GetTitleSize() / 2
+			face := textFace(textSize)
+			loo := text.LayoutOptions{LineSpacing: 0, PrimaryAlign: text.AlignStart, SecondaryAlign: text.AlignCenter}
+			tdop := ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
+			tdop.GeoM.Translate(float64(sb.X0+textSize/2), float64(sb.Y0+(sb.Y1-sb.Y0)/2))
+			top := &text.DrawOptions{DrawImageOptions: tdop, LayoutOptions: loo}
+			top.ColorScale.ScaleWithColor(win.Theme.Window.TitleColor)
+			text.Draw(screen, win.SearchText, face, top)
+			cr := win.searchCloseRect()
+			strokeLine(screen, cr.X0+uiScale, cr.Y0+uiScale, cr.X1-uiScale, cr.Y1-uiScale, uiScale, win.Theme.Window.TitleColor, true)
+			strokeLine(screen, cr.X0+uiScale, cr.Y1-uiScale, cr.X1-uiScale, cr.Y0+uiScale, uiScale, win.Theme.Window.TitleColor, true)
+		}
+
+		//Close, Maximize, Search, and Pin icons
 		var buttonsWidth float32 = 0
 		if win.Closable {
 			var xpad float32 = (win.GetTitleSize()) / 3.0
@@ -390,6 +407,22 @@ func (win *windowData) drawWinTitle(screen *ebiten.Image) {
 				barH = 1
 			}
 			drawFilledRect(screen, x+uiScale, y+uiScale, w-uiScale*2, barH, color.ToRGBA(), true)
+			buttonsWidth += (win.GetTitleSize())
+		}
+
+		// Search icon
+		if win.Searchable {
+			sr := win.searchRect()
+			color := win.Theme.Window.TitleColor
+			if win.HoverSearch {
+				color = win.Theme.Window.HoverTitleColor
+				win.HoverSearch = false
+			}
+			cx := sr.X0 + (sr.X1-sr.X0)/2
+			cy := sr.Y0 + (sr.Y1-sr.Y0)/2
+			r := (sr.X1 - sr.X0) / 4
+			vector.StrokeCircle(screen, cx, cy, r, uiScale, color.ToRGBA(), true)
+			strokeLine(screen, cx+r/2, cy+r/2, sr.X1-uiScale*2, sr.Y1-uiScale*2, uiScale, color, true)
 			buttonsWidth += (win.GetTitleSize())
 		}
 

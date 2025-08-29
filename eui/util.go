@@ -3,6 +3,7 @@ package eui
 import (
 	"image/color"
 	"math"
+	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
@@ -188,6 +189,10 @@ func (win *windowData) pinRect() rect {
 		x1 -= size
 		x0 -= size
 	}
+	if win.Searchable {
+		x1 -= size
+		x0 -= size
+	}
 	return rect{
 		X0: x0,
 		Y0: pos.Y + xpad,
@@ -214,6 +219,64 @@ func (win *windowData) maxRect() rect {
 		X1: x1,
 		Y1: pos.Y + size - xpad,
 	}
+}
+
+func (win *windowData) searchRect() rect {
+	if win.TitleHeight <= 0 || !win.Searchable {
+		return rect{}
+	}
+
+	var xpad float32 = win.Border * win.scale()
+	size := win.GetTitleSize()
+	pos := win.GetPos()
+	x1 := pos.X + win.GetSize().X - xpad
+	if win.Closable {
+		x1 -= size
+	}
+	if win.Maximizable {
+		x1 -= size
+	}
+	x0 := x1 - size
+	return rect{
+		X0: x0,
+		Y0: pos.Y + xpad,
+		X1: x1,
+		Y1: pos.Y + size - xpad,
+	}
+}
+
+func (win *windowData) searchBoxRect() rect {
+	if win.TitleHeight <= 0 || !win.searchOpen {
+		return rect{}
+	}
+	var xpad float32 = win.Border * win.scale()
+	size := win.GetTitleSize()
+	textSize := size / 2
+	face := textFace(textSize)
+	w, _ := text.Measure(win.SearchText, face, 0)
+	maxW, _ := text.Measure(strings.Repeat("W", 64), face, 0)
+	width := float32(w) + size
+	if float64(width) > maxW+float64(size) {
+		width = float32(maxW) + size
+	}
+	if width < size*2 {
+		width = size * 2
+	}
+	sr := win.searchRect()
+	x1 := sr.X0 - xpad
+	x0 := x1 - width
+	y0 := win.getPosition().Y + xpad
+	y1 := y0 + size - xpad*2
+	return rect{X0: x0, Y0: y0, X1: x1, Y1: y1}
+}
+
+func (win *windowData) searchCloseRect() rect {
+	sb := win.searchBoxRect()
+	if sb.X0 == 0 && sb.X1 == 0 {
+		return rect{}
+	}
+	h := sb.Y1 - sb.Y0
+	return rect{X0: sb.X1 - h, Y0: sb.Y0, X1: sb.X1, Y1: sb.Y1}
 }
 
 func (win *windowData) dragbarRect() rect {
@@ -551,6 +614,11 @@ func (win *windowData) getTitlebarPart(mpos point) dragType {
 		return PART_NONE
 	}
 	if win.getTitleRect().containsPoint(mpos) {
+		if win.searchOpen {
+			if win.searchCloseRect().containsPoint(mpos) || win.searchBoxRect().containsPoint(mpos) {
+				return PART_NONE
+			}
+		}
 		if win.Closable && win.xRect().containsPoint(mpos) {
 			win.HoverClose = true
 			return PART_CLOSE
@@ -558,6 +626,10 @@ func (win *windowData) getTitlebarPart(mpos point) dragType {
 		if win.Maximizable && win.maxRect().containsPoint(mpos) {
 			win.HoverMax = true
 			return PART_MAXIMIZE
+		}
+		if win.Searchable && win.searchRect().containsPoint(mpos) {
+			win.HoverSearch = true
+			return PART_SEARCH
 		}
 		if win.pinRect().containsPoint(mpos) {
 			win.HoverPin = true

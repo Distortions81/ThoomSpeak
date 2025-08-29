@@ -35,9 +35,9 @@ type windowData struct {
 	Outlined  bool
 
 	Open, Hovered, Flow,
-	Closable, Movable, Resizable, Maximizable,
-	HoverClose, HoverDragbar, HoverPin, HoverMax,
-	AutoSize bool
+	Closable, Movable, Resizable, Maximizable, Searchable,
+	HoverClose, HoverDragbar, HoverPin, HoverMax, HoverSearch,
+	searchOpen, AutoSize bool
 
 	// Scroll position and behavior
 	Scroll          point
@@ -75,6 +75,9 @@ type windowData struct {
 	// RenderCount tracks how often the window has been drawn.
 	RenderCount int
 
+	// SearchText holds the current text in the window's search box.
+	SearchText string
+
 	// OnClose is an optional callback invoked when the window is closed,
 	// either by user action or programmatically. The callback runs before the
 	// window is removed from the active list.
@@ -87,6 +90,10 @@ type windowData struct {
 	// OnMaximize is an optional callback invoked when the user clicks the
 	// titlebar maximize button. If unset, a default Maximize() is performed.
 	OnMaximize func()
+
+	// OnSearch is an optional callback invoked on every change of the search
+	// text when the search box is active.
+	OnSearch func(string)
 }
 
 type itemData struct {
@@ -250,6 +257,7 @@ const (
 	PART_CLOSE
 	PART_PIN
 	PART_MAXIMIZE
+	PART_SEARCH
 
 	PART_TOP
 	PART_RIGHT
