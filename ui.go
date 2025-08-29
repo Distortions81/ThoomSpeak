@@ -461,6 +461,13 @@ func refreshPluginsWindow() {
 			label += "]"
 		}
 		owner := e.owner
+		click := func() { selectPlugin(owner) }
+		if selectedPlugin == owner {
+			row.Filled = true
+			if pluginsWin != nil && pluginsWin.Theme != nil {
+				row.Color = pluginsWin.Theme.Button.SelectedColor
+			}
+		}
 		if !invalid {
 			charEvents.Handle = func(ev eui.UIEvent) {
 				if ev.Type == eui.EventCheckboxChanged {
@@ -475,20 +482,13 @@ func refreshPluginsWindow() {
 		}
 		row.AddItem(charCB)
 		row.AddItem(allCB)
-		nameTxt, nh := eui.NewText()
+		nameTxt, _ := eui.NewText()
 		nameTxt.Text = label
 		nameTxt.FontSize = 12
 		nameTxt.Size = pluginSize
 		nameTxt.Disabled = invalid
-		if selectedPlugin == owner {
-			nameTxt.Color = eui.ColorYellow
-		}
-		nh.Handle = func(ev eui.UIEvent) {
-			if ev.Type == eui.EventClick {
-				selectedPlugin = owner
-				refreshPluginsWindow()
-			}
-		}
+		nameTxt.Action = click
+		row.Action = click
 		row.AddItem(nameTxt)
 
 		if !invalid {
@@ -515,6 +515,14 @@ func refreshPluginsWindow() {
 		refreshPluginDetails()
 		pluginsWin.Refresh()
 	}
+}
+
+func selectPlugin(owner string) {
+	if selectedPlugin == owner {
+		return
+	}
+	selectedPlugin = owner
+	refreshPluginsWindow()
 }
 
 func refreshPluginDetails() {
