@@ -32,21 +32,14 @@ func buildDrawData(name string, bubbleType int, text string) []byte {
 	return buf
 }
 
-func resetDrawState() {
+func resetTestState() {
+	resetDrawState()
 	players = make(map[string]*Player)
 	thinkMessages = nil
-	stateMu.Lock()
-	state = drawState{
-		descriptors: make(map[uint8]frameDescriptor),
-		mobiles:     make(map[uint8]frameMobile),
-		prevMobiles: make(map[uint8]frameMobile),
-		prevDescs:   make(map[uint8]frameDescriptor),
-	}
-	stateMu.Unlock()
 }
 
 func TestBubbleDroppedForBlockedPlayer(t *testing.T) {
-	resetDrawState()
+	resetTestState()
 	players["Bob"] = &Player{Name: "Bob", Blocked: true}
 	data := buildDrawData("Bob", kBubbleNormal, "hello")
 	if err := parseDrawState(data, false); err != nil {
@@ -61,7 +54,7 @@ func TestBubbleDroppedForBlockedPlayer(t *testing.T) {
 }
 
 func TestThinkMessageDroppedForIgnoredPlayer(t *testing.T) {
-	resetDrawState()
+	resetTestState()
 	players["Bob"] = &Player{Name: "Bob", Ignored: true}
 	data := buildDrawData("Bob", kBubbleThought, "hmm")
 	if err := parseDrawState(data, false); err != nil {
