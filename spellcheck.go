@@ -75,3 +75,13 @@ func findMisspellings(s string) []eui.TextSpan {
 	}
 	return spans
 }
+func suggestCorrections(word string, n int) []string {
+	if sc == nil {
+		return nil
+	}
+	suggestions, err := sc.Suggest(word, n)
+	if err != nil {
+		return nil
+	}
+	return suggestions
+}
