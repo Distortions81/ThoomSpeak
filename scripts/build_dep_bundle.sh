@@ -29,7 +29,7 @@ if command -v apt-get >/dev/null 2>&1; then
   apt-get update -qq
   (
     cd "$APT_DIR"
-    apt-get download "${DEB_PACKAGES[@]}"
+     apt-get -o APT::Sandbox::User=root -qq download "${DEB_PACKAGES[@]}"
   )
 else
   echo "apt-get not found; skipping Debian package download" >&2
@@ -40,7 +40,7 @@ GO_CACHE="$GO_DIR/mod"
 mkdir -p "$GO_CACHE"
 
 echo "Downloading Go modules..."
-GOMODCACHE="$GO_CACHE" go mod download
+GOMODCACHE="$GO_CACHE" /usr/local/go/bin/go mod download
 
 # Create archive.
 
