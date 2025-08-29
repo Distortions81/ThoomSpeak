@@ -86,6 +86,7 @@ var gsdef settings = settings{
 	ChatTTSVolume:        1.0,
 	ChatTTSSpeed:         1.5,
 	ChatTTSVoice:         "en_US-hfc_female-medium",
+	ChatTTSBlocklist:     []string{"koppi", "crius"},
 	Notifications:        true,
 	NotifyFallen:         true,
 	NotifyNotFallen:      true,
@@ -174,6 +175,7 @@ type settings struct {
 	ChatTTSVolume        float64
 	ChatTTSSpeed         float64
 	ChatTTSVoice         string
+	ChatTTSBlocklist     []string
 	Notifications        bool
 	NotifyFallen         bool
 	NotifyNotFallen      bool
@@ -252,6 +254,7 @@ type WindowState struct {
 const settingsFile = "settings.json"
 
 func loadSettings() bool {
+	defer syncTTSBlocklist()
 	path := filepath.Join(dataDirPath, settingsFile)
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -298,6 +301,10 @@ func loadSettings() bool {
 
 	if gs.EnabledPlugins == nil {
 		gs.EnabledPlugins = make(map[string]string)
+	}
+
+	if gs.ChatTTSBlocklist == nil {
+		gs.ChatTTSBlocklist = append([]string(nil), gsdef.ChatTTSBlocklist...)
 	}
 
 	if gs.DenoiseAmount < 0 || gs.DenoiseAmount > 1 {
