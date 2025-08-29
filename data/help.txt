@@ -42,6 +42,7 @@ Other Windows
 - Help: this guide. Open via Windows → Help.
 - Hotkeys: configure built-in and plugin hotkeys.
 - Macros: define text expansions for the input bar.
+- Triggers: view plugin trigger phrases.
 - Mixer: adjust overall, game, music, and TTS volumes; toggle channels.
 - Settings/Quality: tweak visuals (motion smoothing, blending), sound, notifications, and presets.
 

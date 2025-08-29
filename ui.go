@@ -182,6 +182,7 @@ func initUI() {
 	makePlayersWindow()
 	makeMacrosWindow()
 	makeHotkeysWindow()
+	makeTriggersWindow()
 	makePluginsWindow()
 	makeMixerWindow()
 	makeToolbar()
@@ -243,6 +244,7 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 		options := []string{
 			"Hotkeys",
 			"Macros",
+			"Triggers",
 			"Plugins",
 		}
 		eui.ShowContextMenu(options, r.X0, r.Y1, func(i int) {
@@ -253,6 +255,9 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 				refreshMacrosList()
 				macrosWin.ToggleNear(actionsBtn)
 			case 2:
+				refreshTriggersList()
+				triggersWin.ToggleNear(actionsBtn)
+			case 3:
 				refreshPluginsWindow()
 				pluginsWin.ToggleNear(actionsBtn)
 			}
