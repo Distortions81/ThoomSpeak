@@ -83,7 +83,7 @@ func exportsForPlugin(owner string) interp.Exports {
 		m["RegisterTriggers"] = reflect.ValueOf(func(name string, phrases []string, handler func()) {
 			pluginRegisterTriggers(owner, name, phrases, handler)
 		})
-		m["RegisterTrigger"] = reflect.ValueOf(func(phrase string, handler func()) {
+		m["RegisterTrigger"] = reflect.ValueOf(func(name, phrase string, handler func()) {
 			pluginRegisterTriggers(owner, name, []string{phrase}, handler)
 		})
 		m["RegisterConsoleTriggers"] = reflect.ValueOf(func(phrases []string, handler func()) {
