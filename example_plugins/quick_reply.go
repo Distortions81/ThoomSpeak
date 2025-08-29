@@ -11,7 +11,7 @@ var lastThinker string // remembers who last thought to us
 
 // Init watches chat for "thinks to you" messages and adds /r.
 func Init() {
-	gt.RegisterTriggers([]string{"thinks to you"}, func(msg string) {
+	gt.RegisterTriggers("", []string{"thinks to you"}, func(msg string) {
 		words := gt.Words(msg)
 		if len(words) > 0 {
 			lastThinker = words[0]

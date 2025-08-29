@@ -14,7 +14,7 @@ func Init() {
 	nameLower := gt.Lower(gt.PlayerName())
 
 	// Watch for boat offers and respond automatically.
-	gt.RegisterTriggers([]string{"my fine boats"}, func(msg string) {
+	gt.RegisterTriggers("", []string{"my fine boats"}, func(msg string) {
 		lower := gt.Lower(msg)
 		if gt.Includes(lower, nameLower) {
 			gt.RunCommand("/whisper yes")

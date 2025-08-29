@@ -15,7 +15,7 @@ var (
 )
 
 func init() {
-	gt.RegisterTriggers([]string{"Please do something to avoid being disconnected."}, watchChat)
+	gt.RegisterTriggers("", []string{"Please do something to avoid being disconnected."}, watchChat)
 	lastKeepalive = time.Now()
 }
 
