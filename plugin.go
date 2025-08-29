@@ -986,10 +986,6 @@ func scanPlugins(pluginDirs []string, dup func(name, path string)) map[string]pl
 				}
 				invalid = true
 			}
-			if subCategory == "" {
-				consoleMessage("[plugin] missing sub-category: " + path)
-				invalid = true
-			}
 			lower := strings.ToLower(name)
 			if seenNames[lower] {
 				if dup != nil {

@@ -578,6 +578,9 @@ func (item *itemData) drawFlows(win *windowData, parent *itemData, offset point,
 	}
 	subImg := screen.SubImage(drawRect.getRectangle()).(*ebiten.Image)
 	style := item.themeStyle()
+	if item.Disabled {
+		style = disabledStyle(style)
+	}
 
 	if item.Filled || item.Outlined {
 		col := item.Color
@@ -852,6 +855,9 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 	}
 	subImg := screen.SubImage(item.DrawRect.getRectangle()).(*ebiten.Image)
 	style := item.themeStyle()
+	if item.Disabled {
+		style = disabledStyle(style)
+	}
 
 	if item.Label != "" {
 		textSize := (item.FontSize * uiScale) + 2
@@ -1334,7 +1340,7 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 
 		top := &text.DrawOptions{DrawImageOptions: tdop, LayoutOptions: loo}
 		tcolor := style.TextColor
-		if item.ForceTextColor {
+		if item.ForceTextColor && !item.Disabled {
 			tcolor = item.TextColor
 		}
 		top.ColorScale.ScaleWithColor(tcolor)
@@ -1519,6 +1525,9 @@ func drawDropdownOptions(item *itemData, offset point, clip rect, screen *ebiten
 	}
 	subImg := screen.SubImage(visibleRect.getRectangle()).(*ebiten.Image)
 	style := item.themeStyle()
+	if item.Disabled {
+		style = disabledStyle(style)
+	}
 	drawFilledRect(subImg,
 		visibleRect.X0,
 		visibleRect.Y0,
