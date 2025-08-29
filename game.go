@@ -283,6 +283,29 @@ var (
 	stateMu      sync.Mutex
 )
 
+// resetDrawState clears all game state and interpolation data.
+// It also resets timing counters so new sessions start from a clean slate.
+func resetDrawState() {
+	stateMu.Lock()
+	state = drawState{
+		descriptors: make(map[uint8]frameDescriptor),
+		mobiles:     make(map[uint8]frameMobile),
+		prevMobiles: make(map[uint8]frameMobile),
+		prevDescs:   make(map[uint8]frameDescriptor),
+	}
+	stateMu.Unlock()
+
+	resetInterpolation()
+
+	frameCounter = 0
+	serverFPS = 0
+	frameInterval = framems * time.Millisecond
+
+	stateMu.Lock()
+	initialState = cloneDrawState(state)
+	stateMu.Unlock()
+}
+
 // prepareRenderCacheLocked populates render-ready, sorted/partitioned slices.
 // Call with stateMu held and only when a new game state is applied.
 func prepareRenderCacheLocked() {

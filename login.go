@@ -211,6 +211,7 @@ func fetchRandomDemoCharacter(clientVersion int) (string, error) {
 // login connects to the server and performs the login handshake.
 // It runs the network loops and blocks until the context is canceled.
 func login(ctx context.Context, clientVersion int) error {
+	resetDrawState()
 	for {
 		imagesVersion, err := readKeyFileVersion(filepath.Join(dataDirPath, CL_ImagesFile))
 		imagesMissing := false

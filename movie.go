@@ -52,15 +52,7 @@ func parseMovie(path string, clientVersion int) ([]movieFrame, error) {
 	}
 	logDebug("movie version %d.%d headerLen %d", version, revision, headerLen)
 
-	stateMu.Lock()
-	state = drawState{
-		descriptors: make(map[uint8]frameDescriptor),
-		mobiles:     make(map[uint8]frameMobile),
-		prevMobiles: make(map[uint8]frameMobile),
-		prevDescs:   make(map[uint8]frameDescriptor),
-	}
-	initialState = cloneDrawState(state)
-	stateMu.Unlock()
+	resetDrawState()
 
 	pos := headerLen
 	sign := []byte{0xde, 0xad, 0xbe, 0xef}
