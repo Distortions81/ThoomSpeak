@@ -11,8 +11,12 @@ Getting Started
 - Copy or edit any of the example `.go` files to get started.
 - Each plugin must define an `Init()` function. The client discovers and calls
   this function after loading the script.
-- Each plugin must define a unique `PluginName` string. Plugins with duplicate
-  names are ignored.
+ - Each plugin must define a unique `PluginName` string. Plugins with duplicate
+   names are ignored.
+ - Plugins can categorize themselves with `PluginCategory` and
+   `PluginSubCategory` strings. Suggested categories include "Quality Of Life",
+   "Profession", "Fun", and "Equipment". For example,
+   `PluginCategory = "Profession"` and `PluginSubCategory = "Healer"`.
 - Place `.go` files in the `plugins/` directory under your data directory
   (e.g., `data/plugins/`) or next to the `gothoom` program. Both locations are
   scanned.
