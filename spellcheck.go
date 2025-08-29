@@ -25,6 +25,17 @@ var commonWords = []string{
 	"the", "be", "to", "of", "and", "a", "in", "that", "have", "i", "it", "for", "not", "on", "with", "he",
 	"as", "you", "do", "at", "this", "but", "his", "by", "from", "they", "we", "say", "her", "she",
 	"or", "an", "will", "my", "one", "all", "would", "there", "their",
+	// Clan Lord terms and notable NPCs
+	"puddleby", "thoom", "sylvan", "halfling", "dwarf", "fen",
+	"healer", "fighter", "mystic", "ranger", "champion", "bloodmage", "bard",
+	"clan", "clans", "clanning", "exile", "exiles",
+	"moonstone", "sunstone", "fellblade", "greataxe", "gossamer", "kudzu",
+	"darshak", "orga", "wendecka", "noth", "undine", "arachne", "lyfelidae", "yorilla", "t'rool", "scarmis",
+	"lok'groton", "anura", "meshra",
+	"warlock", "berserker", "slasher", "hatchet", "shaman", "scout",
+	"greymyr", "worg", "wraith", "drake", "wyrm", "panther", "cougar", "ferret",
+	"rat", "ratling", "vermine", "noid", "noids", "goblin", "ogre", "orc",
+	"feral", "tenebrion", "melabrion", "qual", "kizmia",
 }
 
 func init() {
