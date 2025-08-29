@@ -20,6 +20,18 @@ Building and testing may not be needed for small changes, maybe just vetting and
    go mod download
    ```
 
+3. To skip network downloads you can use a prebuilt dependency bundle:
+   ```bash
+   curl -LO https://m45sci.xyz/u/dist/goThoom/gothoom_deps.tar.gz
+   tar -xzf gothoom_deps.tar.gz
+   sudo apt-get install -y ./apt/*.deb
+   go env -w GOMODCACHE="$(pwd)/go/mod"
+   ```
+   The archive, produced by `scripts/build_dep_bundle.sh`, contains the
+   required Debian packages under `apt/` and a cached Go module tree under
+   `go/mod`. Extracting it and installing the packages avoids fetching
+   dependencies individually.
+
 For convenience the `scripts` directory contains small helper scripts:
 `scripts/build_gothoom.sh` fetches dependencies, formats the sources and
 compiles the client. `scripts/run_gothoom.sh` launches the program.
