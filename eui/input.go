@@ -437,6 +437,9 @@ func (win *windowData) clickWindowItems(mpos point, click bool) bool {
 }
 
 func (item *itemData) clickFlows(mpos point, click bool) bool {
+	if item.Disabled {
+		return item.DrawRect.containsPoint(mpos)
+	}
 	if part := item.getScrollbarPart(mpos); part != PART_NONE {
 		if click && dragPart == PART_NONE && downWin == item.ParentWindow {
 			dragPart = part
@@ -490,6 +493,9 @@ func (item *itemData) clickFlows(mpos point, click bool) bool {
 }
 
 func (item *itemData) clickItem(mpos point, click bool) bool {
+	if item.Disabled {
+		return item.DrawRect.containsPoint(mpos)
+	}
 	if pointerPressed() && activeItem != nil && activeItem != item {
 		return false
 	}
@@ -783,6 +789,9 @@ func (item *itemData) colorAt(mpos point) (Color, bool) {
 
 func scrollFlow(items []*itemData, mpos point, delta point) bool {
 	for _, it := range items {
+		if it.Disabled {
+			continue
+		}
 		if it.ItemType == ITEM_FLOW {
 			if it.DrawRect.containsPoint(mpos) {
 				req := it.contentBounds()
@@ -846,6 +855,9 @@ func scrollFlow(items []*itemData, mpos point, delta point) bool {
 
 func scrollDropdown(items []*itemData, mpos point, delta point) bool {
 	for _, it := range items {
+		if it.Disabled {
+			continue
+		}
 		if it.ItemType == ITEM_DROPDOWN && it.Open {
 			optionH := it.GetSize().Y
 			r, _ := dropdownOpenRect(it, point{X: it.DrawRect.X0, Y: it.DrawRect.Y0})

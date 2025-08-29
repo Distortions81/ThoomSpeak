@@ -52,6 +52,24 @@ func (item *itemData) themeStyle() *itemData {
 	return nil
 }
 
+// disabledStyle returns a copy of style with all visual colors replaced by the
+// style's DisabledColor. When a widget is disabled, using this helps ensure it
+// renders in a consistent "grayed out" appearance regardless of hover or
+// active states.
+func disabledStyle(style *itemData) *itemData {
+	if style == nil {
+		return nil
+	}
+	ds := *style
+	ds.Color = style.DisabledColor
+	ds.HoverColor = style.DisabledColor
+	ds.ClickColor = style.DisabledColor
+	ds.OutlineColor = style.DisabledColor
+	ds.TextColor = style.DisabledColor
+	ds.SelectedColor = style.DisabledColor
+	return &ds
+}
+
 func (win *windowData) getWinRect() rect {
 	winPos := win.GetPos()
 	return rect{
