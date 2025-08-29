@@ -500,6 +500,7 @@ func disablePlugin(owner, reason string) {
 		}
 	}
 	triggerHandlersMu.Unlock()
+	refreshTriggersList()
 	playerHandlersMu.Lock()
 	for i := 0; i < len(pluginPlayerHandlers); {
 		if pluginPlayerHandlers[i].owner == owner {
@@ -673,6 +674,7 @@ func pluginRegisterTriggers(owner string, phrases []string, fn func(string)) {
 		pluginTriggers[p] = append(pluginTriggers[p], triggerHandler{owner: owner, fn: fn})
 	}
 	triggerHandlersMu.Unlock()
+	refreshTriggersList()
 }
 
 func pluginRegisterPlayerHandler(owner string, fn func(Player)) {
