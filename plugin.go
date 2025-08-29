@@ -338,6 +338,16 @@ var (
 	pluginModCheck        time.Time
 )
 
+const (
+	minPluginMetaLen = 2
+	maxPluginMetaLen = 40
+)
+
+func invalidPluginValue(s string) bool {
+	l := len(s)
+	return l < minPluginMetaLen || l > maxPluginMetaLen
+}
+
 // pluginRegisterCommand lets plugins handle a local slash command like
 // "/example". The name should be without the leading slash and will be
 // matched case-insensitively.
@@ -942,16 +952,28 @@ func rescanPlugins() {
 			if match := authorRE.FindSubmatch(src); len(match) >= 2 {
 				author = strings.TrimSpace(string(match[1]))
 			}
-			invalid := name == "" || author == "" || category == "" || subCategory == ""
-			if name == "" {
-				consoleMessage("[plugin] missing name: " + path)
-				name = base
+			invalid := invalidPluginValue(name) || invalidPluginValue(author) || invalidPluginValue(category) || subCategory == ""
+			if invalidPluginValue(name) {
+				if name == "" {
+					consoleMessage("[plugin] missing name: " + path)
+					name = base
+				} else {
+					consoleMessage("[plugin] invalid name: " + path)
+				}
 			}
-			if author == "" {
-				consoleMessage("[plugin] missing author: " + path)
+			if invalidPluginValue(author) {
+				if author == "" {
+					consoleMessage("[plugin] missing author: " + path)
+				} else {
+					consoleMessage("[plugin] invalid author: " + path)
+				}
 			}
-			if category == "" {
-				consoleMessage("[plugin] missing category: " + path)
+			if invalidPluginValue(category) {
+				if category == "" {
+					consoleMessage("[plugin] missing category: " + path)
+				} else {
+					consoleMessage("[plugin] invalid category: " + path)
+				}
 			}
 			if subCategory == "" {
 				consoleMessage("[plugin] missing sub-category: " + path)
@@ -1086,16 +1108,22 @@ func loadPlugins() {
 			if match := authorRE.FindSubmatch(src); len(match) >= 2 {
 				author = strings.TrimSpace(string(match[1]))
 			}
-			invalid := len(match) < 2 || name == "" || author == "" || category == "" || subCategory == ""
-			if name == "" {
+			invalid := len(match) < 2 || invalidPluginValue(name) || invalidPluginValue(author) || invalidPluginValue(category) || subCategory == ""
+			if len(match) < 2 || name == "" {
 				consoleMessage("[plugin] missing name: " + path)
 				name = base
+			} else if invalidPluginValue(name) {
+				consoleMessage("[plugin] invalid name: " + path)
 			}
 			if author == "" {
 				consoleMessage("[plugin] missing author: " + path)
+			} else if invalidPluginValue(author) {
+				consoleMessage("[plugin] invalid author: " + path)
 			}
 			if category == "" {
 				consoleMessage("[plugin] missing category: " + path)
+			} else if invalidPluginValue(category) {
+				consoleMessage("[plugin] invalid category: " + path)
 			}
 			if subCategory == "" {
 				consoleMessage("[plugin] missing sub-category: " + path)
