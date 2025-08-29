@@ -1051,12 +1051,8 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 
 		textSize := (item.FontSize * uiScale) + 2
 		face := itemFace(item, textSize)
-		if item.ParentWindow != nil && item.ParentWindow.DefaultButton == item {
-			if f, ok := face.(*text.GoTextFace); ok {
-				bf := *f
-				bf.SetVariation(text.MustParseTag("wght"), 700)
-				face = &bf
-			}
+		if item.ParentWindow != nil && item.ParentWindow.DefaultButton == item && item.Face == nil {
+			face = boldFace(textSize)
 		}
 		loo := text.LayoutOptions{
 			LineSpacing:    0,
