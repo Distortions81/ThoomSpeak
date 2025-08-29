@@ -1,6 +1,6 @@
 # goThoom
 
-An open-source (MIT) client for the classic **Clan Lord** MMORPG
+An open-source (MIT) client for the classic **[Clan Lord](https://www.deltatao.com/clanlord/)** MMORPG
 
 <img width="125" height="125" alt="goThoom" src="https://github.com/user-attachments/assets/b036f99a-668b-408e-8a43-524a0659a260" />
 <img src="dev-screenshots/Screenshot_20250829_132759.png"/>
