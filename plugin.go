@@ -905,25 +905,29 @@ func refreshPluginMod() {
 	pluginModTime = latest
 }
 
-func rescanPlugins() {
-	pluginDirs := []string{
-		userPluginsDir(),
-		"plugins",
-	}
+type pluginInfo struct {
+	name        string
+	author      string
+	category    string
+	subCategory string
+	path        string
+	src         []byte
+	invalid     bool
+}
+
+func scanPlugins(pluginDirs []string, dup func(name, path string)) map[string]pluginInfo {
 	nameRE := regexp.MustCompile(`(?m)^\s*(?:var|const)\s+PluginName\s*=\s*"([^"]+)"`)
 	authorRE := regexp.MustCompile(`(?m)^\s*(?:var|const)\s+PluginAuthor\s*=\s*"([^"]+)"`)
-	newDisplay := map[string]string{}
-	newAuthors := map[string]string{}
 	categoryRE := regexp.MustCompile(`(?m)^\s*(?:var|const)\s+PluginCategory\s*=\s*"([^"]+)"`)
 	subCategoryRE := regexp.MustCompile(`(?m)^\s*(?:var|const)\s+PluginSubCategory\s*=\s*"([^"]+)"`)
-	newPaths := map[string]string{}
-	newCategories := map[string]string{}
-	newSubCategories := map[string]string{}
-	newInvalid := map[string]bool{}
+	plugins := map[string]pluginInfo{}
 	seenNames := map[string]bool{}
 	for _, dir := range pluginDirs {
 		entries, err := os.ReadDir(dir)
 		if err != nil {
+			if !os.IsNotExist(err) {
+				log.Printf("read plugin dir %s: %v", dir, err)
+			}
 			continue
 		}
 		for _, e := range entries {
@@ -936,11 +940,11 @@ func rescanPlugins() {
 				log.Printf("read plugin %s: %v", path, err)
 				continue
 			}
-			match := nameRE.FindSubmatch(src)
+			nameMatch := nameRE.FindSubmatch(src)
 			base := strings.TrimSuffix(e.Name(), ".go")
 			name := base
-			if len(match) >= 2 {
-				name = strings.TrimSpace(string(match[1]))
+			if len(nameMatch) >= 2 {
+				name = strings.TrimSpace(string(nameMatch[1]))
 			}
 			catMatch := categoryRE.FindSubmatch(src)
 			category := ""
@@ -956,10 +960,9 @@ func rescanPlugins() {
 			if match := authorRE.FindSubmatch(src); len(match) >= 2 {
 				author = strings.TrimSpace(string(match[1]))
 			}
-
 			invalid := false
-			if len(match) < 2 || name == "" || invalidPluginValue(name) {
-				if len(match) < 2 || name == "" {
+			if len(nameMatch) < 2 || name == "" || invalidPluginValue(name) {
+				if len(nameMatch) < 2 || name == "" {
 					consoleMessage("[plugin] missing name: " + path)
 					name = base
 				} else {
@@ -985,18 +988,30 @@ func rescanPlugins() {
 			}
 			lower := strings.ToLower(name)
 			if seenNames[lower] {
+				if dup != nil {
+					dup(name, path)
+				}
 				continue
 			}
 			seenNames[lower] = true
 			owner := name + "_" + base
-			newDisplay[owner] = name
-			newPaths[owner] = path
-			newAuthors[owner] = author
-			newCategories[owner] = category
-			newSubCategories[owner] = subCategory
-			newInvalid[owner] = invalid
+			plugins[owner] = pluginInfo{
+				name:        name,
+				author:      author,
+				category:    category,
+				subCategory: subCategory,
+				path:        path,
+				src:         src,
+				invalid:     invalid,
+			}
 		}
 	}
+	return plugins
+}
+
+func rescanPlugins() {
+	pluginDirs := []string{userPluginsDir(), "plugins"}
+	scanned := scanPlugins(pluginDirs, nil)
 
 	pluginMu.RLock()
 	oldDisabled := make(map[string]bool, len(pluginDisabled))
@@ -1010,22 +1025,28 @@ func rescanPlugins() {
 	pluginMu.RUnlock()
 
 	for o := range oldOwners {
-		if _, ok := newDisplay[o]; !ok {
+		if _, ok := scanned[o]; !ok {
 			disablePlugin(o, "removed")
 		}
 	}
 
 	pluginMu.Lock()
-	pluginDisplayNames = newDisplay
-	pluginPaths = newPaths
+	pluginDisplayNames = make(map[string]string, len(scanned))
+	pluginPaths = make(map[string]string, len(scanned))
+	pluginAuthors = make(map[string]string, len(scanned))
+	pluginCategories = make(map[string]string, len(scanned))
+	pluginSubCategories = make(map[string]string, len(scanned))
+	pluginInvalid = make(map[string]bool, len(scanned))
+	pluginDisabled = make(map[string]bool, len(scanned))
 	newEnabled := map[string]string{}
-	pluginAuthors = newAuthors
-	pluginCategories = newCategories
-	pluginSubCategories = newSubCategories
-	pluginInvalid = newInvalid
-	pluginDisabled = make(map[string]bool, len(newDisplay))
-	for o := range newDisplay {
-		if newInvalid[o] {
+	for o, info := range scanned {
+		pluginDisplayNames[o] = info.name
+		pluginPaths[o] = info.path
+		pluginAuthors[o] = info.author
+		pluginCategories[o] = info.category
+		pluginSubCategories[o] = info.subCategory
+		pluginInvalid[o] = info.invalid
+		if info.invalid {
 			pluginDisabled[o] = true
 			continue
 		}
@@ -1040,9 +1061,9 @@ func rescanPlugins() {
 		pluginDisabled[o] = !(en == "all" || (playerName != "" && en == playerName))
 	}
 	pluginEnabledFor = newEnabled
-	pluginNames = make(map[string]bool, len(newDisplay))
-	for _, n := range newDisplay {
-		pluginNames[strings.ToLower(n)] = true
+	pluginNames = make(map[string]bool, len(scanned))
+	for _, info := range scanned {
+		pluginNames[strings.ToLower(info.name)] = true
 	}
 	pluginMu.Unlock()
 
@@ -1067,107 +1088,34 @@ func loadPlugins() {
 	ensureExamplePlugins()
 	ensureDefaultPlugins()
 
-	pluginDirs := []string{
-		userPluginsDir(),
-		"plugins",
-	}
-	nameRE := regexp.MustCompile(`(?m)^\s*(?:var|const)\s+PluginName\s*=\s*"([^"]+)"`)
-	authorRE := regexp.MustCompile(`(?m)^\s*(?:var|const)\s+PluginAuthor\s*=\s*"([^"]+)"`)
-	categoryRE := regexp.MustCompile(`(?m)^\s*(?:var|const)\s+PluginCategory\s*=\s*"([^"]+)"`)
-	subCategoryRE := regexp.MustCompile(`(?m)^\s*(?:var|const)\s+PluginSubCategory\s*=\s*"([^"]+)"`)
-	for _, dir := range pluginDirs {
-		entries, err := os.ReadDir(dir)
-		if err != nil {
-			if !os.IsNotExist(err) {
-				log.Printf("read plugin dir %s: %v", dir, err)
+	pluginDirs := []string{userPluginsDir(), "plugins"}
+	scanned := scanPlugins(pluginDirs, func(name, path string) {
+		log.Printf("plugin %s duplicate name %s", path, name)
+		consoleMessage("[plugin] duplicate name: " + name)
+	})
+
+	pluginNames = make(map[string]bool, len(scanned))
+	for o, info := range scanned {
+		pluginNames[strings.ToLower(info.name)] = true
+		en := ""
+		if gs.EnabledPlugins != nil {
+			if val, ok := gs.EnabledPlugins[o]; ok {
+				en = val
 			}
-			continue
 		}
-		for _, e := range entries {
-			if e.IsDir() || !strings.HasSuffix(e.Name(), ".go") {
-				continue
-			}
-			path := filepath.Join(dir, e.Name())
-			src, err := os.ReadFile(path)
-			if err != nil {
-				log.Printf("read plugin %s: %v", path, err)
-				continue
-			}
-			match := nameRE.FindSubmatch(src)
-			base := strings.TrimSuffix(e.Name(), ".go")
-			name := base
-			if len(match) >= 2 {
-				name = strings.TrimSpace(string(match[1]))
-			}
-			catMatch := categoryRE.FindSubmatch(src)
-			category := ""
-			if len(catMatch) >= 2 {
-				category = strings.TrimSpace(string(catMatch[1]))
-			}
-			subMatch := subCategoryRE.FindSubmatch(src)
-			subCategory := ""
-			if len(subMatch) >= 2 {
-				subCategory = strings.TrimSpace(string(subMatch[1]))
-			}
-			author := ""
-			if match := authorRE.FindSubmatch(src); len(match) >= 2 {
-				author = strings.TrimSpace(string(match[1]))
-			}
-			invalid := false
-			if len(match) < 2 || name == "" || invalidPluginValue(name) {
-				if len(match) < 2 || name == "" {
-					consoleMessage("[plugin] missing name: " + path)
-					name = base
-				} else {
-					consoleMessage("[plugin] invalid name: " + path)
-				}
-				invalid = true
-			}
-			if author == "" || invalidPluginValue(author) {
-				if author == "" {
-					consoleMessage("[plugin] missing author: " + path)
-				} else {
-					consoleMessage("[plugin] invalid author: " + path)
-				}
-				invalid = true
-			}
-			if category == "" || invalidPluginValue(category) {
-				if category == "" {
-					consoleMessage("[plugin] missing category: " + path)
-				} else {
-					consoleMessage("[plugin] invalid category: " + path)
-				}
-				invalid = true
-			}
-			lower := strings.ToLower(name)
-			if pluginNames[lower] {
-				log.Printf("plugin %s duplicate name %s", path, name)
-				consoleMessage("[plugin] duplicate name: " + name)
-				continue
-			}
-			pluginNames[lower] = true
-			owner := name + "_" + base
-			en := ""
-			disabled := true
-			if gs.EnabledPlugins != nil {
-				if val, ok := gs.EnabledPlugins[owner]; ok {
-					en = val
-				}
-			}
-			disabled = invalid || !(en == "all" || (playerName != "" && en == playerName))
-			pluginMu.Lock()
-			pluginDisplayNames[owner] = name
-			pluginCategories[owner] = category
-			pluginSubCategories[owner] = subCategory
-			pluginPaths[owner] = path
-			pluginEnabledFor[owner] = en
-			pluginAuthors[owner] = author
-			pluginInvalid[owner] = invalid
-			pluginDisabled[owner] = disabled
-			pluginMu.Unlock()
-			if !disabled {
-				loadPluginSource(owner, name, path, src, restrictedStdlib())
-			}
+		disabled := info.invalid || !(en == "all" || (playerName != "" && en == playerName))
+		pluginMu.Lock()
+		pluginDisplayNames[o] = info.name
+		pluginCategories[o] = info.category
+		pluginSubCategories[o] = info.subCategory
+		pluginPaths[o] = info.path
+		pluginEnabledFor[o] = en
+		pluginAuthors[o] = info.author
+		pluginInvalid[o] = info.invalid
+		pluginDisabled[o] = disabled
+		pluginMu.Unlock()
+		if !disabled {
+			loadPluginSource(o, info.name, info.path, info.src, restrictedStdlib())
 		}
 	}
 	hotkeysMu.Lock()
