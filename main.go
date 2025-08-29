@@ -168,6 +168,7 @@ func main() {
 			}
 
 			playerName = extractMoviePlayerName(frames)
+			applyEnabledPlugins()
 
 			mp := newMoviePlayer(frames, clMovFPS, cancel)
 			mp.makePlaybackWindow()

@@ -103,7 +103,7 @@ var gsdef settings = settings{
 	PlayersWindow:   WindowState{Open: true},
 	MessagesWindow:  WindowState{Open: true},
 	ChatWindow:      WindowState{Open: true},
-	EnabledPlugins:  map[string]bool{},
+	EnabledPlugins:  map[string]string{},
 	vsync:           true,
 	nightEffect:     true,
 	shaderLighting:  true,
@@ -208,7 +208,7 @@ type settings struct {
 	pluginOutputDebug   bool
 	hideMoving          bool
 	hideMobiles         bool
-	EnabledPlugins      map[string]bool
+	EnabledPlugins      map[string]string
 	vsync               bool
 	nightEffect         bool
 	shaderLighting      bool
@@ -261,15 +261,33 @@ func loadSettings() bool {
 		return false
 	}
 
-	tmp := gsdef
+	type settingsFile struct {
+		settings
+		EnabledPlugins map[string]interface{} `json:"EnabledPlugins"`
+	}
+
+	tmp := settingsFile{settings: gsdef}
 	if err := json.Unmarshal(data, &tmp); err != nil {
 		gs = gsdef
 		settingsLoaded = false
 		return false
 	}
 
-	if tmp.Version == SETTINGS_VERSION {
-		gs = tmp
+	if tmp.settings.Version == SETTINGS_VERSION {
+		gs = tmp.settings
+		gs.EnabledPlugins = make(map[string]string)
+		for k, v := range tmp.EnabledPlugins {
+			switch val := v.(type) {
+			case bool:
+				if val {
+					gs.EnabledPlugins[k] = "all"
+				}
+			case string:
+				if val != "" {
+					gs.EnabledPlugins[k] = val
+				}
+			}
+		}
 		settingsLoaded = true
 	} else {
 		gs = gsdef
@@ -279,7 +297,7 @@ func loadSettings() bool {
 	}
 
 	if gs.EnabledPlugins == nil {
-		gs.EnabledPlugins = make(map[string]bool)
+		gs.EnabledPlugins = make(map[string]string)
 	}
 
 	if gs.DenoiseAmount < 0 || gs.DenoiseAmount > 1 {
@@ -375,16 +393,14 @@ func updateBubbleVisibility() {
 func saveSettings() {
 	pluginMu.RLock()
 	if gs.EnabledPlugins == nil {
-		gs.EnabledPlugins = make(map[string]bool, len(pluginDisabled))
+		gs.EnabledPlugins = make(map[string]string, len(pluginEnabledFor))
 	} else {
 		for k := range gs.EnabledPlugins {
 			delete(gs.EnabledPlugins, k)
 		}
 	}
-	for k, v := range pluginDisabled {
-		if !v {
-			gs.EnabledPlugins[k] = true
-		}
+	for k, v := range pluginEnabledFor {
+		gs.EnabledPlugins[k] = v
 	}
 	pluginMu.RUnlock()
 

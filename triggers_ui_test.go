@@ -32,7 +32,7 @@ func TestTriggersWindowListsTriggers(t *testing.T) {
 		t.Fatalf("expected empty triggers list")
 	}
 
-	pluginRegisterTriggers("tester", []string{"hi"}, func(string) {})
+	pluginRegisterTriggers("tester", "", []string{"hi"}, func() {})
 	if len(triggersList.Contents) != 2 {
 		t.Fatalf("items not added to list: %d", len(triggersList.Contents))
 	}
@@ -55,6 +55,7 @@ func TestDisablePluginRefreshesTriggers(t *testing.T) {
 	macroMaps = map[string]map[string]string{}
 	pluginMu = sync.RWMutex{}
 	pluginDisabled = map[string]bool{}
+	pluginEnabledFor = map[string]string{}
 	pluginTerminators = map[string]func(){}
 	t.Cleanup(func() {
 		triggerHandlersMu = sync.RWMutex{}
@@ -66,11 +67,12 @@ func TestDisablePluginRefreshesTriggers(t *testing.T) {
 		macroMaps = map[string]map[string]string{}
 		pluginMu = sync.RWMutex{}
 		pluginDisabled = map[string]bool{}
+		pluginEnabledFor = map[string]string{}
 		pluginTerminators = map[string]func(){}
 	})
 
 	makeTriggersWindow()
-	pluginRegisterTriggers("plug", []string{"yo"}, func(string) {})
+	pluginRegisterTriggers("plug", "", []string{"yo"}, func() {})
 	if len(triggersList.Contents) != 2 {
 		t.Fatalf("items not added to list: %d", len(triggersList.Contents))
 	}

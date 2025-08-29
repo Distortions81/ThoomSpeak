@@ -317,6 +317,7 @@ var (
 	pluginNames           = map[string]bool{}
 	pluginDisplayNames    = map[string]string{}
 	pluginDisabled        = map[string]bool{}
+	pluginEnabledFor      = map[string]string{}
 	pluginPaths           = map[string]string{}
 	pluginTerminators     = map[string]func(){}
 	pluginTriggers        = map[string][]triggerHandler{}
@@ -469,6 +470,9 @@ func recordPluginSend(owner string) bool {
 func disablePlugin(owner, reason string) {
 	pluginMu.Lock()
 	pluginDisabled[owner] = true
+	if reason != "disabled for this character" && reason != "reloaded" {
+		delete(pluginEnabledFor, owner)
+	}
 	term := pluginTerminators[owner]
 	delete(pluginTerminators, owner)
 	pluginMu.Unlock()
@@ -564,6 +568,46 @@ func stopAllPlugins() {
 		pendingCommand = ""
 		consoleMessage("[plugin] all plugins stopped")
 	}
+}
+
+func applyEnabledPlugins() {
+	pluginMu.RLock()
+	owners := make([]string, 0, len(pluginDisplayNames))
+	for o := range pluginDisplayNames {
+		owners = append(owners, o)
+	}
+	pluginMu.RUnlock()
+	for _, o := range owners {
+		pluginMu.RLock()
+		scope := pluginEnabledFor[o]
+		disabled := pluginDisabled[o]
+		pluginMu.RUnlock()
+		shouldEnable := scope == "all" || (playerName != "" && scope == playerName)
+		if disabled && shouldEnable {
+			enablePlugin(o)
+		} else if !disabled && !shouldEnable {
+			disablePlugin(o, "disabled for this character")
+		} else {
+			pluginMu.Lock()
+			pluginDisabled[o] = !shouldEnable
+			pluginMu.Unlock()
+		}
+	}
+}
+
+func setPluginEnabled(owner string, char, all bool) {
+	pluginMu.Lock()
+	if all {
+		pluginEnabledFor[owner] = "all"
+	} else if char && playerName != "" {
+		pluginEnabledFor[owner] = playerName
+	} else {
+		delete(pluginEnabledFor, owner)
+	}
+	pluginMu.Unlock()
+	applyEnabledPlugins()
+	saveSettings()
+	refreshPluginsWindow()
 }
 
 func pluginPlayerName() string {
@@ -891,20 +935,27 @@ func rescanPlugins() {
 	pluginMu.Lock()
 	pluginDisplayNames = newDisplay
 	pluginPaths = newPaths
+	newEnabled := map[string]string{}
 	pluginDisabled = make(map[string]bool, len(newDisplay))
 	for o := range newDisplay {
-		if d, ok := oldDisabled[o]; ok {
-			pluginDisabled[o] = d
-		} else {
-			pluginDisabled[o] = true
+		if en, ok := pluginEnabledFor[o]; ok {
+			newEnabled[o] = en
+		} else if gs.EnabledPlugins != nil {
+			if val, ok := gs.EnabledPlugins[o]; ok {
+				newEnabled[o] = val
+			}
 		}
+		en := newEnabled[o]
+		pluginDisabled[o] = !(en == "all" || (playerName != "" && en == playerName))
 	}
+	pluginEnabledFor = newEnabled
 	pluginNames = make(map[string]bool, len(newDisplay))
 	for _, n := range newDisplay {
 		pluginNames[strings.ToLower(n)] = true
 	}
 	pluginMu.Unlock()
 
+	applyEnabledPlugins()
 	refreshPluginsWindow()
 	settingsDirty = true
 }
@@ -969,15 +1020,17 @@ func loadPlugins() {
 			pluginNames[lower] = true
 			base := strings.TrimSuffix(e.Name(), ".go")
 			owner := name + "_" + base
-			disabled := true
+			en := ""
 			if gs.EnabledPlugins != nil {
-				if en, ok := gs.EnabledPlugins[owner]; ok {
-					disabled = !en
+				if val, ok := gs.EnabledPlugins[owner]; ok {
+					en = val
 				}
 			}
+			disabled := !(en == "all" || (playerName != "" && en == playerName))
 			pluginMu.Lock()
 			pluginDisplayNames[owner] = name
 			pluginPaths[owner] = path
+			pluginEnabledFor[owner] = en
 			pluginDisabled[owner] = disabled
 			pluginMu.Unlock()
 			if !disabled {
