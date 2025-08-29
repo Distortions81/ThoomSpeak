@@ -220,6 +220,17 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 	}
 	row1.AddItem(winBtn)
 
+	btn, setEvents := eui.NewButton()
+	btn.Text = "Settings"
+	btn.Size = eui.Point{X: buttonWidth, Y: buttonHeight}
+	btn.FontSize = toolFontSize
+	setEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			settingsWin.ToggleNear(ev.Item)
+		}
+	}
+	row1.AddItem(btn)
+
 	actionsBtn, actionsEvents := eui.NewButton()
 	actionsBtn.Text = "Actions"
 	actionsBtn.Size = eui.Point{X: buttonWidth, Y: buttonHeight}
@@ -233,11 +244,6 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 			"Hotkeys",
 			"Macros",
 			"Plugins",
-			"Settings",
-			"Help",
-			"Snapshot",
-			"Mixer",
-			"Exit",
 		}
 		eui.ShowContextMenu(options, r.X0, r.Y1, func(i int) {
 			switch i {
@@ -249,38 +255,72 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 			case 2:
 				refreshPluginsWindow()
 				pluginsWin.ToggleNear(actionsBtn)
-			case 3:
-				settingsWin.ToggleNear(actionsBtn)
-			case 4:
-				toggleHelpWindow(actionsBtn)
-			case 5:
-				takeScreenshot()
-			case 6:
-				mixerWin.ToggleNear(actionsBtn)
-			case 7:
-				confirmExitSession()
 			}
 		})
 	}
 	row1.AddItem(actionsBtn)
 
-	/*
-		stopBtn, stopEvents := eui.NewButton()
-		stopBtn.Text = "Stop Plugins"
-		stopBtn.Size = eui.Point{X: buttonWidth * 2, Y: buttonHeight}
-		stopBtn.FontSize = toolFontSize
-
-		stopBtnTheme := *stopBtn.Theme
-		stopBtnTheme.Button.Color = eui.ColorDarkRed
-		stopBtnTheme.Button.HoverColor = eui.ColorRed
-		stopBtnTheme.Button.ClickColor = eui.ColorLightRed
-		stopBtn.Theme = &stopBtnTheme
-		stopEvents.Handle = func(ev eui.UIEvent) {
-			if ev.Type == eui.EventClick {
-				stopAllPlugins()
-			}
+	helpBtn, helpEvents := eui.NewButton()
+	helpBtn.Text = "Help"
+	helpBtn.Size = eui.Point{X: buttonWidth, Y: buttonHeight}
+	helpBtn.FontSize = toolFontSize
+	helpEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			toggleHelpWindow(ev.Item)
 		}
-		row2.AddItem(stopBtn)
+	}
+	row2.AddItem(helpBtn)
+
+	shotBtn, shotEvents := eui.NewButton()
+	shotBtn.Text = "Snapshot"
+	shotBtn.Size = eui.Point{X: buttonWidth, Y: buttonHeight}
+	shotBtn.FontSize = toolFontSize
+	shotEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			takeScreenshot()
+		}
+	}
+	row2.AddItem(shotBtn)
+
+	exitSessBtn, exitSessEv := eui.NewButton()
+	exitSessBtn.Text = "Exit"
+	exitSessBtn.Size = eui.Point{X: buttonWidth, Y: buttonHeight}
+	exitSessBtn.FontSize = toolFontSize
+	exitSessEv.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			confirmExitSession()
+		}
+	}
+	row2.AddItem(exitSessBtn)
+
+	mixBtn, mixEvents := eui.NewButton()
+	mixBtn.Text = "Mixer"
+	mixBtn.Size = eui.Point{X: 64, Y: buttonHeight}
+	mixBtn.FontSize = 12
+	mixEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventClick {
+			mixerWin.ToggleNear(ev.Item)
+		}
+	}
+	row2.AddItem(mixBtn)
+
+	/*
+	   stopBtn, stopEvents := eui.NewButton()
+	   stopBtn.Text = "Stop Plugins"
+	   stopBtn.Size = eui.Point{X: buttonWidth * 2, Y: buttonHeight}
+	   stopBtn.FontSize = toolFontSize
+
+	   stopBtnTheme := *stopBtn.Theme
+	   stopBtnTheme.Button.Color = eui.ColorDarkRed
+	   stopBtnTheme.Button.HoverColor = eui.ColorRed
+	   stopBtnTheme.Button.ClickColor = eui.ColorLightRed
+	   stopBtn.Theme = &stopBtnTheme
+	   stopEvents.Handle = func(ev eui.UIEvent) {
+	           if ev.Type == eui.EventClick {
+	                   stopAllPlugins()
+	           }
+	   }
+	   row2.AddItem(stopBtn)
 	*/
 
 	// Removed toolbar volume slider and mute button (use Mixer instead)
