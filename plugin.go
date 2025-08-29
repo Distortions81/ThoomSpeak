@@ -83,11 +83,14 @@ func exportsForPlugin(owner string) interp.Exports {
 		m["AddMacro"] = reflect.ValueOf(func(short, full string) { pluginAddMacro(owner, short, full) })
 		m["AddMacros"] = reflect.ValueOf(func(macros map[string]string) { pluginAddMacros(owner, macros) })
 		m["AutoReply"] = reflect.ValueOf(func(trigger, cmd string) { pluginAutoReply(owner, trigger, cmd) })
-		m["RegisterTriggers"] = reflect.ValueOf(func(name string, phrases []string, handler func(string)) {
+		m["RegisterTriggers"] = reflect.ValueOf(func(name string, phrases []string, handler func()) {
 			pluginRegisterTriggers(owner, name, phrases, handler)
 		})
 		m["RegisterConsoleTriggers"] = reflect.ValueOf(func(phrases []string, handler func(string)) {
 			pluginRegisterConsoleTriggers(owner, phrases, handler)
+		})
+		m["RegisterTrigger"] = reflect.ValueOf(func(phrase string, handler func()) {
+			pluginRegisterTriggers(owner, name, []string{phrase}, handler)
 		})
 		m["RegisterInputHandler"] = reflect.ValueOf(func(fn func(string) string) { pluginRegisterInputHandler(owner, fn) })
 		m["RegisterPlayerHandler"] = reflect.ValueOf(func(fn func(Player)) { pluginRegisterPlayerHandler(owner, fn) })
@@ -304,7 +307,7 @@ type PluginCommandHandler func(args string)
 type triggerHandler struct {
 	owner string
 	name  string
-	fn    func(string)
+	fn    func()
 }
 
 type inputHandler struct {
@@ -680,7 +683,7 @@ func pluginRegisterInputHandler(owner string, fn func(string) string) {
 	inputHandlersMu.Unlock()
 }
 
-func pluginRegisterTriggers(owner, name string, phrases []string, fn func(string)) {
+func pluginRegisterTriggers(owner, name string, phrases []string, fn func()) {
 	if pluginIsDisabled(owner) || fn == nil {
 		return
 	}
@@ -696,7 +699,7 @@ func pluginRegisterTriggers(owner, name string, phrases []string, fn func(string
 	triggerHandlersMu.Unlock()
 }
 
-func pluginRegisterConsoleTriggers(owner string, phrases []string, fn func(string)) {
+func pluginRegisterConsoleTriggers(owner string, phrases []string, fn func()) {
 	if pluginIsDisabled(owner) || fn == nil {
 		return
 	}
@@ -710,6 +713,19 @@ func pluginRegisterConsoleTriggers(owner string, phrases []string, fn func(strin
 	}
 	triggerHandlersMu.Unlock()
 	refreshTriggersList()
+}
+
+func pluginRegisterTrigger(owner string, phrase string, fn func()) {
+	if pluginIsDisabled(owner) || fn == nil {
+		return
+	}
+	if len(phrase) < 2 {
+		return
+	}
+	triggerHandlersMu.Lock()
+	phrase = strings.ToLower(phrase)
+	pluginTriggers[phrase] = append(pluginTriggers[phrase], triggerHandler{owner: owner, fn: fn})
+	triggerHandlersMu.Unlock()
 }
 
 func pluginRegisterPlayerHandler(owner string, fn func(Player)) {
@@ -738,13 +754,11 @@ func runInputHandlers(txt string) string {
 
 func runChatTriggers(msg string) {
 	triggerHandlersMu.RLock()
-	msgLower := strings.ToLower(msg)
-	speaker := strings.ToLower(chatSpeaker(msg))
 	for phrase, hs := range pluginTriggers {
-		if strings.Contains(msgLower, phrase) {
+		if strings.Contains(msg, phrase) {
 			for _, h := range hs {
-				if h.name == "" || h.name == speaker {
-					go h.fn(msg)
+				if h.name == "" || h.name == chatSpeaker(msg) {
+					go h.fn()
 				}
 			}
 		}
@@ -758,7 +772,7 @@ func runConsoleTriggers(msg string) {
 	for phrase, hs := range pluginConsoleTriggers {
 		if strings.Contains(msgLower, phrase) {
 			for _, h := range hs {
-				go h.fn(msg)
+				go h.fn()
 			}
 		}
 	}

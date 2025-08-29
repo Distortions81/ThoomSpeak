@@ -134,7 +134,10 @@ func RegisterTriggers(name string, phrases []string, fn func(msg string)) {}
 
 // RegisterConsoleTriggers registers a callback for console messages containing
 // any phrase.
-func RegisterConsoleTriggers(phrases []string, fn func(msg string)) {}
+func RegisterConsoleTriggers(phrases []string, fn func()) {}
+
+// RegisterTriggers registers a callback for messages containing any phrase.
+func RegisterTrigger(name string, phrase string, fn func()) {}
 
 // RegisterInputHandler registers a callback to modify input text before sending.
 func RegisterInputHandler(fn func(text string) string) {}
