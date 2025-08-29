@@ -71,29 +71,25 @@ func exportsForPlugin(owner string) interp.Exports {
 		for k, v := range symbols {
 			m[k] = v
 		}
-		m["ToggleEquip"] = reflect.ValueOf(func(id uint16) { pluginToggleEquip(owner, id) })
 		m["Equip"] = reflect.ValueOf(func(id uint16) { pluginEquip(owner, id) })
 		m["Unequip"] = reflect.ValueOf(func(id uint16) { pluginUnequip(owner, id) })
 		m["AddHotkey"] = reflect.ValueOf(func(combo, command string) { pluginAddHotkey(owner, combo, command) })
-		m["Hotkeys"] = reflect.ValueOf(func() []Hotkey { return pluginHotkeys(owner) })
 		m["RemoveHotkey"] = reflect.ValueOf(func(combo string) { pluginRemoveHotkey(owner, combo) })
 		m["RegisterCommand"] = reflect.ValueOf(func(name string, handler PluginCommandHandler) {
 			pluginRegisterCommand(owner, name, handler)
 		})
 		m["AddMacro"] = reflect.ValueOf(func(short, full string) { pluginAddMacro(owner, short, full) })
 		m["AddMacros"] = reflect.ValueOf(func(macros map[string]string) { pluginAddMacros(owner, macros) })
-		m["AutoReply"] = reflect.ValueOf(func(trigger, cmd string) { pluginAutoReply(owner, trigger, cmd) })
 		m["RegisterTriggers"] = reflect.ValueOf(func(name string, phrases []string, handler func()) {
 			pluginRegisterTriggers(owner, name, phrases, handler)
-		})
-		m["RegisterConsoleTriggers"] = reflect.ValueOf(func(phrases []string, handler func(string)) {
-			pluginRegisterConsoleTriggers(owner, phrases, handler)
 		})
 		m["RegisterTrigger"] = reflect.ValueOf(func(phrase string, handler func()) {
 			pluginRegisterTriggers(owner, name, []string{phrase}, handler)
 		})
+		m["RegisterConsoleTriggers"] = reflect.ValueOf(func(phrases []string, handler func()) {
+			pluginRegisterConsoleTriggers(owner, phrases, handler)
+		})
 		m["RegisterInputHandler"] = reflect.ValueOf(func(fn func(string) string) { pluginRegisterInputHandler(owner, fn) })
-		m["RegisterPlayerHandler"] = reflect.ValueOf(func(fn func(Player)) { pluginRegisterPlayerHandler(owner, fn) })
 		m["RunCommand"] = reflect.ValueOf(func(cmd string) { pluginRunCommand(owner, cmd) })
 		m["EnqueueCommand"] = reflect.ValueOf(func(cmd string) { pluginEnqueueCommand(owner, cmd) })
 		ex[pkg] = m

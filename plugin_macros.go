@@ -93,18 +93,3 @@ func pluginRemoveMacros(owner string) {
 	consoleMessage(msg)
 	log.Print(msg)
 }
-
-// pluginAutoReply watches chat messages and runs a command when a message
-// begins with trigger.  Comparison is case-insensitive.  It is handy for simple
-// automatic responses.
-func pluginAutoReply(owner, trigger, cmd string) {
-	if pluginIsDisabled(owner) {
-		return
-	}
-	trig := strings.ToLower(trigger)
-	pluginRegisterTriggers(owner, "", []string{trigger}, func(msg string) {
-		if strings.HasPrefix(strings.ToLower(msg), trig) {
-			pluginRunCommand(owner, cmd)
-		}
-	})
-}
