@@ -6,6 +6,7 @@ import (
 
 	"gothoom/eui"
 
+	ebiten "github.com/hajimehoshi/ebiten/v2"
 	text "github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
@@ -179,6 +180,10 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 		}
 	}
 
+	if input != nil && len(input.Contents) > 0 {
+		showSpellSuggestions(input.Contents[0])
+	}
+
 	if win != nil {
 		// Size the flow to the client area, and the list to fill above any bottom items and optional input.
 		var extraH float32
@@ -199,5 +204,75 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 			list.Size.Y = clientHAvail - extraH
 		}
 		// Do not refresh here unconditionally; callers decide when to refresh.
+	}
+}
+
+// showSpellSuggestions displays correction suggestions for misspelled words
+// when hovering over underlined text. Selecting a suggestion replaces the
+// word and updates the input text.
+func showSpellSuggestions(t *eui.ItemData) {
+	if t == nil || !t.Hovered || len(t.Underlines) == 0 || sc == nil {
+		return
+	}
+	if eui.ContextMenusOpen() {
+		return
+	}
+	mx, my := ebiten.CursorPosition()
+	x := float32(mx)
+	y := float32(my)
+	if x < t.DrawRect.X0 || x > t.DrawRect.X1 || y < t.DrawRect.Y0 || y > t.DrawRect.Y1 {
+		return
+	}
+	if t.Face == nil {
+		return
+	}
+	rs := []rune(t.Text)
+	textSize := t.FontSize*eui.UIScale() + 2
+	metrics := t.Face.Metrics()
+	lineSpacing := textSize * 1.2
+	for _, ul := range t.Underlines {
+		if ul.Start < 0 || ul.End > len(rs) || ul.Start >= ul.End {
+			continue
+		}
+		line := 0
+		lineStart := 0
+		for i := 0; i < ul.Start; i++ {
+			if rs[i] == '\n' {
+				line++
+				lineStart = i + 1
+			}
+		}
+		prefix := string(rs[lineStart:ul.Start])
+		x0, _ := text.Measure(prefix, t.Face, 0)
+		word := string(rs[ul.Start:ul.End])
+		w, _ := text.Measure(word, t.Face, 0)
+		baseY := float32(line)*lineSpacing + float32(metrics.HAscent)
+		top := t.DrawRect.Y0 + baseY - float32(metrics.HAscent)
+		bottom := t.DrawRect.Y0 + baseY + float32(metrics.HDescent)
+		left := t.DrawRect.X0 + float32(x0)
+		right := left + float32(w)
+		if x >= left && x <= right && y >= top && y <= bottom {
+			sugg := suggestCorrections(strings.ToLower(word), 5)
+			if len(sugg) == 0 {
+				return
+			}
+			eui.ShowContextMenu(sugg, x, y, func(i int) {
+				if i < 0 || i >= len(sugg) {
+					return
+				}
+				replacement := sugg[i]
+				rs := []rune(t.Text)
+				newWrapped := string(rs[:ul.Start]) + replacement + string(rs[ul.End:])
+				plain := strings.ReplaceAll(newWrapped, "\n", "")
+				pluginSetInputText(plain)
+				t.Text = newWrapped
+				t.Underlines = findMisspellings(newWrapped)
+				if t.ParentWindow != nil {
+					t.ParentWindow.Refresh()
+				}
+				eui.CloseContextMenus()
+			})
+			return
+		}
 	}
 }
