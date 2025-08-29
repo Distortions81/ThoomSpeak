@@ -1382,6 +1382,36 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 		top.ColorScale.ScaleWithColor(tcolor)
 		text.Draw(subImg, item.Text, face, top)
 
+		if len(item.Underlines) > 0 {
+			metrics := face.Metrics()
+			lineSpacing := float32(textSize) * 1.2
+			rs := []rune(item.Text)
+			for _, ul := range item.Underlines {
+				if ul.Start < 0 || ul.End > len(rs) || ul.Start >= ul.End {
+					continue
+				}
+				line := 0
+				lineStart := 0
+				for i := 0; i < ul.Start; i++ {
+					if rs[i] == '\n' {
+						line++
+						lineStart = i + 1
+					}
+				}
+				prefix := string(rs[lineStart:ul.Start])
+				x0, _ := text.Measure(prefix, face, 0)
+				word := string(rs[ul.Start:ul.End])
+				w, _ := text.Measure(word, face, 0)
+				baseY := offset.Y + float32(line)*lineSpacing + float32(metrics.HAscent)
+				y := baseY + 1
+				vector.StrokeLine(subImg,
+					offset.X+float32(x0), y,
+					offset.X+float32(x0+w), y,
+					1,
+					color.NRGBA{R: 0xFF, G: 0x00, B: 0x00, A: 0xFF}, true)
+			}
+		}
+
 	} else if item.ItemType == ITEM_PROGRESS {
 
 		// Draw progress track

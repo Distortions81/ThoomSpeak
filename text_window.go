@@ -137,6 +137,10 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 		// Soft-wrap the input message to the available width and grow the input area.
 		_, inLines := wrapText(inputMsg, face, wrapWidthPx)
 		wrappedIn := strings.Join(inLines, "\n")
+		var miss []eui.TextSpan
+		if inputMsg != "" && !strings.HasPrefix(inputMsg, "[") {
+			miss = findMisspellings(wrappedIn)
+		}
 		inLinesN := len(inLines)
 		if inLinesN < 1 {
 			inLinesN = 1
@@ -158,6 +162,7 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 			t.Face = face
 			t.Size = eui.Point{X: clientWAvail, Y: inputContentH}
 			t.Filled = true
+			t.Underlines = miss
 			input.AddItem(t)
 		} else {
 			if input.Contents[0].Text != wrappedIn || input.Contents[0].FontSize != float32(fontSize) {
@@ -167,6 +172,7 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 			input.Contents[0].Face = face
 			input.Contents[0].Size.X = clientWAvail
 			input.Contents[0].Size.Y = inputContentH
+			input.Contents[0].Underlines = miss
 		}
 		if scrollInput {
 			input.Scroll.Y = 1e9

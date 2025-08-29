@@ -167,6 +167,7 @@ type itemData struct {
 	OnColorChange func(Color)
 	WheelColor    Color
 	TextPtr       *string
+	Underlines    []TextSpan
 	SecretText    string
 	HideText      bool
 	Handler       *EventHandler
@@ -213,6 +214,11 @@ type rect struct {
 
 type point struct {
 	X, Y float32
+}
+
+type TextSpan struct {
+	Start int
+	End   int
 }
 
 type flowType int
