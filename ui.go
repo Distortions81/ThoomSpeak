@@ -1599,6 +1599,7 @@ func makeAddCharacterWindow() {
 	addBtn, addEvents := eui.NewButton()
 	addBtn.Text = "Add"
 	addBtn.Size = eui.Point{X: 200, Y: 24}
+	addCharWin.DefaultButton = addBtn
 	addEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
 			h := md5.Sum([]byte(addCharPass))
@@ -1807,6 +1808,7 @@ func makeLoginWindow() {
 	connBtn.Text = "Connect"
 	connBtn.Size = eui.Point{X: charWinWidth, Y: 48}
 	connBtn.Padding = 10
+	loginWin.DefaultButton = connBtn
 	connEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
 			if name == "" {

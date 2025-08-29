@@ -61,6 +61,8 @@ type windowData struct {
 
 	Contents []*itemData
 
+	DefaultButton *itemData
+
 	Theme *Theme
 
 	// Render caches the pre-rendered image for this window when Dirty is
