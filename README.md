@@ -127,6 +127,16 @@ go build
 ```
 Requirements: Go **1.24+**, OpenGL + X11 development libraries.
 
+### Dependency bundle for faster setup
+To prefetch all Debian packages and Go modules into a single archive for
+offline installs, run:
+```bash
+scripts/build_dep_bundle.sh
+```
+Unpack `gothoom_deps.tar.gz` on another machine and install the `.deb`
+files from `apt/`. Set `GOMODCACHE` to the extracted `go/mod` directory to
+reuse the module cache when running `go mod download`.
+
 ### Cross-platform release builds
 A helper script builds **Linux + Windows** binaries (and can sign Windows EXEs and macOS `.app` bundles). On Ubuntu it will install missing tools like `zip`/`osslsigncode` automatically. Set cert env vars, then run:
 ```bash
