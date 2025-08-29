@@ -24,7 +24,6 @@ var basePluginExports = interp.Exports{
 	// Short path used by simple plugin scripts: import "gt"
 	// Yaegi expects keys as "importPath/pkgName".
 	"gt/gt": {
-		"Logf":             reflect.ValueOf(pluginLogf),
 		"Console":          reflect.ValueOf(pluginConsole),
 		"ShowNotification": reflect.ValueOf(pluginShowNotification),
 		"ClientVersion":    reflect.ValueOf(&clientVersion).Elem(),
