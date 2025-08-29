@@ -402,7 +402,7 @@ func refreshPluginsWindow() {
 		return
 	}
 	checkSize := eui.Point{X: 32, Y: 32}
-	pluginSize := eui.Point{X: 256, Y: 32}
+	pluginSize := eui.Point{X: 512, Y: 32}
 
 	pluginsList.Contents = pluginsList.Contents[:0]
 	legend := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
@@ -508,6 +508,13 @@ func refreshPluginsWindow() {
 			}
 			row.AddItem(reloadBtn)
 		}
+		nameTxt, _ = eui.NewText()
+		nameTxt.FontSize = 12
+		nameTxt.Size = eui.Point{X: 10, Y: 24}
+		nameTxt.Disabled = invalid
+		nameTxt.Action = click
+		row.Action = click
+		row.AddItem(nameTxt)
 
 		pluginsList.AddItem(row)
 	}
@@ -526,6 +533,8 @@ func selectPlugin(owner string) {
 }
 
 func refreshPluginDetails() {
+
+	infoSize := eui.Point{X: 256, Y: 24}
 	if pluginDetails == nil {
 		return
 	}
@@ -535,6 +544,7 @@ func refreshPluginDetails() {
 		txt, _ := eui.NewText()
 		txt.Text = "Select a plugin"
 		txt.FontSize = 12
+		txt.Size = infoSize
 		pluginDetails.AddItem(txt)
 		return
 	}
@@ -558,6 +568,8 @@ func refreshPluginDetails() {
 	line := func(s string) {
 		item, _ := eui.NewText()
 		item.Text = s
+		item.FontSize = 12
+		item.Size = infoSize
 		pluginDetails.AddItem(item)
 	}
 
@@ -594,6 +606,8 @@ func refreshPluginDetails() {
 		for _, p := range list {
 			t, _ := eui.NewText()
 			t.Text = "  " + p.short + " = " + strings.TrimSpace(p.full)
+			t.FontSize = 12
+			t.Size = infoSize
 			pluginDetails.AddItem(t)
 		}
 	}
@@ -617,6 +631,8 @@ func refreshPluginDetails() {
 		for _, t := range triggers {
 			txt, _ := eui.NewText()
 			txt.Text = "  " + t
+			txt.FontSize = 12
+			txt.Size = infoSize
 			pluginDetails.AddItem(txt)
 		}
 	}
