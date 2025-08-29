@@ -279,8 +279,8 @@ func loadSettings() bool {
 		for k, v := range tmp.EnabledPlugins {
 			switch val := v.(type) {
 			case bool:
-				if val {
-					gs.EnabledPlugins[k] = "all"
+				if val && gs.LastCharacter != "" {
+					gs.EnabledPlugins[k] = gs.LastCharacter
 				}
 			case string:
 				if val != "" {
