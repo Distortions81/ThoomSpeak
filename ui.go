@@ -60,6 +60,8 @@ var addCharPassInput *eui.ItemData
 var windowsWin *eui.WindowData
 var pluginsWin *eui.WindowData
 var pluginsList *eui.ItemData
+var pluginDetails *eui.ItemData
+var selectedPlugin string
 
 // Checkboxes in the Windows window so we can update their state live
 var windowsPlayersCB *eui.ItemData
@@ -358,9 +360,15 @@ func makePluginsWindow() {
 	root := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL, Scrollable: true}
 	pluginsWin.AddItem(root)
 
+	main := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
+	root.AddItem(main)
+
 	list := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
 	pluginsList = list
-	root.AddItem(list)
+	main.AddItem(list)
+
+	pluginDetails = &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_VERTICAL}
+	main.AddItem(pluginDetails)
 
 	buttonsBottom := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
 	root.AddItem(buttonsBottom)
@@ -467,11 +475,20 @@ func refreshPluginsWindow() {
 		}
 		row.AddItem(charCB)
 		row.AddItem(allCB)
-		nameTxt, _ := eui.NewText()
+		nameTxt, nh := eui.NewText()
 		nameTxt.Text = label
 		nameTxt.FontSize = 12
 		nameTxt.Size = pluginSize
 		nameTxt.Disabled = invalid
+		if selectedPlugin == owner {
+			nameTxt.Color = eui.ColorYellow
+		}
+		nh.Handle = func(ev eui.UIEvent) {
+			if ev.Type == eui.EventClick {
+				selectedPlugin = owner
+				refreshPluginsWindow()
+			}
+		}
 		row.AddItem(nameTxt)
 
 		if !invalid {
@@ -494,6 +511,107 @@ func refreshPluginsWindow() {
 
 		pluginsList.AddItem(row)
 	}
+	if pluginsWin != nil {
+		refreshPluginDetails()
+		pluginsWin.Refresh()
+	}
+}
+
+func refreshPluginDetails() {
+	if pluginDetails == nil {
+		return
+	}
+	pluginDetails.Contents = pluginDetails.Contents[:0]
+	owner := selectedPlugin
+	if owner == "" {
+		txt, _ := eui.NewText()
+		txt.Text = "Select a plugin"
+		pluginDetails.AddItem(txt)
+		return
+	}
+
+	pluginMu.RLock()
+	name := pluginDisplayNames[owner]
+	author := pluginAuthors[owner]
+	cat := pluginCategories[owner]
+	sub := pluginSubCategories[owner]
+	disabled := pluginDisabled[owner]
+	invalid := pluginInvalid[owner]
+	pluginMu.RUnlock()
+
+	status := "Enabled"
+	if invalid {
+		status = "Invalid"
+	} else if disabled {
+		status = "Disabled"
+	}
+
+	line := func(s string) {
+		item, _ := eui.NewText()
+		item.Text = s
+		pluginDetails.AddItem(item)
+	}
+
+	line("Name: " + name)
+	line("Author: " + author)
+	catLabel := cat
+	if sub != "" {
+		if catLabel != "" {
+			catLabel += " / "
+		}
+		catLabel += sub
+	}
+	line("Category: " + catLabel)
+	line("Status: " + status)
+	errText := "None"
+	if invalid {
+		errText = "Invalid plugin"
+	}
+	line("Errors: " + errText)
+
+	macroMu.RLock()
+	m := macroMaps[owner]
+	macroMu.RUnlock()
+	if len(m) == 0 {
+		line("Macros: none")
+	} else {
+		line("Macros:")
+		type pair struct{ short, full string }
+		var list []pair
+		for k, v := range m {
+			list = append(list, pair{k, v})
+		}
+		sort.Slice(list, func(i, j int) bool { return list[i].short < list[j].short })
+		for _, p := range list {
+			t, _ := eui.NewText()
+			t.Text = "  " + p.short + " = " + strings.TrimSpace(p.full)
+			pluginDetails.AddItem(t)
+		}
+	}
+
+	triggerHandlersMu.RLock()
+	var triggers []string
+	for phrase, hs := range pluginTriggers {
+		for _, h := range hs {
+			if h.owner == owner {
+				triggers = append(triggers, phrase)
+				break
+			}
+		}
+	}
+	triggerHandlersMu.RUnlock()
+	if len(triggers) == 0 {
+		line("Triggers: none")
+	} else {
+		line("Triggers:")
+		sort.Strings(triggers)
+		for _, t := range triggers {
+			txt, _ := eui.NewText()
+			txt.Text = "  " + t
+			pluginDetails.AddItem(txt)
+		}
+	}
+
 	if pluginsWin != nil {
 		pluginsWin.Refresh()
 	}
