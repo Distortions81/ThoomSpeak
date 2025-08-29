@@ -476,22 +476,23 @@ func refreshPluginsWindow() {
 		}
 		row.AddItem(nameTxt)
 
-		reloadBtn, rh := eui.NewButton()
-		reloadBtn.Text = "Reload"
-		reloadBtn.Size = eui.Point{X: 55, Y: 24}
-		reloadBtn.Disabled = invalid
-		rh.Handle = func(ev eui.UIEvent) {
-			if ev.Type == eui.EventClick && !invalid {
-				pluginMu.RLock()
-				enabled := !pluginDisabled[owner]
-				pluginMu.RUnlock()
-				if enabled {
-					disablePlugin(owner, "reloaded")
-					enablePlugin(owner)
+		if !invalid {
+			reloadBtn, rh := eui.NewButton()
+			reloadBtn.Text = "Reload"
+			reloadBtn.Size = eui.Point{X: 55, Y: 24}
+			rh.Handle = func(ev eui.UIEvent) {
+				if ev.Type == eui.EventClick {
+					pluginMu.RLock()
+					enabled := !pluginDisabled[owner]
+					pluginMu.RUnlock()
+					if enabled {
+						disablePlugin(owner, "reloaded")
+						enablePlugin(owner)
+					}
 				}
 			}
+			row.AddItem(reloadBtn)
 		}
-		row.AddItem(reloadBtn)
 
 		pluginsList.AddItem(row)
 	}
