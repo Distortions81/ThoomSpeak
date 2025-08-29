@@ -983,10 +983,6 @@ func rescanPlugins() {
 				}
 				invalid = true
 			}
-			if subCategory == "" {
-				consoleMessage("[plugin] missing sub-category: " + path)
-				invalid = true
-			}
 			lower := strings.ToLower(name)
 			if seenNames[lower] {
 				continue
@@ -1141,10 +1137,6 @@ func loadPlugins() {
 				} else {
 					consoleMessage("[plugin] invalid category: " + path)
 				}
-				invalid = true
-			}
-			if subCategory == "" {
-				consoleMessage("[plugin] missing sub-category: " + path)
 				invalid = true
 			}
 			lower := strings.ToLower(name)
