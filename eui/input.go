@@ -22,6 +22,8 @@ var (
 
 	downPos point
 	downWin *windowData
+
+	activeSearch *windowData
 )
 
 // Update processes input and updates window state.
@@ -139,7 +141,7 @@ func Update() error {
 					c = ebiten.CursorShapeNWSEResize
 				case PART_TOP_RIGHT, PART_BOTTOM_LEFT:
 					c = ebiten.CursorShapeNESWResize
-				case PART_SCROLL_V, PART_SCROLL_H, PART_PIN:
+				case PART_SCROLL_V, PART_SCROLL_H, PART_PIN, PART_SEARCH:
 					c = ebiten.CursorShapePointer
 				}
 			}
@@ -155,6 +157,20 @@ func Update() error {
 					} else {
 						win.Maximize()
 					}
+					break
+				}
+				if part == PART_SEARCH {
+					win.searchOpen = !win.searchOpen
+					if win.searchOpen {
+						win.SearchText = ""
+						activeSearch = win
+						if win.OnSearch != nil {
+							win.OnSearch(win.SearchText)
+						}
+					} else if activeSearch == win {
+						activeSearch = nil
+					}
+					win.markDirty()
 					break
 				}
 				if part == PART_PIN {
@@ -181,6 +197,30 @@ func Update() error {
 					sizeCh.X = 0
 					if win.setSize(pointSub(win.Size, sizeCh)) && win.zone == nil {
 						win.Position = pointAdd(win.Position, posCh)
+					}
+
+					if win.searchOpen {
+						if part == PART_NONE {
+							if win.searchBoxRect().containsPoint(mpos) {
+								c = ebiten.CursorShapeText
+							} else if win.searchCloseRect().containsPoint(mpos) {
+								c = ebiten.CursorShapePointer
+							}
+						}
+						if click && dragPart == PART_NONE && downWin == win {
+							if win.searchCloseRect().containsPoint(mpos) {
+								win.searchOpen = false
+								if activeSearch == win {
+									activeSearch = nil
+								}
+								win.markDirty()
+								break
+							}
+							if win.searchBoxRect().containsPoint(mpos) {
+								activeSearch = win
+								break
+							}
+						}
 					}
 				case PART_BOTTOM:
 					sizeCh.X = 0
@@ -353,6 +393,35 @@ func Update() error {
 			focusedItem.Focused = false
 			focusedItem.markDirty()
 			focusedItem = nil
+		}
+	}
+
+	if activeSearch != nil {
+		for _, r := range ebiten.AppendInputChars(nil) {
+			if r >= 32 && r != 127 && r != '\r' && r != '\n' {
+				if len([]rune(activeSearch.SearchText)) < 64 {
+					activeSearch.SearchText += string(r)
+					if activeSearch.OnSearch != nil {
+						activeSearch.OnSearch(activeSearch.SearchText)
+					}
+					activeSearch.markDirty()
+				}
+			}
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) {
+			runes := []rune(activeSearch.SearchText)
+			if len(runes) > 0 {
+				activeSearch.SearchText = string(runes[:len(runes)-1])
+				if activeSearch.OnSearch != nil {
+					activeSearch.OnSearch(activeSearch.SearchText)
+				}
+				activeSearch.markDirty()
+			}
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
+			activeSearch.searchOpen = false
+			activeSearch.markDirty()
+			activeSearch = nil
 		}
 	}
 
