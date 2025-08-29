@@ -393,19 +393,25 @@ func refreshPluginsWindow() {
 	if pluginsList == nil {
 		return
 	}
+	checkSize := eui.Point{X: 32, Y: 32}
+	pluginSize := eui.Point{X: 256, Y: 32}
+
 	pluginsList.Contents = pluginsList.Contents[:0]
 	legend := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
 	charTxt, _ := eui.NewText()
 	charTxt.Text = "Character"
-	charTxt.Size = eui.Point{X: 80, Y: 24}
+	charTxt.FontSize = 9
+	charTxt.Size = checkSize
 	legend.AddItem(charTxt)
 	allTxt, _ := eui.NewText()
 	allTxt.Text = "All"
-	allTxt.Size = eui.Point{X: 40, Y: 24}
+	allTxt.FontSize = 9
+	allTxt.Size = checkSize
 	legend.AddItem(allTxt)
 	plugTxt, _ := eui.NewText()
 	plugTxt.Text = "Plugin"
-	plugTxt.Size = eui.Point{X: 256, Y: 24}
+	plugTxt.FontSize = 9
+	plugTxt.Size = pluginSize
 	legend.AddItem(plugTxt)
 	pluginsList.AddItem(legend)
 
@@ -425,9 +431,9 @@ func refreshPluginsWindow() {
 	for _, e := range list {
 		row := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
 		charCB, charEvents := eui.NewCheckbox()
-		charCB.Size = eui.Point{X: 80, Y: 24}
+		charCB.Size = checkSize
 		allCB, allEvents := eui.NewCheckbox()
-		allCB.Size = eui.Point{X: 40, Y: 24}
+		allCB.Size = checkSize
 		pluginMu.RLock()
 		scope := pluginEnabledFor[e.owner]
 		cat := pluginCategories[e.owner]
@@ -458,7 +464,8 @@ func refreshPluginsWindow() {
 		row.AddItem(allCB)
 		nameTxt, _ := eui.NewText()
 		nameTxt.Text = label
-		nameTxt.Size = eui.Point{X: 256, Y: 24}
+		nameTxt.FontSize = 12
+		nameTxt.Size = pluginSize
 		row.AddItem(nameTxt)
 
 		reloadBtn, rh := eui.NewButton()
