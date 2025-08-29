@@ -37,7 +37,7 @@ Each widget block (`Window`, `Button`, `Text`, `Checkbox`, `Radio`, `Input`, `Sl
 - `OutlineColor` – color of the outline if enabled
 - `DisabledColor` – color when the widget is disabled
 - `SelectedColor` – color for selected state (tabs, sliders, dropdowns)
-- `MaxVisible` – for dropdowns, the maximum visible entries
+- `MaxVisible` – for dropdowns, the maximum visible entries (0 shows as many as fit on screen)
 
 The `Window` block also supports `TitleColor`, `TitleBGColor`, `BorderColor`, `SizeTabColor`, `DragbarColor`, `HoverTitleColor`, `HoverColor`, `ActiveColor` and `TitleTextColor`.
 
