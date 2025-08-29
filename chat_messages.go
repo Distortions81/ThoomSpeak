@@ -19,9 +19,10 @@ func chatMessage(msg string) {
 		return
 	}
 
-	if name := chatSpeaker(msg); name != "" {
+	speaker := chatSpeaker(msg)
+	if speaker != "" {
 		playersMu.RLock()
-		p, ok := players[name]
+		p, ok := players[speaker]
 		blocked := ok && (p.Blocked || p.Ignored)
 		playersMu.RUnlock()
 		if blocked {
@@ -35,7 +36,9 @@ func chatMessage(msg string) {
 	updateChatWindow()
 
 	if gs.ChatTTS && !blockTTS && !isSelfChatMessage(msg) {
-		speakChatMessage(msg)
+		if speaker == "" || !isTTSBlocked(speaker) {
+			speakChatMessage(msg)
+		}
 	} else if !gs.ChatTTS {
 		chatTTSDisabledOnce.Do(func() {
 			consoleMessage("Chat TTS is disabled. Enable it in settings to hear messages.")
