@@ -43,7 +43,7 @@ Piper voices are stored in `data/piper/voices`. The client and `scripts/download
 ## Using the UI
 
 - Windows: Click the `Windows` toolbar button to toggle common panels: Players, Inventory, Chat, Console, Help, Hotkeys, Macros, Mixer, Settings, and more. Window layout and open/closed state persist between runs.
-- Actions: Use the `Actions` toolbar drop-down for Hotkeys, Macros, Plugins, Settings, Help, Snapshot, Mixer, or Exit.
+- Actions: Use the `Actions` toolbar drop-down for Hotkeys, Macros, or Plugins. Dedicated buttons provide quick access to Settings, Help, Snapshot, Mixer, and Exit.
 - Movement: Left-click to walk, or use WASD/arrow keys (hold Shift to run). An optional "Click-to-Toggle Walk" sets a target with one click.
 - Input bar: Press Enter to type; press Enter again to send. Esc cancels. Up/Down browse history. While typing, Ctrl-V pastes and Ctrl-C copies the whole line. Right-click the input bar for Paste / Copy Line / Clear Line (Paste and Clear switch to typing mode and refresh immediately).
 - Chat/Console: Chat and Console are separate windows by default. Right-click any chat or console line to copy it; the line briefly highlights. You can merge chat into the console in Settings.
