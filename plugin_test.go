@@ -124,7 +124,6 @@ func TestPluginTriggers(t *testing.T) {
 	wg.Add(1)
 	pluginRegisterTriggers("test", "", []string{"hello"}, func() {
 		triggered = true
-		got = "say hello"
 		wg.Done()
 	})
 	runChatTriggers("say hello")
@@ -160,5 +159,43 @@ func TestPluginRemoveTriggersOnDisable(t *testing.T) {
 	runConsoleTriggers("hi there")
 	if ran {
 		t.Fatalf("trigger ran after plugin disabled")
+	}
+}
+
+// Test that disabling a plugin removes its input and player handlers.
+func TestDisablePluginRemovesHandlers(t *testing.T) {
+	pluginInputHandlers = []inputHandler{
+		{owner: "plug", fn: func(s string) string { return s }},
+		{owner: "other", fn: func(s string) string { return s }},
+	}
+	pluginPlayerHandlers = []playerHandler{
+		{owner: "plug", fn: func(Player) {}},
+		{owner: "other", fn: func(Player) {}},
+	}
+	inputHandlersMu = sync.RWMutex{}
+	playerHandlersMu = sync.RWMutex{}
+	pluginTriggers = map[string][]triggerHandler{}
+	pluginConsoleTriggers = map[string][]triggerHandler{}
+	triggerHandlersMu = sync.RWMutex{}
+	pluginMu = sync.RWMutex{}
+	pluginDisabled = map[string]bool{}
+	pluginEnabledFor = map[string]string{}
+	pluginDisplayNames = map[string]string{"plug": "Plug"}
+	pluginTerminators = map[string]func(){}
+	pluginCommandOwners = map[string]string{}
+	pluginCommands = map[string]PluginCommandHandler{}
+	pluginSendHistory = map[string][]time.Time{}
+	consoleLog = messageLog{max: maxMessages}
+	origDir := dataDirPath
+	dataDirPath = t.TempDir()
+	t.Cleanup(func() { dataDirPath = origDir })
+
+	disablePlugin("plug", "test")
+
+	if len(pluginInputHandlers) != 1 || pluginInputHandlers[0].owner != "other" {
+		t.Fatalf("input handlers not cleaned up: %+v", pluginInputHandlers)
+	}
+	if len(pluginPlayerHandlers) != 1 || pluginPlayerHandlers[0].owner != "other" {
+		t.Fatalf("player handlers not cleaned up: %+v", pluginPlayerHandlers)
 	}
 }

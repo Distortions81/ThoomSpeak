@@ -432,7 +432,7 @@ func refreshPluginsWindow() {
 		scope := pluginEnabledFor[e.owner]
 		charCB.Checked = scope == playerName
 		allCB.Checked = scope == "all"
-		cb, events := eui.NewCheckbox()
+		cb, _ := eui.NewCheckbox()
 		pluginMu.RLock()
 		cat := pluginCategories[e.owner]
 		sub := pluginSubCategories[e.owner]

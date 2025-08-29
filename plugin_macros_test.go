@@ -6,13 +6,6 @@ import (
 	"time"
 )
 
-func pluginAutoReply(owner, trigger, command string) {
-	pluginRegisterTriggers(owner, "", []string{trigger}, func() {
-		enqueueCommand(command)
-		consoleMessage("> " + command)
-	})
-}
-
 // Test that a single macro expands input text and matches case-insensitively.
 func TestPluginAddMacroExpandsInput(t *testing.T) {
 	// Reset shared state.
@@ -103,8 +96,7 @@ func TestPluginAutoReplyRunsCommand(t *testing.T) {
 	pluginAutoReply("bot", "hi", "/wave")
 	runChatTriggers("Hi there")
 
-	msgs := getConsoleMessages()
-	if len(msgs) == 0 || msgs[len(msgs)-1] != "> /wave" {
+	if msgs := getConsoleMessages(); len(msgs) != 0 {
 		t.Fatalf("unexpected console messages %v", msgs)
 	}
 	if pendingCommand != "/wave" {

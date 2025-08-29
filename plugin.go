@@ -490,11 +490,9 @@ func disablePlugin(owner, reason string) {
 	}
 	pluginRemoveMacros(owner)
 	inputHandlersMu.Lock()
-	for i := 0; i < len(pluginInputHandlers); {
+	for i := len(pluginInputHandlers) - 1; i >= 0; i-- {
 		if pluginInputHandlers[i].owner == owner {
 			pluginInputHandlers = append(pluginInputHandlers[:i], pluginInputHandlers[i+1:]...)
-		} else {
-			i++
 		}
 	}
 	inputHandlersMu.Unlock()
@@ -530,11 +528,9 @@ func disablePlugin(owner, reason string) {
 	triggerHandlersMu.Unlock()
 	refreshTriggersList()
 	playerHandlersMu.Lock()
-	for i := 0; i < len(pluginPlayerHandlers); {
+	for i := len(pluginPlayerHandlers) - 1; i >= 0; i-- {
 		if pluginPlayerHandlers[i].owner == owner {
 			pluginPlayerHandlers = append(pluginPlayerHandlers[:i], pluginPlayerHandlers[i+1:]...)
-		} else {
-			i++
 		}
 	}
 	playerHandlersMu.Unlock()
@@ -1076,6 +1072,7 @@ func loadPlugins() {
 			base := strings.TrimSuffix(e.Name(), ".go")
 			owner := name + "_" + base
 			en := ""
+			author := ""
 			if match := authorRE.FindSubmatch(src); len(match) >= 2 {
 				author = strings.TrimSpace(string(match[1]))
 			}
@@ -1085,7 +1082,7 @@ func loadPlugins() {
 					en = val
 				}
 			}
-			disabled := !(en == "all" || (playerName != "" && en == playerName))
+			disabled = !(en == "all" || (playerName != "" && en == playerName))
 			pluginMu.Lock()
 			pluginDisplayNames[owner] = name
 			pluginCategories[owner] = category
