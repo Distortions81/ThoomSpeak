@@ -16,7 +16,7 @@ func consoleMessage(msg string) {
 
 	updateConsoleWindow()
 
-	runTriggers(msg)
+	runConsoleTriggers(msg)
 }
 
 func getConsoleMessages() []string {

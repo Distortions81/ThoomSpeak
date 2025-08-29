@@ -128,8 +128,13 @@ type Player struct {
 // Players returns the list of known players.
 func Players() []Player { return nil }
 
-// RegisterTriggers registers a callback for messages containing any phrase.
-func RegisterTriggers(phrases []string, fn func(msg string)) {}
+// RegisterTriggers registers a callback for chat messages containing any phrase
+// from the specified player name. An empty name matches any speaker.
+func RegisterTriggers(name string, phrases []string, fn func(msg string)) {}
+
+// RegisterConsoleTriggers registers a callback for console messages containing
+// any phrase.
+func RegisterConsoleTriggers(phrases []string, fn func(msg string)) {}
 
 // RegisterInputHandler registers a callback to modify input text before sending.
 func RegisterInputHandler(fn func(text string) string) {}

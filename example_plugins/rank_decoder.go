@@ -72,7 +72,7 @@ func Init() {
 	for phrase := range rankMessages {
 		phrases = append(phrases, phrase)
 	}
-	gt.RegisterTriggers(phrases, func(msg string) {
+	gt.RegisterTriggers("", phrases, func(msg string) {
 		for phrase, rank := range rankMessages {
 			if gt.Includes(msg, phrase) {
 				gt.ShowNotification("Rank " + rank)

@@ -72,8 +72,8 @@ Common API calls:
 - `gt.AutoReply(trigger, cmd)` – run a command when chat starts with trigger.
 - `gt.RegisterInputHandler(func(text string) string)` – inspect or change chat
   text before it is sent.
-- `gt.RegisterTriggers([]string{"phrase"}, func(msg string))` – react to chat or
-  console messages containing any phrase.
+- `gt.RegisterTriggers(name, []string{"phrase"}, func(msg string))` – react to chat messages containing any phrase from the given speaker (name can be "" for any).
+- `gt.RegisterConsoleTriggers([]string{"phrase"}, func(msg string))` – react to console messages containing any phrase.
 - `gt.RegisterPlayerHandler(func(p gt.Player))` – react when player info
   changes.
 - `gt.PlayerName()` – name of your current character.

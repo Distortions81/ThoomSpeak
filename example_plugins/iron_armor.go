@@ -19,7 +19,7 @@ func Init() {
 	gt.RegisterCommand("examinearmor", func(args string) { examineArmor() })
 	gt.AddHotkey("Ctrl-F10", "/ironarmortoggle")
 	gt.AddHotkey("Ctrl-F11", "/examinearmor")
-	gt.RegisterTriggers([]string{"perfect", "good", "look"}, func(msg string) {
+	gt.RegisterTriggers("", []string{"perfect", "good", "look"}, func(msg string) {
 		armorCondition = msg
 	})
 }

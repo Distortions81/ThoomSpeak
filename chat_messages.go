@@ -42,7 +42,7 @@ func chatMessage(msg string) {
 		})
 	}
 
-	runTriggers(msg)
+	runChatTriggers(msg)
 }
 
 func getChatMessages() []string {

@@ -25,7 +25,7 @@ func Init() {
 			gt.Console("* Sharecads disabled")
 		}
 	})
-	gt.RegisterTriggers([]string{"You sense healing energy from "}, handleSharecads)
+	gt.RegisterTriggers("", []string{"You sense healing energy from "}, handleSharecads)
 	gt.AddHotkey("Shift-S", "/shcads")
 }
 

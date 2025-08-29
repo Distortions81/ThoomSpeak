@@ -114,16 +114,17 @@ func TestPluginRegisterCommandConflict(t *testing.T) {
 // Test that trigger handlers registered by plugins receive messages.
 func TestPluginTriggers(t *testing.T) {
 	pluginTriggers = map[string][]triggerHandler{}
+	pluginConsoleTriggers = map[string][]triggerHandler{}
 	triggerHandlersMu = sync.RWMutex{}
 	pluginDisabled = map[string]bool{}
 	var got string
 	var wg sync.WaitGroup
 	wg.Add(1)
-	pluginRegisterTriggers("test", []string{"hello"}, func(msg string) {
+	pluginRegisterTriggers("test", "", []string{"hello"}, func(msg string) {
 		got = msg
 		wg.Done()
 	})
-	consoleMessage("say hello")
+	runChatTriggers("say hello")
 	wg.Wait()
 	if got != "say hello" {
 		t.Fatalf("handler did not run, got %q", got)
@@ -133,6 +134,7 @@ func TestPluginTriggers(t *testing.T) {
 // Test that disabling a plugin removes any trigger handlers it registered.
 func TestPluginRemoveTriggersOnDisable(t *testing.T) {
 	pluginTriggers = map[string][]triggerHandler{}
+	pluginConsoleTriggers = map[string][]triggerHandler{}
 	triggerHandlersMu = sync.RWMutex{}
 	pluginInputHandlers = nil
 	inputHandlersMu = sync.RWMutex{}
@@ -145,9 +147,11 @@ func TestPluginRemoveTriggersOnDisable(t *testing.T) {
 	pluginSendHistory = map[string][]time.Time{}
 
 	ran := false
-	pluginRegisterTriggers("plug", []string{"hi"}, func(msg string) { ran = true })
+	pluginRegisterTriggers("plug", "", []string{"hi"}, func(msg string) { ran = true })
+	pluginRegisterConsoleTriggers("plug", []string{"hi"}, func(msg string) { ran = true })
 	disablePlugin("plug", "test")
-	runTriggers("hi there")
+	runChatTriggers("hi there")
+	runConsoleTriggers("hi there")
 	if ran {
 		t.Fatalf("trigger ran after plugin disabled")
 	}

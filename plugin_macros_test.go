@@ -87,13 +87,14 @@ func TestPluginAutoReplyRunsCommand(t *testing.T) {
 	pluginInputHandlers = nil
 	triggerHandlersMu = sync.RWMutex{}
 	pluginTriggers = map[string][]triggerHandler{}
+	pluginConsoleTriggers = map[string][]triggerHandler{}
 	consoleLog = messageLog{max: maxMessages}
 	commandQueue = nil
 	pendingCommand = ""
 	pluginSendHistory = map[string][]time.Time{}
 
 	pluginAutoReply("bot", "hi", "/wave")
-	runTriggers("Hi there")
+	runChatTriggers("Hi there")
 
 	msgs := getConsoleMessages()
 	if len(msgs) == 0 || msgs[len(msgs)-1] != "> /wave" {

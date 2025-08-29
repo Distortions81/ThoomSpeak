@@ -46,7 +46,7 @@ func Init() {
 		}
 		gt.Console(fmt.Sprintf("Coins: %d (%.0f/hr)", clTotal, rate))
 	})
-	gt.RegisterTriggers([]string{"You get "}, clHandle)
+	gt.RegisterTriggers("", []string{"You get "}, clHandle)
 	gt.AddHotkey("Shift-C", "/cwdata")
 }
 
