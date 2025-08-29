@@ -39,6 +39,7 @@ func TestPluginRegisterAndDisableCommand(t *testing.T) {
 	pluginCommands = map[string]PluginCommandHandler{}
 	pluginCommandOwners = map[string]string{}
 	pluginDisabled = map[string]bool{}
+	pluginEnabledFor = map[string]string{}
 	pluginSendHistory = map[string][]time.Time{}
 	consoleLog = messageLog{max: maxMessages}
 	commandQueue = nil
@@ -117,17 +118,19 @@ func TestPluginTriggers(t *testing.T) {
 	pluginConsoleTriggers = map[string][]triggerHandler{}
 	triggerHandlersMu = sync.RWMutex{}
 	pluginDisabled = map[string]bool{}
-	var got string
+	pluginEnabledFor = map[string]string{}
+	triggered := false
 	var wg sync.WaitGroup
 	wg.Add(1)
 	pluginRegisterTriggers("test", "", []string{"hello"}, func() {
+		triggered = true
 		got = "say hello"
 		wg.Done()
 	})
 	runChatTriggers("say hello")
 	wg.Wait()
-	if got != "say hello" {
-		t.Fatalf("handler did not run, got %q", got)
+	if !triggered {
+		t.Fatalf("handler did not run")
 	}
 }
 
@@ -140,6 +143,7 @@ func TestPluginRemoveTriggersOnDisable(t *testing.T) {
 	inputHandlersMu = sync.RWMutex{}
 	pluginMu = sync.RWMutex{}
 	pluginDisabled = map[string]bool{}
+	pluginEnabledFor = map[string]string{}
 	pluginDisplayNames = map[string]string{}
 	pluginCategories = map[string]string{}
 	pluginSubCategories = map[string]string{}

@@ -6,6 +6,13 @@ import (
 	"time"
 )
 
+func pluginAutoReply(owner, trigger, command string) {
+	pluginRegisterTriggers(owner, "", []string{trigger}, func() {
+		enqueueCommand(command)
+		consoleMessage("> " + command)
+	})
+}
+
 // Test that a single macro expands input text and matches case-insensitively.
 func TestPluginAddMacroExpandsInput(t *testing.T) {
 	// Reset shared state.
@@ -114,6 +121,7 @@ func TestPluginRemoveMacrosOnDisable(t *testing.T) {
 	pluginInputHandlers = nil
 	pluginMu = sync.RWMutex{}
 	pluginDisabled = map[string]bool{}
+	pluginEnabledFor = map[string]string{}
 	pluginDisplayNames = map[string]string{}
 	pluginCategories = map[string]string{}
 	pluginSubCategories = map[string]string{}

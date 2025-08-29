@@ -394,6 +394,21 @@ func refreshPluginsWindow() {
 		return
 	}
 	pluginsList.Contents = pluginsList.Contents[:0]
+	legend := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
+	charTxt, _ := eui.NewText()
+	charTxt.Text = "Character"
+	charTxt.Size = eui.Point{X: 80, Y: 24}
+	legend.AddItem(charTxt)
+	allTxt, _ := eui.NewText()
+	allTxt.Text = "All"
+	allTxt.Size = eui.Point{X: 40, Y: 24}
+	legend.AddItem(allTxt)
+	plugTxt, _ := eui.NewText()
+	plugTxt.Text = "Plugin"
+	plugTxt.Size = eui.Point{X: 256, Y: 24}
+	legend.AddItem(plugTxt)
+	pluginsList.AddItem(legend)
+
 	type entry struct {
 		owner string
 		name  string
@@ -409,6 +424,14 @@ func refreshPluginsWindow() {
 	})
 	for _, e := range list {
 		row := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL}
+		charCB, charEvents := eui.NewCheckbox()
+		charCB.Size = eui.Point{X: 80, Y: 24}
+		allCB, allEvents := eui.NewCheckbox()
+		allCB.Size = eui.Point{X: 40, Y: 24}
+		pluginMu.RLock()
+		scope := pluginEnabledFor[e.owner]
+		charCB.Checked = scope == playerName
+		allCB.Checked = scope == "all"
 		cb, events := eui.NewCheckbox()
 		pluginMu.RLock()
 		cat := pluginCategories[e.owner]
@@ -426,16 +449,22 @@ func refreshPluginsWindow() {
 		cb.Text = label
 		cb.Size = eui.Point{X: 256, Y: 24}
 		owner := e.owner
-		events.Handle = func(ev eui.UIEvent) {
+		charEvents.Handle = func(ev eui.UIEvent) {
 			if ev.Type == eui.EventCheckboxChanged {
-				if ev.Checked {
-					enablePlugin(owner)
-				} else {
-					disablePlugin(owner, "disabled by user")
-				}
+				setPluginEnabled(owner, ev.Checked, allCB.Checked)
 			}
 		}
-		row.AddItem(cb)
+		allEvents.Handle = func(ev eui.UIEvent) {
+			if ev.Type == eui.EventCheckboxChanged {
+				setPluginEnabled(owner, charCB.Checked, ev.Checked)
+			}
+		}
+		row.AddItem(charCB)
+		row.AddItem(allCB)
+		nameTxt, _ := eui.NewText()
+		nameTxt.Text = e.name
+		nameTxt.Size = eui.Point{X: 256, Y: 24}
+		row.AddItem(nameTxt)
 
 		reloadBtn, rh := eui.NewButton()
 		reloadBtn.Text = "Reload"
@@ -1689,6 +1718,7 @@ func makeLoginWindow() {
 					return
 				}
 				playerName = extractMoviePlayerName(frames)
+				applyEnabledPlugins()
 				ctx, cancel := context.WithCancel(gameCtx)
 				mp := newMoviePlayer(frames, clMovFPS, cancel)
 				mp.makePlaybackWindow()
