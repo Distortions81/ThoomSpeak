@@ -123,6 +123,8 @@ func TestPluginRemoveMacrosOnDisable(t *testing.T) {
 	pluginDisabled = map[string]bool{}
 	pluginEnabledFor = map[string]string{}
 	pluginDisplayNames = map[string]string{}
+	pluginCategories = map[string]string{}
+	pluginSubCategories = map[string]string{}
 	pluginTerminators = map[string]func(){}
 	pluginCommandOwners = map[string]string{}
 	pluginCommands = map[string]PluginCommandHandler{}

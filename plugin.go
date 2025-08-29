@@ -92,6 +92,9 @@ func exportsForPlugin(owner string) interp.Exports {
 		m["RegisterInputHandler"] = reflect.ValueOf(func(fn func(string) string) { pluginRegisterInputHandler(owner, fn) })
 		m["RunCommand"] = reflect.ValueOf(func(cmd string) { pluginRunCommand(owner, cmd) })
 		m["EnqueueCommand"] = reflect.ValueOf(func(cmd string) { pluginEnqueueCommand(owner, cmd) })
+		m["StorageGet"] = reflect.ValueOf(func(key string) any { return pluginStorageGet(owner, key) })
+		m["StorageSet"] = reflect.ValueOf(func(key string, value any) { pluginStorageSet(owner, key, value) })
+		m["StorageDelete"] = reflect.ValueOf(func(key string) { pluginStorageDelete(owner, key) })
 		ex[pkg] = m
 	}
 	return ex
@@ -316,6 +319,9 @@ var (
 	pluginMu              sync.RWMutex
 	pluginNames           = map[string]bool{}
 	pluginDisplayNames    = map[string]string{}
+	pluginAuthors         = map[string]string{}
+	pluginCategories      = map[string]string{}
+	pluginSubCategories   = map[string]string{}
 	pluginDisabled        = map[string]bool{}
 	pluginEnabledFor      = map[string]string{}
 	pluginPaths           = map[string]string{}
@@ -755,6 +761,16 @@ func pluginRegisterConsoleTriggers(owner string, phrases []string, fn func()) {
 	refreshTriggersList()
 }
 
+// pluginAutoReply sends a command when a chat message contains trigger.
+func pluginAutoReply(owner, trigger, command string) {
+	if pluginIsDisabled(owner) || trigger == "" || command == "" {
+		return
+	}
+	pluginRegisterTriggers(owner, "", []string{trigger}, func() {
+		pluginEnqueueCommand(owner, command)
+	})
+}
+
 func pluginRegisterTrigger(owner string, phrase string, fn func()) {
 	if pluginIsDisabled(owner) || fn == nil {
 		return
@@ -877,8 +893,14 @@ func rescanPlugins() {
 		"plugins",
 	}
 	nameRE := regexp.MustCompile(`(?m)^\s*(?:var|const)\s+PluginName\s*=\s*"([^"]+)"`)
+	authorRE := regexp.MustCompile(`(?m)^\s*(?:var|const)\s+PluginAuthor\s*=\s*"([^"]+)"`)
 	newDisplay := map[string]string{}
+	newAuthors := map[string]string{}
+	categoryRE := regexp.MustCompile(`(?m)^\s*(?:var|const)\s+PluginCategory\s*=\s*"([^"]+)"`)
+	subCategoryRE := regexp.MustCompile(`(?m)^\s*(?:var|const)\s+PluginSubCategory\s*=\s*"([^"]+)"`)
 	newPaths := map[string]string{}
+	newCategories := map[string]string{}
+	newSubCategories := map[string]string{}
 	seenNames := map[string]bool{}
 	for _, dir := range pluginDirs {
 		entries, err := os.ReadDir(dir)
@@ -900,6 +922,16 @@ func rescanPlugins() {
 				continue
 			}
 			name := strings.TrimSpace(string(match[1]))
+			catMatch := categoryRE.FindSubmatch(src)
+			category := ""
+			if len(catMatch) >= 2 {
+				category = strings.TrimSpace(string(catMatch[1]))
+			}
+			subMatch := subCategoryRE.FindSubmatch(src)
+			subCategory := ""
+			if len(subMatch) >= 2 {
+				subCategory = strings.TrimSpace(string(subMatch[1]))
+			}
 			if name == "" {
 				continue
 			}
@@ -910,8 +942,15 @@ func rescanPlugins() {
 			seenNames[lower] = true
 			base := strings.TrimSuffix(e.Name(), ".go")
 			owner := name + "_" + base
+			author := ""
+			if match := authorRE.FindSubmatch(src); len(match) >= 2 {
+				author = strings.TrimSpace(string(match[1]))
+			}
 			newDisplay[owner] = name
 			newPaths[owner] = path
+			newAuthors[owner] = author
+			newCategories[owner] = category
+			newSubCategories[owner] = subCategory
 		}
 	}
 
@@ -936,6 +975,9 @@ func rescanPlugins() {
 	pluginDisplayNames = newDisplay
 	pluginPaths = newPaths
 	newEnabled := map[string]string{}
+	pluginAuthors = newAuthors
+	pluginCategories = newCategories
+	pluginSubCategories = newSubCategories
 	pluginDisabled = make(map[string]bool, len(newDisplay))
 	for o := range newDisplay {
 		if en, ok := pluginEnabledFor[o]; ok {
@@ -981,6 +1023,9 @@ func loadPlugins() {
 		"plugins",
 	}
 	nameRE := regexp.MustCompile(`(?m)^\s*(?:var|const)\s+PluginName\s*=\s*"([^"]+)"`)
+	authorRE := regexp.MustCompile(`(?m)^\s*(?:var|const)\s+PluginAuthor\s*=\s*"([^"]+)"`)
+	categoryRE := regexp.MustCompile(`(?m)^\s*(?:var|const)\s+PluginCategory\s*=\s*"([^"]+)"`)
+	subCategoryRE := regexp.MustCompile(`(?m)^\s*(?:var|const)\s+PluginSubCategory\s*=\s*"([^"]+)"`)
 	for _, dir := range pluginDirs {
 		entries, err := os.ReadDir(dir)
 		if err != nil {
@@ -1006,6 +1051,16 @@ func loadPlugins() {
 				continue
 			}
 			name := strings.TrimSpace(string(match[1]))
+			catMatch := categoryRE.FindSubmatch(src)
+			category := ""
+			if len(catMatch) >= 2 {
+				category = strings.TrimSpace(string(catMatch[1]))
+			}
+			subMatch := subCategoryRE.FindSubmatch(src)
+			subCategory := ""
+			if len(subMatch) >= 2 {
+				subCategory = strings.TrimSpace(string(subMatch[1]))
+			}
 			if name == "" {
 				log.Printf("plugin %s empty PluginName", path)
 				consoleMessage("[plugin] empty name: " + path)
@@ -1021,6 +1076,10 @@ func loadPlugins() {
 			base := strings.TrimSuffix(e.Name(), ".go")
 			owner := name + "_" + base
 			en := ""
+			if match := authorRE.FindSubmatch(src); len(match) >= 2 {
+				author = strings.TrimSpace(string(match[1]))
+			}
+			disabled := true
 			if gs.EnabledPlugins != nil {
 				if val, ok := gs.EnabledPlugins[owner]; ok {
 					en = val
@@ -1029,8 +1088,11 @@ func loadPlugins() {
 			disabled := !(en == "all" || (playerName != "" && en == playerName))
 			pluginMu.Lock()
 			pluginDisplayNames[owner] = name
+			pluginCategories[owner] = category
+			pluginSubCategories[owner] = subCategory
 			pluginPaths[owner] = path
 			pluginEnabledFor[owner] = en
+			pluginAuthors[owner] = author
 			pluginDisabled[owner] = disabled
 			pluginMu.Unlock()
 			if !disabled {

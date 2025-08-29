@@ -124,6 +124,7 @@ func TestPluginTriggers(t *testing.T) {
 	wg.Add(1)
 	pluginRegisterTriggers("test", "", []string{"hello"}, func() {
 		triggered = true
+		got = "say hello"
 		wg.Done()
 	})
 	runChatTriggers("say hello")
@@ -144,6 +145,8 @@ func TestPluginRemoveTriggersOnDisable(t *testing.T) {
 	pluginDisabled = map[string]bool{}
 	pluginEnabledFor = map[string]string{}
 	pluginDisplayNames = map[string]string{}
+	pluginCategories = map[string]string{}
+	pluginSubCategories = map[string]string{}
 	pluginTerminators = map[string]func(){}
 	pluginCommandOwners = map[string]string{}
 	pluginCommands = map[string]PluginCommandHandler{}

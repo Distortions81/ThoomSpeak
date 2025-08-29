@@ -432,7 +432,22 @@ func refreshPluginsWindow() {
 		scope := pluginEnabledFor[e.owner]
 		charCB.Checked = scope == playerName
 		allCB.Checked = scope == "all"
+		cb, events := eui.NewCheckbox()
+		pluginMu.RLock()
+		cat := pluginCategories[e.owner]
+		sub := pluginSubCategories[e.owner]
+		cb.Checked = !pluginDisabled[e.owner]
 		pluginMu.RUnlock()
+		label := e.name
+		if cat != "" {
+			label += " [" + cat
+			if sub != "" {
+				label += " - " + sub
+			}
+			label += "]"
+		}
+		cb.Text = label
+		cb.Size = eui.Point{X: 256, Y: 24}
 		owner := e.owner
 		charEvents.Handle = func(ev eui.UIEvent) {
 			if ev.Type == eui.EventCheckboxChanged {
