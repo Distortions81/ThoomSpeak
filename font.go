@@ -51,6 +51,7 @@ func initFont() {
 		Source: bold,
 		Size:   gs.MainFontSize * gs.GameScale,
 	}
+	eui.SetBoldFontSource(bold)
 
 	italic, err := text.NewGoTextFaceSource(bytes.NewReader(notoSansItalic))
 	if err != nil {

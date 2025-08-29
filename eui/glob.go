@@ -13,15 +13,16 @@ var (
 	screenWidth  = 1024
 	screenHeight = 1024
 
-	mplusFaceSource  *text.GoTextFaceSource
-	windows          []*windowData
-	activeWindow     *windowData
-	focusedItem      *itemData
-	hoveredItem      *itemData
-	uiScale          float32 = 1.0
-	currentTheme     *Theme
-	currentThemeName string = "AccentDark"
-	clickFlash              = time.Millisecond * 100
+	mplusFaceSource     *text.GoTextFaceSource
+	mplusBoldFaceSource *text.GoTextFaceSource
+	windows             []*windowData
+	activeWindow        *windowData
+	focusedItem         *itemData
+	hoveredItem         *itemData
+	uiScale             float32 = 1.0
+	currentTheme        *Theme
+	currentThemeName    string = "AccentDark"
+	clickFlash                 = time.Millisecond * 100
 
 	// DebugMode enables rendering of debug outlines.
 	DebugMode bool

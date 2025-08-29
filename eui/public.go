@@ -89,8 +89,17 @@ func SetFontSource(src *text.GoTextFaceSource) {
 	faceCache = map[float64]*text.GoTextFace{}
 }
 
+// SetBoldFontSource sets the bold text face source used when rendering bold text.
+func SetBoldFontSource(src *text.GoTextFaceSource) {
+	mplusBoldFaceSource = src
+	boldFaceCache = map[float64]*text.GoTextFace{}
+}
+
 // FontSource returns the current text face source.
 func FontSource() *text.GoTextFaceSource { return mplusFaceSource }
+
+// BoldFontSource returns the current bold text face source.
+func BoldFontSource() *text.GoTextFaceSource { return mplusBoldFaceSource }
 
 // EnsureFontSource initializes the font source from ttf data if needed.
 func EnsureFontSource(ttf []byte) error {
@@ -103,6 +112,20 @@ func EnsureFontSource(ttf []byte) error {
 	}
 	mplusFaceSource = s
 	faceCache = map[float64]*text.GoTextFace{}
+	return nil
+}
+
+// EnsureBoldFontSource initializes the bold font source from ttf data if needed.
+func EnsureBoldFontSource(ttf []byte) error {
+	if mplusBoldFaceSource != nil {
+		return nil
+	}
+	s, err := text.NewGoTextFaceSource(bytes.NewReader(ttf))
+	if err != nil {
+		return err
+	}
+	mplusBoldFaceSource = s
+	boldFaceCache = map[float64]*text.GoTextFace{}
 	return nil
 }
 
