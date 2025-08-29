@@ -86,7 +86,7 @@
     "OutlineColor": "outline",
     "DisabledColor": "disabled",
     "SelectedColor": "accent",
-    "MaxVisible": 5
+    "MaxVisible": 0
   },
   "Tab": {
     "TextColor": "text",

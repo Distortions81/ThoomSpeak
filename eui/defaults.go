@@ -178,7 +178,7 @@ var defaultDropdown = &itemData{
 	HoverColor:   NewColor(96, 96, 96, 255),
 	ClickColor:   NewColor(0, 160, 160, 255),
 	OutlineColor: NewColor(0, 160, 160, 255),
-	MaxVisible:   5,
+	MaxVisible:   0,
 
 	ShadowSize:  16,
 	ShadowColor: NewColor(0, 0, 0, 160),

@@ -472,7 +472,7 @@ func dropdownOpenRect(item *itemData, offset point) (rect, int) {
 	optionH := maxSize.Y
 	visible := item.MaxVisible
 	if visible <= 0 {
-		visible = 5
+		visible = len(item.Options)
 	}
 	if visible > len(item.Options) {
 		visible = len(item.Options)
