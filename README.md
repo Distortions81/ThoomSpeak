@@ -2,7 +2,8 @@
 
 An open-source (MIT) client for the classic **Clan Lord** MMORPG
 
-<img width="375" height="375" alt="goThoom" src="https://github.com/user-attachments/assets/b036f99a-668b-408e-8a43-524a0659a260" />
+<img width="125" height="125" alt="goThoom" src="https://github.com/user-attachments/assets/b036f99a-668b-408e-8a43-524a0659a260" />
+<img src="dev-screenshots/Screenshot_20250829_132759.png"/>
 
 > Status: actively developed, cross-platform builds provided in Releases.
 

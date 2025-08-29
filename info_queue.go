@@ -2,12 +2,14 @@ package main
 
 import (
 	"strings"
+	"sync"
 	"time"
 )
 
 // A tiny, throttled queue of /be-info lookups for players missing details.
 var (
 	infoQueue    = map[string]struct{}{}
+	infoQueueMu  sync.Mutex
 	lastInfoSent time.Time
 	infoCooldown = 500 * time.Millisecond
 )
@@ -26,7 +28,9 @@ func queueInfoRequest(name string) {
 			return // no need
 		}
 	}
+	infoQueueMu.Lock()
 	infoQueue[name] = struct{}{}
+	infoQueueMu.Unlock()
 }
 
 // maybeEnqueueInfo sets pendingCommand to "/be-info <name>" when throttled and
@@ -38,6 +42,8 @@ func maybeEnqueueInfo() bool {
 	if time.Since(lastInfoSent) < infoCooldown {
 		return false
 	}
+	infoQueueMu.Lock()
+	defer infoQueueMu.Unlock()
 	for name := range infoQueue {
 		pendingCommand = "/be-info " + name
 		delete(infoQueue, name)
