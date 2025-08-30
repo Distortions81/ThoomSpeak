@@ -38,8 +38,18 @@ func isTTSBlocked(name string) bool {
 
 func handleNoTTSCommand(args string) {
 	fields := strings.Fields(args)
+	if len(fields) == 1 && strings.ToLower(fields[0]) == "list" {
+		ttsBlocklistMu.RLock()
+		if len(gs.ChatTTSBlocklist) == 0 {
+			consoleMessage("TTS blocklist is empty.")
+		} else {
+			consoleMessage("TTS blocklist: " + strings.Join(gs.ChatTTSBlocklist, ", "))
+		}
+		ttsBlocklistMu.RUnlock()
+		return
+	}
 	if len(fields) != 2 {
-		consoleMessage("Usage: /notts add|remove <name>")
+		consoleMessage("Usage: /notts add|remove <name> or /notts list")
 		return
 	}
 	action := strings.ToLower(fields[0])
@@ -76,6 +86,6 @@ func handleNoTTSCommand(args string) {
 		settingsDirty = true
 		consoleMessage("Removed " + name + " from the TTS blocklist.")
 	default:
-		consoleMessage("Usage: /notts add|remove <name>")
+		consoleMessage("Usage: /notts add|remove <name> or /notts list")
 	}
 }
