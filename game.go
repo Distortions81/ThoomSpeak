@@ -591,7 +591,8 @@ func (g *Game) Update() error {
 	eui.Update() //We really need this to return eaten clicks
 	typingElsewhere := typingInUI()
 	if inputActive && inputFlow != nil && len(inputFlow.Contents) > 0 {
-		inputPos = inputFlow.Contents[0].CursorPos
+		item := inputFlow.Contents[0]
+		inputPos = plainCursorPos(item.Text, item.CursorPos)
 	}
 	checkPluginMods()
 	updateNotifications()

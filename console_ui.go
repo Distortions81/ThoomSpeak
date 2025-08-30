@@ -28,7 +28,7 @@ func updateConsoleWindow() {
 	if inputFlow != nil && len(inputFlow.Contents) > 0 {
 		inputItem := inputFlow.Contents[0]
 		inputItem.Focused = inputActive
-		inputItem.CursorPos = inputPos
+		inputItem.CursorPos = wrappedCursorPos(inputItem.Text, inputPos)
 	}
 	if messagesFlow != nil {
 		// Scroll to bottom on new text; clamp occurs on Refresh.
