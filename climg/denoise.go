@@ -7,11 +7,11 @@ import (
 	"sync"
 )
 
-// denoiseImage softens pixels by blending with neighbours. Pixels that are
-// more similar to their neighbours are blended more strongly while
-// dissimilar pixels are blended less. The sharpness parameter controls how
-// quickly the blend amount falls off as colours become more different. Only
-// the immediate horizontal and vertical neighbours are considered.
+// denoiseImage softens pixels by blending with neighbours. Pixels with
+// similar hue and brightness are blended more strongly while dissimilar
+// pixels are blended less. The sharpness parameter controls how quickly the
+// blend amount falls off as colours become more different. Only the immediate
+// horizontal and vertical neighbours are considered.
 func denoiseImage(img *image.RGBA, sharpness, maxPercent float64) {
 	bounds := img.Bounds()
 	w, h := bounds.Dx(), bounds.Dy()
@@ -47,9 +47,8 @@ func denoiseImage(img *image.RGBA, sharpness, maxPercent float64) {
 				nOff := (y+n.Y)*src.Stride + (x+n.X)*4
 				ncol := color.RGBA{src.Pix[nOff], src.Pix[nOff+1], src.Pix[nOff+2], src.Pix[nOff+3]}
 				dist := colourDist(c, ncol)
-				nd := float64(dist) / 195075.0
-				if nd < 1 {
-					blend := maxPercent * math.Pow(1-nd, sharpness)
+				if dist < 1 {
+					blend := maxPercent * math.Pow(1-dist, sharpness)
 					if blend > 0 {
 						c = mixColour(c, ncol, blend)
 					}
@@ -83,19 +82,65 @@ func getTempRGBA(bounds image.Rectangle) *image.RGBA {
 
 func putTempRGBA(img *image.RGBA) { rgbaPool.Put(img) }
 
-// colourDist returns the squared Euclidean distance between two colours.
+// colourDist returns a normalised distance [0,1] based on hue and brightness
+// differences between two colours. Values >= 1 indicate colours that should
+// not be blended.
 const dt = 0
 
-func colourDist(a, b color.RGBA) int {
-	dr := int(a.R) - int(b.R)
-	dg := int(a.G) - int(b.G)
-	db := int(a.B) - int(b.B)
+func colourDist(a, b color.RGBA) float64 {
 	if a.A < 0xFF || b.A < 0xFF ||
 		(a.R == dt && a.G == dt && a.B == dt) ||
 		(b.R == dt && b.G == dt && b.B == dt) {
-		return 195076
+		return 2 // sentinel > 1
 	}
-	return dr*dr + dg*dg + db*db
+
+	r1, g1, b1 := float64(a.R)/255, float64(a.G)/255, float64(a.B)/255
+	r2, g2, b2 := float64(b.R)/255, float64(b.G)/255, float64(b.B)/255
+
+	h1, s1, v1 := rgbToHSV(r1, g1, b1)
+	h2, s2, v2 := rgbToHSV(r2, g2, b2)
+
+	dh := math.Abs(h1 - h2)
+	if dh > 180 {
+		dh = 360 - dh
+	}
+	dh /= 360
+	dv := math.Abs(v1 - v2)
+	avgSat := (s1 + s2) / 2
+
+	d := dh*avgSat + dv*(1-avgSat)
+	if d > 1 {
+		return 1
+	}
+	return d
+}
+
+func rgbToHSV(r, g, b float64) (h, s, v float64) {
+	max := math.Max(r, math.Max(g, b))
+	min := math.Min(r, math.Min(g, b))
+	v = max
+	d := max - min
+	if max != 0 {
+		s = d / max
+	} else {
+		return 0, 0, 0
+	}
+	if d == 0 {
+		return 0, s, v
+	}
+	switch {
+	case r == max:
+		h = (g - b) / d
+	case g == max:
+		h = 2 + (b-r)/d
+	default:
+		h = 4 + (r-g)/d
+	}
+	h *= 60
+	if h < 0 {
+		h += 360
+	}
+	return
 }
 
 // mixColour blends two colours together by the provided percentage.
