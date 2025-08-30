@@ -2,12 +2,12 @@ package main
 
 const MaxLights = 128
 // Lights restore detail more aggressively near sources but never exceed base.
-const LightScale = 4
+const BaseLightScale = 4
 // Darkening strength per dark source; tuned to avoid over-darkening at low night levels
-const DarkScale  = 1
+const DarkScale      = 1
 // Additive glow-ball parameters
-const HaloRadiusFrac = 0.35
-const HaloStrength  = 0.3
+const HaloRadiusFrac    = 0.35
+const BaseHaloStrength  = 0.3
 
 var (
     LightCount int
@@ -24,6 +24,8 @@ var (
     DarkRadius [MaxLights]float
     DarkAlpha [MaxLights]float
     DarkIntensity [MaxLights]float
+    LightStrength float
+    GlowStrength float
     NightFactor float
 )
 
@@ -65,7 +67,7 @@ func Fragment(pos vec4, texCoord vec2, color vec4) vec4 {
             f := 1.0 / (1.0 + nd*nd)
             // Sharper falloff to localize light influence
             f = f * f
-            w := clamp(LightScale*f, 0.0, 10.0) * LightIntensity[i]
+            w := clamp(BaseLightScale*LightStrength*f, 0.0, 10.0) * LightIntensity[i]
             sumW += w
             rgb := vec3(LightR[i], LightG[i], LightB[i])
             // Equalize by luminance to balance hue influence
@@ -140,7 +142,7 @@ func Fragment(pos vec4, texCoord vec2, color vec4) vec4 {
     }
     // Tone-map halo and add with small strength
     halo = halo / (1.0 + halo)
-    finalRGB = clamp(finalRGB + HaloStrength*halo, 0.0, 1.0)
+    finalRGB = clamp(finalRGB + BaseHaloStrength*GlowStrength*halo, 0.0, 1.0)
 
     return vec4(finalRGB, base.a)
 }

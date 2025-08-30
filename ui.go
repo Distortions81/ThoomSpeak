@@ -82,32 +82,34 @@ var (
 	pictBlendLabel   *eui.ItemData
 	totalCacheLabel  *eui.ItemData
 
-	soundTestLabel  *eui.ItemData
-	soundTestID     int
-	recordBtn       *eui.ItemData
-	recordStatus    *eui.ItemData
-	qualityPresetDD *eui.ItemData
-	denoiseCB       *eui.ItemData
-	motionCB        *eui.ItemData
-	noSmoothCB      *eui.ItemData
-	animCB          *eui.ItemData
-	pictBlendCB     *eui.ItemData
-	throttleSoundCB *eui.ItemData
-	precacheSoundCB *eui.ItemData
-	precacheImageCB *eui.ItemData
-	noCacheCB       *eui.ItemData
-	potatoCB        *eui.ItemData
-	volumeSlider    *eui.ItemData
-	muteBtn         *eui.ItemData
-	mixerWin        *eui.WindowData
-	masterMixSlider *eui.ItemData
-	gameMixSlider   *eui.ItemData
-	musicMixSlider  *eui.ItemData
-	ttsMixSlider    *eui.ItemData
-	mixMuteBtn      *eui.ItemData
-	gameMixCB       *eui.ItemData
-	musicMixCB      *eui.ItemData
-	ttsMixCB        *eui.ItemData
+	soundTestLabel    *eui.ItemData
+	soundTestID       int
+	recordBtn         *eui.ItemData
+	recordStatus      *eui.ItemData
+	qualityPresetDD   *eui.ItemData
+	shaderLightSlider *eui.ItemData
+	shaderGlowSlider  *eui.ItemData
+	denoiseCB         *eui.ItemData
+	motionCB          *eui.ItemData
+	noSmoothCB        *eui.ItemData
+	animCB            *eui.ItemData
+	pictBlendCB       *eui.ItemData
+	throttleSoundCB   *eui.ItemData
+	precacheSoundCB   *eui.ItemData
+	precacheImageCB   *eui.ItemData
+	noCacheCB         *eui.ItemData
+	potatoCB          *eui.ItemData
+	volumeSlider      *eui.ItemData
+	muteBtn           *eui.ItemData
+	mixerWin          *eui.WindowData
+	masterMixSlider   *eui.ItemData
+	gameMixSlider     *eui.ItemData
+	musicMixSlider    *eui.ItemData
+	ttsMixSlider      *eui.ItemData
+	mixMuteBtn        *eui.ItemData
+	gameMixCB         *eui.ItemData
+	musicMixCB        *eui.ItemData
+	ttsMixCB          *eui.ItemData
 )
 
 var ttsTestPhrase = "The quick brown fox jumps over the lazy dog"
@@ -3450,12 +3452,60 @@ func makeQualityWindow() {
 			if qualityPresetDD != nil {
 				qualityPresetDD.Selected = detectQualityPreset()
 			}
+			if shaderLightSlider != nil {
+				shaderLightSlider.Disabled = !ev.Checked
+			}
+			if shaderGlowSlider != nil {
+				shaderGlowSlider.Disabled = !ev.Checked
+			}
 			if debugWin != nil {
 				debugWin.Refresh()
 			}
 		}
 	}
 	left.AddItem(shaderQualityCB)
+
+	sLS, shaderLightEvents := eui.NewSlider()
+	shaderLightSlider = sLS
+	shaderLightSlider.Label = "Light Strength"
+	shaderLightSlider.MinValue = 0
+	shaderLightSlider.MaxValue = 200
+	shaderLightSlider.IntOnly = true
+	shaderLightSlider.Value = float32(gs.ShaderLightStrength * 100)
+	shaderLightSlider.Size = eui.Point{X: width - 10, Y: 24}
+	shaderLightSlider.Disabled = !gs.shaderLighting
+	shaderLightSlider.Tooltip = "Adjust intensity of shader lighting"
+	shaderLightEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			gs.ShaderLightStrength = float64(ev.Value / 100)
+			settingsDirty = true
+			if debugWin != nil {
+				debugWin.Refresh()
+			}
+		}
+	}
+	left.AddItem(shaderLightSlider)
+
+	sGS, shaderGlowEvents := eui.NewSlider()
+	shaderGlowSlider = sGS
+	shaderGlowSlider.Label = "Glow Strength"
+	shaderGlowSlider.MinValue = 0
+	shaderGlowSlider.MaxValue = 200
+	shaderGlowSlider.IntOnly = true
+	shaderGlowSlider.Value = float32(gs.ShaderGlowStrength * 100)
+	shaderGlowSlider.Size = eui.Point{X: width - 10, Y: 24}
+	shaderGlowSlider.Disabled = !gs.shaderLighting
+	shaderGlowSlider.Tooltip = "Adjust strength of glow halos"
+	shaderGlowEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			gs.ShaderGlowStrength = float64(ev.Value / 100)
+			settingsDirty = true
+			if debugWin != nil {
+				debugWin.Refresh()
+			}
+		}
+	}
+	left.AddItem(shaderGlowSlider)
 
 	vsyncCB, vsyncEvents := eui.NewCheckbox()
 	vsyncCB.Text = "VSync - Limit FPS"
