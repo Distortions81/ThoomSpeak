@@ -82,6 +82,8 @@ var gsdef settings = settings{
 	GameSound:            true,
 	GameScale:            2,
 	BarPlacement:         BarPlacementBottom,
+	ShaderLightStrength:  1.0,
+	ShaderGlowStrength:   1.0,
 	MaxNightLevel:        100,
 	ForceNightLevel:      -1,
 	ChatTTS:              true,
@@ -207,6 +209,9 @@ type settings struct {
 	ChatWindow      WindowState
 	WindowZones     map[string]eui.WindowZoneState
 
+	ShaderLightStrength float64
+	ShaderGlowStrength  float64
+
 	imgPlanesDebug      bool
 	smoothingDebug      bool
 	pictAgainDebug      bool
@@ -323,6 +328,13 @@ func loadSettings() bool {
 	}
 	if gs.ChatTTSVoice == "" {
 		gs.ChatTTSVoice = gsdef.ChatTTSVoice
+	}
+
+	if gs.ShaderLightStrength < 0 || gs.ShaderLightStrength > 2 {
+		gs.ShaderLightStrength = gsdef.ShaderLightStrength
+	}
+	if gs.ShaderGlowStrength < 0 || gs.ShaderGlowStrength > 2 {
+		gs.ShaderGlowStrength = gsdef.ShaderGlowStrength
 	}
 
 	if gs.WindowWidth > 0 && gs.WindowHeight > 0 {
@@ -686,6 +698,12 @@ func applyQualityPreset(name string) {
 	}
 	if debugWin != nil {
 		debugWin.Refresh()
+	}
+	if shaderLightSlider != nil {
+		shaderLightSlider.Disabled = !gs.shaderLighting
+	}
+	if shaderGlowSlider != nil {
+		shaderGlowSlider.Disabled = !gs.shaderLighting
 	}
 }
 

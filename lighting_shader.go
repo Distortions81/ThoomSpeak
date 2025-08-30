@@ -161,6 +161,9 @@ func applyLightingShader(dst *ebiten.Image, lights []lightSource, darks []darkSo
 	uniforms["DarkAlpha"] = da
 	uniforms["DarkIntensity"] = dint
 
+	uniforms["LightStrength"] = float32(gs.ShaderLightStrength)
+	uniforms["GlowStrength"] = float32(gs.ShaderGlowStrength)
+
 	// Compute smoothed night factor for reveal scaling in shader.
 	// If we have night smoothing state, use it; otherwise fall back to current level.
 	nightFactor := float32(0)
