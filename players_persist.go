@@ -9,7 +9,8 @@ import (
 )
 
 type persistPlayers struct {
-	Players []persistPlayer `json:"players"`
+	Players    []persistPlayer `json:"players"`
+	LabelNames []string        `json:"label_names,omitempty"`
 }
 
 type persistPlayer struct {
@@ -21,7 +22,7 @@ type persistPlayer struct {
 	Dead        bool   `json:"dead"`
 	GMLevel     int    `json:"gm,omitempty"`
 	Friend      bool   `json:"friend,omitempty"`
-	FriendLabel int    `json:"friend_label,omitempty"`
+	GlobalLabel int    `json:"friend_label,omitempty"`
 	Blocked     bool   `json:"blocked,omitempty"`
 	Ignored     bool   `json:"ignored,omitempty"`
 	Bard        bool   `json:"bard,omitempty"`
@@ -51,6 +52,12 @@ func loadPlayersPersist() {
 	if err := json.Unmarshal(data, &pp); err != nil {
 		return
 	}
+	if len(pp.LabelNames) > 0 {
+		labelNames = append(labelNames[:0], pp.LabelNames...)
+		for len(labelNames) < len(labelColors) {
+			labelNames = append(labelNames, "")
+		}
+	}
 	if len(pp.Players) == 0 {
 		return
 	}
@@ -79,10 +86,8 @@ func loadPlayersPersist() {
 		}
 		pr.Dead = p.Dead
 		pr.GMLevel = p.GMLevel
-		pr.Friend = p.Friend
-		pr.FriendLabel = p.FriendLabel
-		pr.Blocked = p.Blocked
-		pr.Ignored = p.Ignored
+		pr.GlobalLabel = p.GlobalLabel
+		applyPlayerLabel(pr)
 		pr.Bard = p.Bard
 		pr.SameClan = p.SameClan
 		pr.BeWho = p.BeWho
@@ -140,6 +145,9 @@ func savePlayersPersist() {
 		if !p.LastSeen.IsZero() {
 			lastSeen = p.LastSeen.Unix()
 		}
+		friend := p.GlobalLabel > 0 && p.GlobalLabel < 6
+		blocked := p.GlobalLabel == 6
+		ignored := p.GlobalLabel == 7
 		list = append(list, persistPlayer{
 			Name:        p.Name,
 			Gender:      p.Gender,
@@ -148,10 +156,10 @@ func savePlayersPersist() {
 			PictID:      p.PictID,
 			Dead:        p.Dead,
 			GMLevel:     p.GMLevel,
-			Friend:      p.Friend,
-			FriendLabel: p.FriendLabel,
-			Blocked:     p.Blocked,
-			Ignored:     p.Ignored,
+			Friend:      friend,
+			GlobalLabel: p.GlobalLabel,
+			Blocked:     blocked,
+			Ignored:     ignored,
 			Bard:        p.Bard,
 			SameClan:    p.SameClan,
 			BeWho:       p.BeWho,
@@ -164,7 +172,7 @@ func savePlayersPersist() {
 	}
 	playersMu.RUnlock()
 
-	pp := persistPlayers{Players: list}
+	pp := persistPlayers{Players: list, LabelNames: labelNames}
 	data, err := json.MarshalIndent(pp, "", "  ")
 	if err != nil {
 		return
