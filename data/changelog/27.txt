@@ -1,0 +1,16 @@
+Allow drop-down menus to be larger so you don't need to scroll them in most cases.
+Moved macros, hotkeys, plugins to "actions" button in toolbar.
+Tab now cycles text input fields and enter activates a default action (bold text) 
+Added spell check, with red underlines with hover menu to choose suggested spelling.
+Feel free to submit common terms and names in clan lord we can put into the dictionary! 
+arrow forward or back now moves the cursor in text.
+cursor | is now always shown in text fields. 
+typing into a text field always blocks the keystrokes from activating wasd and such
+nametags always render above/on-top the mobile they are for, and automatically adjust position for sprite size. 
+clicking in text now places the cursor there.
+mobiles behind objects now cause the object to fade into semi-transparency and fade back to opaque when no longer obscuring mobiles. The option is in opacity settings with a slider. this is exceptionally helpful for healers, but also on hunts in general. 
+added /notts command to block specific NPCs or players from TTS. Default Koppi and Crius are blocked.
+bubble lifespan has adjustable base life + life per word 
+Added sliders to adjust intensity of lights and of the glow effects.
+F12 now toggles fullscreen 
+More advanced image denoising/dedithering that filters out more noise, and blends dithered colors more while also preserving more details!
