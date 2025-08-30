@@ -794,6 +794,10 @@ func (g *Game) Update() error {
 		}
 	}
 
+	if inputFlow != nil && len(inputFlow.Contents) > 0 {
+		showSpellSuggestions(inputFlow.Contents[0])
+	}
+
 	focused := ebiten.IsFocused()
 
 	/* WASD / ARROWS */
