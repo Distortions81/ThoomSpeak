@@ -320,6 +320,7 @@ func login(ctx context.Context, clientVersion int) error {
 			return fmt.Errorf("character password required")
 		}
 		playerName = utfFold(name)
+		applyLocalLabels()
 		applyEnabledPlugins()
 
 		var resp []byte

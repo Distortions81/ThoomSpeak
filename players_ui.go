@@ -162,6 +162,12 @@ func updatePlayersWindow() {
 
 		row := &eui.ItemData{ItemType: eui.ITEM_FLOW, FlowType: eui.FLOW_HORIZONTAL, Fixed: true}
 
+		if p.FriendLabel > 0 {
+			row.Outlined = true
+			row.Border = 2
+			row.OutlineColor = labelColor(p.FriendLabel)
+		}
+
 		// Highlight if selected.
 		if p.Name == selectedPlayerName {
 			row.Filled = true
@@ -399,6 +405,14 @@ func openPlayersContextMenu(name string, pos eui.Point) {
 			enqueueCommand(fmt.Sprintf("/push %s", maybeQuoteName(n)))
 			nextCommand()
 		})
+	}
+
+	if displayName != "" {
+		options = append(options, "Label")
+		n := displayName
+		actions = append(actions, func() { showLabelMenu(n, pos, false) })
+		options = append(options, "Label (Global)")
+		actions = append(actions, func() { showLabelMenu(n, pos, true) })
 	}
 
 	if len(options) == 0 {

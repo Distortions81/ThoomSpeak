@@ -12,14 +12,15 @@ import (
 // Character holds a saved character name and password hash. The hash is stored
 // on disk using a reversible scrambling to avoid exposing the raw hash.
 type Character struct {
-	Name         string `json:"name"`
-	passHash     string `json:"-"`
-	Key          string `json:"key"`
-	DontRemember bool   `json:"-"`
-	PictID       uint16 `json:"pict,omitempty"`
-	ColorsHex    string `json:"colors,omitempty"`
-	Colors       []byte `json:"-"`
-	Profession   string `json:"prof,omitempty"`
+	Name         string         `json:"name"`
+	passHash     string         `json:"-"`
+	Key          string         `json:"key"`
+	DontRemember bool           `json:"-"`
+	PictID       uint16         `json:"pict,omitempty"`
+	ColorsHex    string         `json:"colors,omitempty"`
+	Colors       []byte         `json:"-"`
+	Profession   string         `json:"prof,omitempty"`
+	Labels       map[string]int `json:"labels,omitempty"`
 }
 
 var characters []Character

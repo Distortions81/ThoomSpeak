@@ -21,7 +21,9 @@ type Player struct {
 	Sharing     bool // player is sharing to us
 	GMLevel     int  // parsed from be-who; not rendered
 	Friend      bool // marked as friend
-	FriendLabel int  // label/color (0-7)
+	FriendLabel int  // effective label/color (0-7)
+	LocalLabel  int  // character-specific label
+	GlobalLabel int  // global label
 	Blocked     bool // true if player is blocked
 	Ignored     bool // true if player is fully ignored
 	Dead        bool // parsed from obit messages (future)

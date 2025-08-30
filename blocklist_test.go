@@ -50,8 +50,8 @@ func TestHandleForgetCommand(t *testing.T) {
 	players = make(map[string]*Player)
 	consoleLog = messageLog{max: maxMessages}
 	p := getPlayer("Bob")
-	p.Friend = true
-	p.FriendLabel = 1
+	p.GlobalLabel = 1
+	applyPlayerLabel(p)
 	handleForgetCommand("Bob")
 	if p.Blocked || p.Ignored || p.Friend || p.FriendLabel != 0 {
 		t.Fatalf("expected Bob to have no labels")

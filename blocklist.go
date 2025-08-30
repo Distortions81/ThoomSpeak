@@ -15,21 +15,17 @@ func handleBlockCommand(args string) {
 	}
 	p := getPlayer(name)
 	playersMu.Lock()
-	wasBlocked := p.Blocked
+	wasBlocked := p.GlobalLabel == 6
 	if wasBlocked {
-		p.Blocked = false
-		if p.FriendLabel == 6 {
-			p.FriendLabel = 0
-		}
+		p.GlobalLabel = 0
 	} else {
-		p.Blocked = true
-		p.Ignored = false
-		p.Friend = false
-		p.FriendLabel = 6
+		p.GlobalLabel = 6
 	}
+	applyPlayerLabel(p)
 	playerCopy := *p
 	playersMu.Unlock()
 	playersDirty = true
+	playersPersistDirty = true
 	killNameTagCacheFor(p.Name)
 	notifyPlayerHandlers(playerCopy)
 	msg := "Blocking " + p.Name + "."
@@ -46,21 +42,17 @@ func handleIgnoreCommand(args string) {
 	}
 	p := getPlayer(name)
 	playersMu.Lock()
-	wasIgnored := p.Ignored
+	wasIgnored := p.GlobalLabel == 7
 	if wasIgnored {
-		p.Ignored = false
-		if p.FriendLabel == 7 {
-			p.FriendLabel = 0
-		}
+		p.GlobalLabel = 0
 	} else {
-		p.Ignored = true
-		p.Blocked = false
-		p.Friend = false
-		p.FriendLabel = 7
+		p.GlobalLabel = 7
 	}
+	applyPlayerLabel(p)
 	playerCopy := *p
 	playersMu.Unlock()
 	playersDirty = true
+	playersPersistDirty = true
 	killNameTagCacheFor(p.Name)
 	notifyPlayerHandlers(playerCopy)
 	msg := "Ignoring " + p.Name + "."
@@ -77,16 +69,16 @@ func handleForgetCommand(args string) {
 	}
 	p := getPlayer(name)
 	playersMu.Lock()
-	wasBlocked := p.Blocked
-	wasIgnored := p.Ignored
-	wasFriend := p.Friend || p.FriendLabel != 0
-	p.Blocked = false
-	p.Ignored = false
-	p.Friend = false
-	p.FriendLabel = 0
+	wasBlocked := p.GlobalLabel == 6
+	wasIgnored := p.GlobalLabel == 7
+	wasFriend := p.GlobalLabel > 0 && p.GlobalLabel < 6
+	p.GlobalLabel = 0
+	p.LocalLabel = 0
+	applyPlayerLabel(p)
 	playerCopy := *p
 	playersMu.Unlock()
 	playersDirty = true
+	playersPersistDirty = true
 	killNameTagCacheFor(p.Name)
 	notifyPlayerHandlers(playerCopy)
 	msg := "Forgot " + p.Name + "."

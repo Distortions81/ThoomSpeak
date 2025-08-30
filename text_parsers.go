@@ -483,27 +483,10 @@ func parsePresenceText(raw []byte, s string) bool {
 			p.LastSeen = time.Now()
 			p.Offline = false
 			if label >= 0 {
-				if p.FriendLabel != label {
-					p.FriendLabel = label
+				if p.GlobalLabel != label {
+					p.GlobalLabel = label
+					applyPlayerLabel(p)
 					labelChanged = true
-				}
-				switch label {
-				case 6:
-					p.Blocked = true
-					p.Ignored = false
-					p.Friend = false
-				case 7:
-					p.Ignored = true
-					p.Blocked = false
-					p.Friend = false
-				default:
-					if label > 0 {
-						p.Friend = true
-					} else {
-						p.Friend = false
-					}
-					p.Blocked = false
-					p.Ignored = false
 				}
 			}
 			friend = p.Friend
@@ -513,6 +496,7 @@ func parsePresenceText(raw []byte, s string) bool {
 		playersMu.Unlock()
 		if labelChanged {
 			killNameTagCacheFor(name)
+			playersPersistDirty = true
 		}
 		playersDirty = true
 		if changed {
@@ -528,34 +512,16 @@ func parsePresenceText(raw []byte, s string) bool {
 		playersMu.Lock()
 		if p, ok := players[name]; ok {
 			p.Offline = true
-			if label >= 0 && p.FriendLabel != label {
-				p.FriendLabel = label
-				switch label {
-				case 6:
-					p.Blocked = true
-					p.Ignored = false
-					p.Friend = false
-				case 7:
-					p.Ignored = true
-					p.Blocked = false
-					p.Friend = false
-				default:
-					if label > 0 {
-						p.Friend = true
-					} else {
-						p.Friend = false
-					}
-					p.Blocked = false
-					p.Ignored = false
-				}
+			if label >= 0 && p.GlobalLabel != label {
+				p.GlobalLabel = label
+				applyPlayerLabel(p)
+				playersPersistDirty = true
+				killNameTagCacheFor(name)
 			}
 			playerCopy := *p
 			playersMu.Unlock()
 			playersDirty = true
 			notifyPlayerHandlers(playerCopy)
-			if label >= 0 {
-				killNameTagCacheFor(name)
-			}
 		} else {
 			playersMu.Unlock()
 			playersDirty = true
