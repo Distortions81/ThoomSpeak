@@ -10,6 +10,11 @@ import (
 	text "github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
+var (
+	cursorPosition  = ebiten.CursorPosition
+	showContextMenu = eui.ShowContextMenu
+)
+
 // makeTextWindow creates a standardized text window with optional input bar.
 func makeTextWindow(title string, hz eui.HZone, vz eui.VZone, withInput bool) (*eui.WindowData, *eui.ItemData, *eui.ItemData) {
 	win := eui.NewWindow()
@@ -217,13 +222,13 @@ func showSpellSuggestions(t *eui.ItemData) {
 	if t == nil || len(t.Underlines) == 0 || sc == nil {
 		return
 	}
-	if !t.Focused || t.Text == "" || t.ParentWindow == nil || !t.ParentWindow.IsOpen() {
+	if t.Text == "" || t.ParentWindow == nil || !t.ParentWindow.IsOpen() {
 		return
 	}
 	if eui.ContextMenusOpen() {
 		return
 	}
-	mx, my := ebiten.CursorPosition()
+	mx, my := cursorPosition()
 	x := float32(mx)
 	y := float32(my)
 	if x < t.DrawRect.X0 || x > t.DrawRect.X1 || y < t.DrawRect.Y0 || y > t.DrawRect.Y1 {
@@ -260,7 +265,7 @@ func showSpellSuggestions(t *eui.ItemData) {
 			if len(sugg) == 0 {
 				return
 			}
-			eui.ShowContextMenu(sugg, x, y, func(i int) {
+			showContextMenu(sugg, x, y, func(i int) {
 				if i < 0 || i >= len(sugg) {
 					return
 				}
