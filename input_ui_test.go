@@ -37,3 +37,32 @@ func TestPointInGameWindow(t *testing.T) {
 		t.Fatalf("pointInGameWindow should ignore exterior point")
 	}
 }
+
+func TestTypingInUI(t *testing.T) {
+	for _, w := range eui.Windows() {
+		w.Close()
+	}
+
+	consoleWin = eui.NewWindow()
+	inputFlow = &eui.ItemData{}
+	consoleWin.AddItem(inputFlow)
+	inp, _ := eui.NewText()
+	inputFlow.AddItem(inp)
+	consoleWin.MarkOpen()
+
+	inp.Focused = true
+	if typingInUI() {
+		t.Fatalf("typingInUI should ignore console input")
+	}
+
+	inp.Focused = false
+	win := eui.NewWindow()
+	other, _ := eui.NewInput()
+	other.Focused = true
+	win.AddItem(other)
+	win.MarkOpen()
+
+	if !typingInUI() {
+		t.Fatalf("typingInUI should detect focused input")
+	}
+}

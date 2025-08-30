@@ -82,3 +82,44 @@ func pointInItems(items []*eui.ItemData, fx, fy float32) bool {
 	}
 	return false
 }
+
+// typingInUI reports whether any EUI text input other than the console input bar
+// currently has focus.
+func typingInUI() bool {
+	var inputItem *eui.ItemData
+	if inputFlow != nil && len(inputFlow.Contents) > 0 {
+		inputItem = inputFlow.Contents[0]
+	}
+	windows := eui.Windows()
+	for _, win := range windows {
+		if !win.IsOpen() {
+			continue
+		}
+		if typingInItems(win.Contents, inputItem) {
+			return true
+		}
+	}
+	return false
+}
+
+func typingInItems(items []*eui.ItemData, exclude *eui.ItemData) bool {
+	for _, it := range items {
+		if it == nil {
+			continue
+		}
+		if it.Focused && (it.ItemType == eui.ITEM_TEXT || it.ItemType == eui.ITEM_INPUT) && it != exclude {
+			return true
+		}
+		if len(it.Contents) > 0 && typingInItems(it.Contents, exclude) {
+			return true
+		}
+		if len(it.Tabs) > 0 {
+			for _, tab := range it.Tabs {
+				if typingInItems(tab.Contents, exclude) {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}

@@ -892,7 +892,7 @@ func hotkeyEquipAlreadyEquipped(cmd string) bool {
 }
 
 func checkHotkeys() {
-	if recording || inputActive {
+	if recording || inputActive || typingInUI() {
 		return
 	}
 	if combo := detectCombo(); combo != "" {
