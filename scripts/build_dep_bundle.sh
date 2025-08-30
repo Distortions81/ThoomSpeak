@@ -45,6 +45,43 @@ mkdir -p "$GO_CACHE"
 echo "Downloading Go modules..."
 GOMODCACHE="$GO_CACHE" /usr/local/go/bin/go mod download
 
+
+# Copy useful data files
+DATA_SRC="data"
+DATA_DST="$WORK_DIR/data"
+
+# List only the files you want to include
+WHITELIST=(
+  "CL_Images"
+  "CL_Sounds"
+  "font/NotoSans-Regular.ttf"
+  "font/NotoSans-Bold.ttf"
+  "font/NotoSans-Italic.ttf"
+  "font/NotoSans-BoldItalic.ttf"
+
+  "font/NotoSansMono-Regular.ttf"
+  "font/NotoSansMono-Bold.ttf"
+
+  "soundfont.sf2"
+)
+
+if [ -d "$DATA_SRC" ]; then
+  echo "Copying whitelisted data files..."
+  mkdir -p "$DATA_DST"
+  for file in "${WHITELIST[@]}"; do
+    if [ -f "$DATA_SRC/$file" ]; then
+      mkdir -p "$DATA_DST/$(dirname "$file")"
+      cp -a "$DATA_SRC/$file" "$DATA_DST/$file"
+    else
+      echo "Warning: $file not found in $DATA_SRC, skipping."
+    fi
+  done
+else
+  echo "No data directory found; skipping data copy."
+fi
+
+cp -a "spellcheck_words.txt" "$WORK_DIR"
+
 # Create archive.
 
 tar -czf "$OUT_FILE" -C "$WORK_DIR" .
