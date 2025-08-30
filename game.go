@@ -1430,7 +1430,7 @@ func drawMobile(screen *ebiten.Image, ox, oy int, m frameMobile, descMap map[uin
 	}
 }
 
-func pictureObscuresPlayerAt(pictID uint16, frame int, pictH, pictV int16, playerH, playerV int16, playerDesc frameDescriptor) bool {
+func pictureObscuresMobileAt(pictID uint16, frame int, pictH, pictV int16, mobH, mobV int16, mobDesc frameDescriptor) bool {
 	if clImages == nil || clImages.IsSemiTransparent(uint32(pictID)) {
 		return false
 	}
@@ -1442,7 +1442,7 @@ func pictureObscuresPlayerAt(pictID uint16, frame int, pictH, pictV int16, playe
 	if frames > 1 {
 		h /= frames
 	}
-	size := mobileSize(playerDesc.PictID)
+	size := mobileSize(mobDesc.PictID)
 	if size == 0 {
 		return false
 	}
@@ -1450,9 +1450,9 @@ func pictureObscuresPlayerAt(pictID uint16, frame int, pictH, pictV int16, playe
 	picR := picL + w
 	picT := int(pictV) - h/2
 	picB := picT + h
-	mL := int(playerH) - size/2
+	mL := int(mobH) - size/2
 	mR := mL + size
-	mT := int(playerV) - size/2
+	mT := int(mobV) - size/2
 	mB := mT + size
 	interL := picL
 	if mL > interL {
@@ -1478,22 +1478,22 @@ func pictureObscuresPlayerAt(pictID uint16, frame int, pictH, pictV int16, playe
 	return clImages.HasOpaqueRect(uint32(pictID), rect)
 }
 
-// pictureDrawsAfterPlayerAt reports whether a picture at the given position
-// would be drawn after the player based on plane and sort order.
-func pictureDrawsAfterPlayerAt(p framePicture, pictH, pictV int16, playerH, playerV int16, playerPlane int) bool {
-	if p.Plane > playerPlane {
+// pictureDrawsAfterMobileAt reports whether a picture at the given position
+// would be drawn after a mobile based on plane and sort order.
+func pictureDrawsAfterMobileAt(p framePicture, pictH, pictV int16, mobH, mobV int16, mobPlane int) bool {
+	if p.Plane > mobPlane {
 		return true
 	}
-	if p.Plane < playerPlane {
+	if p.Plane < mobPlane {
 		return false
 	}
-	if int(playerV) < int(pictV) {
+	if int(mobV) < int(pictV) {
 		return true
 	}
-	if int(playerV) > int(pictV) {
+	if int(mobV) > int(pictV) {
 		return false
 	}
-	return int(playerH) <= int(pictH)
+	return int(mobH) <= int(pictH)
 }
 
 // drawPicture renders a single picture sprite.
@@ -1550,36 +1550,33 @@ func drawPicture(screen *ebiten.Image, ox, oy int, p framePicture, alpha float64
 	img := loadImageFrame(p.PictID, frame)
 	fadeAlpha := float32(1.0)
 	if gs.FadeObscuringPictures && w > 0 && h > 0 && clImages != nil && !clImages.IsSemiTransparent(uint32(p.PictID)) {
-		var player frameMobile
-		var havePlayer bool
 		for _, m := range mobiles {
-			if m.Index == playerIndex {
-				player = m
-				havePlayer = true
-				break
+			d, ok := descMap[m.Index]
+			if !ok {
+				continue
 			}
-		}
-		if havePlayer {
-			if d, ok := descMap[playerIndex]; ok {
-				prevMob := player
-				if pm, ok := prevMobiles[playerIndex]; ok {
-					prevMob = pm
-				}
-				prevDrawAfter := pictureDrawsAfterPlayerAt(p, p.PrevH, p.PrevV, prevMob.H, prevMob.V, d.Plane)
-				currDrawAfter := pictureDrawsAfterPlayerAt(p, p.H, p.V, player.H, player.V, d.Plane)
-				if prevDrawAfter || currDrawAfter {
-					prevObscure := pictureObscuresPlayerAt(p.PictID, prevFrame, p.PrevH, p.PrevV, prevMob.H, prevMob.V, d)
-					currObscure := pictureObscuresPlayerAt(p.PictID, frame, p.H, p.V, player.H, player.V, d)
-					prevAlpha := float32(1.0)
-					if prevObscure && prevDrawAfter {
-						prevAlpha = float32(gs.ObscuringPictureOpacity)
-					}
-					targetAlpha := float32(1.0)
-					if currObscure && currDrawAfter {
-						targetAlpha = float32(gs.ObscuringPictureOpacity)
-					}
-					fadeAlpha = prevAlpha + (targetAlpha-prevAlpha)*fade
-				}
+			prevMob := m
+			if pm, ok := prevMobiles[m.Index]; ok {
+				prevMob = pm
+			}
+			prevDrawAfter := pictureDrawsAfterMobileAt(p, p.PrevH, p.PrevV, prevMob.H, prevMob.V, d.Plane)
+			currDrawAfter := pictureDrawsAfterMobileAt(p, p.H, p.V, m.H, m.V, d.Plane)
+			if !prevDrawAfter && !currDrawAfter {
+				continue
+			}
+			prevObscure := pictureObscuresMobileAt(p.PictID, prevFrame, p.PrevH, p.PrevV, prevMob.H, prevMob.V, d)
+			currObscure := pictureObscuresMobileAt(p.PictID, frame, p.H, p.V, m.H, m.V, d)
+			prevAlpha := float32(1.0)
+			if prevObscure && prevDrawAfter {
+				prevAlpha = float32(gs.ObscuringPictureOpacity)
+			}
+			targetAlpha := float32(1.0)
+			if currObscure && currDrawAfter {
+				targetAlpha = float32(gs.ObscuringPictureOpacity)
+			}
+			mobFade := prevAlpha + (targetAlpha-prevAlpha)*fade
+			if mobFade < fadeAlpha {
+				fadeAlpha = mobFade
 			}
 		}
 	}
