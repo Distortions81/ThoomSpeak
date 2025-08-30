@@ -3,6 +3,7 @@ package main
 import (
 	"image/color"
 	"strings"
+	"time"
 
 	"gothoom/eui"
 )
@@ -100,14 +101,16 @@ func showLabelMenu(name string, pos eui.Point, global bool) {
 		opts = append(opts, labelName(i+1))
 	}
 	opts = append(opts, "Edit labels…")
-	eui.ShowContextMenu(opts, pos.X, pos.Y, func(i int) {
-		if i == 0 {
-			setPlayerLabel(name, 0, global)
-		} else if i == len(opts)-1 {
-			openLabelEditWindow()
-		} else {
-			setPlayerLabel(name, i, global)
-		}
+	time.AfterFunc(0, func() {
+		eui.ShowContextMenu(opts, pos.X, pos.Y, func(i int) {
+			if i == 0 {
+				setPlayerLabel(name, 0, global)
+			} else if i == len(opts)-1 {
+				openLabelEditWindow()
+			} else {
+				setPlayerLabel(name, i, global)
+			}
+		})
 	})
 }
 
