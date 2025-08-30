@@ -72,6 +72,33 @@ func TestPictureOnEdge(t *testing.T) {
 	}
 }
 
+func TestMobileOnEdge(t *testing.T) {
+	orig := mobileSizeFunc
+	mobileSizeFunc = func(id uint16) int { return 10 }
+	defer func() { mobileSizeFunc = orig }()
+
+	half := 5
+	d := frameDescriptor{PictID: 1}
+	tests := []struct {
+		name string
+		m    frameMobile
+		want bool
+	}{
+		{"inside", frameMobile{H: 0, V: 0}, false},
+		{"left 80% off", frameMobile{H: int16(-fieldCenterX - 8 + half), V: 0}, true},
+		{"left 60% off", frameMobile{H: int16(-fieldCenterX - 6 + half), V: 0}, false},
+		{"corner 80% off", frameMobile{H: int16(-fieldCenterX - 8 + half), V: int16(-fieldCenterY - 8 + half)}, true},
+		{"outside", frameMobile{H: int16(fieldCenterX + half + 1), V: 0}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := mobileOnEdge(tt.m, d); got != tt.want {
+				t.Fatalf("mobileOnEdge(%s) = %v, want %v", tt.name, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestPictureShiftBackgroundCap(t *testing.T) {
 	gs.NoCaching = false
 	pixelCountMu.Lock()
