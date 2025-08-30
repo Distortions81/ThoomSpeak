@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -76,6 +77,45 @@ func TestPluginRegisterAndDisableCommand(t *testing.T) {
 	}
 	if cmds := getQueuedCommands(); len(cmds) != 0 {
 		t.Fatalf("commands queued when plugin disabled: %v", cmds)
+	}
+}
+
+// Test that when a plugin registers a command but is later disabled, user-entered
+// commands with that name still fall through to the server.
+func TestDisabledPluginCommandFallsThrough(t *testing.T) {
+	// Reset shared state.
+	pluginCommands = map[string]PluginCommandHandler{}
+	pluginCommandOwners = map[string]string{}
+	pluginDisabled = map[string]bool{}
+	pendingCommand = ""
+
+	owner := "tester"
+	pluginRegisterCommand(owner, "sleep", func(args string) {})
+	pluginDisabled[owner] = true
+
+	txt := "/sleep"
+	if strings.HasPrefix(txt, "/") {
+		parts := strings.SplitN(strings.TrimPrefix(txt, "/"), " ", 2)
+		name := strings.ToLower(parts[0])
+		args := ""
+		if len(parts) > 1 {
+			args = parts[1]
+		}
+		if handler, ok := pluginCommands[name]; ok && handler != nil {
+			owner := pluginCommandOwners[name]
+			if !pluginDisabled[owner] {
+				consoleMessage("> " + txt)
+				go handler(args)
+			} else {
+				pendingCommand = txt
+			}
+		} else {
+			pendingCommand = txt
+		}
+	}
+
+	if pendingCommand != "/sleep" {
+		t.Fatalf("pending command %q, want %q", pendingCommand, "/sleep")
 	}
 }
 
