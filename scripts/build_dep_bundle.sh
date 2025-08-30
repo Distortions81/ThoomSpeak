@@ -52,8 +52,8 @@ DATA_DST="$WORK_DIR/data"
 
 # List only the files you want to include
 WHITELIST=(
-  "CL_Images"
-  "CL_Sounds"
+  #"CL_Images"
+  #"CL_Sounds"
   "font/NotoSans-Regular.ttf"
   "font/NotoSans-Bold.ttf"
   "font/NotoSans-Italic.ttf"
@@ -62,7 +62,7 @@ WHITELIST=(
   "font/NotoSansMono-Regular.ttf"
   "font/NotoSansMono-Bold.ttf"
 
-  "soundfont.sf2"
+  #"soundfont.sf2"
 )
 
 if [ -d "$DATA_SRC" ]; then
@@ -80,7 +80,7 @@ else
   echo "No data directory found; skipping data copy."
 fi
 
-cp -a "spellcheck_words.txt" "$WORK_DIR"
+cp -a "spellcheck_words.txt" "$WORK_DIR/"
 
 # Create archive.
 
