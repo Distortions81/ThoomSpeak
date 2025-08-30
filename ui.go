@@ -2600,6 +2600,31 @@ func makeSettingsWindow() {
 	}
 	right.AddItem(bubbleLifeSlider)
 
+	fadePicsCB, fadePicsEvents := eui.NewCheckbox()
+	fadePicsCB.Text = "Fade pictures over mobiles"
+	fadePicsCB.Checked = gs.FadeObscuringPictures
+	fadePicsEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventCheckboxChanged {
+			gs.FadeObscuringPictures = ev.Checked
+			settingsDirty = true
+		}
+	}
+	right.AddItem(fadePicsCB)
+
+	obscureSlider, obscureEvents := eui.NewSlider()
+	obscureSlider.Label = "Obscuring picture opacity"
+	obscureSlider.MinValue = 0
+	obscureSlider.MaxValue = 1
+	obscureSlider.Value = float32(gs.ObscuringPictureOpacity)
+	obscureSlider.Size = eui.Point{X: panelWidth - 10, Y: 24}
+	obscureEvents.Handle = func(ev eui.UIEvent) {
+		if ev.Type == eui.EventSliderChanged {
+			gs.ObscuringPictureOpacity = float64(ev.Value)
+			settingsDirty = true
+		}
+	}
+	right.AddItem(obscureSlider)
+
 	barOpacitySlider, barOpacityEvents := eui.NewSlider()
 	barOpacitySlider.Label = "Status bar opacity"
 	barOpacitySlider.MinValue = 0.1

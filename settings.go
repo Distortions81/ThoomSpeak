@@ -37,31 +37,33 @@ var windowsRestored bool
 var gsdef settings = settings{
 	Version: SETTINGS_VERSION,
 
-	KBWalkSpeed:        0.25,
-	MainFontSize:       8,
-	BubbleFontSize:     6,
-	ConsoleFontSize:    12,
-	ChatFontSize:       14,
-	InventoryFontSize:  18,
-	PlayersFontSize:    18,
-	BubbleOpacity:      0.7,
-	BubbleLife:         1.0,
-	NameBgOpacity:      0.7,
-	BarOpacity:         0.5,
-	SpeechBubbles:      true,
-	BubbleNormal:       true,
-	BubbleWhisper:      true,
-	BubbleYell:         true,
-	BubbleThought:      true,
-	BubbleRealAction:   true,
-	BubbleMonster:      true,
-	BubblePlayerAction: true,
-	BubblePonder:       true,
-	BubbleNarrate:      true,
-	BubbleSelf:         true,
-	BubbleOtherPlayers: true,
-	BubbleMonsters:     true,
-	BubbleNarration:    true,
+	KBWalkSpeed:             0.25,
+	MainFontSize:            8,
+	BubbleFontSize:          6,
+	ConsoleFontSize:         12,
+	ChatFontSize:            14,
+	InventoryFontSize:       18,
+	PlayersFontSize:         18,
+	BubbleOpacity:           0.7,
+	BubbleLife:              1.0,
+	NameBgOpacity:           0.7,
+	BarOpacity:              0.5,
+	ObscuringPictureOpacity: 0.5,
+	FadeObscuringPictures:   true,
+	SpeechBubbles:           true,
+	BubbleNormal:            true,
+	BubbleWhisper:           true,
+	BubbleYell:              true,
+	BubbleThought:           true,
+	BubbleRealAction:        true,
+	BubbleMonster:           true,
+	BubblePlayerAction:      true,
+	BubblePonder:            true,
+	BubbleNarrate:           true,
+	BubbleSelf:              true,
+	BubbleOtherPlayers:      true,
+	BubbleMonsters:          true,
+	BubbleNarration:         true,
 
 	MotionSmoothing:      true,
 	ObjectPinning:        true,
@@ -114,35 +116,37 @@ var gsdef settings = settings{
 type settings struct {
 	Version int
 
-	LastCharacter         string
-	ClickToToggle         bool
-	MiddleClickMoveWindow bool
-	InputBarAlwaysOpen    bool
-	KBWalkSpeed           float64
-	MainFontSize          float64
-	BubbleFontSize        float64
-	ConsoleFontSize       float64
-	ChatFontSize          float64
-	InventoryFontSize     float64
-	PlayersFontSize       float64
-	BubbleOpacity         float64
-	BubbleLife            float64
-	NameBgOpacity         float64
-	BarOpacity            float64
-	SpeechBubbles         bool
-	BubbleNormal          bool
-	BubbleWhisper         bool
-	BubbleYell            bool
-	BubbleThought         bool
-	BubbleRealAction      bool
-	BubbleMonster         bool
-	BubblePlayerAction    bool
-	BubblePonder          bool
-	BubbleNarrate         bool
-	BubbleSelf            bool
-	BubbleOtherPlayers    bool
-	BubbleMonsters        bool
-	BubbleNarration       bool
+	LastCharacter           string
+	ClickToToggle           bool
+	MiddleClickMoveWindow   bool
+	InputBarAlwaysOpen      bool
+	KBWalkSpeed             float64
+	MainFontSize            float64
+	BubbleFontSize          float64
+	ConsoleFontSize         float64
+	ChatFontSize            float64
+	InventoryFontSize       float64
+	PlayersFontSize         float64
+	BubbleOpacity           float64
+	BubbleLife              float64
+	NameBgOpacity           float64
+	BarOpacity              float64
+	ObscuringPictureOpacity float64
+	FadeObscuringPictures   bool
+	SpeechBubbles           bool
+	BubbleNormal            bool
+	BubbleWhisper           bool
+	BubbleYell              bool
+	BubbleThought           bool
+	BubbleRealAction        bool
+	BubbleMonster           bool
+	BubblePlayerAction      bool
+	BubblePonder            bool
+	BubbleNarrate           bool
+	BubbleSelf              bool
+	BubbleOtherPlayers      bool
+	BubbleMonsters          bool
+	BubbleNarration         bool
 
 	MotionSmoothing      bool
 	ObjectPinning        bool

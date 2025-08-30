@@ -1473,6 +1473,31 @@ func drawPicture(screen *ebiten.Image, ox, oy int, p framePicture, alpha float64
 	addLightSource(uint32(p.PictID), float64(x), float64(y), w)
 
 	img := loadImageFrame(p.PictID, frame)
+	fadeAlpha := float32(1.0)
+	if gs.FadeObscuringPictures && w > 0 && h > 0 {
+		picL := int(p.H) - w/2
+		picR := picL + w
+		picT := int(p.V) - h/2
+		picB := picT + h
+		for _, m := range mobiles {
+			d, ok := descMap[m.Index]
+			if !ok || p.Plane < d.Plane {
+				continue
+			}
+			size := mobileSize(d.PictID)
+			if size == 0 {
+				continue
+			}
+			mL := int(m.H) - size/2
+			mR := mL + size
+			mT := int(m.V) - size/2
+			mB := mT + size
+			if picR > mL && picL < mR && picB > mT && picT < mB {
+				fadeAlpha = float32(gs.ObscuringPictureOpacity)
+				break
+			}
+		}
+	}
 	var prevImg *ebiten.Image
 	var prevFrame int
 	if gs.BlendPicts && clImages != nil {
@@ -1527,6 +1552,9 @@ func drawPicture(screen *ebiten.Image, ox, oy int, p framePicture, alpha float64
 			op.ColorScale.Scale(0, 0, 1, 1)
 		} else if src == img && gs.smoothingDebug && p.Moving {
 			op.ColorScale.Scale(1, 0, 0, 1)
+		}
+		if fadeAlpha < 1 {
+			op.ColorScale.ScaleAlpha(fadeAlpha)
 		}
 		screen.DrawImage(src, op)
 
