@@ -1433,7 +1433,7 @@ func drawMobile(screen *ebiten.Image, ox, oy int, m frameMobile, descMap map[uin
 	}
 }
 
-func pictureObscuresMobileAt(pictID uint16, frame int, pictH, pictV int16, mobH, mobV int16, mobDesc frameDescriptor) bool {
+func pictureObscuresMobileAt(pictID uint16, frame int, pictH, pictV int16, mob frameMobile, mobDesc frameDescriptor) bool {
 	if clImages == nil || clImages.IsSemiTransparent(uint32(pictID)) {
 		return false
 	}
@@ -1449,13 +1449,14 @@ func pictureObscuresMobileAt(pictID uint16, frame int, pictH, pictV int16, mobH,
 	if size == 0 {
 		return false
 	}
+
 	picL := int(pictH) - w/2
 	picR := picL + w
 	picT := int(pictV) - h/2
 	picB := picT + h
-	mL := int(mobH) - size/2
+	mL := int(mob.H) - size/2
 	mR := mL + size
-	mT := int(mobV) - size/2
+	mT := int(mob.V) - size/2
 	mB := mT + size
 	interL := picL
 	if mL > interL {
@@ -1476,9 +1477,67 @@ func pictureObscuresMobileAt(pictID uint16, frame int, pictH, pictV int16, mobH,
 	if interR <= interL || interB <= interT {
 		return false
 	}
-	offsetY := frame * h
-	rect := image.Rect(interL-picL, interT-picT+offsetY, interR-picL, interB-picT+offsetY)
-	return clImages.HasOpaqueRect(uint32(pictID), rect)
+
+	picMask := clImages.AlphaMaskQuarter(uint32(pictID), false)
+	mobMask := clImages.AlphaMaskQuarter(uint32(mobDesc.PictID), true)
+	if picMask == nil || mobMask == nil {
+		return false
+	}
+
+	picFrameOffsetY := (frame * h) >> 2
+	picX0 := (interL - picL) >> 2
+	picY0 := picFrameOffsetY + ((interT - picT) >> 2)
+	picX1 := (interR - picL + 3) >> 2
+	picY1 := picFrameOffsetY + ((interB - picT + 3) >> 2)
+
+	mobFrameX := int(mob.State&0x0F) * size
+	mobFrameY := int(mob.State>>4) * size
+	mobX0 := (mobFrameX + (interL - mL)) >> 2
+	mobY0 := (mobFrameY + (interT - mT)) >> 2
+	mobX1 := (mobFrameX + (interR - mL) + 3) >> 2
+	mobY1 := (mobFrameY + (interB - mT) + 3) >> 2
+
+	if picX0 < 0 {
+		picX0 = 0
+	}
+	if picY0 < 0 {
+		picY0 = 0
+	}
+	if mobX0 < 0 {
+		mobX0 = 0
+	}
+	if mobY0 < 0 {
+		mobY0 = 0
+	}
+	if picX1 > picMask.W {
+		picX1 = picMask.W
+	}
+	if picY1 > picMask.H {
+		picY1 = picMask.H
+	}
+	if mobX1 > mobMask.W {
+		mobX1 = mobMask.W
+	}
+	if mobY1 > mobMask.H {
+		mobY1 = mobMask.H
+	}
+
+	width := picX1 - picX0
+	if w := mobX1 - mobX0; w < width {
+		width = w
+	}
+	height := picY1 - picY0
+	if h := mobY1 - mobY0; h < height {
+		height = h
+	}
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			if picMask.Opaque(picX0+x, picY0+y) && mobMask.Opaque(mobX0+x, mobY0+y) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // pictureDrawsAfterMobileAt reports whether a picture at the given position
@@ -1567,8 +1626,8 @@ func drawPicture(screen *ebiten.Image, ox, oy int, p framePicture, alpha float64
 			if !prevDrawAfter && !currDrawAfter {
 				continue
 			}
-			prevObscure := pictureObscuresMobileAt(p.PictID, prevFrame, p.PrevH, p.PrevV, prevMob.H, prevMob.V, d)
-			currObscure := pictureObscuresMobileAt(p.PictID, frame, p.H, p.V, m.H, m.V, d)
+			prevObscure := pictureObscuresMobileAt(p.PictID, prevFrame, p.PrevH, p.PrevV, prevMob, d)
+			currObscure := pictureObscuresMobileAt(p.PictID, frame, p.H, p.V, m, d)
 			prevAlpha := float32(1.0)
 			if prevObscure && prevDrawAfter {
 				prevAlpha = float32(gs.ObscuringPictureOpacity)
