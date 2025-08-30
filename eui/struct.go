@@ -170,6 +170,7 @@ type itemData struct {
 	Underlines    []TextSpan
 	SecretText    string
 	HideText      bool
+	CursorPos     int
 	Handler       *EventHandler
 	Contents      []*itemData
 

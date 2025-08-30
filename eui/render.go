@@ -1097,26 +1097,45 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 
 		textSize := (item.FontSize * uiScale) + 2
 		face := itemFace(item, textSize)
+		metrics := face.Metrics()
+		lineHeight := math.Ceil(metrics.HAscent) + math.Ceil(metrics.HDescent) + math.Ceil(metrics.HLineGap)
+		lines := strings.Split(item.Text, "\n")
 		loo := text.LayoutOptions{
 			LineSpacing:    0,
 			PrimaryAlign:   text.AlignStart,
 			SecondaryAlign: text.AlignCenter,
 		}
-		tdop := ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
-		tdop.GeoM.Translate(
-			float64(offset.X+item.BorderPad+item.Padding+currentStyle.TextPadding*uiScale),
-			float64(offset.Y+((maxSize.Y)/2)),
-		)
-		top := &text.DrawOptions{DrawImageOptions: tdop, LayoutOptions: loo}
-		top.ColorScale.ScaleWithColor(style.TextColor)
-		text.Draw(subImg, item.Text, face, top)
+		startY := float64(offset.Y) + float64(maxSize.Y)/2 - lineHeight*(float64(len(lines)-1))/2
+		for i, line := range lines {
+			tdop := ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
+			tdop.GeoM.Translate(
+				float64(offset.X+item.BorderPad+item.Padding+currentStyle.TextPadding*uiScale),
+				startY+float64(i)*lineHeight,
+			)
+			top := &text.DrawOptions{DrawImageOptions: tdop, LayoutOptions: loo}
+			top.ColorScale.ScaleWithColor(style.TextColor)
+			text.Draw(subImg, line, face, top)
+		}
 
 		if item.Focused {
-			width, _ := text.Measure(item.Text, face, 0)
+			runes := []rune(item.Text)
+			if focused := item.CursorPos; focused < 0 {
+				item.CursorPos = 0
+			} else if focused > len(runes) {
+				item.CursorPos = len(runes)
+			}
+			prefix := string(runes[:item.CursorPos])
+			preLines := strings.Split(prefix, "\n")
+			lineIdx := len(preLines) - 1
+			lastLine := preLines[lineIdx]
+			width, _ := text.Measure(lastLine, face, 0)
 			cx := offset.X + item.BorderPad + item.Padding + currentStyle.TextPadding*uiScale + float32(width)
+			cy := float32(startY + float64(lineIdx)*lineHeight)
+			topY := cy - float32(math.Ceil(metrics.HAscent))
+			bottomY := cy + float32(math.Ceil(metrics.HDescent))
 			strokeLine(subImg,
-				cx, offset.Y+2,
-				cx, offset.Y+maxSize.Y-2,
+				cx, topY,
+				cx, bottomY,
 				1, style.TextColor, false)
 		}
 

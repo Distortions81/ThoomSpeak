@@ -324,18 +324,26 @@ func Update() error {
 		for _, r := range ebiten.AppendInputChars(nil) {
 			if r >= 32 && r != 127 && r != '\r' && r != '\n' {
 				if focusedItem.HideText {
-					focusedItem.SecretText += string(r)
-					focusedItem.Text += "*"
-				} else {
-					focusedItem.Text += string(r)
-				}
-				if focusedItem.TextPtr != nil {
-					if focusedItem.HideText {
+					dispRunes := []rune(focusedItem.Text)
+					secRunes := []rune(focusedItem.SecretText)
+					pos := focusedItem.CursorPos
+					dispRunes = append(dispRunes[:pos], append([]rune("*"), dispRunes[pos:]...)...)
+					secRunes = append(secRunes[:pos], append([]rune(string(r)), secRunes[pos:]...)...)
+					focusedItem.Text = string(dispRunes)
+					focusedItem.SecretText = string(secRunes)
+					if focusedItem.TextPtr != nil {
 						*focusedItem.TextPtr = focusedItem.SecretText
-					} else {
+					}
+				} else {
+					runes := []rune(focusedItem.Text)
+					pos := focusedItem.CursorPos
+					runes = append(runes[:pos], append([]rune(string(r)), runes[pos:]...)...)
+					focusedItem.Text = string(runes)
+					if focusedItem.TextPtr != nil {
 						*focusedItem.TextPtr = focusedItem.Text
 					}
 				}
+				focusedItem.CursorPos++
 				focusedItem.markDirty()
 				if focusedItem.Handler != nil {
 					focusedItem.Handler.Emit(UIEvent{Item: focusedItem, Type: EventInputChanged, Text: focusedItem.Text})
@@ -347,18 +355,27 @@ func Update() error {
 		if ctrl && inpututil.IsKeyJustPressed(ebiten.KeyV) {
 			if txt := clipboard.Read(clipboard.FmtText); len(txt) > 0 {
 				runes := []rune(string(txt))
+				pos := focusedItem.CursorPos
 				if focusedItem.HideText {
-					focusedItem.SecretText += string(runes)
-					focusedItem.Text += strings.Repeat("*", len(runes))
+					dispRunes := []rune(focusedItem.Text)
+					secRunes := []rune(focusedItem.SecretText)
+					dispInsert := []rune(strings.Repeat("*", len(runes)))
+					dispRunes = append(dispRunes[:pos], append(dispInsert, dispRunes[pos:]...)...)
+					secRunes = append(secRunes[:pos], append(runes, secRunes[pos:]...)...)
+					focusedItem.Text = string(dispRunes)
+					focusedItem.SecretText = string(secRunes)
 					if focusedItem.TextPtr != nil {
 						*focusedItem.TextPtr = focusedItem.SecretText
 					}
 				} else {
-					focusedItem.Text += string(runes)
+					tRunes := []rune(focusedItem.Text)
+					tRunes = append(tRunes[:pos], append(runes, tRunes[pos:]...)...)
+					focusedItem.Text = string(tRunes)
 					if focusedItem.TextPtr != nil {
 						*focusedItem.TextPtr = focusedItem.Text
 					}
 				}
+				focusedItem.CursorPos += len(runes)
 				focusedItem.markDirty()
 				if focusedItem.Handler != nil {
 					focusedItem.Handler.Emit(UIEvent{Item: focusedItem, Type: EventInputChanged, Text: focusedItem.Text})
@@ -374,19 +391,92 @@ func Update() error {
 		}
 
 		if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) {
+			pos := focusedItem.CursorPos
 			runes := []rune(focusedItem.Text)
-			if len(runes) > 0 {
+			if pos > 0 && len(runes) > 0 {
 				if focusedItem.HideText {
-					focusedItem.SecretText = string(runes[:len(runes)-1])
+					secRunes := []rune(focusedItem.SecretText)
+					secRunes = append(secRunes[:pos-1], secRunes[pos:]...)
+					focusedItem.SecretText = string(secRunes)
+					dispRunes := append(runes[:pos-1], runes[pos:]...)
+					focusedItem.Text = string(dispRunes)
+					if focusedItem.TextPtr != nil {
+						*focusedItem.TextPtr = focusedItem.SecretText
+					}
+				} else {
+					runes = append(runes[:pos-1], runes[pos:]...)
+					focusedItem.Text = string(runes)
+					if focusedItem.TextPtr != nil {
+						*focusedItem.TextPtr = focusedItem.Text
+					}
 				}
-				focusedItem.Text = string(runes[:len(runes)-1])
-				if focusedItem.TextPtr != nil {
-					*focusedItem.TextPtr = focusedItem.Text
-				}
+				focusedItem.CursorPos--
 				focusedItem.markDirty()
 				if focusedItem.Handler != nil {
 					focusedItem.Handler.Emit(UIEvent{Item: focusedItem, Type: EventInputChanged, Text: focusedItem.Text})
 				}
+			}
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyArrowLeft) {
+			if focusedItem.CursorPos > 0 {
+				focusedItem.CursorPos--
+				focusedItem.markDirty()
+			}
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyArrowRight) {
+			if focusedItem.CursorPos < len([]rune(focusedItem.Text)) {
+				focusedItem.CursorPos++
+				focusedItem.markDirty()
+			}
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyArrowUp) {
+			runes := []rune(focusedItem.Text)
+			pos := focusedItem.CursorPos
+			lineStart := pos
+			for lineStart > 0 && runes[lineStart-1] != '\n' {
+				lineStart--
+			}
+			if lineStart > 0 {
+				col := pos - lineStart
+				prevEnd := lineStart - 1
+				prevStart := prevEnd
+				for prevStart > 0 && runes[prevStart-1] != '\n' {
+					prevStart--
+				}
+				prevLen := prevEnd - prevStart
+				newPos := prevStart + col
+				if col > prevLen {
+					newPos = prevStart + prevLen
+				}
+				focusedItem.CursorPos = newPos
+				focusedItem.markDirty()
+			}
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyArrowDown) {
+			runes := []rune(focusedItem.Text)
+			pos := focusedItem.CursorPos
+			lineStart := pos
+			for lineStart > 0 && runes[lineStart-1] != '\n' {
+				lineStart--
+			}
+			lineEnd := pos
+			for lineEnd < len(runes) && runes[lineEnd] != '\n' {
+				lineEnd++
+			}
+			if lineEnd < len(runes) {
+				col := pos - lineStart
+				nextStart := lineEnd + 1
+				nextEnd := nextStart
+				for nextEnd < len(runes) && runes[nextEnd] != '\n' {
+					nextEnd++
+				}
+				nextLen := nextEnd - nextStart
+				newPos := nextStart + col
+				if col > nextLen {
+					newPos = nextStart + nextLen
+				}
+				focusedItem.CursorPos = newPos
+				focusedItem.markDirty()
 			}
 		}
 		if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
@@ -470,6 +560,7 @@ func Update() error {
 					focusedItem.markDirty()
 				}
 				focusedItem = inputs[next]
+				focusedItem.CursorPos = len([]rune(focusedItem.Text))
 				focusedItem.Focused = true
 				focusedItem.markDirty()
 			}
@@ -668,6 +759,7 @@ func (item *itemData) clickItem(mpos point, click bool) bool {
 			}
 		} else if item.ItemType == ITEM_INPUT {
 			focusedItem = item
+			focusedItem.CursorPos = len([]rune(focusedItem.Text))
 			item.Focused = true
 			item.markDirty()
 		} else if item.ItemType == ITEM_DROPDOWN {
