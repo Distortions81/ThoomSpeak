@@ -1469,6 +1469,24 @@ func pictureObscuresPlayerAt(pictID uint16, pictH, pictV int16, playerH, playerV
 	return clImages.HasOpaqueRect(uint32(pictID), rect)
 }
 
+// pictureDrawsAfterPlayerAt reports whether a picture at the given position
+// would be drawn after the player based on plane and sort order.
+func pictureDrawsAfterPlayerAt(p framePicture, pictH, pictV int16, playerH, playerV int16, playerPlane int) bool {
+	if p.Plane > playerPlane {
+		return true
+	}
+	if p.Plane < playerPlane {
+		return false
+	}
+	if int(playerV) < int(pictV) {
+		return true
+	}
+	if int(playerV) > int(pictV) {
+		return false
+	}
+	return int(playerH) <= int(pictH)
+}
+
 // drawPicture renders a single picture sprite.
 func drawPicture(screen *ebiten.Image, ox, oy int, p framePicture, alpha float64, fade float32, mobiles []frameMobile, descMap map[uint8]frameDescriptor, prevMobiles map[uint8]frameMobile, prevPictures []framePicture, shiftX, shiftY int) {
 	if gs.hideMoving && p.Moving {
@@ -1533,17 +1551,21 @@ func drawPicture(screen *ebiten.Image, ox, oy int, p framePicture, alpha float64
 				if pm, ok := prevMobiles[playerIndex]; ok {
 					prevMob = pm
 				}
-				prevObscure := pictureObscuresPlayerAt(p.PictID, p.PrevH, p.PrevV, prevMob.H, prevMob.V, d)
-				currObscure := pictureObscuresPlayerAt(p.PictID, p.H, p.V, player.H, player.V, d)
-				prevAlpha := float32(1.0)
-				if prevObscure {
-					prevAlpha = float32(gs.ObscuringPictureOpacity)
+				prevDrawAfter := pictureDrawsAfterPlayerAt(p, p.PrevH, p.PrevV, prevMob.H, prevMob.V, d.Plane)
+				currDrawAfter := pictureDrawsAfterPlayerAt(p, p.H, p.V, player.H, player.V, d.Plane)
+				if prevDrawAfter || currDrawAfter {
+					prevObscure := pictureObscuresPlayerAt(p.PictID, p.PrevH, p.PrevV, prevMob.H, prevMob.V, d)
+					currObscure := pictureObscuresPlayerAt(p.PictID, p.H, p.V, player.H, player.V, d)
+					prevAlpha := float32(1.0)
+					if prevObscure && prevDrawAfter {
+						prevAlpha = float32(gs.ObscuringPictureOpacity)
+					}
+					targetAlpha := float32(1.0)
+					if currObscure && currDrawAfter {
+						targetAlpha = float32(gs.ObscuringPictureOpacity)
+					}
+					fadeAlpha = prevAlpha + (targetAlpha-prevAlpha)*fade
 				}
-				targetAlpha := float32(1.0)
-				if currObscure {
-					targetAlpha = float32(gs.ObscuringPictureOpacity)
-				}
-				fadeAlpha = prevAlpha + (targetAlpha-prevAlpha)*fade
 			}
 		}
 	}
