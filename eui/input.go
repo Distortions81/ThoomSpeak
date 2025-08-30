@@ -757,9 +757,9 @@ func (item *itemData) clickItem(mpos point, click bool) bool {
 			if item.Handler != nil {
 				item.Handler.Emit(UIEvent{Item: item, Type: EventRadioSelected, Checked: true})
 			}
-		} else if item.ItemType == ITEM_INPUT {
+		} else if item.ItemType == ITEM_INPUT || (item.ItemType == ITEM_TEXT && item.Filled) {
 			focusedItem = item
-			focusedItem.CursorPos = len([]rune(focusedItem.Text))
+			focusedItem.CursorPos = item.cursorIndexAt(mpos)
 			item.Focused = true
 			item.markDirty()
 		} else if item.ItemType == ITEM_DROPDOWN {
@@ -846,6 +846,44 @@ func (item *itemData) clickItem(mpos point, click bool) bool {
 		}
 	}
 	return true
+}
+
+func (item *itemData) cursorIndexAt(mpos point) int {
+	textSize := (item.FontSize * uiScale) + 2
+	face := itemFace(item, textSize)
+	lines := strings.Split(item.Text, "\n")
+	metrics := face.Metrics()
+	lineHeight := float32(math.Ceil(metrics.HAscent + metrics.HDescent + 2))
+	x := mpos.X - item.DrawRect.X0
+	y := mpos.Y - item.DrawRect.Y0
+	if x < 0 {
+		x = 0
+	}
+	if y < 0 {
+		y = 0
+	}
+	line := int(y / lineHeight)
+	if line < 0 {
+		line = 0
+	}
+	if line >= len(lines) {
+		line = len(lines) - 1
+	}
+	pos := 0
+	for i := 0; i < line; i++ {
+		pos += len([]rune(lines[i]))
+		pos++
+	}
+	runes := []rune(lines[line])
+	advance := float32(0)
+	for i, r := range runes {
+		w, _ := text.Measure(string(r), face, 0)
+		if x < advance+float32(w)/2 {
+			return pos + i
+		}
+		advance += float32(w)
+	}
+	return pos + len(runes)
 }
 
 func uncheckRadioGroup(parent *itemData, group string, except *itemData) {
