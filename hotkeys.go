@@ -125,7 +125,7 @@ func loadHotkeys() {
 	}
 	pluginHotkeyMu.Unlock()
 
-	// Ensure the default right-click use hotkey exists.
+	// Ensure default hotkeys exist.
 	def := Hotkey{Name: "Click To Use", Combo: "RightClick", Commands: []HotkeyCommand{{Command: "/use @clicked"}}, Disabled: true}
 	exists := false
 	for _, hk := range newList {
@@ -136,6 +136,18 @@ func loadHotkeys() {
 	}
 	if !exists {
 		newList = append(newList, def)
+	}
+
+	fs := Hotkey{Name: "Toggle Fullscreen", Combo: "F12", Commands: []HotkeyCommand{{Command: "/fullscreen"}}}
+	exists = false
+	for _, hk := range newList {
+		if hk.Combo == fs.Combo && hk.Plugin == "" {
+			exists = true
+			break
+		}
+	}
+	if !exists {
+		newList = append(newList, fs)
 	}
 
 	hotkeysMu.Lock()
@@ -903,6 +915,16 @@ func checkHotkeys() {
 			if hk.Combo == combo && !hk.Disabled {
 				for _, c := range hk.Commands {
 					cmd := strings.TrimSpace(c.Command)
+					lower := strings.ToLower(cmd)
+					if lower == "/fullscreen" {
+						SettingsLock.Lock()
+						gs.Fullscreen = !gs.Fullscreen
+						ebiten.SetFullscreen(gs.Fullscreen)
+						ebiten.SetWindowFloating(gs.Fullscreen || gs.AlwaysOnTop)
+						SettingsLock.Unlock()
+						settingsDirty = true
+						continue
+					}
 					// Show hotkey-triggered command as if it were typed
 					var ok bool
 					cmd, ok = applyHotkeyVars(cmd)

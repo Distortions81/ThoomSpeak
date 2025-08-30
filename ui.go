@@ -2164,7 +2164,7 @@ func makeSettingsWindow() {
 	}
 
 	fullscreenCB, fullscreenEvents := eui.NewCheckbox()
-	fullscreenCB.Text = "Fullscreen"
+	fullscreenCB.Text = "Fullscreen (F12)"
 	fullscreenCB.Size = eui.Point{X: panelWidth, Y: 24}
 	fullscreenCB.Checked = gs.Fullscreen
 	fullscreenEvents.Handle = func(ev eui.UIEvent) {
