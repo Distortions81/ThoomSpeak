@@ -45,7 +45,7 @@ var gsdef settings = settings{
 	InventoryFontSize:       18,
 	PlayersFontSize:         18,
 	BubbleOpacity:           0.7,
-	BubbleLife:              1.0,
+	BubbleBaseLife:          2.0,
 	NameBgOpacity:           0.7,
 	BarOpacity:              0.5,
 	ObscuringPictureOpacity: 0.5,
@@ -128,7 +128,7 @@ type settings struct {
 	InventoryFontSize       float64
 	PlayersFontSize         float64
 	BubbleOpacity           float64
-	BubbleLife              float64
+	BubbleBaseLife          float64 `json:"BubbleLife"`
 	NameBgOpacity           float64
 	BarOpacity              float64
 	ObscuringPictureOpacity float64

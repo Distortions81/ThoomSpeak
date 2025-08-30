@@ -2586,19 +2586,19 @@ func makeSettingsWindow() {
 	}
 	right.AddItem(bubbleOpSlider)
 
-	bubbleLifeSlider, bubbleLifeEvents := eui.NewSlider()
-	bubbleLifeSlider.Label = "Bubble Life (s/word)"
-	bubbleLifeSlider.MinValue = 0.5
-	bubbleLifeSlider.MaxValue = 5
-	bubbleLifeSlider.Value = float32(gs.BubbleLife)
-	bubbleLifeSlider.Size = eui.Point{X: panelWidth - 10, Y: 24}
-	bubbleLifeEvents.Handle = func(ev eui.UIEvent) {
+	bubbleBaseLifeSlider, bubbleBaseLifeEvents := eui.NewSlider()
+	bubbleBaseLifeSlider.Label = "Base Bubble Life (s)"
+	bubbleBaseLifeSlider.MinValue = 1
+	bubbleBaseLifeSlider.MaxValue = 5
+	bubbleBaseLifeSlider.Value = float32(gs.BubbleBaseLife)
+	bubbleBaseLifeSlider.Size = eui.Point{X: panelWidth - 10, Y: 24}
+	bubbleBaseLifeEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventSliderChanged {
-			gs.BubbleLife = float64(ev.Value)
+			gs.BubbleBaseLife = float64(ev.Value)
 			settingsDirty = true
 		}
 	}
-	right.AddItem(bubbleLifeSlider)
+	right.AddItem(bubbleBaseLifeSlider)
 
 	fadePicsCB, fadePicsEvents := eui.NewCheckbox()
 	fadePicsCB.Text = "Fade pictures over mobiles"
