@@ -302,8 +302,8 @@ func buildToolbar(toolFontSize, buttonWidth, buttonHeight float32) *eui.ItemData
 
 	mixBtn, mixEvents := eui.NewButton()
 	mixBtn.Text = "Mixer"
-	mixBtn.Size = eui.Point{X: 64, Y: buttonHeight}
-	mixBtn.FontSize = 12
+	mixBtn.Size = eui.Point{X: buttonWidth, Y: buttonHeight}
+	mixBtn.FontSize = toolFontSize
 	mixEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventClick {
 			mixerWin.ToggleNear(ev.Item)
@@ -905,16 +905,16 @@ func makeToolbar() {
 	if hudWin != nil {
 		return
 	}
-	var toolFontSize float32 = 10
-	var buttonHeight float32 = 15
-	var buttonWidth float32 = 64
+	var toolFontSize float32 = 12
+	var buttonHeight float32 = 18
+	var buttonWidth float32 = 80
 
 	hudWin = eui.NewWindow()
 	hudWin.Title = "Toolbar"
 	hudWin.Closable = false
 	hudWin.Resizable = false
 	hudWin.AutoSize = false
-	hudWin.Size = eui.Point{X: 450, Y: 75}
+	hudWin.Size = eui.Point{X: 435, Y: 85}
 	hudWin.Movable = true
 	hudWin.NoScroll = true
 	hudWin.SetZone(eui.HZoneLeft, eui.VZoneTop)
