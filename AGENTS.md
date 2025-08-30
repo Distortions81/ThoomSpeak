@@ -7,7 +7,7 @@ Building and testing may not be needed for small changes, maybe just vetting and
 
 ## Installing dependencies
 
-1. Skip slow downloads and package installs you can use a prebuilt dependency bundle:
+1. Skip slow downloads use the prebuilt dependency bundle:
    ```bash
    curl -LO https://m45sci.xyz/u/dist/goThoom/gothoom_deps.tar.gz
    tar -xzf gothoom_deps.tar.gz
@@ -18,14 +18,6 @@ Building and testing may not be needed for small changes, maybe just vetting and
    required Debian packages under `apt/` and a cached Go module tree under
    `go/mod`. Extracting it and installing the packages avoids fetching
    dependencies individually.
-
-2. Install Go 1.24 or later. On Debian/Ubuntu you can run:
-   ```bash
-   sudo apt-get update
-   sudo apt-get install -y golang-go build-essential libgl1-mesa-dev libglu1-mesa-dev xorg-dev
-   ```
-   `libgl1-mesa-dev`, `libglu1-mesa-dev`, and `xorg-dev` provide the OpenGL and X11 libraries required by Ebiten.
-   On other distributions install the equivalent development packages.
    
 3. Fetch Go module dependencies:
    ```bash
