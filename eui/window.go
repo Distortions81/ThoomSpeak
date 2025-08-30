@@ -304,6 +304,15 @@ func (target *windowData) Close() {
 	}
 	target.deallocate()
 	//target.RemoveWindow()
+	if activeWindow == target {
+		activeWindow = nil
+		for i := len(windows) - 1; i >= 0; i-- {
+			if windows[i].Open {
+				activeWindow = windows[i]
+				break
+			}
+		}
+	}
 	if WindowStateChanged != nil {
 		WindowStateChanged()
 	}
