@@ -188,6 +188,7 @@ var walkToggled bool
 
 var inputActive bool
 var inputText []rune
+var inputPos int
 var inputHistory []string
 var historyPos int
 
@@ -584,6 +585,9 @@ func (g *Game) Update() error {
 		initGame()
 	})
 
+	if inputFlow != nil && len(inputFlow.Contents) > 0 {
+		inputFlow.Contents[0].Focused = false
+	}
 	eui.Update() //We really need this to return eaten clicks
 	typingElsewhere := typingInUI()
 	checkPluginMods()
@@ -675,23 +679,45 @@ func (g *Game) Update() error {
 	if typingElsewhere && inputActive {
 		inputActive = false
 		inputText = inputText[:0]
+		inputPos = 0
 		historyPos = len(inputHistory)
 		changedInput = true
 	}
 	if inputActive {
 		if newChars := ebiten.AppendInputChars(nil); len(newChars) > 0 {
-			inputText = append(inputText, newChars...)
+			if inputPos < 0 {
+				inputPos = 0
+			}
+			if inputPos > len(inputText) {
+				inputPos = len(inputText)
+			}
+			inputText = append(inputText[:inputPos], append(newChars, inputText[inputPos:]...)...)
+			inputPos += len(newChars)
 			changedInput = true
 		}
 		ctrl := ebiten.IsKeyPressed(ebiten.KeyControl) || ebiten.IsKeyPressed(ebiten.KeyControlLeft) || ebiten.IsKeyPressed(ebiten.KeyControlRight)
 		if ctrl && inpututil.IsKeyJustPressed(ebiten.KeyV) {
 			if txt := clipboard.Read(clipboard.FmtText); len(txt) > 0 {
-				inputText = append(inputText, []rune(string(txt))...)
+				runes := []rune(string(txt))
+				inputText = append(inputText[:inputPos], append(runes, inputText[inputPos:]...)...)
+				inputPos += len(runes)
 				changedInput = true
 			}
 		}
 		if ctrl && inpututil.IsKeyJustPressed(ebiten.KeyC) {
 			clipboard.Write(clipboard.FmtText, []byte(string(inputText)))
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyArrowLeft) {
+			if inputPos > 0 {
+				inputPos--
+				changedInput = true
+			}
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyArrowRight) {
+			if inputPos < len(inputText) {
+				inputPos++
+				changedInput = true
+			}
 		}
 		if inpututil.IsKeyJustPressed(ebiten.KeyArrowUp) {
 			if len(inputHistory) > 0 {
@@ -701,6 +727,7 @@ func (g *Game) Update() error {
 					historyPos = 0
 				}
 				inputText = []rune(inputHistory[historyPos])
+				inputPos = len(inputText)
 				changedInput = true
 			}
 		}
@@ -709,25 +736,31 @@ func (g *Game) Update() error {
 				if historyPos < len(inputHistory)-1 {
 					historyPos++
 					inputText = []rune(inputHistory[historyPos])
+					inputPos = len(inputText)
 					changedInput = true
 				} else {
 					historyPos = len(inputHistory)
 					inputText = inputText[:0]
+					inputPos = 0
 					changedInput = true
 				}
 			}
 		}
 		if len(inputText) > 0 && time.Since(lastBackpace) > time.Millisecond*keyRepeatRate {
 			if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) {
-
-				lastBackpace = time.Now()
-				inputText = inputText[:len(inputText)-1]
-				changedInput = true
+				if inputPos > 0 {
+					lastBackpace = time.Now()
+					inputText = append(inputText[:inputPos-1], inputText[inputPos:]...)
+					inputPos--
+					changedInput = true
+				}
 			} else if d := inpututil.KeyPressDuration(ebiten.KeyBackspace); d > 30 {
-
-				lastBackpace = time.Now()
-				inputText = inputText[:len(inputText)-1]
-				changedInput = true
+				if inputPos > 0 {
+					lastBackpace = time.Now()
+					inputText = append(inputText[:inputPos-1], inputText[inputPos:]...)
+					inputPos--
+					changedInput = true
+				}
 			}
 		}
 		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
@@ -792,12 +825,14 @@ func (g *Game) Update() error {
 				inputActive = false
 			}
 			inputText = inputText[:0]
+			inputPos = 0
 			historyPos = len(inputHistory)
 			changedInput = true
 		}
 		if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
 			inputActive = false
 			inputText = inputText[:0]
+			inputPos = 0
 			historyPos = len(inputHistory)
 			changedInput = true
 		}
@@ -805,6 +840,7 @@ func (g *Game) Update() error {
 		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
 			inputActive = true
 			inputText = inputText[:0]
+			inputPos = 0
 			historyPos = len(inputHistory)
 			changedInput = true
 		}
@@ -826,7 +862,7 @@ func (g *Game) Update() error {
 	/* WASD / ARROWS */
 
 	var keyWalk bool
-	if focused && !inputActive {
+	if focused && !inputActive && !typingElsewhere {
 		dx, dy := 0, 0
 		if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) || ebiten.IsKeyPressed(ebiten.KeyA) {
 			dx--
