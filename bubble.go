@@ -196,17 +196,21 @@ func drawBubble(screen *ebiten.Image, txt string, x, y int, typ int, far bool, n
 		}
 	}
 
-	vs, is := body.AppendVerticesAndIndicesForFilling(nil, nil)
-	op := &ebiten.DrawTrianglesOptions{ColorScaleMode: ebiten.ColorScaleModePremultipliedAlpha, AntiAlias: true}
-	for i := range vs {
-		vs[i].SrcX = 0
-		vs[i].SrcY = 0
-		vs[i].ColorR = float32(bgR) / 0xffff
-		vs[i].ColorG = float32(bgG) / 0xffff
-		vs[i].ColorB = float32(bgB) / 0xffff
-		vs[i].ColorA = float32(bgA) / 0xffff
+	var vs []ebiten.Vertex
+	var is []uint16
+	if bubbleType != kBubblePonder {
+		vs, is = body.AppendVerticesAndIndicesForFilling(nil, nil)
+		op := &ebiten.DrawTrianglesOptions{ColorScaleMode: ebiten.ColorScaleModePremultipliedAlpha, AntiAlias: true}
+		for i := range vs {
+			vs[i].SrcX = 0
+			vs[i].SrcY = 0
+			vs[i].ColorR = float32(bgR) / 0xffff
+			vs[i].ColorG = float32(bgG) / 0xffff
+			vs[i].ColorB = float32(bgB) / 0xffff
+			vs[i].ColorA = float32(bgA) / 0xffff
+		}
+		screen.DrawTriangles(vs, is, whiteImage, op)
 	}
-	screen.DrawTriangles(vs, is, whiteImage, op)
 	if !far && !noArrow {
 		vs, is = tail.AppendVerticesAndIndicesForFilling(vs[:0], is[:0])
 		tailOp := &ebiten.DrawTrianglesOptions{
@@ -615,10 +619,40 @@ func drawMonsterSpikes(screen *ebiten.Image, left, top, right, bottom, radius, s
 	}
 }
 
-// drawPonderWaves embellishes ponder bubbles with a subtle wavy border made of
-// small circles. The circles animate slowly to give the bubble a gentle
-// shimmering effect.
+// drawPonderWaves renders the ponder bubble's body and a subtle animated wavy
+// border made of small circles. Drawing both here ensures consistent
+// compositing and color/alpha handling.
 func drawPonderWaves(screen *ebiten.Image, left, top, right, bottom int, col color.Color) {
+	cr, cg, cb, ca := col.RGBA()
+	radius := float32(8 * gs.GameScale)
+	var body vector.Path
+	body.MoveTo(float32(left)+radius, float32(top))
+	body.LineTo(float32(right)-radius, float32(top))
+	body.Arc(float32(right)-radius, float32(top)+radius, radius, -math.Pi/2, 0, vector.Clockwise)
+	body.LineTo(float32(right), float32(bottom)-radius)
+	body.Arc(float32(right)-radius, float32(bottom)-radius, radius, 0, math.Pi/2, vector.Clockwise)
+	body.LineTo(float32(left)+radius, float32(bottom))
+	body.Arc(float32(left)+radius, float32(bottom)-radius, radius, math.Pi/2, math.Pi, vector.Clockwise)
+	body.LineTo(float32(left), float32(top)+radius)
+	body.Arc(float32(left)+radius, float32(top)+radius, radius, math.Pi, 3*math.Pi/2, vector.Clockwise)
+	body.Close()
+
+	vs, is := body.AppendVerticesAndIndicesForFilling(nil, nil)
+	for i := range vs {
+		vs[i].SrcX = 0
+		vs[i].SrcY = 0
+		vs[i].ColorR = float32(cr) / 0xffff
+		vs[i].ColorG = float32(cg) / 0xffff
+		vs[i].ColorB = float32(cb) / 0xffff
+		vs[i].ColorA = float32(ca) / 0xffff
+	}
+	op := &ebiten.DrawTrianglesOptions{
+		ColorScaleMode: ebiten.ColorScaleModePremultipliedAlpha,
+		AntiAlias:      true,
+		Blend:          ebiten.BlendCopy,
+	}
+	screen.DrawTriangles(vs, is, whiteImage, op)
+
 	r := float32(6 * gs.GameScale)
 	step := r * 1.2
 	phase := float64(time.Now().UnixNano()) / float64(time.Second)
