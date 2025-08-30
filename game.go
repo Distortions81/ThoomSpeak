@@ -585,6 +585,7 @@ func (g *Game) Update() error {
 	})
 
 	eui.Update() //We really need this to return eaten clicks
+	typingElsewhere := typingInUI()
 	checkPluginMods()
 	updateNotifications()
 	updateThinkMessages()
@@ -671,6 +672,12 @@ func (g *Game) Update() error {
 
 	/* Console input */
 	changedInput := false
+	if typingElsewhere && inputActive {
+		inputActive = false
+		inputText = inputText[:0]
+		historyPos = len(inputHistory)
+		changedInput = true
+	}
 	if inputActive {
 		if newChars := ebiten.AppendInputChars(nil); len(newChars) > 0 {
 			inputText = append(inputText, newChars...)
@@ -790,7 +797,7 @@ func (g *Game) Update() error {
 			historyPos = len(inputHistory)
 			changedInput = true
 		}
-	} else {
+	} else if !typingElsewhere {
 		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
 			inputActive = true
 			inputText = inputText[:0]
