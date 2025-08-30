@@ -1253,10 +1253,10 @@ func drawScene(screen *ebiten.Image, ox, oy int, snap drawSnapshot, alpha float6
 		}
 	} else {
 		for _, m := range dead {
+			drawMobile(screen, ox, oy, m, descMap, snap.prevMobiles, snap.prevDescs, snap.picShiftX, snap.picShiftY, alpha, mobileFade, mobileLimit)
 			if !gs.nameTagsNative {
 				drawMobileNameTag(screen, snap, m, alpha)
 			}
-			drawMobile(screen, ox, oy, m, descMap, snap.prevMobiles, snap.prevDescs, snap.picShiftX, snap.picShiftY, alpha, mobileFade, mobileLimit)
 		}
 		i, j := 0, 0
 		maxInt := int(^uint(0) >> 1)
@@ -1273,10 +1273,10 @@ func drawScene(screen *ebiten.Image, ox, oy int, snap drawSnapshot, alpha float6
 			}
 			if mV < pV || (mV == pV && mH <= pH) {
 				if live[i].State != poseDead {
+					drawMobile(screen, ox, oy, live[i], descMap, snap.prevMobiles, snap.prevDescs, snap.picShiftX, snap.picShiftY, alpha, mobileFade, mobileLimit)
 					if !gs.nameTagsNative {
 						drawMobileNameTag(screen, snap, live[i], alpha)
 					}
-					drawMobile(screen, ox, oy, live[i], descMap, snap.prevMobiles, snap.prevDescs, snap.picShiftX, snap.picShiftY, alpha, mobileFade, mobileLimit)
 				}
 				i++
 			} else {
@@ -1702,6 +1702,11 @@ func drawMobileNameTag(screen *ebiten.Image, snap drawSnapshot, m frameMobile, a
 	y := roundToInt((v + float64(fieldCenterY)) * gs.GameScale)
 	if d, ok := snap.descriptors[m.Index]; ok {
 		nameAlpha := uint8(gs.NameBgOpacity*255 + 0.5)
+		size := mobileSize(d.PictID)
+		if size <= 0 {
+			size = 40
+		}
+		offset := float64(size) * gs.GameScale / 2
 		if d.Name != "" {
 			style := styleRegular
 			playersMu.RLock()
@@ -1716,7 +1721,7 @@ func drawMobileNameTag(screen *ebiten.Image, snap drawSnapshot, m frameMobile, a
 			}
 			playersMu.RUnlock()
 			if m.nameTag != nil && m.nameTagKey.FontGen == fontGen && m.nameTagKey.Opacity == nameAlpha && m.nameTagKey.Text == d.Name && m.nameTagKey.Colors == m.Colors && m.nameTagKey.Style == style {
-				top := y + int(20*gs.GameScale)
+				top := y + int(offset)
 				left := x - int(float64(m.nameTagW)/2)
 				op := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
 				op.GeoM.Translate(float64(left), float64(top))
@@ -1743,7 +1748,7 @@ func drawMobileNameTag(screen *ebiten.Image, snap drawSnapshot, m frameMobile, a
 				w, h := text.Measure(d.Name, face, 0)
 				iw := int(math.Ceil(w))
 				ih := int(math.Ceil(h))
-				top := y + int(20*gs.GameScale)
+				top := y + int(offset)
 				left := x - int(float64(iw)/2)
 				op := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
 				op.GeoM.Scale(float64(iw+5), float64(ih))
@@ -1764,8 +1769,7 @@ func drawMobileNameTag(screen *ebiten.Image, snap drawSnapshot, m frameMobile, a
 				}
 				barClr := nameBackColors[back]
 				barClr.A = nameAlpha
-				size := mobileSize(d.PictID)
-				top := y + int(float64(size)*gs.GameScale/2+2*gs.GameScale)
+				top := y + int(offset+2*gs.GameScale)
 				left := x - int(6*gs.GameScale)
 				op := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest, DisableMipmaps: true}
 				op.GeoM.Scale(12*gs.GameScale, 2*gs.GameScale)
