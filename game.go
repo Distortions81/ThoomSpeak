@@ -1426,6 +1426,49 @@ func drawMobile(screen *ebiten.Image, ox, oy int, m frameMobile, descMap map[uin
 	}
 }
 
+func pictureObscuresPlayerAt(pictID uint16, pictH, pictV int16, playerH, playerV int16, playerDesc frameDescriptor) bool {
+	if clImages == nil || clImages.IsSemiTransparent(uint32(pictID)) {
+		return false
+	}
+	w, h := clImages.Size(uint32(pictID))
+	if w <= 0 || h <= 0 {
+		return false
+	}
+	size := mobileSize(playerDesc.PictID)
+	if size == 0 {
+		return false
+	}
+	picL := int(pictH) - w/2
+	picR := picL + w
+	picT := int(pictV) - h/2
+	picB := picT + h
+	mL := int(playerH) - size/2
+	mR := mL + size
+	mT := int(playerV) - size/2
+	mB := mT + size
+	interL := picL
+	if mL > interL {
+		interL = mL
+	}
+	interR := picR
+	if mR < interR {
+		interR = mR
+	}
+	interT := picT
+	if mT > interT {
+		interT = mT
+	}
+	interB := picB
+	if mB < interB {
+		interB = mB
+	}
+	if interR <= interL || interB <= interT {
+		return false
+	}
+	rect := image.Rect(interL-picL, interT-picT, interR-picL, interB-picT)
+	return clImages.HasOpaqueRect(uint32(pictID), rect)
+}
+
 // drawPicture renders a single picture sprite.
 func drawPicture(screen *ebiten.Image, ox, oy int, p framePicture, alpha float64, fade float32, mobiles []frameMobile, descMap map[uint8]frameDescriptor, prevMobiles map[uint8]frameMobile, prevPictures []framePicture, shiftX, shiftY int) {
 	if gs.hideMoving && p.Moving {
@@ -1474,27 +1517,33 @@ func drawPicture(screen *ebiten.Image, ox, oy int, p framePicture, alpha float64
 
 	img := loadImageFrame(p.PictID, frame)
 	fadeAlpha := float32(1.0)
-	if gs.FadeObscuringPictures && w > 0 && h > 0 {
-		picL := int(p.H) - w/2
-		picR := picL + w
-		picT := int(p.V) - h/2
-		picB := picT + h
+	if gs.FadeObscuringPictures && w > 0 && h > 0 && clImages != nil && !clImages.IsSemiTransparent(uint32(p.PictID)) {
+		var player frameMobile
+		var havePlayer bool
 		for _, m := range mobiles {
-			d, ok := descMap[m.Index]
-			if !ok || p.Plane < d.Plane {
-				continue
-			}
-			size := mobileSize(d.PictID)
-			if size == 0 {
-				continue
-			}
-			mL := int(m.H) - size/2
-			mR := mL + size
-			mT := int(m.V) - size/2
-			mB := mT + size
-			if picR > mL && picL < mR && picB > mT && picT < mB {
-				fadeAlpha = float32(gs.ObscuringPictureOpacity)
+			if m.Index == playerIndex {
+				player = m
+				havePlayer = true
 				break
+			}
+		}
+		if havePlayer {
+			if d, ok := descMap[playerIndex]; ok {
+				prevMob := player
+				if pm, ok := prevMobiles[playerIndex]; ok {
+					prevMob = pm
+				}
+				prevObscure := pictureObscuresPlayerAt(p.PictID, p.PrevH, p.PrevV, prevMob.H, prevMob.V, d)
+				currObscure := pictureObscuresPlayerAt(p.PictID, p.H, p.V, player.H, player.V, d)
+				prevAlpha := float32(1.0)
+				if prevObscure {
+					prevAlpha = float32(gs.ObscuringPictureOpacity)
+				}
+				targetAlpha := float32(1.0)
+				if currObscure {
+					targetAlpha = float32(gs.ObscuringPictureOpacity)
+				}
+				fadeAlpha = prevAlpha + (targetAlpha-prevAlpha)*fade
 			}
 		}
 	}
