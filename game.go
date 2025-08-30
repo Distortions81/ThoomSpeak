@@ -301,6 +301,13 @@ func resetDrawState() {
 	serverFPS = 0
 	frameInterval = framems * time.Millisecond
 
+	// Clear frame timing history so new sessions start fresh without
+	// inherited intervals from previous connections.
+	frameMu.Lock()
+	lastFrameTime = time.Time{}
+	intervalHist = map[int]int{}
+	frameMu.Unlock()
+
 	stateMu.Lock()
 	initialState = cloneDrawState(state)
 	stateMu.Unlock()
