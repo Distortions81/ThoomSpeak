@@ -2602,6 +2602,7 @@ func makeSettingsWindow() {
 
 	fadePicsCB, fadePicsEvents := eui.NewCheckbox()
 	fadePicsCB.Text = "Fade pictures over mobiles"
+	fadePicsCB.Size = eui.Point{X: panelWidth - 10, Y: 24}
 	fadePicsCB.Checked = gs.FadeObscuringPictures
 	fadePicsEvents.Handle = func(ev eui.UIEvent) {
 		if ev.Type == eui.EventCheckboxChanged {
