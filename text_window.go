@@ -181,7 +181,10 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 	}
 
 	if input != nil && len(input.Contents) > 0 {
-		showSpellSuggestions(input.Contents[0])
+		t := input.Contents[0]
+		if t.Text != "" && t.Focused {
+			showSpellSuggestions(t)
+		}
 	}
 
 	if win != nil {
@@ -211,7 +214,10 @@ func updateTextWindow(win *eui.WindowData, list, input *eui.ItemData, msgs []str
 // when hovering over underlined text. Selecting a suggestion replaces the
 // word and updates the input text.
 func showSpellSuggestions(t *eui.ItemData) {
-	if t == nil || !t.Hovered || len(t.Underlines) == 0 || sc == nil {
+	if t == nil || len(t.Underlines) == 0 || sc == nil {
+		return
+	}
+	if t.Text == "" || t.ParentWindow == nil || !t.ParentWindow.IsOpen() {
 		return
 	}
 	if eui.ContextMenusOpen() {
