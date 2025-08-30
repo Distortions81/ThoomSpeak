@@ -233,9 +233,8 @@ func showSpellSuggestions(t *eui.ItemData) {
 		return
 	}
 	rs := []rune(t.Text)
-	textSize := t.FontSize*eui.UIScale() + 2
 	metrics := t.Face.Metrics()
-	lineSpacing := textSize * 1.2
+	lineHeight := float32(math.Ceil(metrics.HAscent + metrics.HDescent + 2))
 	for _, ul := range t.Underlines {
 		if ul.Start < 0 || ul.End > len(rs) || ul.Start >= ul.End {
 			continue
@@ -252,9 +251,8 @@ func showSpellSuggestions(t *eui.ItemData) {
 		x0, _ := text.Measure(prefix, t.Face, 0)
 		word := string(rs[ul.Start:ul.End])
 		w, _ := text.Measure(word, t.Face, 0)
-		baseY := float32(line)*lineSpacing + float32(metrics.HAscent)
-		top := t.DrawRect.Y0 + baseY - float32(metrics.HAscent)
-		bottom := t.DrawRect.Y0 + baseY + float32(metrics.HDescent)
+		top := t.DrawRect.Y0 + float32(line)*lineHeight
+		bottom := top + lineHeight
 		left := t.DrawRect.X0 + float32(x0)
 		right := left + float32(w)
 		if x >= left && x <= right && y >= top && y <= bottom {
