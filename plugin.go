@@ -687,6 +687,7 @@ func pluginSetInputText(text string) {
 	inputMu.Lock()
 	inputText = []rune(text)
 	inputActive = true
+	inputPos = len(inputText)
 	inputMu.Unlock()
 }
 

@@ -2294,6 +2294,7 @@ func makeSettingsWindow() {
 			} else {
 				inputActive = false
 				inputText = inputText[:0]
+				inputPos = 0
 				historyPos = len(inputHistory)
 			}
 			updateConsoleWindow()
