@@ -1383,8 +1383,10 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 
 		textSize := (item.FontSize * uiScale) + 2
 		face := itemFace(item, textSize)
+		metrics := face.Metrics()
+		lineSpacing := float32(textSize) * 1.2
 		loo := text.LayoutOptions{
-			LineSpacing:    float64(textSize) * 1.2,
+			LineSpacing:    float64(lineSpacing),
 			PrimaryAlign:   text.AlignStart,
 			SecondaryAlign: text.AlignStart,
 		}
@@ -1401,9 +1403,29 @@ func (item *itemData) drawItemInternal(parent *itemData, offset point, base poin
 		top.ColorScale.ScaleWithColor(tcolor)
 		text.Draw(subImg, item.Text, face, top)
 
+		if item.Focused {
+			runes := []rune(item.Text)
+			if focused := item.CursorPos; focused < 0 {
+				item.CursorPos = 0
+			} else if focused > len(runes) {
+				item.CursorPos = len(runes)
+			}
+			prefix := string(runes[:item.CursorPos])
+			preLines := strings.Split(prefix, "\n")
+			lineIdx := len(preLines) - 1
+			lastLine := preLines[lineIdx]
+			width, _ := text.Measure(lastLine, face, 0)
+			cx := offset.X + float32(width)
+			baseY := offset.Y + float32(lineIdx)*lineSpacing + float32(metrics.HAscent)
+			topY := baseY - float32(math.Ceil(metrics.HAscent))
+			bottomY := baseY + float32(math.Ceil(metrics.HDescent))
+			strokeLine(subImg,
+				cx, topY,
+				cx, bottomY,
+				1, style.TextColor, false)
+		}
+
 		if len(item.Underlines) > 0 {
-			metrics := face.Metrics()
-			lineSpacing := float32(textSize) * 1.2
 			rs := []rune(item.Text)
 			for _, ul := range item.Underlines {
 				if ul.Start < 0 || ul.End > len(rs) || ul.Start >= ul.End {
