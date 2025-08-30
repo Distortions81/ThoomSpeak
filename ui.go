@@ -2603,7 +2603,7 @@ func makeSettingsWindow() {
 	right.AddItem(bubbleBaseLifeSlider)
 
 	fadePicsCB, fadePicsEvents := eui.NewCheckbox()
-	fadePicsCB.Text = "Fade pictures over mobiles"
+	fadePicsCB.Text = "Fade objects obscuring mobiles"
 	fadePicsCB.Size = eui.Point{X: panelWidth - 10, Y: 24}
 	fadePicsCB.Checked = gs.FadeObscuringPictures
 	fadePicsEvents.Handle = func(ev eui.UIEvent) {
@@ -2615,9 +2615,9 @@ func makeSettingsWindow() {
 	right.AddItem(fadePicsCB)
 
 	obscureSlider, obscureEvents := eui.NewSlider()
-	obscureSlider.Label = "Obscuring picture opacity"
-	obscureSlider.MinValue = 0
-	obscureSlider.MaxValue = 1
+	obscureSlider.Label = "Obscuring object opacity"
+	obscureSlider.MinValue = 0.25
+	obscureSlider.MaxValue = 0.7
 	obscureSlider.Value = float32(gs.ObscuringPictureOpacity)
 	obscureSlider.Size = eui.Point{X: panelWidth - 10, Y: 24}
 	obscureEvents.Handle = func(ev eui.UIEvent) {
@@ -3468,8 +3468,8 @@ func makeQualityWindow() {
 	sLS, shaderLightEvents := eui.NewSlider()
 	shaderLightSlider = sLS
 	shaderLightSlider.Label = "Light Strength"
-	shaderLightSlider.MinValue = 0
-	shaderLightSlider.MaxValue = 200
+	shaderLightSlider.MinValue = 0.01
+	shaderLightSlider.MaxValue = 5000
 	shaderLightSlider.IntOnly = true
 	shaderLightSlider.Value = float32(gs.ShaderLightStrength * 100)
 	shaderLightSlider.Size = eui.Point{X: width - 10, Y: 24}
@@ -3489,8 +3489,8 @@ func makeQualityWindow() {
 	sGS, shaderGlowEvents := eui.NewSlider()
 	shaderGlowSlider = sGS
 	shaderGlowSlider.Label = "Glow Strength"
-	shaderGlowSlider.MinValue = 0
-	shaderGlowSlider.MaxValue = 200
+	shaderGlowSlider.MinValue = 0.01
+	shaderGlowSlider.MaxValue = 500
 	shaderGlowSlider.IntOnly = true
 	shaderGlowSlider.Value = float32(gs.ShaderGlowStrength * 100)
 	shaderGlowSlider.Size = eui.Point{X: width - 10, Y: 24}
