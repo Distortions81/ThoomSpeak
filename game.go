@@ -764,6 +764,10 @@ func (g *Game) Update() error {
 							if !pluginDisabled[owner] {
 								consoleMessage("> " + txt)
 								go handler(args)
+							} else {
+								// Disabled plugin commands should fall through so the
+								// server still receives the user's input.
+								pendingCommand = txt
 							}
 						} else {
 							pendingCommand = txt
