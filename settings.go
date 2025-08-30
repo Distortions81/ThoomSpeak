@@ -72,7 +72,7 @@ var gsdef settings = settings{
 	MobileBlendFrames:    10,
 	PictBlendFrames:      10,
 	DenoiseSharpness:     4.0,
-	DenoiseAmount:        0.2,
+	DenoiseAmount:        0.33,
 	ShowFPS:              true,
 	UIScale:              1.0,
 	MasterVolume:         1.0,

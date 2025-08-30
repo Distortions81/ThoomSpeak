@@ -3567,7 +3567,7 @@ func makeQualityWindow() {
 	denoiseAmtSlider, denoiseAmtEvents := eui.NewSlider()
 	denoiseAmtSlider.Label = "Denoise strength"
 	denoiseAmtSlider.MinValue = 0
-	denoiseAmtSlider.MaxValue = 100
+	denoiseAmtSlider.MaxValue = 50
 	denoiseAmtSlider.Value = float32(gs.DenoiseAmount * 100)
 	denoiseAmtSlider.Size = eui.Point{X: width - 10, Y: 24}
 	denoiseAmtSlider.Tooltip = "How strongly to blend dithered areas"
