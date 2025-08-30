@@ -38,10 +38,11 @@ type framePicture struct {
 }
 
 type frameMobile struct {
-	Index  uint8
-	State  uint8
-	H, V   int16
-	Colors uint8
+	Index   uint8
+	State   uint8
+	H, V    int16
+	Colors  uint8
+	Persist bool
 	// Cached name tag image (for d.Name != "").
 	nameTag    *ebiten.Image
 	nameTagW   int
@@ -78,6 +79,8 @@ const (
 	maxMobiles     = 512
 	maxBubbles     = 128
 )
+
+var mobileSizeFunc = mobileSize
 
 var skipPictShift = map[uint16]struct{}{
 	3037: {},
@@ -291,6 +294,76 @@ func pictureVisible(p framePicture) bool {
 		int(p.H)-halfW > fieldCenterX ||
 		int(p.V)+halfH < -fieldCenterY ||
 		int(p.V)-halfH > fieldCenterY {
+		return false
+	}
+	return true
+}
+
+// mobileOnEdge reports whether the mobile overlaps the visible game field and
+// whether its bounding box touches or extends past the field boundaries. It
+// returns true only when one or two edges are crossed and at least 70% of the
+// mobile lies outside the field.
+func mobileOnEdge(m frameMobile, d frameDescriptor) bool {
+	size := mobileSizeFunc(d.PictID)
+	if size <= 0 || size > maxPersistImageSize {
+		return false
+	}
+	half := size / 2
+	left := int(m.H) - half
+	right := int(m.H) + half
+	top := int(m.V) - half
+	bottom := int(m.V) + half
+	if right < -fieldCenterX || left > fieldCenterX ||
+		bottom < -fieldCenterY || top > fieldCenterY {
+		return false
+	}
+	edgeLeft := left <= -fieldCenterX
+	edgeRight := right >= fieldCenterX
+	edgeTop := top <= -fieldCenterY
+	edgeBottom := bottom >= fieldCenterY
+
+	edgeCount := 0
+	if edgeLeft {
+		edgeCount++
+	}
+	if edgeRight {
+		edgeCount++
+	}
+	if edgeTop {
+		edgeCount++
+	}
+	if edgeBottom {
+		edgeCount++
+	}
+	if edgeCount == 0 || edgeCount > 2 {
+		return false
+	}
+
+	interLeft := left
+	if interLeft < -fieldCenterX {
+		interLeft = -fieldCenterX
+	}
+	interRight := right
+	if interRight > fieldCenterX {
+		interRight = fieldCenterX
+	}
+	interTop := top
+	if interTop < -fieldCenterY {
+		interTop = -fieldCenterY
+	}
+	interBottom := bottom
+	if interBottom > fieldCenterY {
+		interBottom = fieldCenterY
+	}
+	visibleW := interRight - interLeft
+	visibleH := interBottom - interTop
+	if visibleW <= 0 || visibleH <= 0 {
+		return false
+	}
+	totalArea := size * size
+	visibleArea := visibleW * visibleH
+	offArea := totalArea - visibleArea
+	if offArea*10 < totalArea*7 {
 		return false
 	}
 	return true
@@ -1081,6 +1154,29 @@ func parseDrawState(data []byte, buildCache bool) error {
 		//logDebug("interp mobiles interval=%v extra=%d", interval, extra)
 		state.prevTime = time.Now()
 		state.curTime = state.prevTime.Add(interval)
+	}
+
+	// Carry over previous-frame mobiles that disappear at the edge to avoid
+	// premature culling from interpolation.
+	if len(state.mobiles) > 0 {
+		present := make(map[uint8]struct{}, len(mobiles))
+		for _, m := range mobiles {
+			present[m.Index] = struct{}{}
+		}
+		for idx, pm := range state.mobiles {
+			if pm.Persist {
+				continue
+			}
+			if _, ok := present[idx]; ok {
+				continue
+			}
+			if d, ok := state.descriptors[idx]; ok && mobileOnEdge(pm, d) {
+				pm.H = int16(int(pm.H) + state.picShiftX)
+				pm.V = int16(int(pm.V) + state.picShiftY)
+				pm.Persist = true
+				mobiles = append(mobiles, pm)
+			}
+		}
 	}
 
 	if state.mobiles == nil {
