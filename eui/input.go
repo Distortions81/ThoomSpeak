@@ -516,7 +516,7 @@ func Update() error {
 	}
 
 	if inpututil.IsKeyJustPressed(ebiten.KeyEnter) || inpututil.IsKeyJustPressed(ebiten.KeyKPEnter) {
-		if activeWindow != nil && activeWindow.DefaultButton != nil {
+		if activeWindow != nil && activeWindow.Open && activeWindow.DefaultButton != nil {
 			btn := activeWindow.DefaultButton
 			if !btn.Disabled && !btn.Invisible {
 				activeItem = btn
@@ -530,7 +530,7 @@ func Update() error {
 	}
 
 	if inpututil.IsKeyJustPressed(ebiten.KeyTab) {
-		if activeWindow != nil {
+		if activeWindow != nil && activeWindow.Open {
 			var inputs []*itemData
 			collectInputs(activeWindow.Contents, &inputs)
 			if len(inputs) > 0 {
