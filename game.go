@@ -593,6 +593,8 @@ func (g *Game) Update() error {
 	if inputActive && inputFlow != nil && len(inputFlow.Contents) > 0 {
 		item := inputFlow.Contents[0]
 		inputPos = plainCursorPos(item.Text, item.CursorPos)
+		plain := strings.ReplaceAll(item.Text, "\n", "")
+		inputText = []rune(plain)
 	}
 	checkPluginMods()
 	updateNotifications()
