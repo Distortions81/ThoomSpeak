@@ -22,6 +22,9 @@ DEB_PACKAGES=(
   libgl1-mesa-dev
   libglu1-mesa-dev
   xorg-dev
+  libxrandr-dev
+  libasound2-dev
+  libgtk-3-dev
 )
 
 if command -v apt-get >/dev/null 2>&1; then

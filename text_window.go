@@ -217,7 +217,7 @@ func showSpellSuggestions(t *eui.ItemData) {
 	if t == nil || len(t.Underlines) == 0 || sc == nil {
 		return
 	}
-	if t.Text == "" || t.ParentWindow == nil || !t.ParentWindow.IsOpen() {
+	if !t.Focused || t.Text == "" || t.ParentWindow == nil || !t.ParentWindow.IsOpen() {
 		return
 	}
 	if eui.ContextMenusOpen() {
