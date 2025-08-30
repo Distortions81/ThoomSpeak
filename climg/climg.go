@@ -837,6 +837,116 @@ func (c *CLImages) NonTransparentPixels(id uint32) int {
 	return count
 }
 
+// HasOpaqueRect reports whether any non-transparent pixels exist within the
+// specified rectangle of the image identified by id. The rectangle coordinates
+// are relative to the top-left corner of the sprite.
+func (c *CLImages) HasOpaqueRect(id uint32, rect image.Rectangle) bool {
+	ref := c.idrefs[id]
+	if ref == nil {
+		return false
+	}
+	imgLoc := c.images[ref.imageID]
+	colLoc := c.colors[ref.colorID]
+	if imgLoc == nil || colLoc == nil {
+		return false
+	}
+	r := bytes.NewReader(c.data)
+	if _, err := r.Seek(int64(imgLoc.offset), io.SeekStart); err != nil {
+		log.Printf("seek image %d: %v", id, err)
+		return false
+	}
+	var h, w uint16
+	var pad uint32
+	var v, b byte
+	if err := binary.Read(r, binary.BigEndian, &h); err != nil {
+		log.Printf("read h for %d: %v", id, err)
+		return false
+	}
+	if err := binary.Read(r, binary.BigEndian, &w); err != nil {
+		log.Printf("read w for %d: %v", id, err)
+		return false
+	}
+	if err := binary.Read(r, binary.BigEndian, &pad); err != nil {
+		log.Printf("read pad for %d: %v", id, err)
+		return false
+	}
+	if err := binary.Read(r, binary.BigEndian, &v); err != nil {
+		log.Printf("read v for %d: %v", id, err)
+		return false
+	}
+	if err := binary.Read(r, binary.BigEndian, &b); err != nil {
+		log.Printf("read b for %d: %v", id, err)
+		return false
+	}
+
+	width := int(w)
+	height := int(h)
+	rect = rect.Intersect(image.Rect(0, 0, width, height))
+	if rect.Empty() {
+		return false
+	}
+	valueW := int(v)
+	blockLenW := int(b)
+	pixelCount := width * height
+	br := New(r)
+	data := make([]byte, pixelCount)
+	pixPos := 0
+	for pixPos < pixelCount {
+		t, err := br.ReadBit()
+		if err != nil {
+			log.Printf("read bit for %d: %v", id, err)
+			return false
+		}
+		s, err := br.ReadInt(blockLenW)
+		if err != nil {
+			log.Printf("read int for %d: %v", id, err)
+			return false
+		}
+		s++
+		if t {
+			for i := 0; i < s && pixPos < pixelCount; i++ {
+				val, err := br.ReadBits(valueW)
+				if err != nil {
+					log.Printf("read bits for %d: %v", id, err)
+					return false
+				}
+				data[pixPos] = val
+				pixPos++
+			}
+		} else {
+			val, err := br.ReadBits(valueW)
+			if err != nil {
+				log.Printf("read bits for %d: %v", id, err)
+				return false
+			}
+			for i := 0; i < s && pixPos < pixelCount; i++ {
+				data[pixPos] = val
+				pixPos++
+			}
+		}
+	}
+
+	if ref.flags&pictDefCustomColors != 0 && len(data) >= width {
+		data = data[width:]
+	}
+
+	_, transparent := alphaTransparentForFlags(ref.flags)
+	if !transparent {
+		return true
+	}
+
+	col := colLoc.colorBytes
+	for y := rect.Min.Y; y < rect.Max.Y; y++ {
+		row := y * width
+		for x := rect.Min.X; x < rect.Max.X; x++ {
+			if col[data[row+x]] != 0 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // applyCustomPalette replaces entries in col according to mapping and custom.
 // mapping holds color table indices for each customizable slot while custom
 // provides the new palette indices supplied by the server for those slots.
