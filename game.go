@@ -586,6 +586,7 @@ func (g *Game) Update() error {
 	})
 
 	if inputFlow != nil && len(inputFlow.Contents) > 0 {
+		eui.ClearFocus(inputFlow.Contents[0])
 		inputFlow.Contents[0].Focused = false
 	}
 	eui.Update() //We really need this to return eaten clicks

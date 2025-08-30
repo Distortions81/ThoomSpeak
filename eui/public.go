@@ -166,3 +166,12 @@ func SetCurrentStyleName(name string) { currentStyleName = name }
 
 // AccentSaturation returns the current accent color saturation value.
 func AccentSaturation() float64 { return accentSaturation }
+
+// ClearFocus removes focus from the provided item if it is currently focused.
+func ClearFocus(it *ItemData) {
+	if focusedItem == it {
+		focusedItem.Focused = false
+		focusedItem.markDirty()
+		focusedItem = nil
+	}
+}
