@@ -1429,13 +1429,17 @@ func drawMobile(screen *ebiten.Image, ox, oy int, m frameMobile, descMap map[uin
 	}
 }
 
-func pictureObscuresPlayerAt(pictID uint16, pictH, pictV int16, playerH, playerV int16, playerDesc frameDescriptor) bool {
+func pictureObscuresPlayerAt(pictID uint16, frame int, pictH, pictV int16, playerH, playerV int16, playerDesc frameDescriptor) bool {
 	if clImages == nil || clImages.IsSemiTransparent(uint32(pictID)) {
 		return false
 	}
 	w, h := clImages.Size(uint32(pictID))
 	if w <= 0 || h <= 0 {
 		return false
+	}
+	frames := clImages.NumFrames(uint32(pictID))
+	if frames > 1 {
+		h /= frames
 	}
 	size := mobileSize(playerDesc.PictID)
 	if size == 0 {
@@ -1468,7 +1472,8 @@ func pictureObscuresPlayerAt(pictID uint16, pictH, pictV int16, playerH, playerV
 	if interR <= interL || interB <= interT {
 		return false
 	}
-	rect := image.Rect(interL-picL, interT-picT, interR-picL, interB-picT)
+	offsetY := frame * h
+	rect := image.Rect(interL-picL, interT-picT+offsetY, interR-picL, interB-picT+offsetY)
 	return clImages.HasOpaqueRect(uint32(pictID), rect)
 }
 
@@ -1510,14 +1515,19 @@ func drawPicture(screen *ebiten.Image, ox, oy int, p framePicture, alpha float64
 	}
 
 	frame := 0
+	prevFrame := 0
 	if clImages != nil {
 		frame = clImages.FrameIndex(uint32(p.PictID), frameCounter)
+		prevFrame = clImages.FrameIndex(uint32(p.PictID), frameCounter-1)
 	}
 	plane := p.Plane
 
 	w, h := 0, 0
 	if clImages != nil {
 		w, h = clImages.Size(uint32(p.PictID))
+		if frames := clImages.NumFrames(uint32(p.PictID)); frames > 1 {
+			h /= frames
+		}
 	}
 
 	var mobileX, mobileY float64
@@ -1557,8 +1567,8 @@ func drawPicture(screen *ebiten.Image, ox, oy int, p framePicture, alpha float64
 				prevDrawAfter := pictureDrawsAfterPlayerAt(p, p.PrevH, p.PrevV, prevMob.H, prevMob.V, d.Plane)
 				currDrawAfter := pictureDrawsAfterPlayerAt(p, p.H, p.V, player.H, player.V, d.Plane)
 				if prevDrawAfter || currDrawAfter {
-					prevObscure := pictureObscuresPlayerAt(p.PictID, p.PrevH, p.PrevV, prevMob.H, prevMob.V, d)
-					currObscure := pictureObscuresPlayerAt(p.PictID, p.H, p.V, player.H, player.V, d)
+					prevObscure := pictureObscuresPlayerAt(p.PictID, prevFrame, p.PrevH, p.PrevV, prevMob.H, prevMob.V, d)
+					currObscure := pictureObscuresPlayerAt(p.PictID, frame, p.H, p.V, player.H, player.V, d)
 					prevAlpha := float32(1.0)
 					if prevObscure && prevDrawAfter {
 						prevAlpha = float32(gs.ObscuringPictureOpacity)
@@ -1573,9 +1583,7 @@ func drawPicture(screen *ebiten.Image, ox, oy int, p framePicture, alpha float64
 		}
 	}
 	var prevImg *ebiten.Image
-	var prevFrame int
 	if gs.BlendPicts && clImages != nil {
-		prevFrame = clImages.FrameIndex(uint32(p.PictID), frameCounter-1)
 		if prevFrame != frame {
 			prevImg = loadImageFrame(p.PictID, prevFrame)
 		}
