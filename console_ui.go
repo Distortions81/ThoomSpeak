@@ -28,9 +28,6 @@ func updateConsoleWindow() {
 	if inputFlow != nil && len(inputFlow.Contents) > 0 {
 		inputItem := inputFlow.Contents[0]
 		inputItem.Focused = inputActive
-		if inputItem.Focused {
-			inputPos = inputItem.CursorPos
-		}
 		inputItem.CursorPos = inputPos
 	}
 	if messagesFlow != nil {
